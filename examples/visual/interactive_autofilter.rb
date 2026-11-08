@@ -9,7 +9,7 @@ Xlsxrb.write(output_path) do |wb|
     s.row(%w[Name Department])
     s.row(%w[Alice HR])
     s.row(%w[Bob Eng])
-    s.auto_filter("A1:B3")
+    s.auto_filter = "A1:B3"
   end
   wb.defined_name("_xlnm._FilterDatabase", "Filter!$A$1:$B$3", sheet: "Filter", hidden: true)
 end

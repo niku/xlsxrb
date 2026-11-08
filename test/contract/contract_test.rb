@@ -425,7 +425,7 @@ class ContractTest < Test::Unit::TestCase
               w.sheet("S") do |s|
                 s.row(["See the shape below"])
                 s.shape(preset: "rect", text: "Important!",
-                        from_col: 0, from_row: 2, to_col: 3, to_row: 6,
+                        from_column: 0, from_row: 2, to_column: 3, to_row: 6,
                         fill_color: "#FFFFC0", line_color: "#FF0000")
               end
             end
@@ -435,7 +435,7 @@ class ContractTest < Test::Unit::TestCase
               w.sheet("S") do |s|
                 s.row(["See the shape below"])
                 s.shape(preset: "rect", text: "Important!",
-                        from_col: 0, from_row: 2, to_col: 3, to_row: 6,
+                        from_column: 0, from_row: 2, to_column: 3, to_row: 6,
                         fill_color: "#FFFFC0", line_color: "#FF0000")
               end
             end
@@ -486,7 +486,7 @@ class ContractTest < Test::Unit::TestCase
         s.row(%w[Name Score])
         s.row(["Alice", 95])
         s.row(["Bob", 87])
-        s.auto_filter("A1:B3")
+        s.auto_filter = "A1:B3"
       end
     end
 
@@ -790,7 +790,7 @@ class ContractTest < Test::Unit::TestCase
       w.sheet("All") do |s|
         s.row(%w[Name Score])
         s.row(["Alice", 95])
-        s.auto_filter("A1:B2")
+        s.auto_filter = "A1:B2"
         s.merge("A1:A1")
         s.freeze_pane(row: 1)
         s.page_margins(left: 1.0, right: 1.0)
@@ -866,9 +866,8 @@ class ContractTest < Test::Unit::TestCase
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Sheet1") do |s|
         s.row(["Data"])
-        s.sheet_properties(:tab_color, "FF0000")
-        s.sheet_view(:show_grid_lines, false)
-        s.sheet_view(:zoom_scale, 150)
+        s.sheet_properties(tab_color: "FF0000")
+        s.sheet_view(show_grid_lines: false, zoom_scale: 150)
       end
     end
 
@@ -906,7 +905,7 @@ class ContractTest < Test::Unit::TestCase
       w.sheet("Sheet1") do |s|
         s.row(["Data"])
       end
-      w.print_area("Sheet1!$A$1:$C$10", sheet: "Sheet1")
+      w.print_area = "Sheet1!$A$1:$C$10"
       w.print_titles(rows: "1:2", columns: "A:B", sheet: "Sheet1")
     end
 
@@ -923,8 +922,7 @@ class ContractTest < Test::Unit::TestCase
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Sheet1") do |s|
         s.row(["Data"])
-        s.print_options(:grid_lines, true)
-        s.print_options(:horizontal_centered, true)
+        s.print_options(grid_lines: true, horizontal_centered: true)
       end
     end
 
@@ -958,7 +956,7 @@ class ContractTest < Test::Unit::TestCase
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Sheet1") do |s|
         s.row(["Data"])
-        s.auto_filter("A1:A10")
+        s.auto_filter = "A1:A10"
         s.sort_state("A1:A10", [{ ref: "A1:A10", descending: true }])
       end
     end
@@ -978,7 +976,7 @@ class ContractTest < Test::Unit::TestCase
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Sheet1") do |s|
         s.row(["Data"])
-        s.auto_filter("A1:A10")
+        s.auto_filter = "A1:A10"
         s.filter_column(0, type: :filters, values: ["Data"])
       end
     end
@@ -1012,8 +1010,8 @@ class ContractTest < Test::Unit::TestCase
       w.sheet("Sheet1") do |s|
         s.row(["Data"])
       end
-      w.core_property(:creator, "Author")
-      w.app_property(:application, "Xlsxrb")
+      w.core_properties(creator: "Author")
+      w.app_properties(application: "Xlsxrb")
       w.custom_property("MyProp", "MyValue")
     end
 
@@ -1031,7 +1029,7 @@ class ContractTest < Test::Unit::TestCase
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Sheet1") do |s|
         s.row(["Data"])
-        s.image(MINIMAL_PNG, ext: "png", from_col: 1, from_row: 1)
+        s.image(MINIMAL_PNG, ext: "png", from_column: 1, from_row: 1)
       end
     end
 
@@ -1052,8 +1050,8 @@ class ContractTest < Test::Unit::TestCase
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Styled") do |s|
         s.style("bold_green") do |style|
-          style.bold(true)
-          style.fill_color("00FF00")
+          style.bold = true
+          style.fill_color = "00FF00"
         end
         s.row(["Header"], cell_styles: ["bold_green"])
         s.row(["Normal"])
@@ -1085,7 +1083,7 @@ class ContractTest < Test::Unit::TestCase
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Formats") do |s|
         # numFmtId 4 = "#,##0.00" (built-in)
-        s.style("currency") { |style| style.number_format(4) }
+        s.style("currency") { |style| style.number_format = 4 }
         s.row([1234.56], cell_styles: ["currency"])
         s.row([7890])
       end
@@ -1132,7 +1130,7 @@ class ContractTest < Test::Unit::TestCase
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Dates") do |s|
         # numFmtId 14 = "m/d/yy" (built-in date format); triggers date conversion in Reader
-        s.style("date_fmt") { |style| style.number_format(14) }
+        s.style("date_fmt") { |style| style.number_format = 14 }
         s.row([today], cell_styles: ["date_fmt"])
       end
     end
@@ -1158,7 +1156,7 @@ class ContractTest < Test::Unit::TestCase
       w.sheet("Shapes") do |s|
         s.row(["Data"])
         s.shape(preset: "roundRect", text: "Call Out",
-                from_col: 1, from_row: 2, to_col: 4, to_row: 6)
+                from_column: 1, from_row: 2, to_column: 4, to_row: 6)
       end
     end
 
@@ -1183,8 +1181,8 @@ class ContractTest < Test::Unit::TestCase
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Multi") do |s|
         s.row(["Data"])
-        s.shape(preset: "rect", text: "Box", from_col: 0, from_row: 1, to_col: 2, to_row: 3)
-        s.shape(preset: "ellipse", text: "Oval", from_col: 3, from_row: 1, to_col: 5, to_row: 3)
+        s.shape(preset: "rect", text: "Box", from_column: 0, from_row: 1, to_column: 2, to_row: 3)
+        s.shape(preset: "ellipse", text: "Oval", from_column: 3, from_row: 1, to_column: 5, to_row: 3)
       end
     end
 

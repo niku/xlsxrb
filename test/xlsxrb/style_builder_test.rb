@@ -114,30 +114,34 @@ class StyleBuilderTest < Test::Unit::TestCase
 
   test "font property setters and 0-argument getters" do
     b = Xlsxrb::StyleBuilder.new("header")
-    assert_equal(false, b.bold)
-    assert_equal(false, b.italic)
+    assert_equal(false, b.bold?)
+    assert_equal(false, b.italic?)
     assert_nil(b.font_size)
     assert_nil(b.font_name)
     assert_nil(b.font_color)
     assert_nil(b.underline)
-    assert_equal(false, b.strike)
+    assert_equal(false, b.strike?)
     assert_nil(b.vert_align)
-    assert_equal(false, b.superscript)
-    assert_equal(false, b.subscript)
+    assert_equal(false, b.superscript?)
+    assert_equal(false, b.subscript?)
 
-    assert_nil(b.bold(true))
-    assert_nil(b.italic(true))
-    assert_nil(b.font_size(14))
-    assert_nil(b.font_name("Arial"))
-    assert_nil(b.font_color(:red))
-    assert_nil(b.underline("double"))
-    assert_nil(b.strike(true))
-    assert_nil(b.vert_align("superscript"))
+    refute_respond_to(b, :bold)
+    refute_respond_to(b, :italic)
+    refute_respond_to(b, :strike)
+    refute_respond_to(b, :superscript)
+    refute_respond_to(b, :subscript)
 
-    assert_equal(true, b.bold)
+    b.bold = true
+    b.italic = true
+    b.font_size = 14
+    b.font_name = "Arial"
+    b.font_color = :red
+    b.underline = "double"
+    b.strike = true
+    b.vert_align = "superscript"
+
     assert_equal(true, b.bold?)
     assert_equal(true, b.font_props[:bold])
-    assert_equal(true, b.italic)
     assert_equal(true, b.italic?)
     assert_equal(true, b.font_props[:italic])
     assert_equal(14, b.font_size)
@@ -147,19 +151,16 @@ class StyleBuilderTest < Test::Unit::TestCase
     assert_equal("FFFF0000", b.font_props[:color])
     assert_equal("double", b.underline)
     assert_equal("double", b.font_props[:underline])
-    assert_equal(true, b.strike)
     assert_equal(true, b.strike?)
     assert_equal(true, b.font_props[:strike])
     assert_equal("superscript", b.vert_align)
     assert_equal("superscript", b.font_props[:vert_align])
-    assert_equal(true, b.superscript)
     assert_equal(true, b.superscript?)
 
-    assert_nil(b.subscript(true))
+    b.subscript = true
     assert_equal("subscript", b.vert_align)
-    assert_equal(true, b.subscript)
     assert_equal(true, b.subscript?)
-    assert_equal(false, b.superscript)
+    assert_equal(false, b.superscript?)
 
     # font(**opts) bulk helper and 0-arg getter
     b2 = Xlsxrb::StyleBuilder.new
@@ -180,7 +181,7 @@ class StyleBuilderTest < Test::Unit::TestCase
     assert_nil(b.fill_pattern)
     assert_equal({}, b.fill)
 
-    assert_nil(b.fill_color(:yellow))
+    b.fill_color = :yellow
     assert_equal("solid", b.fill_props[:pattern])
     assert_equal("FFFFFF00", b.fill_props[:fg_color])
     assert_equal("FFFFFF00", b.fill_color)
@@ -245,27 +246,28 @@ class StyleBuilderTest < Test::Unit::TestCase
     assert_equal({}, b.alignment)
     assert_nil(b.align_horizontal)
     assert_nil(b.align_vertical)
-    assert_equal(false, b.wrap_text)
-    assert_equal(false, b.shrink_to_fit)
+    assert_equal(false, b.wrap_text?)
+    assert_equal(false, b.shrink_to_fit?)
     assert_nil(b.text_rotation)
     assert_nil(b.indent)
 
-    assert_nil(b.align_horizontal("center"))
-    assert_nil(b.align_vertical("top"))
-    assert_nil(b.wrap_text(true))
-    assert_nil(b.shrink_to_fit(false))
-    assert_nil(b.text_rotation(45))
-    assert_nil(b.indent(2.5))
+    refute_respond_to(b, :wrap_text)
+    refute_respond_to(b, :shrink_to_fit)
+
+    b.align_horizontal = "center"
+    b.align_vertical = "top"
+    b.wrap_text = true
+    b.shrink_to_fit = false
+    b.text_rotation = 45
+    b.indent = 2.5
 
     assert_equal("center", b.alignment[:horizontal])
     assert_equal("center", b.align_horizontal)
     assert_equal("top", b.alignment[:vertical])
     assert_equal("top", b.align_vertical)
     assert_equal(true, b.alignment[:wrap_text])
-    assert_equal(true, b.wrap_text)
     assert_equal(true, b.wrap_text?)
     assert_equal(false, b.alignment[:shrink_to_fit])
-    assert_equal(false, b.shrink_to_fit)
     assert_equal(false, b.shrink_to_fit?)
     assert_equal(45, b.alignment[:text_rotation])
     assert_equal(45, b.text_rotation)
@@ -278,16 +280,15 @@ class StyleBuilderTest < Test::Unit::TestCase
   test "protection property setters and 0-argument getters" do
     b = Xlsxrb::StyleBuilder.new
     assert_equal({}, b.protection)
-    assert_equal(true, b.locked)
     assert_equal(true, b.locked?)
-    assert_equal(false, b.hidden)
     assert_equal(false, b.hidden?)
 
-    assert_nil(b.locked(false))
-    assert_nil(b.hidden(true))
-    assert_equal(false, b.locked)
+    refute_respond_to(b, :locked)
+    refute_respond_to(b, :hidden)
+
+    b.locked = false
+    b.hidden = true
     assert_equal(false, b.locked?)
-    assert_equal(true, b.hidden)
     assert_equal(true, b.hidden?)
     assert_equal({ locked: false, hidden: true }, b.protection)
 
@@ -301,7 +302,7 @@ class StyleBuilderTest < Test::Unit::TestCase
   test "number format and apply_options! option hash" do
     b = Xlsxrb::StyleBuilder.new
     assert_nil(b.number_format)
-    assert_nil(b.number_format("$#,##0.00"))
+    b.number_format = "$#,##0.00"
     assert_equal("$#,##0.00", b.number_format)
 
     # apply_options! with nested hashes
@@ -325,7 +326,7 @@ class StyleBuilderTest < Test::Unit::TestCase
 
   test "fractional font_size preserves Float and serializes to sz val in styles XML" do
     b1 = Xlsxrb::StyleBuilder.new
-    b1.font_size(10.5)
+    b1.font_size = 10.5
     assert_equal(10.5, b1.font_size)
     assert_equal(10.5, b1.font_props[:size])
 
@@ -336,7 +337,7 @@ class StyleBuilderTest < Test::Unit::TestCase
 
     # Normalization of whole Float to Integer
     b3 = Xlsxrb::StyleBuilder.new
-    b3.font_size(12.0)
+    b3.font_size = 12.0
     assert_equal(12, b3.font_size)
     assert_instance_of(Integer, b3.font_props[:size])
 

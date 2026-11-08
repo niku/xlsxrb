@@ -22,7 +22,7 @@ Xlsxrb.write(output_path) do |wb|
   wb.sheet("Borders") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
-    s.print_options(:grid_lines, true)
+    s.print_options(grid_lines: true)
 
     s.row(["Border Style", "Cell Preview"])
     s.row(["Thin", "Thin Border"], cell_styles: { 1 => "thin" })

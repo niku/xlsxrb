@@ -9,8 +9,6 @@ module Xlsxrb
   #
   # @api public
   class WorksheetBuilder
-    OMITTED = Object.new.freeze
-    private_constant :OMITTED
     # @param name [String] The worksheet name.
     # @param strict_excel_mode [Boolean] Whether to enforce Microsoft Excel limits.
     # @param state [Symbol] Sheet visibility state (:visible, :hidden, or :very_hidden).
@@ -74,9 +72,12 @@ module Xlsxrb
     #: Array[Hash[Symbol, untyped]]
     attr_reader :defined_names
 
-    # @return [Boolean] Whether to treat strings starting with formula prefixes as plain text.
-    #: bool
-    attr_accessor :escape_formulas
+    # Sets whether to treat strings starting with formula prefixes as plain text.
+    #
+    # @param val [Boolean]
+    # @return [Boolean]
+    #: (bool) -> bool
+    attr_writer :escape_formulas
 
     # Returns whether formula escaping is enabled.
     #
@@ -249,16 +250,16 @@ module Xlsxrb
                                raw_value: val.cached_value&.to_s,
                                format_code: fmt_code
                              )
-                           elsif val.is_a?(Hash) && (val.key?(:formula) || val.key?(:expression) || (val[:type]&.to_sym == :shared && (val.key?(:shared_index) || val.key?(:si))))
+                           elsif val.is_a?(Hash) && (val.key?(:formula) || val.key?(:expression) || (val[:type]&.to_sym == :shared && val.key?(:shared_index)))
                              cached_val = val.key?(:value) ? val[:value] : val[:cached_value]
                              f_expr = val[:formula] || val[:expression] || ""
-                             f_type = val[:type] || (:shared if val.key?(:shared_index) || val.key?(:si))
+                             f_type = val[:type] || (:shared if val.key?(:shared_index))
                              f_obj = Elements::Formula.new(
                                expression: f_expr,
                                cached_value: cached_val,
                                type: f_type,
                                ref: val[:ref],
-                               shared_index: val[:shared_index] || val[:si],
+                               shared_index: val[:shared_index],
                                calculate_always: val[:calculate_always]
                              )
                              Elements::Cell.new(
@@ -284,7 +285,7 @@ module Xlsxrb
       end
 
       cells.compact!
-      unmapped = row_style ? { style_index: row_style } : {}
+      unmapped = Elements::EMPTY_HASH
       @rows << Elements::Row.new(
         index: row_index,
         cells: cells,
@@ -479,7 +480,10 @@ module Xlsxrb
       end
     end
 
-    # Configures worksheet-level outline and grouping view properties.
+    # Configures or queries worksheet-level outline and grouping view properties.
+    #
+    # When called with no arguments, returns the outline properties Hash.
+    # When called with arguments, updates outline properties and returns nil.
     #
     # @example Show summary row below detail rows
     #   sheet.outline_properties(summary_below: true, summary_right: true)
@@ -491,9 +495,11 @@ module Xlsxrb
     # @param opts [Hash] Additional options.
     # @return [Hash<Symbol, untyped>, void]
     # @api public
-    #: (?summary_below: bool?, ?summary_right: bool?, ?show_outline_symbols: bool?, ?apply_styles: bool?, **untyped opts) -> (Hash[Symbol, untyped] | void)
+    #: () -> Hash[Symbol, untyped]
+    #: (?summary_below: bool?, ?summary_right: bool?, ?show_outline_symbols: bool?, ?apply_styles: bool?, **untyped opts) -> void
     def outline_properties(summary_below: nil, summary_right: nil, show_outline_symbols: nil, apply_styles: nil, **opts)
       return @sheet_properties.slice(:summary_below, :summary_right, :show_outline_symbols, :apply_styles) if summary_below.nil? && summary_right.nil? && show_outline_symbols.nil? && apply_styles.nil? && opts.empty?
+
       props = (@sheet_properties[:outline_properties] || {}).dup
       props[:summary_below] = summary_below unless summary_below.nil?
       props[:summary_right] = summary_right unless summary_right.nil?
@@ -517,7 +523,6 @@ module Xlsxrb
       outline_properties(**h)
       nil
     end
-    alias outline_pr= outline_properties=
 
     # Adds a chart to the worksheet.
     #
@@ -568,16 +573,12 @@ module Xlsxrb
       @hyperlinks << link
     end
 
-    # Sets an auto-filter range on the sheet.
+    # Returns the auto-filter range for the worksheet, or nil if none.
     #
-    # @param range [String, nil] The cell range (e.g. "A1:E100").
-    # @return [void]
+    # @return [String, nil]
     # @api public
-    #: (String? range) -> void
-    def auto_filter(range)
-      @auto_filter = range
-      nil
-    end
+    #: () -> String?
+    attr_reader :auto_filter
 
     # Sets the auto-filter range for the worksheet.
     #
@@ -586,8 +587,7 @@ module Xlsxrb
     # @api public
     #: (String? range) -> String?
     def auto_filter=(range)
-      auto_filter(range)
-      range
+      @auto_filter = range&.to_s
     end
 
     # Configures filtering rules on a specific column of an auto-filter.
@@ -596,30 +596,35 @@ module Xlsxrb
     # @param filter [Hash] Filter criteria (e.g. values, custom filters).
     # @return [void]
     # @api public
-    #: (Integer | String | Symbol col_id, Hash[untyped, untyped] filter) -> void
+    #: (Integer | String | Symbol col_id, (Hash[untyped, untyped] | Array[untyped]) filter) -> void
     def filter_column(col_id, filter)
       col_id = Elements::Cell._column_index(col_id) if col_id.is_a?(String) || col_id.is_a?(Symbol)
       @filter_columns[col_id] = filter
       nil
     end
 
-    # Configures column sort state for the sheet.
+    # Configures or queries column sort state for the sheet.
     #
-    # @param ref [String] The sorted range.
-    # @param sort_conditions [Array<Hash>] List of sort condition definitions.
+    # When called with no arguments, returns the {Elements::SortState} value object.
+    # When called with arguments, updates sort state and returns nil.
+    #
+    # @param ref [String, nil] The sorted range.
+    # @param sort_conditions [Array<Hash>, nil] List of sort condition definitions.
+    # @param case_sensitive [Boolean] Whether sorting is case sensitive.
+    # @param sort_method [String, nil] Sort method.
     # @param opts [Hash] Additional sort state options.
-    # @return [Elements::SortState, Hash<Symbol, untyped>, nil, void]
+    # @return [Elements::SortState, nil, void]
     # @api public
-    #: (?String? ref, ?Array[Hash[untyped, untyped]]? sort_conditions, **untyped opts) -> (untyped | void)
-    def sort_state(ref = nil, sort_conditions = nil, **opts)
-      if ref.nil? && sort_conditions.nil? && opts.empty?
-        return nil unless @sort_state
-        return Elements::SortState.new(**@sort_state) if defined?(Elements::SortState)
-
-        return @sort_state
+    #: () -> Elements::SortState?
+    #: (?String? ref, ?Array[Hash[untyped, untyped]]? sort_conditions, ?case_sensitive: bool, ?sort_method: String?, **untyped opts) -> void
+    def sort_state(ref = nil, sort_conditions = nil, case_sensitive: false, sort_method: nil, **opts)
+      if ref.nil? && sort_conditions.nil?
+        return @sort_state ? Elements::SortState.new(**@sort_state) : nil
       end
 
-      @sort_state = { ref: ref, sort_conditions: sort_conditions }.merge(opts)
+      entry = { ref: ref, sort_conditions: sort_conditions, case_sensitive: case_sensitive }
+      entry[:sort_method] = sort_method if sort_method
+      @sort_state = entry.merge(opts)
       nil
     end
 
@@ -628,7 +633,7 @@ module Xlsxrb
     # @param opts [Elements::SortState, Hash, nil] Sort state options.
     # @return [void]
     # @api public
-    #: (untyped opts) -> void
+    #: (Elements::SortState | Hash[Symbol, untyped] | nil opts) -> void
     def sort_state=(opts)
       @sort_state = opts&.respond_to?(:to_h) ? opts.to_h : opts
       nil
@@ -713,8 +718,7 @@ module Xlsxrb
       entry = {
         source_ref: source_ref, row_fields: row_fields,
         data_fields: data_fields, column_fields: c_fields,
-        col_fields: c_fields, ref: target_ref,
-        dest_ref: target_ref, name: name,
+        ref: target_ref, destination: target_ref, name: name,
         field_names: field_names, items: items
       }.merge(opts)
       @pivot_tables << entry
@@ -797,23 +801,29 @@ module Xlsxrb
       @merge_cells_ranges << canonical unless @merge_cells_ranges.include?(canonical)
     end
 
-    # Freezes window panes at the specified row and column, or queries freeze pane settings.
+    # Configures or queries freeze panes (<pane state="frozen">).
+    #
+    # When called with no arguments, returns the {Elements::FreezePane} value object or nil.
+    # When called with arguments, configures the freeze pane and returns nil.
     #
     # @param row [Integer, nil] Number of rows to freeze from top (0-based split position).
     # @param column [Integer, String, nil] Number of columns to freeze from left (0-based or letter).
-    # @return [Elements::FreezePane, Hash<Symbol, untyped>, nil, void]
+    # @param top_left_cell [String, nil] Top-left cell reference in bottom-right pane.
+    # @param active_pane [String, Symbol, nil] Active pane identifier.
+    # @return [Elements::FreezePane, nil, void]
     # @api public
-    #: (?row: Integer | nil, ?column: (Integer | String)?) -> (untyped | void)
-    def freeze_pane(row: nil, column: nil)
-      if row.nil? && column.nil?
-        return nil unless @freeze_pane
-        return Elements::FreezePane.new(**@freeze_pane) if defined?(Elements::FreezePane)
-
-        return @freeze_pane
+    #: () -> Elements::FreezePane?
+    #: (?row: Integer | nil, ?column: (Integer | String)?, ?top_left_cell: String?, ?active_pane: (String | Symbol)?) -> void
+    def freeze_pane(row: nil, column: nil, top_left_cell: nil, active_pane: nil)
+      if row.nil? && column.nil? && top_left_cell.nil? && active_pane.nil?
+        return @freeze_pane ? Elements::FreezePane.new(**@freeze_pane) : nil
       end
 
-      c = Elements::Cell._column_index(column || 0)
-      @freeze_pane = { row: row || 0, col: c, column: c }
+      c = column ? Elements::Cell._column_index(column) : 0
+      entry = { row: row || 0, column: c }
+      entry[:top_left_cell] = top_left_cell if top_left_cell
+      entry[:active_pane] = active_pane.to_s if active_pane
+      @freeze_pane = entry
       nil
     end
 
@@ -822,7 +832,7 @@ module Xlsxrb
     # @param opts [Elements::FreezePane, Hash, nil] Freeze pane options.
     # @return [void]
     # @api public
-    #: (untyped opts) -> void
+    #: (Elements::FreezePane | Hash[Symbol, untyped] | nil opts) -> void
     def freeze_pane=(opts)
       if opts.nil?
         @freeze_pane = nil
@@ -830,32 +840,34 @@ module Xlsxrb
         h = opts.respond_to?(:to_h) ? opts.to_h : opts
         c = h[:column] || h[:col]
         c = Elements::Cell._column_index(c) if c
-        @freeze_pane = { row: h[:row] || 0, col: c || 0, column: c || 0 }
+        entry = { row: h[:row] || 0, column: c || 0 }
+        entry[:top_left_cell] = h[:top_left_cell] if h[:top_left_cell]
+        entry[:active_pane] = h[:active_pane].to_s if h[:active_pane]
+        @freeze_pane = entry
       end
       nil
     end
 
-    # Splits window panes without freezing or queries split pane settings.
+    # Splits window panes without freezing or queries split pane settings (<pane>).
+    #
+    # When called with no arguments, returns the {Elements::SplitPane} value object or nil.
+    # When called with arguments, configures the split pane and returns nil.
     #
     # @param x_split [Integer, nil] Horizontal split offset in points.
     # @param y_split [Integer, nil] Vertical split offset in points.
     # @param top_left_cell [String, nil] Top-left cell reference in bottom-right pane.
     # @param active_pane [String, Symbol, nil] Active pane identifier.
-    # @param state [String, Symbol, nil] Split state.
-    # @return [Elements::SplitPane, Hash<Symbol, untyped>, nil, void]
+    # @return [Elements::SplitPane, nil, void]
     # @api public
-    #: (?x_split: Integer | nil, ?y_split: Integer | nil, ?top_left_cell: String?, ?active_pane: (String | Symbol)?, ?state: (String | Symbol)?) -> (untyped | void)
-    def split_pane(x_split: nil, y_split: nil, top_left_cell: nil, active_pane: nil, state: nil)
-      if x_split.nil? && y_split.nil? && top_left_cell.nil? && active_pane.nil? && state.nil?
-        return nil unless @split_pane
-        return Elements::SplitPane.new(**@split_pane) if defined?(Elements::SplitPane)
-
-        return @split_pane
+    #: () -> Elements::SplitPane?
+    #: (?x_split: Integer | nil, ?y_split: Integer | nil, ?top_left_cell: String?, ?active_pane: (String | Symbol)?) -> void
+    def split_pane(x_split: nil, y_split: nil, top_left_cell: nil, active_pane: nil)
+      if x_split.nil? && y_split.nil? && top_left_cell.nil? && active_pane.nil?
+        return @split_pane ? Elements::SplitPane.new(**@split_pane) : nil
       end
 
       entry = { x_split: x_split || 0, y_split: y_split || 0, top_left_cell: top_left_cell }
       entry[:active_pane] = active_pane.to_s if active_pane
-      entry[:state] = state.to_s if state
       @split_pane = entry
       nil
     end
@@ -865,7 +877,7 @@ module Xlsxrb
     # @param opts [Elements::SplitPane, Hash, nil] Split pane options.
     # @return [void]
     # @api public
-    #: (untyped opts) -> void
+    #: (Elements::SplitPane | Hash[Symbol, untyped] | nil opts) -> void
     def split_pane=(opts)
       if opts.nil?
         @split_pane = nil
@@ -873,31 +885,29 @@ module Xlsxrb
         h = opts.respond_to?(:to_h) ? opts.to_h : opts
         entry = { x_split: h[:x_split] || 0, y_split: h[:y_split] || 0, top_left_cell: h[:top_left_cell] }
         entry[:active_pane] = h[:active_pane].to_s if h[:active_pane]
-        entry[:state] = h[:state].to_s if h[:state]
         @split_pane = entry
       end
       nil
     end
 
-    # Sets or queries the active cell and selection area (<selection>).
+    # Configures or queries the active cell and selection area (<selection>).
+    #
+    # When called with no arguments, returns the selection ({Elements::Selection}, Array, or nil).
+    # When called with arguments, updates the selection and returns nil.
     #
     # @param active_cell [String, nil] Active cell reference (e.g. "A1") or range (e.g. "A1:D10").
     # @param sqref [String, nil] Selected range reference (e.g. "A1:D10").
     # @param pane [String, Symbol, nil] Target pane (:topLeft, :topRight, :bottomLeft, :bottomRight).
-    # @return [Elements::Selection, Array<Elements::Selection>, Hash<Symbol, untyped>, nil, void]
+    # @return [Elements::Selection, Array<Elements::Selection>, nil, void]
     # @api public
-    #: (?String? active_cell, ?sqref: String?, ?pane: (String | Symbol)?) -> (untyped | void)
+    #: () -> (Elements::Selection | Array[Elements::Selection])?
+    #: (?String? active_cell, ?sqref: String?, ?pane: (String | Symbol)?) -> void
     def selection(active_cell = nil, sqref: nil, pane: nil)
       if active_cell.nil? && sqref.nil? && pane.nil?
         return nil if @selection.nil?
+        return @selection.map { |s| Elements::Selection.new(**s) } if @selection.is_a?(Array)
 
-        if defined?(Elements::Selection)
-          return @selection.map { |s| Elements::Selection.new(**s) } if @selection.is_a?(Array)
-
-          return Elements::Selection.new(**@selection)
-        end
-
-        return @selection
+        return Elements::Selection.new(**@selection)
       end
 
       if sqref.nil? && active_cell.is_a?(String) && active_cell.include?(":")
@@ -906,8 +916,9 @@ module Xlsxrb
       else
         sqref ||= active_cell
       end
-      @selection = { active_cell: active_cell, sqref: sqref }
-      @selection[:pane] = pane if pane
+      sel = { active_cell: active_cell, sqref: sqref }
+      sel[:pane] = pane if pane
+      @selection = sel
       nil
     end
 
@@ -916,7 +927,7 @@ module Xlsxrb
     # @param opts [Elements::Selection, Array<Elements::Selection, Hash>, Hash, nil]
     # @return [void]
     # @api public
-    #: (untyped opts) -> void
+    #: (Elements::Selection | Array[Elements::Selection | Hash[Symbol, untyped]] | Hash[Symbol, untyped] | nil opts) -> void
     def selection=(opts)
       @selection = if opts.nil?
                      nil
@@ -928,7 +939,10 @@ module Xlsxrb
       nil
     end
 
-    # Sets page margins in inches for printing.
+    # Configures or queries page margins in inches for printing (<pageMargins>).
+    #
+    # When called with no arguments, returns the {Elements::PageMargins} value object or nil.
+    # When called with arguments, configures page margins and returns nil.
     #
     # @param left [Float, nil] Left margin.
     # @param right [Float, nil] Right margin.
@@ -936,15 +950,13 @@ module Xlsxrb
     # @param bottom [Float, nil] Bottom margin.
     # @param header [Float, nil] Header margin.
     # @param footer [Float, nil] Footer margin.
-    # @return [Elements::PageMargins, Hash<Symbol, untyped>, nil, void]
+    # @return [Elements::PageMargins, nil, void]
     # @api public
-    #: (?left: Float?, ?right: Float?, ?top: Float?, ?bottom: Float?, ?header: Float?, ?footer: Float?) -> (untyped | void)
+    #: () -> Elements::PageMargins?
+    #: (?left: Float?, ?right: Float?, ?top: Float?, ?bottom: Float?, ?header: Float?, ?footer: Float?) -> void
     def page_margins(left: nil, right: nil, top: nil, bottom: nil, header: nil, footer: nil)
       if left.nil? && right.nil? && top.nil? && bottom.nil? && header.nil? && footer.nil?
-        return nil unless @page_margins
-        return Elements::PageMargins.new(**@page_margins) if defined?(Elements::PageMargins)
-
-        return @page_margins
+        return @page_margins ? Elements::PageMargins.new(**@page_margins) : nil
       end
 
       @page_margins = DslHelpers.normalize_page_margins(
@@ -958,7 +970,7 @@ module Xlsxrb
     # @param opts [Hash, Elements::PageMargins, nil]
     # @return [void]
     # @api public
-    #: (untyped opts) -> void
+    #: (Hash[Symbol, untyped] | Elements::PageMargins | nil opts) -> void
     def page_margins=(opts)
       if opts.nil?
         @page_margins = nil
@@ -971,17 +983,16 @@ module Xlsxrb
 
     # Configures or queries page setup configuration (<pageSetup>).
     #
-    # When called with no arguments, returns the page setup value object or hash.
+    # When called with no arguments, returns the {Elements::PageSetup} value object.
     # When called with keyword arguments, updates page setup and returns nil.
     #
     # @param opts [Hash] Page setup options (e.g. orientation: :landscape, paper_size: 9).
-    # @return [Elements::PageSetup, Hash<Symbol, untyped>, void]
+    # @return [Elements::PageSetup, void]
     # @api public
-    #: (**untyped opts) -> (untyped | void)
+    #: () -> Elements::PageSetup
+    #: (**untyped opts) -> void
     def page_setup(**opts)
-      if opts.empty?
-        return defined?(Elements::PageSetup) ? Elements::PageSetup.new(**@page_setup) : @page_setup
-      end
+      return Elements::PageSetup.new(**@page_setup) if opts.empty?
 
       @page_setup.merge!(opts)
       @sheet_properties[:fit_to_page] = true if (opts.key?(:fit_to_width) || opts.key?(:fit_to_height)) && !@sheet_properties.key?(:fit_to_page)
@@ -993,19 +1004,19 @@ module Xlsxrb
     # @param opts [Hash, Elements::PageSetup]
     # @return [void]
     # @api public
-    #: (untyped opts) -> void
+    #: (Hash[Symbol, untyped] | Elements::PageSetup opts) -> void
     def page_setup=(opts)
       h = opts.respond_to?(:to_h) ? opts.to_h : (opts || {})
       @page_setup = h.transform_keys(&:to_sym)
       nil
     end
 
-    # Gets whether page setup fits content to page width/height.
+    # Returns whether page setup fits content to page width/height.
     #
     # @return [Boolean]
     # @api public
     #: () -> bool
-    def fit_to_page
+    def fit_to_page?
       @sheet_properties[:fit_to_page] ? true : false
     end
 
@@ -1014,24 +1025,23 @@ module Xlsxrb
     # @param enabled [Boolean, nil] Whether to fit to page.
     # @return [Boolean]
     # @api public
-    #: (bool? enabled) -> bool
+    #: (bool? enabled) -> bool?
     def fit_to_page=(enabled)
       @sheet_properties[:fit_to_page] = enabled ? true : false
     end
 
     # Configures or queries headers and footers for printing (<headerFooter>).
     #
-    # When called with no arguments, returns the header/footer value object or hash.
+    # When called with no arguments, returns the {Elements::HeaderFooter} value object.
     # When called with keyword arguments, updates headers and footers and returns nil.
     #
     # @param opts [Hash] Header and footer options (e.g. odd_header: "&CHeader Text").
-    # @return [Elements::HeaderFooter, Hash<Symbol, untyped>, void]
+    # @return [Elements::HeaderFooter, void]
     # @api public
-    #: (**untyped opts) -> (untyped | void)
+    #: () -> Elements::HeaderFooter
+    #: (**untyped opts) -> void
     def header_footer(**opts)
-      if opts.empty?
-        return defined?(Elements::HeaderFooter) ? Elements::HeaderFooter.new(**@header_footer) : @header_footer
-      end
+      return Elements::HeaderFooter.new(**@header_footer) if opts.empty?
 
       @header_footer.merge!(opts)
       nil
@@ -1042,7 +1052,7 @@ module Xlsxrb
     # @param opts [Hash, Elements::HeaderFooter]
     # @return [void]
     # @api public
-    #: (untyped opts) -> void
+    #: (Hash[Symbol, untyped] | Elements::HeaderFooter opts) -> void
     def header_footer=(opts)
       h = opts.respond_to?(:to_h) ? opts.to_h : (opts || {})
       @header_footer = h.transform_keys(&:to_sym)
@@ -1052,22 +1062,16 @@ module Xlsxrb
     # Configures or queries print options (<printOptions>).
     #
     # When called with no arguments, returns the {Elements::PrintOptions} value object.
-    # When called with arguments or keyword options, configures print options and returns nil.
+    # When called with keyword options, configures print options and returns nil.
     #
-    # @param name [Symbol, String, Hash, Elements::MetadataRecord, nil] Option name or hash/record of options.
-    # @param value [Object, nil] Option value.
     # @param opts [Hash] Additional print options.
     # @return [Elements::PrintOptions, void]
     # @api public
-    #: (?Symbol | String | Hash[Symbol, untyped] | Elements::MetadataRecord | nil name, ?untyped value, **untyped opts) -> (Elements::PrintOptions | void)
-    def print_options(name = nil, value = nil, **opts)
-      return Elements::PrintOptions.new(**@print_options) if name.nil? && value.nil? && opts.empty?
+    #: () -> Elements::PrintOptions
+    #: (**untyped opts) -> void
+    def print_options(**opts)
+      return Elements::PrintOptions.new(**@print_options) if opts.empty?
 
-      if name.is_a?(Hash) || (name.respond_to?(:to_h) && !name.is_a?(Symbol) && !name.is_a?(String))
-        opts = name.to_h.merge(opts)
-        name = nil
-      end
-      @print_options[name.to_sym] = value if name && !value.nil?
       opts.each { |k, v| @print_options[k.to_sym] = v }
       nil
     end
@@ -1109,24 +1113,15 @@ module Xlsxrb
       @defined_names << entry
     end
 
-    # Sets or gets the print area for the worksheet.
-    #
-    # @example Set print area range
-    #   sheet.print_area("A1:H50")
+    # Returns the print area for the worksheet, or nil if none.
     #
     # @example Get print area range
     #   sheet.print_area #=> "A1:H50"
     #
-    # @param range [String, nil] Cell range (e.g. "A1:H50").
-    # @return [String, nil, void]
+    # @return [String, nil]
     # @api public
-    #: (?String? range) -> (String | nil | void)
-    def print_area(range = nil)
-      return @print_area if range.nil?
-
-      @print_area = range&.to_s
-      nil
-    end
+    #: () -> String?
+    attr_reader :print_area
 
     # Sets the print area for the worksheet.
     #
@@ -1140,24 +1135,23 @@ module Xlsxrb
 
     # Sets or gets repeating print titles (rows and/or columns) for pagination.
     #
+    # When called with no arguments, returns the {Elements::PrintTitles} value object or nil.
+    # When called with arguments, updates print titles and returns nil.
+    #
     # @example Set repeating header rows
     #   sheet.print_titles(rows: "1:2")
     #
     # @example Get repeating print titles
-    #   sheet.print_titles #=> { rows: "1:2", columns: nil, cols: nil }
+    #   sheet.print_titles #=> #<Xlsxrb::Elements::PrintTitles ...>
     #
-    # @param rows [String, nil] Repeating row range (e.g. "1:2").
     # @param rows [String, Integer, Range, nil] Repeating row range (e.g. "1:2" or 0-based 0..1).
     # @param columns [String, Integer, Symbol, Range, nil] Repeating column range (e.g. "A:B" or 0..1).
     # @return [Elements::PrintTitles, nil, void]
     # @api public
-    #: (?rows: (String | Integer | Range[Integer])?, ?columns: (String | Integer | Symbol | Range[untyped])?) -> (Elements::PrintTitles | nil | void)
+    #: () -> Elements::PrintTitles?
+    #: (?rows: (String | Integer | Range[Integer])?, ?columns: (String | Integer | Symbol | Range[untyped])?) -> void
     def print_titles(rows: nil, columns: nil)
-      if rows.nil? && columns.nil?
-        return nil unless @print_titles
-
-        return Elements::PrintTitles.new(**@print_titles)
-      end
+      return @print_titles ? Elements::PrintTitles.new(**@print_titles) : nil if rows.nil? && columns.nil?
 
       norm_rows = DslHelpers.normalize_print_titles_rows(rows)
       norm_cols = DslHelpers.normalize_print_titles_columns(columns)
@@ -1238,21 +1232,19 @@ module Xlsxrb
       print_titles(rows: existing_rows, columns: cols_str)
     end
 
-    # Configures or queries sheet-level protection with optional password hashing (<sheetProtection>).
+    # Sets or queries sheet-level protection with optional password hashing (<sheetProtection>).
     #
-    # When called with no arguments, returns the sheet protection value object or hash.
+    # When called with no arguments, returns the {Elements::SheetProtection} value object or nil.
     # When called with keyword arguments, sets sheet protection and returns nil.
     #
     # @param opts [Hash] Protection options (e.g. password: "secret", select_locked_cells: true).
-    # @return [Elements::SheetProtection, Hash<Symbol, untyped>, nil, void]
+    # @return [Elements::SheetProtection, nil, void]
     # @api public
-    #: (**untyped opts) -> (untyped | void)
+    #: () -> Elements::SheetProtection?
+    #: (**untyped opts) -> void
     def sheet_protection(**opts)
       if opts.empty?
-        return nil unless @sheet_protection
-        return Elements::SheetProtection.new(**@sheet_protection) if defined?(Elements::SheetProtection)
-
-        @sheet_protection
+        @sheet_protection ? Elements::SheetProtection.new(**@sheet_protection) : nil
       else
         @sheet_protection = DslHelpers.normalize_protection_options(opts)
         nil
@@ -1264,7 +1256,7 @@ module Xlsxrb
     # @param opts [Elements::SheetProtection, Hash, Boolean, nil]
     # @return [void]
     # @api public
-    #: (untyped opts) -> void
+    #: (Elements::SheetProtection | Hash[Symbol, untyped] | bool | nil opts) -> void
     def sheet_protection=(opts)
       if opts.nil? || opts == false
         @sheet_protection = nil
@@ -1290,9 +1282,9 @@ module Xlsxrb
     # @api public
     #: (String file_data, ?ext: ::String, ?from_column: ::Integer?, ?from_row: ::Integer, ?to_column: ::Integer?, ?to_row: ::Integer, **untyped opts) -> void
     def image(file_data, ext: "png", from_column: nil, from_row: 0, to_column: nil, to_row: 10, **opts)
-      fc = from_column || opts[:from_col] || 0
-      tc = to_column || opts[:to_col] || 5
-      img = { file_data: file_data, ext: ext, from_column: fc, from_col: fc, from_row: from_row, to_column: tc, to_col: tc, to_row: to_row }
+      fc = from_column || 0
+      tc = to_column || 5
+      img = { file_data: file_data, ext: ext, from_column: fc, from_row: from_row, to_column: tc, to_row: to_row }
       img.merge!(opts)
       @images << img
     end
@@ -1370,9 +1362,9 @@ module Xlsxrb
     # @api public
     #: (?preset: String, ?text: String?, ?from_column: Integer?, ?from_row: Integer, ?to_column: Integer?, ?to_row: Integer, **untyped opts) -> void
     def shape(preset: "rect", text: nil, from_column: nil, from_row: 0, to_column: nil, to_row: 5, **opts)
-      fc = from_column || opts[:from_col] || 0
-      tc = to_column || opts[:to_col] || 5
-      shape_data = { preset: preset, text: text, from_column: fc, from_col: fc, from_row: from_row, to_column: tc, to_col: tc, to_row: to_row }
+      fc = from_column || 0
+      tc = to_column || 5
+      shape_data = { preset: preset, text: text, from_column: fc, from_row: from_row, to_column: tc, to_row: to_row }
       shape_data[:name] = opts.delete(:name) || "Shape #{@shapes.size + 1}"
       shape_data.merge!(opts)
       @shapes << shape_data
@@ -1419,48 +1411,32 @@ module Xlsxrb
 
     # Sets a single sheet property.
     #
-    # @param name [Symbol, String] Property name.
-    # @param value [Object] Property value.
-    # @return [void]
-    # @api public
-    #: (Symbol | String name, untyped value) -> void
-    def sheet_property(name, value)
-      sheet_properties(name, value)
-    end
-
     # Configures or queries sheet properties (<sheetPr>).
     #
     # When called with no arguments, returns the {Elements::SheetProperties} value object.
-    # When called with arguments or keyword options, configures properties and returns nil.
+    # When called with keyword options, configures properties and returns nil.
     #
-    # @param name [Symbol, String, Hash, Elements::MetadataRecord, nil] Property name or hash/record of properties.
-    # @param value [Object, nil] Property value when name is provided.
     # @param opts [Hash] Additional sheet properties.
     # @return [Elements::SheetProperties, void]
     # @api public
-    #: (?Symbol | String | Hash[Symbol, untyped] | Elements::MetadataRecord | nil name, ?untyped value, **untyped opts) -> (Elements::SheetProperties | void)
-    def sheet_properties(name = nil, value = nil, **opts)
-      return Elements::SheetProperties.new(**@sheet_properties) if name.nil? && value.nil? && opts.empty?
+    #: () -> Elements::SheetProperties
+    #: (**untyped opts) -> void
+    def sheet_properties(**opts)
+      return Elements::SheetProperties.new(**@sheet_properties) if opts.empty?
 
-      if name.is_a?(Hash) || (name.respond_to?(:to_h) && !name.is_a?(Symbol) && !name.is_a?(String))
-        opts = name.to_h.merge(opts)
-        name = nil
-      end
-      if name && !value.nil?
-        sym = name.to_sym
+      opts.each do |k, v|
+        sym = k.to_sym
         if sym == :state
-          val = value.to_sym
+          val = v.to_sym
           raise ArgumentError, "Invalid sheet state ':#{val}'. Allowed states are :visible, :hidden, :very_hidden" unless VALID_SHEET_STATES.include?(val)
 
           @state = val
-          return nil
         elsif sym == :hidden
-          @state = value ? :hidden : :visible
-          return nil
+          @state = v ? :hidden : :visible
+        else
+          @sheet_properties[sym] = v
         end
-        @sheet_properties[name.to_sym] = value
       end
-      opts.each { |k, v| sheet_properties(k, v) }
       nil
     end
 
@@ -1473,29 +1449,23 @@ module Xlsxrb
     def sheet_properties=(opts)
       h = opts.respond_to?(:to_h) ? opts.to_h : (opts || {})
       @sheet_properties = {}
-      h.each { |k, v| sheet_properties(k, v) }
+      sheet_properties(**h)
       nil
     end
 
     # Configures or queries sheet view display properties (<sheetView>).
     #
     # When called with no arguments, returns the {Elements::SheetView} value object.
-    # When called with arguments or keyword options, configures view properties and returns nil.
+    # When called with keyword options, configures view properties and returns nil.
     #
-    # @param name [Symbol, String, Hash, Elements::MetadataRecord, nil] View property name or hash/record of properties.
-    # @param value [Object, nil] View property value when name is provided.
     # @param opts [Hash] Additional view properties.
     # @return [Elements::SheetView, void]
     # @api public
-    #: (?Symbol | String | Hash[Symbol, untyped] | Elements::MetadataRecord | nil name, ?untyped value, **untyped opts) -> (Elements::SheetView | void)
-    def sheet_view(name = nil, value = nil, **opts)
-      return Elements::SheetView.new(**@sheet_view) if name.nil? && value.nil? && opts.empty?
+    #: () -> Elements::SheetView
+    #: (**untyped opts) -> void
+    def sheet_view(**opts)
+      return Elements::SheetView.new(**@sheet_view) if opts.empty?
 
-      if name.is_a?(Hash) || (name.respond_to?(:to_h) && !name.is_a?(Symbol) && !name.is_a?(String))
-        opts = name.to_h.merge(opts)
-        name = nil
-      end
-      @sheet_view[name.to_sym] = value if name && !value.nil?
       opts.each { |k, v| @sheet_view[k.to_sym] = v }
       nil
     end
@@ -1515,29 +1485,20 @@ module Xlsxrb
     # Configures or queries sheet format properties (<sheetFormatPr>).
     #
     # When called with no arguments, returns the {Elements::SheetFormat} value object.
-    # When called with arguments or keyword options, configures format properties and returns nil.
+    # When called with keyword options, configures format properties and returns nil.
     #
     # @example Using keyword arguments
     #   sheet.sheet_format(default_row_height: 24, default_column_width: 15)
     #
-    # @example Using property name and value
-    #   sheet.sheet_format(:default_row_height, 24)
-    #
-    # @param name [Symbol, String, Hash, Elements::MetadataRecord, nil] Property name or hash/record of properties.
-    # @param value [Object, nil] Property value when name is provided.
     # @param opts [Hash] Keyword arguments for sheet format properties.
     # @return [Elements::SheetFormat, void]
     # @api public
-    #: (?Symbol | String | Hash[Symbol, untyped] | Elements::MetadataRecord | nil name, ?untyped value, **untyped opts) -> (Elements::SheetFormat | void)
-    def sheet_format(name = nil, value = nil, **opts)
-      return Elements::SheetFormat.new(**@sheet_format) if name.nil? && value.nil? && opts.empty?
+    #: () -> Elements::SheetFormat
+    #: (**untyped opts) -> void
+    def sheet_format(**opts)
+      return Elements::SheetFormat.new(**@sheet_format) if opts.empty?
 
-      if name.is_a?(Hash) || (name.respond_to?(:to_h) && !name.is_a?(Symbol) && !name.is_a?(String))
-        @sheet_format.merge!(name.to_h)
-      elsif name && value
-        @sheet_format[name.to_sym] = value
-      end
-      @sheet_format.merge!(opts) unless opts.empty?
+      opts.each { |k, v| @sheet_format[k.to_sym] = v }
       nil
     end
 
@@ -1549,8 +1510,7 @@ module Xlsxrb
     #: (Hash[Symbol, untyped] | Elements::SheetFormat opts) -> void
     def sheet_format=(opts)
       h = opts.respond_to?(:to_h) ? opts.to_h : (opts || {})
-      @sheet_format = {}
-      sheet_format(h)
+      @sheet_format = h.transform_keys(&:to_sym)
       nil
     end
 
@@ -1770,7 +1730,7 @@ module Xlsxrb
       facade_meta[:sheet_format] = @sheet_format unless @sheet_format.empty?
       facade_meta[:sheet_view] = @sheet_view unless @sheet_view.empty?
       facade_meta[:row_breaks] = @row_breaks unless @row_breaks.empty?
-      facade_meta[:col_breaks] = @col_breaks unless @col_breaks.empty?
+      facade_meta[:column_breaks] = @col_breaks unless @col_breaks.empty?
       facade_meta[:protected_ranges] = @protected_ranges unless @protected_ranges.empty?
       facade_meta[:cell_watches] = @cell_watches unless @cell_watches.empty?
       facade_meta[:ignored_errors] = @ignored_errors unless @ignored_errors.empty?
@@ -1851,6 +1811,9 @@ module Xlsxrb
         tables: @tables,
         shapes: @shapes,
         freeze_pane: @freeze_pane,
+        split_pane: @split_pane,
+        filter_columns: @filter_columns,
+        sort_state: @sort_state,
         page_setup: @page_setup,
         page_margins: @page_margins,
         header_footer: @header_footer,
@@ -1881,8 +1844,6 @@ module Xlsxrb
   #
   # @api public
   class TableBuilder
-    OMITTED = Object.new.freeze
-    private_constant :OMITTED
     # @param ref [String, nil] Table range (e.g. "A1:D10").
     # @param columns [Array, nil] Column header names or definition hashes.
     # @param name [String, nil] Table name identifier.
@@ -1909,9 +1870,21 @@ module Xlsxrb
       @options[:ref] = val.to_s
     end
 
-    #: () -> Array[untyped]?
+    # Returns column definitions for the table.
+    #
+    # @return [Array<Elements::TableColumn>]
+    # @api public
+    #: () -> Array[Elements::TableColumn]
     def columns
-      @options[:columns]
+      (@options[:columns] || []).each_with_index.map do |c, idx|
+        if c.is_a?(Elements::TableColumn)
+          c
+        elsif c.is_a?(Hash)
+          Elements::TableColumn.new(id: idx + 1, **c)
+        else
+          Elements::TableColumn.new(id: idx + 1, name: c.to_s)
+        end
+      end
     end
 
     #: (untyped cols) -> untyped
@@ -1978,9 +1951,9 @@ module Xlsxrb
       @options[:style] = val.to_s
     end
 
-    #: () -> bool?
-    def show_row_stripes
-      @options[:show_row_stripes]
+    #: () -> bool
+    def show_row_stripes?
+      @options[:show_row_stripes] ? true : false
     end
 
     #: (bool val) -> bool
@@ -1988,9 +1961,9 @@ module Xlsxrb
       @options[:show_row_stripes] = val ? true : false
     end
 
-    #: () -> bool?
-    def show_column_stripes
-      @options[:show_column_stripes]
+    #: () -> bool
+    def show_column_stripes?
+      @options[:show_column_stripes] ? true : false
     end
 
     #: (bool val) -> bool
@@ -1998,9 +1971,9 @@ module Xlsxrb
       @options[:show_column_stripes] = val ? true : false
     end
 
-    #: () -> bool?
-    def show_first_column
-      @options[:show_first_column]
+    #: () -> bool
+    def show_first_column?
+      @options[:show_first_column] ? true : false
     end
 
     #: (bool val) -> bool
@@ -2008,9 +1981,9 @@ module Xlsxrb
       @options[:show_first_column] = val ? true : false
     end
 
-    #: () -> bool?
-    def show_last_column
-      @options[:show_last_column]
+    #: () -> bool
+    def show_last_column?
+      @options[:show_last_column] ? true : false
     end
 
     #: (bool val) -> bool
@@ -2028,13 +2001,17 @@ module Xlsxrb
       @options[:totals_row_count] = val.to_i
     end
 
-    # Gets or sets whether the table has a totals row.
+    # Returns whether the table has a totals row.
     #
-    # @return [Boolean, nil]
-    #: () -> bool?
-    def totals_row
+    # @return [Boolean]
+    #: () -> bool
+    def totals_row?
       rc = @options[:totals_row_count]
-      rc ? rc.positive? : @options[:totals_row]
+      if rc
+        rc.positive?
+      else
+        @options[:totals_row] ? true : false
+      end
     end
 
     #: (bool val) -> bool
@@ -2043,9 +2020,9 @@ module Xlsxrb
       val
     end
 
-    #: () -> bool?
-    def auto_filter
-      @options[:auto_filter]
+    #: () -> bool
+    def auto_filter?
+      @options[:auto_filter] != false
     end
 
     #: (bool val) -> bool
@@ -2168,9 +2145,9 @@ module Xlsxrb
       @options[:formula2] = val
     end
 
-    #: () -> bool?
-    def allow_blank
-      @options[:allow_blank]
+    #: () -> bool
+    def allow_blank?
+      @options[:allow_blank] ? true : false
     end
 
     #: (bool val) -> bool
@@ -2178,9 +2155,9 @@ module Xlsxrb
       @options[:allow_blank] = val ? true : false
     end
 
-    #: () -> bool?
-    def show_input_message
-      @options[:show_input_message]
+    #: () -> bool
+    def show_input_message?
+      @options[:show_input_message] ? true : false
     end
 
     #: (bool val) -> bool
@@ -2188,9 +2165,9 @@ module Xlsxrb
       @options[:show_input_message] = val ? true : false
     end
 
-    #: () -> bool?
-    def show_error_message
-      @options[:show_error_message]
+    #: () -> bool
+    def show_error_message?
+      @options[:show_error_message] ? true : false
     end
 
     #: (bool val) -> bool
@@ -2376,9 +2353,9 @@ module Xlsxrb
       @options[:font_color] = val
     end
 
-    #: () -> bool?
-    def bold
-      @options[:bold]
+    #: () -> bool
+    def bold?
+      @options[:bold] ? true : false
     end
 
     #: (bool val) -> bool
@@ -2386,9 +2363,9 @@ module Xlsxrb
       @options[:bold] = val ? true : false
     end
 
-    #: () -> bool?
-    def italic
-      @options[:italic]
+    #: () -> bool
+    def italic?
+      @options[:italic] ? true : false
     end
 
     #: (bool val) -> bool
@@ -2426,9 +2403,9 @@ module Xlsxrb
       @options[:font_size] = val
     end
 
-    #: () -> bool?
-    def stop_if_true
-      @options[:stop_if_true]
+    #: () -> bool
+    def stop_if_true?
+      @options[:stop_if_true] ? true : false
     end
 
     #: (bool val) -> bool
@@ -2446,9 +2423,9 @@ module Xlsxrb
       @options[:priority] = val.to_i
     end
 
-    #: () -> bool?
-    def above_average
-      @options[:above_average]
+    #: () -> bool
+    def above_average?
+      @options[:above_average] ? true : false
     end
 
     #: (bool val) -> bool
@@ -2456,9 +2433,9 @@ module Xlsxrb
       @options[:above_average] = val ? true : false
     end
 
-    #: () -> bool?
-    def equal_average
-      @options[:equal_average]
+    #: () -> bool
+    def equal_average?
+      @options[:equal_average] ? true : false
     end
 
     #: (bool val) -> bool
@@ -2486,9 +2463,9 @@ module Xlsxrb
       @options[:rank] = val.to_i
     end
 
-    #: () -> bool?
-    def percent
-      @options[:percent]
+    #: () -> bool
+    def percent?
+      @options[:percent] ? true : false
     end
 
     #: (bool val) -> bool
@@ -2496,9 +2473,9 @@ module Xlsxrb
       @options[:percent] = val ? true : false
     end
 
-    #: () -> bool?
-    def bottom
-      @options[:bottom]
+    #: () -> bool
+    def bottom?
+      @options[:bottom] ? true : false
     end
 
     #: (bool val) -> bool

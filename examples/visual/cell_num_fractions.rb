@@ -3,7 +3,7 @@
 require "xlsxrb"
 output_path = ARGV[0] || "cell_num_fractions.xlsx"
 Xlsxrb.write(output_path) do |wb|
-  wb.style("frac") { |s| s.number_format("# ?/?") }
+  wb.style("frac") { |s| s.number_format = "# ?/?" }
   wb.sheet("Fractions") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)

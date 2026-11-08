@@ -6,8 +6,8 @@ output_path = ARGV[0] || "japanese_text.xlsx"
 
 Xlsxrb.write(output_path) do |wb|
   wb.style("ja_font") do |style|
-    style.font_name("Noto Sans CJK JP")
-    style.font_size(12)
+    style.font_name = "Noto Sans CJK JP"
+    style.font_size = 12
   end
 
   wb.sheet("Japanese") do |s|

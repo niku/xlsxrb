@@ -13,7 +13,7 @@ module Xlsxrb
   #       sheet.row(["Product", "Revenue"])
   #       sheet.row(["Widget", 1000])
   #     end
-  #     builder.core_property(:creator, "Reporting System")
+  #     builder.core_properties(creator: "Reporting System")
   #   end
   #
   # @api public
@@ -44,9 +44,12 @@ module Xlsxrb
       @tab_ratio = nil
     end
 
-    # @return [Boolean] Whether to treat strings starting with formula prefixes as plain text.
-    #: bool
-    attr_accessor :escape_formulas
+    # Sets whether to treat strings starting with formula prefixes as plain text.
+    #
+    # @param val [Boolean]
+    # @return [Boolean]
+    #: (bool) -> bool
+    attr_writer :escape_formulas
 
     # Returns whether formula escaping is enabled.
     #
@@ -173,12 +176,22 @@ module Xlsxrb
     #: (String | Symbol | Integer | nil)
     attr_accessor :first_sheet
 
-    # Gets or sets whether sheet tabs are visible in the workbook window.
+    # Sets whether sheet tabs are visible in the workbook window.
     #
+    # @param visible [Boolean, nil]
     # @return [Boolean, nil]
     # @api public
-    #: bool?
-    attr_accessor :show_sheet_tabs
+    #: (bool? visible) -> bool?
+    attr_writer :show_sheet_tabs
+
+    # Returns whether sheet tabs are visible in the workbook window.
+    #
+    # @return [Boolean]
+    # @api public
+    #: () -> bool
+    def show_sheet_tabs?
+      @show_sheet_tabs != false
+    end
 
     # Gets or sets the ratio between the sheet tabs bar and the horizontal scroll bar (0-1000).
     #
@@ -206,29 +219,25 @@ module Xlsxrb
       @workbook_properties[:code_name] = name&.to_s
     end
 
-    # Sets a workbook-level property.
+    # Configures or queries workbook-level properties.
+    #
+    # When called with no arguments, returns the {Elements::WorkbookProperties} value object.
+    # When called with keyword options, configures properties and returns nil.
     #
     # @note **SECURITY WARNING:** If you set `:update_links` to anything other than `"never"`,
     #   you may expose end-users to malicious external reference vulnerabilities (e.g., CSV/DDE Injection)
     #   when they open the generated Excel file. Ensure you fully trust the exported data.
     #
-    # @param name [Symbol] Property name (e.g. :update_links).
-    # @param value [String, Integer, Boolean] Property value.
-    # @return [void]
-    # @api public
-    #: (Symbol name, String | Integer | bool value) -> void
-    def workbook_property(name, value)
-      @workbook_properties[name] = value
-      nil
-    end
-
-    # Returns workbook-level properties.
-    #
-    # @return [Elements::WorkbookProperties]
+    # @param opts [Hash] Workbook properties map.
+    # @return [Elements::WorkbookProperties, void]
     # @api public
     #: () -> Elements::WorkbookProperties
-    def workbook_properties
-      Elements::WorkbookProperties.new(**@workbook_properties)
+    #: (**untyped opts) -> void
+    def workbook_properties(**opts)
+      return Elements::WorkbookProperties.new(**@workbook_properties) if opts.empty?
+
+      @workbook_properties.merge!(opts)
+      nil
     end
 
     # Sets workbook-level properties.
@@ -238,7 +247,9 @@ module Xlsxrb
     # @api public
     #: (untyped props) -> void
     def workbook_properties=(props)
-      @workbook_properties = props.is_a?(Elements::MetadataRecord) ? props.to_h : props
+      h = props.respond_to?(:to_h) ? props.to_h : (props || {})
+      @workbook_properties = h.transform_keys(&:to_sym)
+      nil
     end
 
     # Returns the list of worksheet names added to this workbook so far.
@@ -289,7 +300,7 @@ module Xlsxrb
       sheet_builder = WorksheetBuilder.new(name, strict_excel_mode: @strict_excel_mode, state: state, escape_formulas: @escape_formulas)
       sheet_builder.code_name = code_name if code_name
       sheet_builder.tab_color = tab_color if tab_color
-      opts.each { |k, v| sheet_builder.sheet_properties(k, v) }
+      sheet_builder.sheet_properties(**opts) unless opts.empty?
       @sheet_builders << sheet_builder
       yield sheet_builder if block_given?
       @defined_names.concat(sheet_builder.defined_names)
@@ -345,51 +356,54 @@ module Xlsxrb
       @defined_names.map { |dn| dn.is_a?(Elements::DefinedName) ? dn : Elements::DefinedName.new(**dn) }
     end
 
-    # Sets or gets the print area for a sheet.
+    # Returns the print area range for the sheet, or nil if none.
     #
-    # @param range [String, Object, nil] Cell range (e.g. "A1:G50").
     # @param sheet [String, nil] Target sheet name (defaults to latest or "Sheet1").
-    # @return [String, nil, void]
+    # @return [String, nil]
     # @api public
-    #: (?untyped range, ?sheet: String?) -> (String | nil | void)
-    def print_area(range = OMITTED, sheet: nil)
+    #: (?sheet: String?) -> String?
+    def print_area(sheet: nil)
       sheet_name = sheet || @sheets.last&.name || "Sheet1"
-      if range.equal?(OMITTED)
-        dn = @defined_names.find { |d| d[:name] == "_xlnm.Print_Area" && d[:local_sheet_name] == sheet_name }
-        return dn ? dn[:value].split("!", 2).last.tr("$", "") : nil
-      end
-
-      @defined_names.reject! { |dn| dn[:name] == "_xlnm.Print_Area" && dn[:local_sheet_name] == sheet_name }
-      if range
-        value = "'#{sheet_name}'!#{absolute_range(range)}"
-        defined_name("_xlnm.Print_Area", value, sheet: sheet_name, scope: sheet_name)
-      end
-      nil
+      dn = @defined_names.find { |d| d[:name] == "_xlnm.Print_Area" && d[:local_sheet_name] == sheet_name }
+      dn ? dn[:value].split("!", 2).last.tr("$", "") : nil
     end
 
-    # Sets the print area for the worksheet.
+    # Sets the print area for the current worksheet.
     #
     # @param range [String, nil] Cell range (e.g. "A1:G50").
     # @return [String, nil]
     # @api public
     #: (String? range) -> String?
     def print_area=(range)
-      print_area(range) if range
-      range
+      sheet_name = @sheets.last&.name || "Sheet1"
+      set_print_area(range, sheet: sheet_name)
     end
 
-    # Sets repeating print titles (rows and/or columns) for pagination.
+    # Sets or gets repeating print titles (rows and/or columns) for pagination.
+    #
+    # When called with no row/column arguments, returns the {Elements::PrintTitles} value object or nil.
+    # When called with row/column arguments, sets repeating print titles and returns nil.
     #
     # @param rows [String, nil] Repeating row range (e.g. "1:2").
     # @param columns [String, nil] Repeating column range (e.g. "A:B").
     # @param sheet [String, nil] Target sheet name.
-    # @return [void]
+    # @return [Elements::PrintTitles, nil, void]
     # @api public
+    #: () -> Elements::PrintTitles?
     #: (?rows: (String | Integer | Range[Integer])?, ?columns: (String | Integer | Symbol | Range[untyped])?, ?sheet: String?) -> void
     def print_titles(rows: nil, columns: nil, sheet: nil)
+      sheet_name = sheet || @sheets.last&.name || "Sheet1"
+      if rows.nil? && columns.nil?
+        existing = @defined_names.find { |dn| dn[:name] == "_xlnm.Print_Titles" && dn[:local_sheet_name] == sheet_name }
+        return nil unless existing
+
+        c = Regexp.last_match(1).delete("$") if existing[:value] =~ /'[^']*'!\$([A-Za-z]+:\$[A-Za-z]+)/
+        r = Regexp.last_match(1).delete("$") if existing[:value] =~ /'[^']*'!\$([0-9]+:\$[0-9]+)/
+        return Elements::PrintTitles.new(rows: r, columns: c)
+      end
+
       c = DslHelpers.normalize_print_titles_columns(columns)
       r = DslHelpers.normalize_print_titles_rows(rows)
-      sheet_name = sheet || @sheets.last&.name || "Sheet1"
       existing = @defined_names.find { |dn| dn[:name] == "_xlnm.Print_Titles" && dn[:local_sheet_name] == sheet_name }
       if existing && (r.nil? || c.nil?)
         c = Regexp.last_match(1).delete("$") if c.nil? && existing[:value] =~ /'[^']*'!\$([A-Za-z]+:\$[A-Za-z]+)/
@@ -406,13 +420,18 @@ module Xlsxrb
 
     # Sets repeating print titles.
     #
-    # @param opts [Elements::PrintTitles, Hash] Options with :rows and/or :columns.
-    # @return [Elements::PrintTitles, Hash]
+    # @param opts [Elements::PrintTitles, Hash, nil] Options with :rows and/or :columns.
+    # @return [Elements::PrintTitles, Hash, nil]
     # @api public
-    #: (Elements::PrintTitles | Hash[Symbol, untyped] opts) -> (Elements::PrintTitles | Hash[Symbol, untyped])
+    #: (Elements::PrintTitles | Hash[Symbol, untyped] | nil opts) -> (Elements::PrintTitles | Hash[Symbol, untyped] | nil)
     def print_titles=(opts)
-      h = opts.respond_to?(:to_h) ? opts.to_h : opts
-      print_titles(**h)
+      if opts.nil?
+        sheet_name = @sheets.last&.name || "Sheet1"
+        @defined_names.reject! { |dn| dn[:name] == "_xlnm.Print_Titles" && dn[:local_sheet_name] == sheet_name }
+      else
+        h = opts.respond_to?(:to_h) ? opts.to_h : opts
+        print_titles(**h)
+      end
       opts
     end
 
@@ -490,45 +509,66 @@ module Xlsxrb
       @workbook_protection = opts.is_a?(Elements::MetadataRecord) ? opts.to_h : opts
     end
 
-    # Sets a Dublin Core document metadata property.
+    # Configures or queries Dublin Core document metadata properties.
     #
-    # @param name [Symbol] Core property name (:creator, :title, :subject, :description, etc.).
-    # @param value [String, Integer, Time] Property value.
-    # @return [void]
-    # @api public
-    #: (Symbol name, String | Integer | Time value) -> void
-    def core_property(name, value)
-      @core_properties[name] = value
-    end
-
-    # Returns core document properties.
+    # When called with no arguments, returns the {Elements::CoreProperties} value object.
+    # When called with keyword options, configures properties and returns nil.
     #
-    # @return [Elements::CoreProperties]
+    # @param opts [Hash] Core properties map (:creator, :title, :subject, :description, etc.).
+    # @return [Elements::CoreProperties, void]
     # @api public
     #: () -> Elements::CoreProperties
-    def core_properties
-      Elements::CoreProperties.new(**@core_properties)
+    #: (**untyped opts) -> void
+    def core_properties(**opts)
+      return Elements::CoreProperties.new(**@core_properties) if opts.empty?
+
+      @core_properties.merge!(opts)
+      nil
     end
 
-    # Sets an extended application metadata property.
+    # Replaces core document properties.
     #
-    # @param name [Symbol] Application property name (:company, :manager, :app_version, etc.).
-    # @param value [String, Integer, Time] Property value.
+    # @param props [Hash, Elements::CoreProperties]
     # @return [void]
     # @api public
-    #: (Symbol name, String | Integer | Time value) -> void
-    def app_property(name, value)
-      norm_name = name.to_sym == :application ? :app_name : name.to_sym
-      @app_properties[norm_name] = value
+    #: (Hash[Symbol, untyped] | Elements::CoreProperties props) -> void
+    def core_properties=(props)
+      h = props.respond_to?(:to_h) ? props.to_h : (props || {})
+      @core_properties = h.transform_keys(&:to_sym)
+      nil
     end
 
-    # Returns application document properties.
+    # Configures or queries extended application metadata properties.
     #
-    # @return [Elements::AppProperties]
+    # When called with no arguments, returns the {Elements::AppProperties} value object.
+    # When called with keyword options, configures properties and returns nil.
+    #
+    # @param opts [Hash] Application properties map (:company, :manager, :app_version, etc.).
+    # @return [Elements::AppProperties, void]
     # @api public
     #: () -> Elements::AppProperties
-    def app_properties
-      Elements::AppProperties.new(**@app_properties)
+    #: (**untyped opts) -> void
+    def app_properties(**opts)
+      return Elements::AppProperties.new(**@app_properties) if opts.empty?
+
+      opts.each do |k, v|
+        norm_name = k.to_sym == :application ? :app_name : k.to_sym
+        @app_properties[norm_name] = v
+      end
+      nil
+    end
+
+    # Replaces application document properties.
+    #
+    # @param props [Hash, Elements::AppProperties]
+    # @return [void]
+    # @api public
+    #: (Hash[Symbol, untyped] | Elements::AppProperties props) -> void
+    def app_properties=(props)
+      h = props.respond_to?(:to_h) ? props.to_h : (props || {})
+      @app_properties = {}
+      app_properties(**h)
+      nil
     end
 
     # Sets multiple core, app, and/or custom properties simultaneously.
@@ -540,8 +580,8 @@ module Xlsxrb
     # @api public
     #: (?core: Hash[Symbol, String | Integer | Time]?, ?app: Hash[Symbol, String | Integer | Time]?, ?custom: Hash[String | Symbol, untyped]?) -> void
     def properties(core: nil, app: nil, custom: nil)
-      core&.each { |k, v| core_property(k, v) }
-      app&.each { |k, v| app_property(k, v) }
+      core_properties(**core) if core
+      app_properties(**app) if app
       custom&.each { |k, v| custom_property(k.to_s, v) }
     end
 
@@ -586,7 +626,7 @@ module Xlsxrb
 
       # Auto-register print_area and print_titles defined names from sheet builders if not explicitly defined
       @sheet_builders.each do |sb|
-        print_area(sb.print_area, sheet: sb.name) if sb.print_area && @defined_names.none? { |dn| dn[:name] == "_xlnm.Print_Area" && dn[:local_sheet_name] == sb.name }
+        set_print_area(sb.print_area, sheet: sb.name) if sb.print_area && @defined_names.none? { |dn| dn[:name] == "_xlnm.Print_Area" && dn[:local_sheet_name] == sb.name }
         print_titles(rows: sb.print_titles.rows, columns: sb.print_titles.columns, sheet: sb.name) if sb.print_titles && @defined_names.none? { |dn| dn[:name] == "_xlnm.Print_Titles" && dn[:local_sheet_name] == sb.name }
         sb.defined_names&.each do |dn|
           @defined_names << dn
@@ -623,7 +663,7 @@ module Xlsxrb
                         end
 
       @workbook_properties[:active_sheet] = active_tab_idx unless active_tab_idx.nil?
-      @workbook_properties[:active_tab] = active_tab_idx unless active_tab_idx.nil?
+      @workbook_properties[:active_sheet_index] = active_tab_idx unless active_tab_idx.nil?
       @workbook_properties[:first_sheet] = first_sheet_idx unless first_sheet_idx.nil?
       @workbook_properties[:show_sheet_tabs] = @show_sheet_tabs unless @show_sheet_tabs.nil?
       @workbook_properties[:tab_ratio] = @tab_ratio unless @tab_ratio.nil?
@@ -647,6 +687,17 @@ module Xlsxrb
     end
 
     private
+
+    #: (String? range, ?sheet: String?) -> String?
+    def set_print_area(range, sheet: nil)
+      sheet_name = sheet || @sheets.last&.name || "Sheet1"
+      @defined_names.reject! { |dn| dn[:name] == "_xlnm.Print_Area" && dn[:local_sheet_name] == sheet_name }
+      if range
+        value = "'#{sheet_name}'!#{absolute_range(range)}"
+        defined_name("_xlnm.Print_Area", value, sheet: sheet_name, scope: sheet_name)
+      end
+      range&.to_s
+    end
 
     #: (untyped range) -> untyped
     def absolute_range(range)
@@ -692,7 +743,7 @@ module Xlsxrb
         end
 
         sheet.rows.each do |row|
-          raw_row_style = row.unmapped_data&.[](:style_index)
+          raw_row_style = row.style_index || row.unmapped_data&.[](:style_index)
           next unless raw_row_style.is_a?(Hash)
 
           inline_name = "__inline_row_#{raw_row_style.hash}"
@@ -770,7 +821,7 @@ module Xlsxrb
         end
 
         new_rows = sheet.rows.map do |row|
-          raw_row_style = row.unmapped_data&.[](:style_index)
+          raw_row_style = row.style_index || row.unmapped_data&.[](:style_index)
           resolved_row_style = if raw_row_style.is_a?(Hash)
                                  inline_name = "__inline_row_#{raw_row_style.hash}"
                                  style_name_to_id[inline_name]
@@ -780,9 +831,9 @@ module Xlsxrb
                                  raw_row_style
                                end
           row_unmapped = row.unmapped_data
-          if resolved_row_style && resolved_row_style != raw_row_style
-            row_unmapped = (row.unmapped_data || {}).dup
-            row_unmapped[:style_index] = resolved_row_style
+          if row_unmapped&.key?(:style_index)
+            row_unmapped = row_unmapped.dup
+            row_unmapped.delete(:style_index)
           end
 
           new_cells = row.cells.map do |cell|

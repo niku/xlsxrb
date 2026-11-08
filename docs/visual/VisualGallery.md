@@ -593,10 +593,10 @@ require "date"
 output_path = ARGV[0] || "basic_data.xlsx"
 
 Xlsxrb.write(output_path) do |wb|
-  wb.style("currency") { |style| style.number_format("$#,##0.00") }
-  wb.style("date") { |style| style.number_format("yyyy-mm-dd") }
+  wb.style("currency") { |style| style.number_format = "$#,##0.00" }
+  wb.style("date") { |style| style.number_format = "yyyy-mm-dd" }
   wb.sheet("Basic Data") do |sheet|
-    sheet.sheet_properties(:fit_to_page, true)
+    sheet.sheet_properties(fit_to_page: true)
     sheet.page_setup(fit_to_width: 1, fit_to_height: 1)
     sheet.column(0, width: 25)
     sheet.column(1, width: 25)
@@ -627,8 +627,8 @@ Demonstrates custom formatting for integers, floating point numbers, currencies,
 require "xlsxrb"
 output_path = ARGV[0] || "cell_numbers.xlsx"
 Xlsxrb.write(output_path) do |wb|
-  wb.style("currency") { |s| s.number_format("$#,##0.00") }
-  wb.style("percent") { |s| s.number_format("0.0%") }
+  wb.style("currency") { |s| s.number_format = "$#,##0.00" }
+  wb.style("percent") { |s| s.number_format = "0.0%" }
   wb.sheet("Numbers") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -662,7 +662,7 @@ require "xlsxrb"
 require "date"
 output_path = ARGV[0] || "cell_dates.xlsx"
 Xlsxrb.write(output_path) do |wb|
-  wb.style("custom_date") { |s| s.number_format("yyyy-mm-dd") }
+  wb.style("custom_date") { |s| s.number_format = "yyyy-mm-dd" }
   wb.sheet("Dates") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -694,7 +694,7 @@ require "xlsxrb"
 require "time"
 output_path = ARGV[0] || "cell_times.xlsx"
 Xlsxrb.write(output_path) do |wb|
-  wb.style("time_fmt") { |s| s.number_format("hh:mm:ss") }
+  wb.style("time_fmt") { |s| s.number_format = "hh:mm:ss" }
   wb.sheet("Times") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -824,8 +824,8 @@ output_path = ARGV[0] || "japanese_text.xlsx"
 
 Xlsxrb.write(output_path) do |wb|
   wb.style("ja_font") do |style|
-    style.font_name("Noto Sans CJK JP")
-    style.font_size(12)
+    style.font_name = "Noto Sans CJK JP"
+    style.font_size = 12
   end
 
   wb.sheet("Japanese") do |s|
@@ -860,16 +860,16 @@ output_path = ARGV[0] || "styles_fonts_fills.xlsx"
 
 Xlsxrb.write(output_path) do |wb|
   wb.style("header") do |style|
-    style.bold(true)
-    style.font_size(14)
-    style.font_color("FFFFFFFF")
-    style.fill_color("FF4F81BD")
+    style.bold = true
+    style.font_size = 14
+    style.font_color = "FFFFFFFF"
+    style.fill_color = "FF4F81BD"
   end
 
   wb.style("highlight") do |style|
-    style.italic(true)
-    style.font_color("FFC00000")
-    style.fill_color("FFFFFF00")
+    style.italic = true
+    style.font_color = "FFC00000"
+    style.fill_color = "FFFFFF00"
   end
 
   wb.sheet("Styles") do |sheet|
@@ -1048,7 +1048,7 @@ Xlsxrb.write(output_path) do |wb|
   wb.sheet("Borders") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
-    s.print_options(:grid_lines, true)
+    s.print_options(grid_lines: true)
 
     s.row(["Border Style", "Cell Preview"])
     s.row(["Thin", "Thin Border"], cell_styles: { 1 => "thin" })
@@ -1090,8 +1090,8 @@ Demonstrates solid cell background fill colors.
 require "xlsxrb"
 output_path = ARGV[0] || "fill_solid_colors.xlsx"
 Xlsxrb.write(output_path) do |wb|
-  wb.style("red_fill") { |s| s.fill_color("FFFFC7CE") }
-  wb.style("green_fill") { |s| s.fill_color("FFC6EFCE") }
+  wb.style("red_fill") { |s| s.fill_color = "FFFFC7CE" }
+  wb.style("green_fill") { |s| s.fill_color = "FFC6EFCE" }
   wb.sheet("Fills") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -1195,11 +1195,11 @@ Xlsxrb.write(output_path) do |wb|
   wb.sheet("Red Tab") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
-    s.sheet_properties(:tab_color, :red)
+    s.sheet_properties(tab_color: :red)
     s.row(["Red tab sheet"])
   end
   wb.sheet("Green Tab") do |s|
-    s.sheet_properties(:tab_color, :green)
+    s.sheet_properties(tab_color: :green)
     s.row(["Green tab sheet"])
   end
 end
@@ -1225,11 +1225,11 @@ Demonstrates horizontal text alignment (left, center, right).
 require "xlsxrb"
 output_path = ARGV[0] || "align_horizontal.xlsx"
 Xlsxrb.write(output_path) do |wb|
-  wb.style("left") { |s| s.align_horizontal("left") }
-  wb.style("center") { |s| s.align_horizontal("center") }
-  wb.style("right") { |s| s.align_horizontal("right") }
+  wb.style("left") { |s| s.align_horizontal = "left" }
+  wb.style("center") { |s| s.align_horizontal = "center" }
+  wb.style("right") { |s| s.align_horizontal = "right" }
   wb.sheet("Alignment") do |s|
-    s.print_options(:grid_lines, true)
+    s.print_options(grid_lines: true)
     s.column(0, width: 20)
     s.column(1, width: 20)
     s.column(2, width: 20)
@@ -1258,7 +1258,7 @@ Demonstrates horizontal fill alignment (repeats value to fill cell width).
 require "xlsxrb"
 output_path = ARGV[0] || "align_horizontal_fill.xlsx"
 Xlsxrb.write(output_path) do |wb|
-  wb.style("fill_align") { |s| s.align_horizontal("fill") }
+  wb.style("fill_align") { |s| s.align_horizontal = "fill" }
   wb.sheet("Alignment") do |s|
     s.column(0, width: 30)
     s.row(["X "], cell_styles: { 0 => "fill_align" })
@@ -1287,8 +1287,8 @@ require "xlsxrb"
 output_path = ARGV[0] || "align_horizontal_justify.xlsx"
 Xlsxrb.write(output_path) do |wb|
   wb.style("justify_align") do |s|
-    s.align_horizontal("justify")
-    s.wrap_text(true)
+    s.align_horizontal = "justify"
+    s.wrap_text = true
   end
   wb.sheet("Alignment") do |s|
     s.column(0, width: 25)
@@ -1317,13 +1317,13 @@ Demonstrates vertical text alignment (top, center, bottom).
 require "xlsxrb"
 output_path = ARGV[0] || "align_vertical.xlsx"
 Xlsxrb.write(output_path) do |wb|
-  wb.style("top") { |s| s.align_vertical("top") }
-  wb.style("center") { |s| s.align_vertical("center") }
-  wb.style("bottom") { |s| s.align_vertical("bottom") }
+  wb.style("top") { |s| s.align_vertical = "top" }
+  wb.style("center") { |s| s.align_vertical = "center" }
+  wb.style("bottom") { |s| s.align_vertical = "bottom" }
   wb.sheet("Vertical Alignment") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
-    s.print_options(:grid_lines, true)
+    s.print_options(grid_lines: true)
     s.row(%w[Top Center Bottom], cell_styles: { 0 => "top", 1 => "center", 2 => "bottom" }, height: 40)
   end
 end
@@ -1349,9 +1349,9 @@ Demonstrates auto-wrapping multi-line text inside narrow cells.
 require "xlsxrb"
 output_path = ARGV[0] || "align_text_wrap.xlsx"
 Xlsxrb.write(output_path) do |wb|
-  wb.style("wrap", &:wrap_text)
+  wb.style("wrap") { |s| s.wrap_text = true }
   wb.sheet("Text Wrap") do |s|
-    s.print_options(:grid_lines, true)
+    s.print_options(grid_lines: true)
     s.column(0, width: 15)
     s.row(["This is a long sentence that wraps inside the cell."], cell_styles: { 0 => "wrap" })
   end
@@ -1378,12 +1378,12 @@ Demonstrates text rotated by specific angles (45, 90 degrees).
 require "xlsxrb"
 output_path = ARGV[0] || "align_text_rotation.xlsx"
 Xlsxrb.write(output_path) do |wb|
-  wb.style("rot_45") { |s| s.text_rotation(45) }
-  wb.style("rot_90") { |s| s.text_rotation(90) }
+  wb.style("rot_45") { |s| s.text_rotation = 45 }
+  wb.style("rot_90") { |s| s.text_rotation = 90 }
   wb.sheet("Rotation") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
-    s.print_options(:grid_lines, true)
+    s.print_options(grid_lines: true)
     s.row(["Rotated 45", "Rotated 90"], cell_styles: { 0 => "rot_45", 1 => "rot_90" }, height: 50)
   end
 end
@@ -1409,12 +1409,18 @@ Demonstrates text indentation inside cells.
 require "xlsxrb"
 output_path = ARGV[0] || "align_indent.xlsx"
 Xlsxrb.write(output_path) do |wb|
-  wb.style("indent_1") { |s| s.align_horizontal("left").indent(1) }
-  wb.style("indent_3") { |s| s.align_horizontal("left").indent(3) }
+  wb.style("indent_1") do |s|
+    s.align_horizontal = "left"
+    s.indent = 1
+  end
+  wb.style("indent_3") do |s|
+    s.align_horizontal = "left"
+    s.indent = 3
+  end
   wb.sheet("Indent") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
-    s.print_options(:grid_lines, true)
+    s.print_options(grid_lines: true)
     s.row(["No Indent"])
     s.row(["Indent 1"], cell_styles: { 0 => "indent_1" })
     s.row(["Indent 3"], cell_styles: { 0 => "indent_3" })
@@ -1562,10 +1568,13 @@ require "xlsxrb"
 output_path = ARGV[0] || "merge_freeze.xlsx"
 
 Xlsxrb.write(output_path) do |wb|
-  wb.style("title") { |style| style.border_all(style: "thin", color: "FF000000").align_horizontal("center") }
+  wb.style("title") do |style|
+    style.border_all(style: "thin", color: "FF000000")
+    style.align_horizontal = "center"
+  end
   wb.style("border") { |style| style.border_all(style: "thin", color: "FF000000") }
   wb.sheet("Merge & Freeze") do |s|
-    s.sheet_properties(:fit_to_page, true)
+    s.sheet_properties(fit_to_page: true)
     s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -1576,7 +1585,7 @@ Xlsxrb.write(output_path) do |wb|
     s.row(["Row 2 Col A", "Row 2 Col B", "Row 2 Col C"], cell_styles: %w[border border border])
 
     s.merge("A1:C1")
-    s.freeze_pane(row: 2, col: 0)
+    s.freeze_pane(row: 2, column: 0)
   end
 end
 ```
@@ -1603,7 +1612,7 @@ output_path = ARGV[0] || "col_grouping.xlsx"
 Xlsxrb.write(output_path) do |wb|
   wb.style("border") { |style| style.border_all(style: "thin", color: "FF000000") }
   wb.sheet("Col Grouping") do |s|
-    s.sheet_properties(:fit_to_page, true)
+    s.sheet_properties(fit_to_page: true)
     s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.column(0, width: 25, outline_level: 0)
     s.column(1, width: 25, outline_level: 1)
@@ -1635,12 +1644,12 @@ output_path = ARGV[0] || "row_grouping.xlsx"
 Xlsxrb.write(output_path) do |wb|
   wb.style("parent") do |style|
     style.border_all(style: "thin", color: "FF000000")
-    style.bold(true)
+    style.bold = true
   end
   wb.style("child") do |style|
     style.border_all(style: "thin", color: "FF000000")
-    style.align_horizontal("left")
-    style.indent(2)
+    style.align_horizontal = "left"
+    style.indent = 2
   end
   wb.sheet("Row Grouping") do |s|
     s.column(0, width: 25)
@@ -1672,7 +1681,7 @@ Demonstrates Yen Currency format code formatting.
 require "xlsxrb"
 output_path = ARGV[0] || "cell_num_currency_jpy.xlsx"
 Xlsxrb.write(output_path) do |wb|
-  wb.style("jpy") { |s| s.number_format("¥#,##0;[Red]¥-#,##0") }
+  wb.style("jpy") { |s| s.number_format = "¥#,##0;[Red]¥-#,##0" }
   wb.sheet("JPY Currency") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -1703,7 +1712,7 @@ Demonstrates percentages with two decimal places (0.00%).
 require "xlsxrb"
 output_path = ARGV[0] || "cell_num_percent_decimals.xlsx"
 Xlsxrb.write(output_path) do |wb|
-  wb.style("pct2") { |s| s.number_format("0.00%") }
+  wb.style("pct2") { |s| s.number_format = "0.00%" }
   wb.sheet("Percents") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -1733,7 +1742,7 @@ Demonstrates scientific number formats (0.00E+00).
 require "xlsxrb"
 output_path = ARGV[0] || "cell_num_scientific.xlsx"
 Xlsxrb.write(output_path) do |wb|
-  wb.style("sci") { |s| s.number_format("0.00E+00") }
+  wb.style("sci") { |s| s.number_format = "0.00E+00" }
   wb.sheet("Scientific") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -1764,7 +1773,7 @@ Demonstrates fraction number formats (# ?/?).
 require "xlsxrb"
 output_path = ARGV[0] || "cell_num_fractions.xlsx"
 Xlsxrb.write(output_path) do |wb|
-  wb.style("frac") { |s| s.number_format("# ?/?") }
+  wb.style("frac") { |s| s.number_format = "# ?/?" }
   wb.sheet("Fractions") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -1796,7 +1805,7 @@ Demonstrates custom colored formats for positive and negative numbers.
 require "xlsxrb"
 output_path = ARGV[0] || "cell_num_custom_colors.xlsx"
 Xlsxrb.write(output_path) do |wb|
-  wb.style("custom_color") { |s| s.number_format("[Green]#,##0;[Red]-#,##0") }
+  wb.style("custom_color") { |s| s.number_format = "[Green]#,##0;[Red]-#,##0" }
   wb.sheet("Custom Colors") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -1829,7 +1838,7 @@ require "xlsxrb"
 output_path = ARGV[0] || "conditional_formatting.xlsx"
 
 Xlsxrb.write(output_path) do |wb|
-  wb.style("center") { |style| style.align_horizontal("center") }
+  wb.style("center") { |style| style.align_horizontal = "center" }
   wb.sheet("Scores") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -1863,7 +1872,7 @@ Demonstrates color scale/heatmap conditional formatting.
 require "xlsxrb"
 output_path = ARGV[0] || "cf_color_scale.xlsx"
 Xlsxrb.write(output_path) do |wb|
-  wb.style("center") { |style| style.align_horizontal("center") }
+  wb.style("center") { |style| style.align_horizontal = "center" }
   wb.sheet("Colors") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -1895,7 +1904,7 @@ Demonstrates data bar visual conditional formatting indicators.
 require "xlsxrb"
 output_path = ARGV[0] || "cf_data_bar.xlsx"
 Xlsxrb.write(output_path) do |wb|
-  wb.style("center") { |style| style.align_horizontal("center") }
+  wb.style("center") { |style| style.align_horizontal = "center" }
   wb.sheet("Data Bars") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -1927,7 +1936,7 @@ Demonstrates icon set indicators (red/yellow/green arrows).
 require "xlsxrb"
 output_path = ARGV[0] || "cf_icon_set.xlsx"
 Xlsxrb.write(output_path) do |wb|
-  wb.style("center") { |style| style.align_horizontal("center") }
+  wb.style("center") { |style| style.align_horizontal = "center" }
   wb.sheet("Icons") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -1959,7 +1968,7 @@ Demonstrates conditional formatting highlighting cells greater than a threshold.
 require "xlsxrb"
 output_path = ARGV[0] || "cf_cell_greater_than.xlsx"
 Xlsxrb.write(output_path) do |wb|
-  wb.style("center") { |style| style.align_horizontal("center") }
+  wb.style("center") { |style| style.align_horizontal = "center" }
   wb.sheet("CF Greater") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -1992,7 +2001,7 @@ Demonstrates conditional formatting highlighting cells less than a threshold.
 require "xlsxrb"
 output_path = ARGV[0] || "cf_cell_less_than.xlsx"
 Xlsxrb.write(output_path) do |wb|
-  wb.style("center") { |style| style.align_horizontal("center") }
+  wb.style("center") { |style| style.align_horizontal = "center" }
   wb.sheet("CF Less") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -2025,7 +2034,7 @@ Demonstrates conditional formatting highlighting cells equal to a target value.
 require "xlsxrb"
 output_path = ARGV[0] || "cf_cell_equal_to.xlsx"
 Xlsxrb.write(output_path) do |wb|
-  wb.style("center") { |style| style.align_horizontal("center") }
+  wb.style("center") { |style| style.align_horizontal = "center" }
   wb.sheet("CF Equal") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -2058,7 +2067,7 @@ Demonstrates conditional formatting highlighting cells within a range.
 require "xlsxrb"
 output_path = ARGV[0] || "cf_cell_between.xlsx"
 Xlsxrb.write(output_path) do |wb|
-  wb.style("center") { |style| style.align_horizontal("center") }
+  wb.style("center") { |style| style.align_horizontal = "center" }
   wb.sheet("CF Between") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -2091,7 +2100,7 @@ Demonstrates conditional formatting highlighting cells greater than or equal to 
 require "xlsxrb"
 output_path = ARGV[0] || "cf_cell_greater_equal.xlsx"
 Xlsxrb.write(output_path) do |wb|
-  wb.style("center") { |style| style.align_horizontal("center") }
+  wb.style("center") { |style| style.align_horizontal = "center" }
   wb.sheet("CF Greater Equal") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -2220,7 +2229,7 @@ Demonstrates conditional formatting using a custom formula expression.
 require "xlsxrb"
 output_path = ARGV[0] || "cf_expression_formula.xlsx"
 Xlsxrb.write(output_path) do |wb|
-  wb.style("center") { |style| style.align_horizontal("center") }
+  wb.style("center") { |style| style.align_horizontal = "center" }
   wb.sheet("CF Expression") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -2257,7 +2266,7 @@ output_path = ARGV[0] || "chart_bar.xlsx"
 
 Xlsxrb.write(output_path) do |wb|
   wb.sheet("Sales Data") do |s|
-    s.sheet_properties(:fit_to_page, true)
+    s.sheet_properties(fit_to_page: true)
     s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -2307,7 +2316,7 @@ Xlsxrb.write(output_path) do |wb|
     s.row([2024, 100, 150])
     s.row([2025, 120, 180])
     s.row([2026, 140, 210])
-    s.sheet_properties(:fit_to_page, true)
+    s.sheet_properties(fit_to_page: true)
     s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.chart(
       type: :bar,
@@ -2350,7 +2359,7 @@ Xlsxrb.write(output_path) do |wb|
     s.row([2024, 100, 150])
     s.row([2025, 120, 180])
     s.row([2026, 140, 210])
-    s.sheet_properties(:fit_to_page, true)
+    s.sheet_properties(fit_to_page: true)
     s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.chart(
       type: :bar,
@@ -2387,7 +2396,7 @@ require "xlsxrb"
 output_path = ARGV[0] || "chart_line.xlsx"
 Xlsxrb.write(output_path) do |wb|
   wb.sheet("Data") do |s|
-    s.sheet_properties(:fit_to_page, true)
+    s.sheet_properties(fit_to_page: true)
     s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -2432,7 +2441,7 @@ Xlsxrb.write(output_path) do |wb|
     s.row([2024, 100, 150])
     s.row([2025, 120, 180])
     s.row([2026, 140, 210])
-    s.sheet_properties(:fit_to_page, true)
+    s.sheet_properties(fit_to_page: true)
     s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.chart(
       type: :line,
@@ -2469,7 +2478,7 @@ require "xlsxrb"
 output_path = ARGV[0] || "chart_area.xlsx"
 Xlsxrb.write(output_path) do |wb|
   wb.sheet("Data") do |s|
-    s.sheet_properties(:fit_to_page, true)
+    s.sheet_properties(fit_to_page: true)
     s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -2513,7 +2522,7 @@ Xlsxrb.write(output_path) do |wb|
     s.row([2024, 100, 150])
     s.row([2025, 120, 180])
     s.row([2026, 140, 210])
-    s.sheet_properties(:fit_to_page, true)
+    s.sheet_properties(fit_to_page: true)
     s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.chart(
       type: :area,
@@ -2550,7 +2559,7 @@ require "xlsxrb"
 output_path = ARGV[0] || "chart_pie.xlsx"
 Xlsxrb.write(output_path) do |wb|
   wb.sheet("Data") do |s|
-    s.sheet_properties(:fit_to_page, true)
+    s.sheet_properties(fit_to_page: true)
     s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -2595,7 +2604,7 @@ require "xlsxrb"
 output_path = ARGV[0] || "chart_doughnut.xlsx"
 Xlsxrb.write(output_path) do |wb|
   wb.sheet("Data") do |s|
-    s.sheet_properties(:fit_to_page, true)
+    s.sheet_properties(fit_to_page: true)
     s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -2640,7 +2649,7 @@ require "xlsxrb"
 output_path = ARGV[0] || "chart_scatter.xlsx"
 Xlsxrb.write(output_path) do |wb|
   wb.sheet("Data") do |s|
-    s.sheet_properties(:fit_to_page, true)
+    s.sheet_properties(fit_to_page: true)
     s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -2678,7 +2687,7 @@ require "xlsxrb"
 output_path = ARGV[0] || "chart_radar.xlsx"
 Xlsxrb.write(output_path) do |wb|
   wb.sheet("Data") do |s|
-    s.sheet_properties(:fit_to_page, true)
+    s.sheet_properties(fit_to_page: true)
     s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -2718,7 +2727,7 @@ require "xlsxrb"
 output_path = ARGV[0] || "sparkline_line.xlsx"
 Xlsxrb.write(output_path) do |wb|
   wb.sheet("Sparkline") do |s|
-    s.sheet_properties(:fit_to_page, true)
+    s.sheet_properties(fit_to_page: true)
     s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -2755,7 +2764,7 @@ require "xlsxrb"
 output_path = ARGV[0] || "sparkline_column.xlsx"
 Xlsxrb.write(output_path) do |wb|
   wb.sheet("Sparkline") do |s|
-    s.sheet_properties(:fit_to_page, true)
+    s.sheet_properties(fit_to_page: true)
     s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.column(0, width: 25)
     s.column(1, width: 25)
@@ -2852,8 +2861,8 @@ Xlsxrb.write(output_path) do |wb|
       "SalesData!A1:D7",
       row_fields: ["Region"],
       data_fields: [{ name: "Sales", subtotal: "sum" }],
-      col_fields: ["Quarter"],
-      dest_ref: "A10",
+      column_fields: ["Quarter"],
+      ref: "A10",
       name: "RegionalSalesSummary"
     )
   end
@@ -2935,7 +2944,7 @@ end
 dummy_png = make_png(100, 100, 255, 0, 0)
 
 Xlsxrb.write(output_path) do |wb|
-  wb.style("center") { |st| st.align_horizontal(:center) }
+  wb.style("center") { |st| st.align_horizontal = :center }
   wb.sheet("Images") do |s|
     s.row(["Logo Target cell:", "", "", "Boundary"], cell_styles: [nil, "center", "center", "center"])
     s.row(["", "", "", ""])
@@ -3119,7 +3128,7 @@ Xlsxrb.write(output_path) do |wb|
   wb.sheet("Print Grid Lines") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
-    s.print_options(:grid_lines, true)
+    s.print_options(grid_lines: true)
     s.row(["Grid Lines Printed sheet"])
   end
 end
@@ -3148,7 +3157,7 @@ Xlsxrb.write(output_path) do |wb|
   wb.sheet("Print Headings") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
-    s.print_options(:headings, true)
+    s.print_options(headings: true)
     s.row(["Row/Col Headings Printed sheet"])
   end
 end
@@ -3278,7 +3287,7 @@ Xlsxrb.write(output_path) do |wb|
     s.row(["Select Unlocked", "Allowed"], cell_styles: :cell)
 
     # Protect worksheet against unauthorized edits
-    s.protect_sheet(password: "secret", select_locked_cells: true, select_unlocked_cells: true)
+    s.sheet_protection(password: "secret", select_locked_cells: true, select_unlocked_cells: true)
   end
 end
 ```
@@ -3312,8 +3321,8 @@ subtle_bg = [
 ].pack("m")
 
 Xlsxrb.write(output_path) do |wb|
-  wb.tab_ratio(600)
-  wb.active_sheet("Active Summary")
+  wb.tab_ratio = 600
+  wb.active_sheet = "Active Summary"
 
   wb.style(:header, font: { bold: true, color: "FFFFFF" }, fill_color: "1E3A8A", align_horizontal: :center)
   wb.style(:meta_hdr, font: { bold: true, color: "FFFFFF" }, fill_color: "047857", align_horizontal: :center)
@@ -3325,8 +3334,8 @@ Xlsxrb.write(output_path) do |wb|
     s.column(1, width: 28)
     s.column(2, width: 16)
 
-    s.phonetic_properties(font_id: 0, type: :no_conversion, alignment: :left)
-    s.ignore_error("A2:A4", number_stored_as_text: true)
+    s.phonetic_properties = { font_id: 0, type: :no_conversion, alignment: :left }
+    s.ignored_error("A2:A4", number_stored_as_text: true)
 
     s.row(["Code", "Product Description", "Inventory"], cell_styles: :header)
     s.row(["00101", "Compact Mechanical Keyboard", 42], cell_styles: :border_cell)
@@ -3339,8 +3348,8 @@ Xlsxrb.write(output_path) do |wb|
     s.column(0, width: 22)
     s.column(1, width: 20)
 
-    s.sheet_calc_pr(full_calc_on_load: true)
-    s.background_image(subtle_bg)
+    s.sheet_calc_properties = { full_calc_on_load: true }
+    s.background_image = subtle_bg
 
     s.row(%w[Metric Calculation], cell_styles: :meta_hdr)
     s.row(["Total Units", "=SUM('Active Summary'!C2:C4)"], cell_styles: :border_cell)
@@ -3389,7 +3398,7 @@ Xlsxrb.write(output_path) do |wb|
     s.row(%w[Name Department])
     s.row(%w[Alice HR])
     s.row(%w[Bob Eng])
-    s.auto_filter("A1:B3")
+    s.auto_filter = "A1:B3"
   end
   wb.defined_name("_xlnm._FilterDatabase", "Filter!$A$1:$B$3", sheet: "Filter", hidden: true)
 end
@@ -3458,7 +3467,7 @@ Xlsxrb.write(output_path) do |wb|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(["Department", "Select:"])
-    s.validate_data("B2", in: %w[HR Sales Engineering])
+    s.data_validation("B2", list: %w[HR Sales Engineering])
   end
 end
 ```
@@ -3492,7 +3501,7 @@ Xlsxrb.write(output_path) do |wb|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(["Age", "Enter (18-99):"])
-    s.validate_data("B2", type: "whole", operator: "between", formula1: "18", formula2: "99", show_error_message: true, error_title: "Invalid Age", error: "Age must be between 18 and 99!")
+    s.data_validation("B2", type: "whole", operator: "between", formula1: "18", formula2: "99", show_error_message: true, error_title: "Invalid Age", error: "Age must be between 18 and 99!")
   end
 end
 ```
@@ -3526,7 +3535,7 @@ Xlsxrb.write(output_path) do |wb|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(["Date Range", "Enter Date (2026):"])
-    s.validate_data("B2", type: "date", operator: "between", formula1: "Date(2026,1,1)", formula2: "Date(2026,12,31)", show_error_message: true, error_title: "Invalid Date", error: "Must be a date in 2026")
+    s.data_validation("B2", type: "date", operator: "between", formula1: "Date(2026,1,1)", formula2: "Date(2026,12,31)", show_error_message: true, error_title: "Invalid Date", error: "Must be a date in 2026")
   end
 end
 ```
@@ -3560,7 +3569,7 @@ Xlsxrb.write(output_path) do |wb|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(["Schedule", "Enter Time (after 08:00):"])
-    s.validate_data("B2", type: "time", operator: "greaterThan", formula1: "0.33333", show_error_message: true, error_title: "Too Early", error: "Time must be after 08:00 AM")
+    s.data_validation("B2", type: "time", operator: "greaterThan", formula1: "0.33333", show_error_message: true, error_title: "Too Early", error: "Time must be after 08:00 AM")
   end
 end
 ```
@@ -3594,7 +3603,7 @@ Xlsxrb.write(output_path) do |wb|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.row(["Username", "Enter (< 10 chars):"])
-    s.validate_data("B2", type: "textLength", operator: "lessThan", formula1: "10", show_error_message: true, error_title: "Too Long", error: "Username must be under 10 characters")
+    s.data_validation("B2", type: "textLength", operator: "lessThan", formula1: "10", show_error_message: true, error_title: "Too Long", error: "Username must be under 10 characters")
   end
 end
 ```
@@ -3629,7 +3638,7 @@ Xlsxrb.write(output_path) do |wb|
     s.column(1, width: 25)
     s.row(["Number A", "Number B (Must be larger A)"])
     s.row([10, ""])
-    s.validate_data("B2", type: "custom", formula1: "B2>A2", show_error_message: true, error_title: "Validation Error", error: "Number B must be greater than Number A")
+    s.data_validation("B2", type: "custom", formula1: "B2>A2", show_error_message: true, error_title: "Validation Error", error: "Number B must be greater than Number A")
   end
 end
 ```
@@ -3657,7 +3666,7 @@ Xlsxrb.write(output_path) do |wb|
   wb.sheet("Hide Grid Lines") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
-    s.sheet_view(:show_grid_lines, false)
+    s.sheet_view(show_grid_lines: false)
     s.row(["No Grid Lines displayed"])
   end
 end
@@ -3686,7 +3695,7 @@ Xlsxrb.write(output_path) do |wb|
   wb.sheet("Zoom 150") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
-    s.sheet_view(:zoom_scale, 150)
+    s.sheet_view(zoom_scale: 150)
     s.row(["Zoom scale is set to 150%"])
   end
 end

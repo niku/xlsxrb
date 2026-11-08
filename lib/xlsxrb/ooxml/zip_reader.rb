@@ -86,7 +86,8 @@ module Xlsxrb
           sliced
         end
 
-        #: (?Integer chunk_size) ?{ (String) -> void } -> (void | Enumerator[String, void])
+        #: (?Integer chunk_size) { (String) -> void } -> void
+        #: (?Integer chunk_size) -> Enumerator[String, void]
         def each_chunk(chunk_size = DEFAULT_CHUNK_SIZE, &block)
           return enum_for(:each_chunk, chunk_size) unless block
           raise IOError, "closed stream" if @closed
@@ -293,7 +294,8 @@ module Xlsxrb
       end
 
       # Yields (entry_name, data_string) for each file in the archive.
-      #: () ?{ (String, String?) -> void } -> (void | Enumerator[[String, String?], void])
+      #: () { (String, String?) -> void } -> void
+      #: () -> Enumerator[[String, String?], void]
       def each_entry(&block)
         return enum_for(:each_entry) unless block
 
@@ -327,7 +329,8 @@ module Xlsxrb
       end
 
       # Yields inflated binary chunks directly from the compressed stream.
-      #: (String entry_name, ?chunk_size: Integer, ?encoding: (Encoding | String | false | nil)) ?{ (String) -> void } -> (void | Enumerator[String, void])
+      #: (String entry_name, ?chunk_size: Integer, ?encoding: (Encoding | String | false | nil)) { (String) -> void } -> void
+      #: (String entry_name, ?chunk_size: Integer, ?encoding: (Encoding | String | false | nil)) -> Enumerator[String, void]
       def each_entry_chunk(entry_name, chunk_size: 65_536, encoding: nil, &block)
         return enum_for(:each_entry_chunk, entry_name, chunk_size: chunk_size, encoding: encoding) unless block
 

@@ -11,26 +11,7 @@ class ApiSymmetryTest < Test::Unit::TestCase
   ].freeze
 
   # Workbook-level delegators or stream-lifecycle methods intentionally on WorksheetProxy
-  PROXY_ONLY_METHODS = %i[
-    active_sheet
-    active_sheet=
-    app_property
-    cleanup!
-    core_property
-    custom_property
-    default_font
-    first_sheet
-    first_sheet=
-    internal_sheet_setup
-    properties
-    workbook_protection
-    sheet_names
-    show_sheet_tabs
-    show_sheet_tabs=
-    tab_ratio
-    tab_ratio=
-    workbook_property
-  ].freeze
+  PROXY_ONLY_METHODS = [].freeze
 
   def test_worksheet_builder_and_proxy_method_symmetry
     wb_methods = Xlsxrb::WorksheetBuilder.public_instance_methods(false).reject { |m| m.to_s.include?("__RBS_TEST_") }
@@ -144,7 +125,7 @@ class ApiSymmetryTest < Test::Unit::TestCase
     assert_empty missing_in_builder,
                  "Workbook-level methods in StreamWriter missing from WorkbookBuilder: #{missing_in_builder.inspect}"
 
-    (wb_methods - %i[hyperlink comment]).each do |method_name|
+    wb_methods.each do |method_name|
       wb_params = Xlsxrb::WorkbookBuilder.instance_method(method_name).parameters
       sw_params = Xlsxrb::StreamWriter.instance_method(method_name).parameters
 

@@ -9,9 +9,9 @@ class StyleTest < Test::Unit::TestCase
       w.sheet("Test") do |s|
         # Define a style
         s.style("heading") do |style|
-          style.bold(true)
-          style.font_size(14)
-          style.font_color("FFFF0000")
+          style.bold = true
+          style.font_size = 14
+          style.font_color = "FFFF0000"
         end
 
         # Add rows with styles
@@ -40,14 +40,14 @@ class StyleTest < Test::Unit::TestCase
       Xlsxrb.write(tmp.path) do |w|
         # Define styles
         w.style("heading") do |style|
-          style.bold(true)
-          style.font_size(14)
-          style.font_color("FFFF0000")
+          style.bold = true
+          style.font_size = 14
+          style.font_color = "FFFF0000"
         end
 
         w.style("total") do |style|
-          style.bold(true)
-          style.fill_color("FF00FF00")
+          style.bold = true
+          style.fill_color = "FF00FF00"
         end
 
         w.sheet("Sales") do
@@ -78,15 +78,13 @@ class StyleTest < Test::Unit::TestCase
 
   test "style builder property setters and getters" do
     style = Xlsxrb::StyleBuilder.new("test")
-    assert_nil(style.bold(true))
-    assert_nil(style.italic(true))
-    assert_nil(style.font_size(12))
-    assert_nil(style.font_name("Arial"))
+    style.bold = true
+    style.italic = true
+    style.font_size = 12
+    style.font_name = "Arial"
 
-    assert_equal(true, style.bold)
     assert_equal(true, style.bold?)
     assert_equal(true, style.font_props[:bold])
-    assert_equal(true, style.italic)
     assert_equal(true, style.italic?)
     assert_equal(true, style.font_props[:italic])
     assert_equal(12, style.font_size)
@@ -98,9 +96,9 @@ class StyleTest < Test::Unit::TestCase
     workbook = Xlsxrb.build do |w|
       w.sheet("Styled") do |s|
         s.style("bold_red") do |style|
-          style.bold(true)
-          style.font_color("FFFF0000")
-          style.font_size(12)
+          style.bold = true
+          style.font_color = "FFFF0000"
+          style.font_size = 12
         end
 
         s.row(%w[Styled Data], cell_styles: ["bold_red", nil])
@@ -156,14 +154,14 @@ class StyleTest < Test::Unit::TestCase
       parsed = Xlsxrb.load(filepath)
       border = parsed.styles.borders.first
       assert_equal("FFFF0000", border&.left&.dig(:color, :rgb))
-      assert_equal(true, border&.diagonal_up)
-      assert_equal(true, border&.diagonal_down)
+      assert_true(border&.diagonal_up?)
+      assert_true(border&.diagonal_down?)
 
       xf = parsed.styles.cell_xfs.first
       assert_equal(2, xf&.alignment&.indent)
-      assert_equal(true, xf&.alignment&.shrink_to_fit)
-      assert_equal(true, xf&.protection&.locked)
-      assert_equal(false, xf&.protection&.hidden)
+      assert_true(xf&.alignment&.shrink_to_fit?)
+      assert_true(xf&.protection&.locked?)
+      assert_false(xf&.protection&.hidden?)
     end
   end
 
@@ -180,7 +178,7 @@ class StyleTest < Test::Unit::TestCase
 
     styles = Xlsxrb::Ooxml::StylesParser.parse(styles_xml)
 
-    assert_equal(false, styles.fonts.first.bold)
+    assert_false(styles.fonts.first.bold?)
     assert_equal([{ fill: { bg_color: { rgb: "FFBFBFBF" } } },
                   { font: { bold: true, italic: false, color: { auto: true } }, number_format: { num_fmt_id: 164, format_code: "0.0" } }],
                  styles.dxfs.map(&:to_h))
@@ -232,18 +230,18 @@ class StyleTest < Test::Unit::TestCase
       parsed = Xlsxrb::Ooxml::StylesParser.parse(Xlsxrb::Ooxml::ZipReader.open(filepath) { |z| z.read_entry("xl/styles.xml") })
       assert_equal(1, parsed.dxfs.size)
       dxf = parsed.dxfs.first
-      assert_equal(false, dxf.font.bold)
-      assert_equal(true, dxf.font.italic)
+      assert_false(dxf.font.bold?)
+      assert_true(dxf.font.italic?)
       assert_equal(true, dxf.font.color[:auto])
       assert_equal(164, dxf.number_format[:num_fmt_id])
       assert_equal("0.00", dxf.number_format[:format_code])
       assert_equal("solid", dxf.fill.pattern_type)
       assert_equal("FFFF0000", dxf.fill.fg_color[:rgb])
       assert_equal("center", dxf.alignment.horizontal)
-      assert_equal(true, dxf.alignment.wrap_text)
+      assert_true(dxf.alignment.wrap_text?)
       assert_equal("thin", dxf.border.bottom[:style])
       assert_equal("FF0000FF", dxf.border.bottom[:color][:rgb])
-      assert_equal(true, dxf.protection.locked)
+      assert_true(dxf.protection.locked?)
     end
   end
 
@@ -302,7 +300,7 @@ class StyleTest < Test::Unit::TestCase
 
     dxf_id = styles.add_dxf(font: { italic: true })
     assert_equal(0, dxf_id)
-    assert_equal(true, styles.dxf(0)&.font&.italic)
+    assert_true(styles.dxf(0)&.font&.italic?)
 
     cs_xf_id = styles.add_cell_style_xf(font_id: 0)
     assert_equal(0, cs_xf_id)
@@ -368,15 +366,15 @@ class StyleTest < Test::Unit::TestCase
 
     # Direct StylesParser
     parsed = Xlsxrb::Ooxml::StylesParser.parse(xml)
-    assert_true(parsed.borders[0].diagonal_up)
-    assert_nil(parsed.borders[0].diagonal_down)
+    assert_true(parsed.borders[0].diagonal_up?)
+    assert_false(parsed.borders[0].diagonal_down?)
     xf = parsed.cell_xfs[0]
-    assert_true(xf.apply_alignment)
-    assert_false(xf.apply_protection)
-    assert_true(xf.alignment.wrap_text)
-    assert_nil(xf.alignment.shrink_to_fit)
-    assert_false(xf.protection.locked)
-    assert_true(xf.protection.hidden)
+    assert_true(xf.apply_alignment?)
+    assert_false(xf.apply_protection?)
+    assert_true(xf.alignment.wrap_text?)
+    assert_false(xf.alignment.shrink_to_fit?)
+    assert_false(xf.protection.locked?)
+    assert_true(xf.protection.hidden?)
 
     # SAX StylesListener
     listener = Xlsxrb::Ooxml::Reader::StylesListener.new

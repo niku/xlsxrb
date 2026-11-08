@@ -8006,13 +8006,11 @@ class WriterTest < Test::Unit::TestCase
           s.row([1, 2, 3])
           s.freeze_pane(row: 1, column: 1)
           s.selection("B2", sqref: "B2:C3", pane: "bottomRight")
-          s.sheet_view(:top_left_cell, "A1")
-          s.sheet_view(:tab_selected, true)
-          s.sheet_view(:zoom_scale_normal, 120)
+          s.sheet_view(top_left_cell: "A1", tab_selected: true, zoom_scale_normal: 120)
         end
         w.sheet("Sheet2") do |s|
           s.row([4, 5, 6])
-          s.sheet_view(:zoom_scale, 85)
+          s.sheet_view(zoom_scale: 85)
         end
       end
 
@@ -8032,12 +8030,12 @@ class WriterTest < Test::Unit::TestCase
       wb = Xlsxrb.load(path)
       s1 = wb.sheets[0]
       assert_equal({ active_cell: "B2", sqref: "B2:C3", pane: "bottomRight" }, s1.selection.to_h)
-      assert_equal(true, s1.sheet_view.tab_selected)
+      assert_true(s1.sheet_view.tab_selected?)
       assert_equal(120, s1.sheet_view.zoom_scale_normal)
 
       s2 = wb.sheets[1]
       assert_nil(s2.selection)
-      assert_nil(s2.sheet_view.tab_selected)
+      assert_false(s2.sheet_view.tab_selected?)
       assert_equal(85, s2.sheet_view.zoom_scale)
     end
   end
@@ -8064,7 +8062,7 @@ class WriterTest < Test::Unit::TestCase
 
       wb = Xlsxrb.load(path)
       dv = wb.sheet(0).data_validations.first
-      assert_equal(true, dv.show_drop_down)
+      assert_true(dv.show_drop_down?)
       assert_equal("off", dv.ime_mode)
     end
   end
@@ -8142,7 +8140,7 @@ class WriterTest < Test::Unit::TestCase
       w.sheet("Hidden2", hidden: true) { |s| s.row(["h2"]) }
       w.sheet("VeryHidden", state: :very_hidden) { |s| s.row(["vh"]) }
       w.sheet("ViaProps") do |s|
-        s.sheet_properties(:state, :hidden)
+        s.sheet_properties(state: :hidden)
         s.row(["p"])
       end
       w.sheet("ViaStateMethod") do |s|
@@ -8172,7 +8170,7 @@ class WriterTest < Test::Unit::TestCase
     assert_raise(ArgumentError) do
       Xlsxrb.write(StringIO.new) do |w|
         w.sheet("Invalid") do |s|
-          s.sheet_properties(:state, :invalid_state)
+          s.sheet_properties(state: :invalid_state)
         end
       end
     end
@@ -8280,16 +8278,16 @@ class WriterTest < Test::Unit::TestCase
     end
     assert_equal 2, wb.sheet("DOMSheet").ignored_errors.size
     assert_equal "A1:A10", wb.sheet("DOMSheet").ignored_errors[0].sqref
-    assert_equal true, wb.sheet("DOMSheet").ignored_errors[0].number_stored_as_text
+    assert_true wb.sheet("DOMSheet").ignored_errors[0].number_stored_as_text?
 
     dom_xlsx = Xlsxrb.write(wb)
     reread_dom = Xlsxrb.load(dom_xlsx)
     assert_equal 2, reread_dom.sheet(0).ignored_errors.size
     assert_equal "A1:A10", reread_dom.sheet(0).ignored_errors[0].sqref
-    assert_equal true, reread_dom.sheet(0).ignored_errors[0].number_stored_as_text
+    assert_true reread_dom.sheet(0).ignored_errors[0].number_stored_as_text?
     assert_equal "B1:B10", reread_dom.sheet(0).ignored_errors[1].sqref
-    assert_equal true, reread_dom.sheet(0).ignored_errors[1].eval_error
-    assert_equal true, reread_dom.sheet(0).ignored_errors[1].formula_range
+    assert_true reread_dom.sheet(0).ignored_errors[1].eval_error?
+    assert_true reread_dom.sheet(0).ignored_errors[1].formula_range?
 
     # Test via streaming writer
     buf = StringIO.new
@@ -8314,8 +8312,8 @@ class WriterTest < Test::Unit::TestCase
     assert_equal 1, stream_read_errors.size
     assert_equal 1, stream_read_errors[0].size
     assert_equal "A1:C5", stream_read_errors[0][0].sqref
-    assert_equal true, stream_read_errors[0][0].two_digit_text_year
-    assert_equal true, stream_read_errors[0][0].unlocked_formula
+    assert_true stream_read_errors[0][0].two_digit_text_year?
+    assert_true stream_read_errors[0][0].unlocked_formula?
 
     # Check XML contains <ignoredErrors>
     sheet_xml = read_xml_from_xlsx(buf.string, "xl/worksheets/sheet1.xml")
@@ -8590,8 +8588,8 @@ class WriterTest < Test::Unit::TestCase
 
     wb = Xlsxrb.load(buf.string)
     assert_equal(2, wb.styles.dxfs.size)
-    assert_equal(false, wb.styles.dxfs[0].font.bold)
-    assert_equal(false, wb.styles.dxfs[0].font.italic)
+    assert_false(wb.styles.dxfs[0].font.bold?)
+    assert_false(wb.styles.dxfs[0].font.italic?)
     assert_equal(true, wb.styles.dxfs[0].font.color[:auto])
     assert_equal("none", wb.styles.dxfs[0].fill.pattern_type)
     assert_equal("FFFFFF00", wb.styles.dxfs[0].fill.bg_color[:rgb])

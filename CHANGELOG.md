@@ -1,18 +1,28 @@
 ## [Unreleased]
 
 ### Added
+- Add `show_sheet_tabs?`, `full_calc_on_load?`, and `refresh_all?` boolean predicates on `Elements::WorkbookProperties`.
+- Add `core_properties=` and `app_properties=` assignment setters on `WorkbookBuilder`, `StreamWriter`, and `StreamWriter::WorksheetProxy`.
+- Add `name` reader on `StreamWriter::WorksheetProxy` to mirror `WorksheetBuilder#name`.
 - Value object delegators (`formula`, `array_formula`, `shared_formula`, `rich_text`, `hyperlink`, `comment`, `cell_error`) on `WorkbookBuilder`, and (`formula`, `array_formula`, `shared_formula`, `rich_text`, `cell_error`) on `WorksheetBuilder`, `StreamWriter`, and `StreamWriter::WorksheetProxy`.
 - Expose `:style_index` as a canonical `Data.define` member on `Elements::Row`.
+- Add `columns` 0-argument reader on `WorksheetBuilder`, `StreamWriter`, and `StreamWriter::WorksheetProxy` returning an array of `Elements::Column`, and on `TableBuilder` returning an array of `Elements::TableColumn`.
+- Add `sheet_protection=` assignment setter on `WorksheetBuilder`, `StreamWriter`, and `WorksheetProxy` accepting `Elements::SheetProtection`, `Hash`, `Boolean`, or `nil`.
+- Add `print_titles=` assignment setter on `WorksheetBuilder`, `WorkbookBuilder`, `StreamWriter`, and `WorksheetProxy` accepting `Elements::PrintTitles`, `Hash`, or `nil`.
 
 ### Changed
+- Unify property configuration methods across `WorksheetBuilder`, `WorkbookBuilder`, `StreamWriter`, and `WorksheetProxy` (`sheet_properties`, `sheet_view`, `sheet_format`, `print_options`, `workbook_properties`, `core_properties`, `app_properties`) to pure 0-argument getters returning value objects/hashes and keyword argument mutators returning `void` (`nil`).
+- Unify single-value property accessors (`print_area`, `auto_filter`) across `WorksheetBuilder`, `StreamWriter`, `WorksheetProxy`, and `WorkbookBuilder` to 0-argument getters and dedicated `=` assignment setters.
+- Unify boolean 0-argument getters to `?` predicate methods across builders: `TableBuilder` (`#show_row_stripes?`, `#show_column_stripes?`, `#show_first_column?`, `#show_last_column?`, `#totals_row?`, `#auto_filter?`), `DataValidationBuilder` (`#allow_blank?`, `#show_input_message?`, `#show_error_message?`), `ConditionalFormatBuilder` (`#bold?`, `#italic?`, `#stop_if_true?`, `#above_average?`, `#equal_average?`, `#percent?`, `#bottom?`), `ChartBuilder` (`#plot_visible_only?`, `#show_legend_key?`), `ChartBuilder::SeriesBuilder` (`#smooth?`), `WorksheetBuilder`/`StreamWriter`/`WorksheetProxy` (`#fit_to_page?`), and `WorkbookBuilder`/`StreamWriter` (`#show_sheet_tabs?`).
+- Normalize structured metadata methods (`page_setup`, `page_margins`, `header_footer`, `sheet_protection`, `freeze_pane`, `split_pane`, `selection`, `sort_state`, `outline_properties`, `print_titles`) across `WorksheetBuilder`, `StreamWriter`, `WorksheetProxy`, and `WorkbookBuilder` to return their current immutable Value Object (or `nil`/Hash) when invoked with 0 arguments, and return `void` (`nil`) when called with configuration arguments.
+- Change `TableBuilder#column` to return `void` (`nil`) instead of an internal column definition hash.
 - Separate internal pipelines of `Xlsxrb.read` and `Xlsxrb.load`: `Xlsxrb.read` parses minimal streaming metadata directly yielding `StreamSheet` instances, while `Xlsxrb.load` materializes `Elements::Worksheet` directly without allocating intermediate `StreamSheet` instances or double-validating.
 - Make `Elements::Cell` fully immutable by freezing instances upon instantiation in `Cell#initialize` and `Cell.fast_create`.
 - Restrict `Elements::Workbook#sheets`, `#sheet`, `#[]`, `#each`, and `#active_sheet` signatures to `Elements::Worksheet` instances only.
 - Rename `Elements::Styles#num_fmt` to `number_format_code`.
 - Rename `Elements::Dxf` member and keyword `:num_fmt` to `:number_format`.
 - Rename `Elements::SheetProperties` member and keyword `:page_setup_pr` to `:page_setup_properties`.
-- Unify `StyleBuilder` property methods to act as pure zero-argument getters returning current values and mutate state returning `nil` when called with arguments (ADR 0005).
-- Add getter methods (`superscript?`, `subscript?`, `wrap_text?`, `shrink_to_fit?`, `locked?`, `hidden?`) and assignment setters (`font=`, `vert_align=`, `superscript=`, `subscript=`, `fill=`, `border=`) on `StyleBuilder`.
+- Unify `StyleBuilder` single-attribute methods to dedicated 0-argument getters (`font_size`, `font_name`, `font_color`, `underline`, `vert_align`, `fill_color`, `align_horizontal`, `align_vertical`, `text_rotation`, `indent`, `number_format`) and assignment setters (`font_size=`, `font_name=`, etc.), and 0-argument boolean predicates (`bold?`, `italic?`, `strike?`, `underline?`, `wrap_text?`, `shrink_to_fit?`, `locked?`, `hidden?`, `superscript?`, `subscript?`) with assignment setters (`bold=`, `italic=`, etc.).
 - Return frozen `Elements::IgnoredError` value objects from `WorksheetBuilder#ignored_errors`, `StreamWriter#ignored_errors`, and `StreamWriter::WorksheetProxy#ignored_errors`.
 - Encapsulate internal methods by making `StyleBuilder#resolve_color` and `StreamSheet#auto_filter_data` private.
 - Update blockless `Xlsxrb.read` to return an `Enumerator[StreamSheet, void]` with managed zip container lifecycle; use `Xlsxrb.load` for in-memory random access.
@@ -25,6 +35,15 @@
 - Unify `Elements::Worksheet` constructor parameter `sheet_calc_pr:` to `sheet_calc_properties:` and simplify `#with` to canonical keyword arguments.
 
 ### Removed
+- Remove dead private helper `Xlsxrb.write_workbook`.
+- Remove legacy `unmapped_data` fallbacks for `:style_index` in `Elements::Row#initialize`, and `:style_index`, `:style`, `:best_fit`, and `:collapsed` in `Elements::Column#initialize`.
+- Hide non-`?` boolean member reader methods on all 28 `Elements::MetadataRecord` `Data.define` classes and `Elements::Formula#calculate_always`.
+- Remove singular property mutators (`sheet_property`, `workbook_property`, `core_property`, `app_property`) across builders in favor of unified `sheet_properties`, `workbook_properties`, `core_properties`, and `app_properties`.
+- Remove dual getter/setter `value = OMITTED` parameter branches and non-`?` boolean getter methods (`bold`, `italic`, `strike`, `wrap_text`, `shrink_to_fit`, `locked`, `hidden`, `superscript`, `subscript`) from `StyleBuilder`.
+- Remove `WorkbookBuilder#hyperlink` and `WorkbookBuilder#comment` delegators (use top-level `Xlsxrb.hyperlink` and `Xlsxrb.comment`).
+- Remove legacy table key fallbacks (`:total_row_formula`, `:total_formula`, `:total_row`, `:total_row_count`) in `DslHelpers` and writers in favor of `:totals_row_formula`, `:totals_row`, and `:totals_row_count`.
+- Remove legacy rule `:size` fallback in `DslHelpers.extract_dxf_from_rule!` (retaining `:font_size`).
+- Remove legacy duplicate keys (`from_col`/`to_col`, `col:`, `col_fields:`, `dest_ref:`, `active_tab:`, `cols:`, `col_breaks:`, `si:`) across builders and writers in favor of canonical keys (`from_column`/`to_column`, `column:`, `column_fields:`, `destination:`, `active_sheet_index:`, `columns:`, `column_breaks:`, `shared_index:`).
 - Remove in-memory `#close` on `Elements::Workbook` and `Elements::Worksheet`, and remove `#load` on `Elements::Worksheet` (`StreamSheet#close` and `StreamSheet#load` remain intact).
 - Remove asymmetric legacy methods on `StreamSheet`: `#sheet_views`, `#first_column_index`, `#last_column_index`, `#legacy_drawing`, and `#ext_lst` in favor of `#sheet_view` and `#column_range`.
 - Remove `Xlsxrb._read_workbook` and `Elements::Workbook#_load`.
@@ -34,7 +53,8 @@
 - Remove positional offset arguments and `col_delta:` keyword from `Xlsxrb.expand_formula`, unifying the signature to `def self.expand_formula(formula, from_ref: nil, to_ref: nil, row_delta: nil, column_delta: nil)`.
 - Remove singular `column:` and `row:` keyword arguments from `defined_name` across `WorkbookBuilder`, `WorksheetBuilder`, `StreamWriter`, and `WorksheetProxy` (unified to `columns:` and `rows:`), and align `DslHelpers.normalize_defined_name_value`.
 - Remove `show_symbols:` keyword argument from `outline_properties` across `WorksheetBuilder`, `StreamWriter`, and `WorksheetProxy` (unified to `show_outline_symbols:`).
-- Remove `alias fit_to_page? fit_to_page` on builder classes (`WorksheetBuilder`, `StreamWriter`, and `WorksheetProxy`), retaining `fit_to_page` as the 0-argument getter.
+- Remove non-predicate boolean getters across builders: `TableBuilder` (`#show_row_stripes`, `#show_column_stripes`, `#show_first_column`, `#show_last_column`, `#totals_row`, `#auto_filter`), `DataValidationBuilder` (`#allow_blank`, `#show_input_message`, `#show_error_message`), `ConditionalFormatBuilder` (`#bold`, `#italic`, `#stop_if_true`, `#above_average`, `#equal_average`, `#percent`, `#bottom`), `ChartBuilder` (`#plot_visible_only`, `#show_legend_key`), `ChartBuilder::SeriesBuilder` (`#smooth`), `WorksheetBuilder`/`StreamWriter`/`WorksheetProxy` (`#fit_to_page`), `WorkbookBuilder`/`StreamWriter` (`#show_sheet_tabs`), and non-predicate `#escape_formulas` readers on `WorkbookBuilder`, `WorksheetBuilder`, `StreamWriter`, and `WorksheetProxy` in favor of their `?` predicate equivalents.
+- Remove workbook-level delegation methods and stream-lifecycle helpers (`active_sheet`, `active_sheet=`, `first_sheet`, `first_sheet=`, `show_sheet_tabs`, `show_sheet_tabs=`, `tab_ratio`, `tab_ratio=`, `workbook_property`, `workbook_protection`, `core_property`, `app_property`, `custom_property`, `properties`, `default_font`, `sheet_names`, `cleanup!`, `internal_sheet_setup`) from `StreamWriter::WorksheetProxy` to establish full method symmetry with `WorksheetBuilder`.
 - Remove positional argument setters from `ChartBuilder` and `SeriesBuilder` in favor of pure 0-argument getters, dedicated `=` assignment setters, `title(**kwargs)`, keyword dictionary methods (`legend(**kwargs)`, `plot_area(**kwargs)`, etc.), and `series(**kwargs, &block)`.
 - Remove `#[]`, `#[]=`, and `:in` fallback from `DataValidationBuilder` and `DslHelpers.normalize_data_validation`.
 - Remove `#[]`, `#[]=`, `formulas`, `formulas=`, and fallbacks for `:size` and `:format_id` from `ConditionalFormatBuilder`.

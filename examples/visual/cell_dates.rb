@@ -4,7 +4,7 @@ require "xlsxrb"
 require "date"
 output_path = ARGV[0] || "cell_dates.xlsx"
 Xlsxrb.write(output_path) do |wb|
-  wb.style("custom_date") { |s| s.number_format("yyyy-mm-dd") }
+  wb.style("custom_date") { |s| s.number_format = "yyyy-mm-dd" }
   wb.sheet("Dates") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)

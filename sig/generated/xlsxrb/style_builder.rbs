@@ -17,8 +17,6 @@ module Xlsxrb
 
     VERT_ALIGN_MAP: untyped
 
-    OMITTED: untyped
-
     # Normalizes a color definition (CSS color name, hex code, or RGB integer) to an OpenXML hex color string.
     #
     # @example
@@ -89,8 +87,10 @@ module Xlsxrb
     # @param opts [Hash] The font properties.
     # @return [Hash, void]
     # @api public
-    # : (**untyped) -> (Hash[Symbol, untyped] | void)
-    def font: (**untyped opts) -> untyped
+    # : () -> Hash[Symbol, untyped]
+    # : (**untyped) -> void
+    def font: () -> Hash[Symbol, untyped]
+            | (**untyped) -> void
 
     # Sets font options.
     # @param opts [Hash]
@@ -98,13 +98,6 @@ module Xlsxrb
     # @api public
     # : (Hash[Symbol, untyped] opts) -> Hash[Symbol, untyped]
     def font=: (Hash[Symbol, untyped] opts) -> Hash[Symbol, untyped]
-
-    # Sets or returns whether font is bold.
-    # @param value [Boolean, Object]
-    # @return [Boolean, void]
-    # @api public
-    # : (?untyped value) -> (bool | void)
-    def bold: (?untyped value) -> untyped
 
     # Sets the font to bold.
     # @param value [Boolean]
@@ -119,13 +112,6 @@ module Xlsxrb
     # : () -> bool
     def bold?: () -> bool
 
-    # Sets or returns whether font is italic.
-    # @param value [Boolean, Object]
-    # @return [Boolean, void]
-    # @api public
-    # : (?untyped value) -> (bool | void)
-    def italic: (?untyped value) -> untyped
-
     # Sets the font to italic.
     # @param value [Boolean]
     # @return [Boolean]
@@ -139,12 +125,11 @@ module Xlsxrb
     # : () -> bool
     def italic?: () -> bool
 
-    # Sets or gets the font size in points.
-    # @param size_value [Integer, Float, Object, nil] The size in points (supports fractional sizes such as 10.5).
-    # @return [Integer, Float, void, nil]
+    # Gets the font size in points.
+    # @return [Integer, Float, nil]
     # @api public
-    # : (?Numeric? size_value) -> (Numeric | void | nil)
-    def font_size: (?untyped size_value) -> untyped
+    # : () -> (Integer | Float | nil)
+    def font_size: () -> (Integer | Float | nil)
 
     # Sets the font size in points.
     # @param size_value [Integer, Float] The size in points (supports fractional sizes such as 10.5).
@@ -153,12 +138,11 @@ module Xlsxrb
     # : (Numeric size_value) -> Numeric
     def font_size=: (Numeric size_value) -> Numeric
 
-    # Gets or sets the font name.
-    # @param name [String, Object] The font name.
-    # @return [String, void, nil]
+    # Gets the font name.
+    # @return [String, nil]
     # @api public
-    # : (?untyped name) -> (String | void | nil)
-    def font_name: (?untyped name) -> untyped
+    # : () -> String?
+    def font_name: () -> String?
 
     # Sets the font name.
     # @param name [String]
@@ -167,12 +151,11 @@ module Xlsxrb
     # : (String name) -> String
     def font_name=: (String name) -> String
 
-    # Gets or sets the font color.
-    # @param color [String, Symbol, Object] The color.
-    # @return [String, Symbol, void, nil]
+    # Gets the font color.
+    # @return [String, nil]
     # @api public
-    # : (?untyped color) -> (String | Symbol | void | nil)
-    def font_color: (?untyped color) -> untyped
+    # : () -> String?
+    def font_color: () -> String?
 
     # Sets the font color.
     # @param color [String, Symbol]
@@ -181,12 +164,11 @@ module Xlsxrb
     # : (String | Symbol color) -> (String | Symbol)
     def font_color=: (String | Symbol color) -> (String | Symbol)
 
-    # Sets or gets the font underline style.
-    # @param val [String, Symbol, Boolean, Object] The underline style (e.g., 'single', :double, :single_accounting, :double_accounting).
-    # @return [String, Symbol, Boolean, void, nil]
+    # Gets the font underline style.
+    # @return [String, Symbol, Boolean, nil]
     # @api public
-    # : (?untyped val) -> (String | Symbol | bool | void | nil)
-    def underline: (?untyped val) -> untyped
+    # : () -> (String | Symbol | bool | nil)
+    def underline: () -> (String | Symbol | bool | nil)
 
     # Sets the font underline style.
     # @param val [String, Symbol, Boolean]
@@ -201,13 +183,6 @@ module Xlsxrb
     # : () -> bool
     def underline?: () -> bool
 
-    # Sets or returns whether font has strikethrough.
-    # @param value [Boolean, Object]
-    # @return [Boolean, void]
-    # @api public
-    # : (?untyped value) -> (bool | void)
-    def strike: (?untyped value) -> untyped
-
     # Sets the font strikethrough.
     # @param value [Boolean]
     # @return [Boolean]
@@ -221,12 +196,11 @@ module Xlsxrb
     # : () -> bool
     def strike?: () -> bool
 
-    # Gets or sets the vertical alignment of the font.
-    # @param value [String, Symbol, Object] The alignment value ('superscript', 'subscript', 'baseline', :superscript, :subscript).
-    # @return [String, void, nil]
+    # Gets the vertical alignment of the font.
+    # @return [String, nil]
     # @api public
-    # : (?untyped value) -> (String | void | nil)
-    def vert_align: (?untyped value) -> untyped
+    # : () -> String?
+    def vert_align: () -> String?
 
     # Sets the vertical alignment of the font.
     # @param val [String, Symbol]
@@ -235,19 +209,6 @@ module Xlsxrb
     # : (untyped val) -> untyped
     def vert_align=: (untyped val) -> untyped
 
-    # Sets or gets whether the font is superscript.
-    # @param value [Boolean, Object] Whether to apply superscript.
-    # @return [Boolean, void]
-    # @api public
-    # : (?untyped value) -> (bool | void)
-    def superscript: (?untyped value) -> untyped
-
-    # Returns whether superscript is enabled.
-    # @return [Boolean]
-    # @api public
-    # : () -> bool
-    def superscript?: () -> bool
-
     # Sets the font to superscript.
     # @param val [Boolean]
     # @return [Boolean]
@@ -255,18 +216,11 @@ module Xlsxrb
     # : (untyped val) -> untyped
     def superscript=: (untyped val) -> untyped
 
-    # Sets or gets whether the font is subscript.
-    # @param value [Boolean, Object] Whether to apply subscript.
-    # @return [Boolean, void]
-    # @api public
-    # : (?untyped value) -> (bool | void)
-    def subscript: (?untyped value) -> untyped
-
-    # Returns whether subscript is enabled.
+    # Returns whether superscript is enabled.
     # @return [Boolean]
     # @api public
     # : () -> bool
-    def subscript?: () -> bool
+    def superscript?: () -> bool
 
     # Sets the font to subscript.
     # @param val [Boolean]
@@ -275,14 +229,22 @@ module Xlsxrb
     # : (untyped val) -> untyped
     def subscript=: (untyped val) -> untyped
 
+    # Returns whether subscript is enabled.
+    # @return [Boolean]
+    # @api public
+    # : () -> bool
+    def subscript?: () -> bool
+
     # Sets or gets the fill pattern.
-    # @param pattern [String, Symbol, Object] The pattern type.
+    # @param pattern [String, Symbol, nil] The pattern type.
     # @param fg_color [String, Symbol, nil] The foreground color.
     # @param bg_color [String, Symbol, nil] The background color.
     # @return [String, Symbol, void, nil]
     # @api public
-    # : (?untyped pattern, ?fg_color: String | Symbol | nil, ?bg_color: String | Symbol | nil) -> (untyped | void)
-    def fill_pattern: (?untyped pattern, ?fg_color: untyped, ?bg_color: untyped) -> untyped
+    # : () -> (String | Symbol | untyped)
+    # : (?untyped pattern, ?fg_color: String | Symbol | nil, ?bg_color: String | Symbol | nil) -> void
+    def fill_pattern: () -> (String | Symbol | untyped)
+                    | (?untyped pattern, ?fg_color: String | Symbol | nil, ?bg_color: String | Symbol | nil) -> void
 
     # Sets the fill pattern.
     # @param pattern [String, Symbol, Hash]
@@ -291,12 +253,11 @@ module Xlsxrb
     # : (untyped pattern) -> untyped
     def fill_pattern=: (untyped pattern) -> untyped
 
-    # Gets or sets a solid fill color.
-    # @param color [String, Symbol, Object] The color.
-    # @return [String, Symbol, void, nil]
+    # Gets a solid fill color.
+    # @return [String, nil]
     # @api public
-    # : (?untyped color) -> (String | Symbol | void | nil)
-    def fill_color: (?untyped color) -> untyped
+    # : () -> String?
+    def fill_color: () -> String?
 
     # Sets a solid fill color.
     # @param color [String, Symbol]
@@ -306,13 +267,15 @@ module Xlsxrb
     def fill_color=: (String | Symbol color) -> (String | Symbol)
 
     # Configures fill properties or returns current fill properties.
-    # @param pattern [String, Symbol, Object]
+    # @param pattern [String, Symbol, nil]
     # @param fg_color [String, Symbol, nil]
     # @param bg_color [String, Symbol, nil]
     # @return [Hash, void]
     # @api public
-    # : (?pattern: untyped, ?fg_color: String | Symbol | nil, ?bg_color: String | Symbol | nil) -> (Hash[Symbol, untyped] | void)
-    def fill: (?pattern: untyped, ?fg_color: untyped, ?bg_color: untyped) -> untyped
+    # : () -> Hash[Symbol, untyped]
+    # : (?pattern: untyped, ?fg_color: String | Symbol | nil, ?bg_color: String | Symbol | nil) -> void
+    def fill: () -> Hash[Symbol, untyped]
+            | (?pattern: untyped, ?fg_color: String | Symbol | nil, ?bg_color: String | Symbol | nil) -> void
 
     # Sets fill options.
     # @param opts [Hash, Object]
@@ -322,13 +285,15 @@ module Xlsxrb
     def fill=: (untyped opts) -> untyped
 
     # Sets or gets a gradient fill.
-    # @param type [String, Object] The gradient type.
+    # @param type [String, nil] The gradient type.
     # @param degree [Numeric, nil] The degree.
     # @param stops [Array] The gradient stops.
     # @return [Hash, void, nil]
     # @api public
-    # : (?type: untyped, ?degree: Numeric | nil, ?stops: Array[untyped]) -> (Hash[Symbol, untyped] | void | nil)
-    def fill_gradient: (?type: untyped, ?degree: untyped, ?stops: untyped) -> untyped
+    # : () -> Hash[Symbol, untyped]?
+    # : (?type: untyped, ?degree: Numeric | nil, ?stops: Array[untyped]) -> void
+    def fill_gradient: () -> Hash[Symbol, untyped]?
+                     | (?type: untyped, ?degree: Numeric | nil, ?stops: Array[untyped]) -> void
 
     # Configures multiple border properties or returns current border properties.
     #
@@ -340,8 +305,10 @@ module Xlsxrb
     # @param diagonal [Hash, nil] Options for diagonal border.
     # @return [Hash, void]
     # @api public
-    # : (?all: Hash[Symbol, untyped]?, ?left: Hash[Symbol, untyped]?, ?right: Hash[Symbol, untyped]?, ?top: Hash[Symbol, untyped]?, ?bottom: Hash[Symbol, untyped]?, ?diagonal: Hash[Symbol, untyped]?) -> (Hash[Symbol, untyped] | void)
-    def border: (?all: untyped, ?left: untyped, ?right: untyped, ?top: untyped, ?bottom: untyped, ?diagonal: untyped) -> untyped
+    # : () -> Hash[Symbol, untyped]
+    # : (?all: Hash[Symbol, untyped]?, ?left: Hash[Symbol, untyped]?, ?right: Hash[Symbol, untyped]?, ?top: Hash[Symbol, untyped]?, ?bottom: Hash[Symbol, untyped]?, ?diagonal: Hash[Symbol, untyped]?) -> void
+    def border: () -> Hash[Symbol, untyped]
+              | (?all: Hash[Symbol, untyped]?, ?left: Hash[Symbol, untyped]?, ?right: Hash[Symbol, untyped]?, ?top: Hash[Symbol, untyped]?, ?bottom: Hash[Symbol, untyped]?, ?diagonal: Hash[Symbol, untyped]?) -> void
 
     # Sets border options.
     # @param opts [Hash]
@@ -416,8 +383,10 @@ module Xlsxrb
     # @param relative_indent [Integer, nil] Relative indentation level.
     # @return [Hash, void]
     # @api public
-    # : (?horizontal: (String | Symbol)?, ?vertical: (String | Symbol)?, ?wrap_text: bool?, ?text_rotation: Integer?, ?indent: Integer?, ?shrink_to_fit: bool?, ?reading_order: Integer?, ?justify_last_line: bool?, ?relative_indent: Integer?) -> (Hash[Symbol, untyped] | void)
-    def alignment: (?horizontal: untyped, ?vertical: untyped, ?wrap_text: untyped, ?text_rotation: untyped, ?indent: untyped, ?shrink_to_fit: untyped, ?reading_order: untyped, ?justify_last_line: untyped, ?relative_indent: untyped) -> untyped
+    # : () -> Hash[Symbol, untyped]
+    # : (?horizontal: (String | Symbol)?, ?vertical: (String | Symbol)?, ?wrap_text: bool?, ?text_rotation: Integer?, ?indent: Integer?, ?shrink_to_fit: bool?, ?reading_order: Integer?, ?justify_last_line: bool?, ?relative_indent: Integer?) -> void
+    def alignment: () -> Hash[Symbol, untyped]
+                 | (?horizontal: (String | Symbol)?, ?vertical: (String | Symbol)?, ?wrap_text: bool?, ?text_rotation: Integer?, ?indent: Integer?, ?shrink_to_fit: bool?, ?reading_order: Integer?, ?justify_last_line: bool?, ?relative_indent: Integer?) -> void
 
     # Sets alignment options.
     #
@@ -427,12 +396,11 @@ module Xlsxrb
     # : (Hash[Symbol, untyped] opts) -> Hash[Symbol, untyped]
     def alignment=: (Hash[Symbol, untyped] opts) -> Hash[Symbol, untyped]
 
-    # Gets or sets horizontal alignment.
-    # @param value [String, Symbol, Object] The alignment.
-    # @return [String, Symbol, void, nil]
+    # Gets horizontal alignment.
+    # @return [String, Symbol, nil]
     # @api public
-    # : (?untyped value) -> (String | Symbol | void | nil)
-    def align_horizontal: (?untyped value) -> untyped
+    # : () -> (String | Symbol | nil)
+    def align_horizontal: () -> (String | Symbol | nil)
 
     # Sets horizontal alignment.
     # @param value [String, Symbol]
@@ -441,12 +409,11 @@ module Xlsxrb
     # : (String | Symbol value) -> (String | Symbol)
     def align_horizontal=: (String | Symbol value) -> (String | Symbol)
 
-    # Gets or sets vertical alignment.
-    # @param value [String, Symbol, Object] The alignment.
-    # @return [String, Symbol, void, nil]
+    # Gets vertical alignment.
+    # @return [String, Symbol, nil]
     # @api public
-    # : (?untyped value) -> (String | Symbol | void | nil)
-    def align_vertical: (?untyped value) -> untyped
+    # : () -> (String | Symbol | nil)
+    def align_vertical: () -> (String | Symbol | nil)
 
     # Sets vertical alignment.
     # @param value [String, Symbol]
@@ -454,13 +421,6 @@ module Xlsxrb
     # @api public
     # : (String | Symbol value) -> (String | Symbol)
     def align_vertical=: (String | Symbol value) -> (String | Symbol)
-
-    # Sets or gets text wrapping.
-    # @param value [Boolean, Object] Whether to wrap text.
-    # @return [Boolean, void]
-    # @api public
-    # : (?untyped value) -> (bool | void)
-    def wrap_text: (?untyped value) -> untyped
 
     # Sets text wrapping.
     # @param value [Boolean]
@@ -475,13 +435,6 @@ module Xlsxrb
     # : () -> bool
     def wrap_text?: () -> bool
 
-    # Sets or gets shrink to fit.
-    # @param value [Boolean, Object] Whether to shrink text.
-    # @return [Boolean, void]
-    # @api public
-    # : (?untyped value) -> (bool | void)
-    def shrink_to_fit: (?untyped value) -> untyped
-
     # Sets shrink to fit.
     # @param value [Boolean]
     # @return [Boolean]
@@ -495,12 +448,11 @@ module Xlsxrb
     # : () -> bool
     def shrink_to_fit?: () -> bool
 
-    # Gets or sets text rotation.
-    # @param value [Numeric, Object] The rotation angle.
-    # @return [Numeric, void, nil]
+    # Gets text rotation.
+    # @return [Numeric, nil]
     # @api public
-    # : (?untyped value) -> (Numeric | void | nil)
-    def text_rotation: (?untyped value) -> untyped
+    # : () -> (Numeric | nil)
+    def text_rotation: () -> (Numeric | nil)
 
     # Sets text rotation.
     # @param value [Numeric]
@@ -509,12 +461,11 @@ module Xlsxrb
     # : (Numeric value) -> Numeric
     def text_rotation=: (Numeric value) -> Numeric
 
-    # Gets or sets text indent.
-    # @param value [Numeric, Object] The indent level.
-    # @return [Numeric, void, nil]
+    # Gets text indent.
+    # @return [Integer, nil]
     # @api public
-    # : (?untyped value) -> (Numeric | void | nil)
-    def indent: (?untyped value) -> untyped
+    # : () -> (Integer | nil)
+    def indent: () -> (Integer | nil)
 
     # Sets text indent.
     # @param value [Numeric]
@@ -531,8 +482,10 @@ module Xlsxrb
     # @param hidden [Boolean, nil]
     # @return [Hash, void]
     # @api public
-    # : (?locked: bool?, ?hidden: bool?) -> (Hash[Symbol, untyped] | void)
-    def protection: (?locked: untyped, ?hidden: untyped) -> untyped
+    # : () -> Hash[Symbol, untyped]
+    # : (?locked: bool?, ?hidden: bool?) -> void
+    def protection: () -> Hash[Symbol, untyped]
+                  | (?locked: bool?, ?hidden: bool?) -> void
 
     # Sets protection options.
     #
@@ -541,14 +494,6 @@ module Xlsxrb
     # @api public
     # : (Hash[Symbol, untyped] opts) -> Hash[Symbol, untyped]
     def protection=: (Hash[Symbol, untyped] opts) -> Hash[Symbol, untyped]
-
-    # Sets or gets whether the cell is locked.
-    #
-    # @param value [Boolean, Object]
-    # @return [Boolean, void]
-    # @api public
-    # : (?untyped value) -> (bool | void)
-    def locked: (?untyped value) -> untyped
 
     # Sets whether the cell is locked.
     #
@@ -564,14 +509,6 @@ module Xlsxrb
     # : () -> bool
     def locked?: () -> bool
 
-    # Sets or gets whether the cell formula is hidden.
-    #
-    # @param value [Boolean, Object]
-    # @return [Boolean, void]
-    # @api public
-    # : (?untyped value) -> (bool | void)
-    def hidden: (?untyped value) -> untyped
-
     # Sets whether the cell formula is hidden.
     #
     # @param value [Boolean]
@@ -586,12 +523,11 @@ module Xlsxrb
     # : () -> bool
     def hidden?: () -> bool
 
-    # Sets or gets the number format.
-    # @param num_fmt_id [String, Integer, Object, nil] The format id or format string.
-    # @return [String, Integer, void, nil]
+    # Gets the number format.
+    # @return [String, Integer, nil]
     # @api public
-    # : (?String | Integer | Object | nil num_fmt_id) -> (String | Integer | void | nil)
-    def number_format: (?untyped num_fmt_id) -> untyped
+    # : () -> (String | Integer | nil)
+    def number_format: () -> (String | Integer | nil)
 
     # Sets the number format.
     # @param num_fmt_id [String, Integer]

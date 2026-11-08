@@ -22,9 +22,9 @@ module RubyLsp
           documentation: "Registers a reusable named cell style (font, fill, border, alignment, number_format).\n\n```ruby\nwb.style(:bold_blue, font: { bold: true, color: \"0000FF\" })\n```"
         },
         {
-          label: "workbook_property",
-          detail: "(name, value) -> void",
-          documentation: "Sets a workbook-level property (e.g. `:update_links`).\n\n```ruby\nwb.workbook_property(:update_links, \"never\")\n```"
+          label: "workbook_properties",
+          detail: "(**opts) -> Elements::WorkbookProperties | void",
+          documentation: "Configures or queries workbook-level properties (e.g. `:update_links`).\n\n```ruby\nwb.workbook_properties(update_links: \"never\")\n```"
         },
         {
           label: "workbook_protection",
@@ -52,14 +52,14 @@ module RubyLsp
           documentation: "Sets multiple core and application metadata properties at once."
         },
         {
-          label: "core_property",
-          detail: "(name, value) -> void",
-          documentation: "Sets core document metadata (e.g. `:title`, `:creator`, `:subject`, `:keywords`)."
+          label: "core_properties",
+          detail: "(**opts) -> Elements::CoreProperties | void",
+          documentation: "Configures or queries core document metadata (e.g. `:title`, `:creator`, `:subject`, `:keywords`)."
         },
         {
-          label: "app_property",
-          detail: "(name, value) -> void",
-          documentation: "Sets application document metadata (e.g. `:company`, `:manager`)."
+          label: "app_properties",
+          detail: "(**opts) -> Elements::AppProperties | void",
+          documentation: "Configures or queries application document metadata (e.g. `:company`, `:manager`)."
         },
         {
           label: "custom_property",
@@ -90,9 +90,9 @@ module RubyLsp
           documentation: "Builds and returns the immutable `Elements::Workbook` DOM hierarchy."
         },
         {
-          label: "workbook_property",
-          detail: "(name, value) -> void",
-          documentation: "Sets a workbook property."
+          label: "workbook_properties",
+          detail: "(**opts) -> Elements::WorkbookProperties | void",
+          documentation: "Configures or queries workbook properties."
         },
         {
           label: "workbook_protection",
@@ -120,14 +120,14 @@ module RubyLsp
           documentation: "Sets multiple metadata properties."
         },
         {
-          label: "core_property",
-          detail: "(name, value) -> void",
-          documentation: "Sets core document metadata."
+          label: "core_properties",
+          detail: "(**opts) -> Elements::CoreProperties | void",
+          documentation: "Configures or queries core document metadata."
         },
         {
-          label: "app_property",
-          detail: "(name, value) -> void",
-          documentation: "Sets application document metadata."
+          label: "app_properties",
+          detail: "(**opts) -> Elements::AppProperties | void",
+          documentation: "Configures or queries application document metadata."
         },
         {
           label: "custom_property",
@@ -229,8 +229,8 @@ module RubyLsp
         },
         {
           label: "print_options",
-          detail: "(name, value) -> void",
-          documentation: "Configures print options (e.g. `s.print_options(:grid_lines, true)`)."
+          detail: "(**opts) -> void",
+          documentation: "Configures print options (e.g. `s.print_options(grid_lines: true)`)."
         },
         {
           label: "sheet_protection",
@@ -239,13 +239,13 @@ module RubyLsp
         },
         {
           label: "sheet_view",
-          detail: "(name, value) -> void",
-          documentation: "Sets view settings (e.g. `s.sheet_view(:show_grid_lines, false)`)."
+          detail: "(**opts) -> void",
+          documentation: "Sets view settings (e.g. `s.sheet_view(show_grid_lines: false)`)."
         },
         {
           label: "sheet_properties",
-          detail: "(name, value) -> void",
-          documentation: "Sets sheet properties (e.g. `s.sheet_properties(:tab_color, \"FF0000\")`)."
+          detail: "(**opts) -> void",
+          documentation: "Sets sheet properties (e.g. `s.sheet_properties(tab_color: \"FF0000\")`)."
         },
         {
           label: "selection",
@@ -327,11 +327,6 @@ module RubyLsp
           label: "valid?",
           detail: "() -> Boolean",
           documentation: "Returns true if all workbook elements and sheets are valid."
-        },
-        {
-          label: "validate",
-          detail: "() -> Array<String>",
-          documentation: "Validates workbook structure and returns any validation errors."
         }
       ].freeze
 
@@ -340,11 +335,6 @@ module RubyLsp
           label: "[]",
           detail: "(cell_ref) -> Elements::Cell?",
           documentation: "Finds and returns a cell by A1 reference.\n\n```ruby\ncell = sheet[\"B2\"]\n```"
-        },
-        {
-          label: "cell_value",
-          detail: "(cell_ref) -> Object?",
-          documentation: "Returns the raw value of the cell at the given A1 reference."
         },
         {
           label: "each_row",
@@ -390,11 +380,6 @@ module RubyLsp
           label: "valid?",
           detail: "() -> Boolean",
           documentation: "Returns true if all cells and rows in the worksheet are valid."
-        },
-        {
-          label: "validate",
-          detail: "() -> Array<String>",
-          documentation: "Returns any validation errors found in the worksheet."
         }
       ].freeze
 
@@ -448,11 +433,6 @@ module RubyLsp
           label: "valid?",
           detail: "() -> Boolean",
           documentation: "Returns true if all cells in this row are valid."
-        },
-        {
-          label: "validate",
-          detail: "() -> Array<String>",
-          documentation: "Validates all cells in this row and returns error messages."
         }
       ].freeze
 
@@ -511,82 +491,432 @@ module RubyLsp
           label: "valid?",
           detail: "() -> Boolean",
           documentation: "Returns true if row_index, column_index, and value are valid."
-        },
-        {
-          label: "validate",
-          detail: "() -> Array<String>",
-          documentation: "Returns validation errors if indices are negative or invalid."
         }
       ].freeze
 
       CHART_BUILDER_ITEMS = [
         {
+          label: "type",
+          detail: "() -> Symbol | String | nil",
+          documentation: "Gets chart type (e.g. :line, :bar, :pie, :radar, :scatter)."
+        },
+        {
+          label: "type=",
+          detail: "(value) -> Symbol | String | nil",
+          documentation: "Sets chart type (e.g. :line, :bar, :pie, :radar, :scatter)."
+        },
+        {
           label: "title",
-          detail: "(text) -> void",
-          documentation: "Sets the chart title text."
+          detail: "(**kwargs) -> String | Hash | nil",
+          documentation: "Gets or configures chart title text or options."
+        },
+        {
+          label: "title=",
+          detail: "(value) -> String | Hash | nil",
+          documentation: "Sets chart title text or options hash."
         },
         {
           label: "series",
-          detail: "(range, name: nil) -> void",
-          documentation: "Adds data series value range."
+          detail: "(**kwargs) { |series_builder| ... } -> Array<Hash> | nil",
+          documentation: "Adds data series value range or yields a SeriesBuilder."
         },
         {
-          label: "categories",
-          detail: "(range) -> void",
-          documentation: "Sets category label range (e.g. `'Sheet1!$A$2:$A$10'`)."
+          label: "series=",
+          detail: "(value) -> Array<Hash> | Hash",
+          documentation: "Sets series array or configuration hash."
         },
         {
           label: "legend",
-          detail: "(position: 'r') -> void",
-          documentation: "Configures legend position (`'r'`, `'l'`, `'t'`, `'b'`, `'none'`)."
+          detail: "(**kwargs) -> Object?",
+          documentation: "Gets or configures chart legend properties."
         },
         {
-          label: "plot_by",
-          detail: "(grouping) -> void",
-          documentation: "Sets series grouping (`'standard'`, `'stacked'`, `'percentStacked'`)."
+          label: "legend=",
+          detail: "(value) -> Object?",
+          documentation: "Sets chart legend properties."
         },
         {
-          label: "dimension",
-          detail: "(from_col: 0, from_row: 0, to_col: 8, to_row: 15) -> void",
-          documentation: "Sets chart position and size on the worksheet."
+          label: "plot_area",
+          detail: "(**kwargs) -> Object?",
+          documentation: "Gets or configures plot area properties."
         },
         {
-          label: "gridlines",
-          detail: "(horizontal: true, vertical: false) -> void",
-          documentation: "Configures chart major gridlines."
+          label: "plot_area=",
+          detail: "(value) -> Object?",
+          documentation: "Sets plot area properties."
+        },
+        {
+          label: "chart_space",
+          detail: "(**kwargs) -> Object?",
+          documentation: "Gets or configures chart space properties."
+        },
+        {
+          label: "chart_space=",
+          detail: "(value) -> Object?",
+          documentation: "Sets chart space properties."
         },
         {
           label: "style",
-          detail: "(id) -> void",
+          detail: "() -> Object?",
+          documentation: "Gets built-in chart style number (1-48) or options."
+        },
+        {
+          label: "style=",
+          detail: "(value) -> Object?",
           documentation: "Sets built-in chart style number (1-48)."
+        },
+        {
+          label: "data_labels",
+          detail: "(**kwargs) -> Object?",
+          documentation: "Gets or configures chart data labels."
+        },
+        {
+          label: "data_labels=",
+          detail: "(value) -> Object?",
+          documentation: "Sets chart data labels."
+        },
+        {
+          label: "plot_visible_only?",
+          detail: "() -> bool",
+          documentation: "Returns whether to plot visible cells only."
+        },
+        {
+          label: "plot_visible_only=",
+          detail: "(value) -> bool?",
+          documentation: "Sets whether to plot visible cells only."
+        },
+        {
+          label: "display_blanks_as",
+          detail: "() -> String?",
+          documentation: "Gets how blank cells are displayed in the chart."
+        },
+        {
+          label: "display_blanks_as=",
+          detail: "(value) -> String?",
+          documentation: "Sets how blank cells are displayed in the chart."
+        },
+        {
+          label: "view3d",
+          detail: "(**kwargs) -> Object?",
+          documentation: "Gets or configures 3D view properties."
+        },
+        {
+          label: "view3d=",
+          detail: "(value) -> Object?",
+          documentation: "Sets 3D view properties."
+        },
+        {
+          label: "category_axis",
+          detail: "(**kwargs) -> Object?",
+          documentation: "Gets or configures category axis properties."
+        },
+        {
+          label: "category_axis=",
+          detail: "(value) -> Object?",
+          documentation: "Sets category axis properties."
+        },
+        {
+          label: "value_axis",
+          detail: "(**kwargs) -> Object?",
+          documentation: "Gets or configures value axis properties."
+        },
+        {
+          label: "value_axis=",
+          detail: "(value) -> Object?",
+          documentation: "Sets value axis properties."
+        },
+        {
+          label: "secondary_value_axis",
+          detail: "(**kwargs) -> Object?",
+          documentation: "Gets or configures secondary value axis properties."
+        },
+        {
+          label: "secondary_value_axis=",
+          detail: "(value) -> Object?",
+          documentation: "Sets secondary value axis properties."
+        },
+        {
+          label: "show_legend_key?",
+          detail: "() -> bool",
+          documentation: "Returns whether to show the legend key in data labels."
+        },
+        {
+          label: "show_legend_key=",
+          detail: "(value) -> bool?",
+          documentation: "Sets whether to show the legend key in data labels."
         }
       ].freeze
 
       STYLE_BUILDER_ITEMS = [
         {
-          label: "font",
-          detail: "(name: 'Calibri', size: 11, bold: false, italic: false, underline: false, color: nil) -> void",
-          documentation: "Sets font typography, size, weight, and color."
+          label: "bold=",
+          detail: "(bool) -> bool",
+          documentation: "Sets whether font is bold."
         },
         {
-          label: "fill",
-          detail: "(pattern: 'solid', fg_color: nil, bg_color: nil) -> void",
-          documentation: "Sets background fill pattern and foreground color."
+          label: "bold?",
+          detail: "() -> Boolean",
+          documentation: "Returns whether font is bold."
         },
         {
-          label: "border",
-          detail: "(all: nil, left: nil, right: nil, top: nil, bottom: nil, diagonal: nil) -> self",
-          documentation: "Sets cell border lines and colors."
+          label: "italic=",
+          detail: "(bool) -> bool",
+          documentation: "Sets whether font is italic."
         },
         {
-          label: "alignment",
-          detail: "(horizontal: nil, vertical: nil, wrap_text: nil, text_rotation: nil, indent: nil, shrink_to_fit: nil, ...) -> Hash | self",
-          documentation: "Sets cell text alignment and text wrap."
+          label: "italic?",
+          detail: "() -> Boolean",
+          documentation: "Returns whether font is italic."
+        },
+        {
+          label: "font_size=",
+          detail: "(Numeric) -> Numeric",
+          documentation: "Sets font size in points."
+        },
+        {
+          label: "font_size",
+          detail: "() -> Numeric?",
+          documentation: "Returns font size in points."
+        },
+        {
+          label: "font_name=",
+          detail: "(String) -> String",
+          documentation: "Sets font family name."
+        },
+        {
+          label: "font_name",
+          detail: "() -> String?",
+          documentation: "Returns font family name."
+        },
+        {
+          label: "font_color=",
+          detail: "(color) -> Object",
+          documentation: "Sets font text color."
+        },
+        {
+          label: "font_color",
+          detail: "() -> String?",
+          documentation: "Returns font text color."
+        },
+        {
+          label: "underline=",
+          detail: "(val) -> Object",
+          documentation: "Sets font underline style."
+        },
+        {
+          label: "underline",
+          detail: "() -> Object?",
+          documentation: "Returns font underline style."
+        },
+        {
+          label: "underline?",
+          detail: "() -> Boolean",
+          documentation: "Returns whether font underline is enabled."
+        },
+        {
+          label: "strike=",
+          detail: "(bool) -> bool",
+          documentation: "Sets whether font has strikethrough."
+        },
+        {
+          label: "strike?",
+          detail: "() -> Boolean",
+          documentation: "Returns whether font has strikethrough."
+        },
+        {
+          label: "vert_align=",
+          detail: "(val) -> Object",
+          documentation: "Sets font vertical alignment (superscript/subscript)."
+        },
+        {
+          label: "vert_align",
+          detail: "() -> String?",
+          documentation: "Returns font vertical alignment."
+        },
+        {
+          label: "superscript=",
+          detail: "(bool) -> Object",
+          documentation: "Sets font superscript."
+        },
+        {
+          label: "superscript?",
+          detail: "() -> Boolean",
+          documentation: "Returns whether font superscript is enabled."
+        },
+        {
+          label: "subscript=",
+          detail: "(bool) -> Object",
+          documentation: "Sets font subscript."
+        },
+        {
+          label: "subscript?",
+          detail: "() -> Boolean",
+          documentation: "Returns whether font subscript is enabled."
+        },
+        {
+          label: "fill_color=",
+          detail: "(color) -> Object",
+          documentation: "Sets solid background fill color."
+        },
+        {
+          label: "fill_color",
+          detail: "() -> String?",
+          documentation: "Returns background fill color."
+        },
+        {
+          label: "fill_pattern",
+          detail: "(?pattern, ?fg_color: nil, ?bg_color: nil) -> Object?",
+          documentation: "Gets or sets background fill pattern and colors."
+        },
+        {
+          label: "fill_gradient",
+          detail: "(?type: nil, ?degree: nil, ?stops: []) -> Hash?",
+          documentation: "Gets or sets gradient fill."
+        },
+        {
+          label: "align_horizontal=",
+          detail: "(val) -> Object",
+          documentation: "Sets horizontal text alignment."
+        },
+        {
+          label: "align_horizontal",
+          detail: "() -> Object?",
+          documentation: "Returns horizontal text alignment."
+        },
+        {
+          label: "align_vertical=",
+          detail: "(val) -> Object",
+          documentation: "Sets vertical text alignment."
+        },
+        {
+          label: "align_vertical",
+          detail: "() -> Object?",
+          documentation: "Returns vertical text alignment."
+        },
+        {
+          label: "wrap_text=",
+          detail: "(bool) -> bool",
+          documentation: "Sets text wrapping."
+        },
+        {
+          label: "wrap_text?",
+          detail: "() -> Boolean",
+          documentation: "Returns whether text wrapping is enabled."
+        },
+        {
+          label: "shrink_to_fit=",
+          detail: "(bool) -> bool",
+          documentation: "Sets shrink to fit."
+        },
+        {
+          label: "shrink_to_fit?",
+          detail: "() -> Boolean",
+          documentation: "Returns whether shrink to fit is enabled."
+        },
+        {
+          label: "text_rotation=",
+          detail: "(Numeric) -> Numeric",
+          documentation: "Sets text rotation in degrees."
+        },
+        {
+          label: "text_rotation",
+          detail: "() -> Numeric?",
+          documentation: "Returns text rotation in degrees."
+        },
+        {
+          label: "indent=",
+          detail: "(Numeric) -> Numeric",
+          documentation: "Sets text indentation level."
+        },
+        {
+          label: "indent",
+          detail: "() -> Integer?",
+          documentation: "Returns text indentation level."
+        },
+        {
+          label: "locked=",
+          detail: "(bool) -> bool",
+          documentation: "Sets whether cell is locked."
+        },
+        {
+          label: "locked?",
+          detail: "() -> Boolean",
+          documentation: "Returns whether cell is locked."
+        },
+        {
+          label: "hidden=",
+          detail: "(bool) -> bool",
+          documentation: "Sets whether cell formula is hidden."
+        },
+        {
+          label: "hidden?",
+          detail: "() -> Boolean",
+          documentation: "Returns whether cell formula is hidden."
+        },
+        {
+          label: "number_format=",
+          detail: "(code_or_id) -> Object",
+          documentation: "Sets custom number format code or built-in ID."
         },
         {
           label: "number_format",
-          detail: "(format_code_or_id) -> void",
-          documentation: "Sets custom number or date format code (e.g. `'#,##0.00'`, `'yyyy-mm-dd'`)."
+          detail: "() -> Object?",
+          documentation: "Returns custom number format code or built-in ID."
+        },
+        {
+          label: "border_all",
+          detail: "(style: 'thin', color: nil) -> void",
+          documentation: "Sets all borders to the given style and color."
+        },
+        {
+          label: "border_top",
+          detail: "(style: 'thin', color: nil) -> void",
+          documentation: "Sets top border style and color."
+        },
+        {
+          label: "border_bottom",
+          detail: "(style: 'thin', color: nil) -> void",
+          documentation: "Sets bottom border style and color."
+        },
+        {
+          label: "border_left",
+          detail: "(style: 'thin', color: nil) -> void",
+          documentation: "Sets left border style and color."
+        },
+        {
+          label: "border_right",
+          detail: "(style: 'thin', color: nil) -> void",
+          documentation: "Sets right border style and color."
+        },
+        {
+          label: "border_diagonal",
+          detail: "(style: 'thin', color: nil, up: false, down: false) -> void",
+          documentation: "Sets diagonal border style and color."
+        },
+        {
+          label: "font",
+          detail: "(**opts) -> Hash | void",
+          documentation: "Configures font typography, size, weight, and color, or returns font properties."
+        },
+        {
+          label: "fill",
+          detail: "(**opts) -> Hash | void",
+          documentation: "Configures background fill pattern and foreground color, or returns fill properties."
+        },
+        {
+          label: "border",
+          detail: "(**opts) -> Hash | void",
+          documentation: "Configures cell border lines and colors, or returns border properties."
+        },
+        {
+          label: "alignment",
+          detail: "(**opts) -> Hash | void",
+          documentation: "Configures cell text alignment and text wrap, or returns alignment properties."
+        },
+        {
+          label: "protection",
+          detail: "(**opts) -> Hash | void",
+          documentation: "Configures cell protection (locked, hidden), or returns protection properties."
         }
       ].freeze
 

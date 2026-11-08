@@ -4,7 +4,7 @@ require "xlsxrb"
 require "time"
 output_path = ARGV[0] || "cell_times.xlsx"
 Xlsxrb.write(output_path) do |wb|
-  wb.style("time_fmt") { |s| s.number_format("hh:mm:ss") }
+  wb.style("time_fmt") { |s| s.number_format = "hh:mm:ss" }
   wb.sheet("Times") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)

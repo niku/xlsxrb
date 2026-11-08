@@ -698,9 +698,9 @@ class PublicApiTest < Test::Unit::TestCase
     temp_file.close
 
     Xlsxrb.write(temp_file.path) do |wb|
-      wb.style("bold", &:bold)
-      wb.style("italic", &:italic)
-      wb.style("red") { |s| s.font_color(:red) }
+      wb.style("bold") { |s| s.bold = true }
+      wb.style("italic") { |s| s.italic = true }
+      wb.style("red") { |s| s.font_color = :red }
 
       wb.sheet("Test")
       wb.row(
@@ -751,10 +751,10 @@ class PublicApiTest < Test::Unit::TestCase
   test "StyleBuilder DSL configures correctly" do
     sb = Xlsxrb::StyleBuilder.new("test")
     sb.font(bold: true, color: :red)
-    sb.fill_color(:blue)
+    sb.fill_color = :blue
     sb.border_all(style: "thick")
-    sb.align_horizontal("center")
-    sb.number_format("0.00")
+    sb.align_horizontal = "center"
+    sb.number_format = "0.00"
 
     assert_equal true, sb.font_props[:bold]
     assert_equal "FFFF0000", sb.font_props[:color]
@@ -766,7 +766,7 @@ class PublicApiTest < Test::Unit::TestCase
     assert_instance_of(Xlsxrb::Elements::Formula, f)
     assert_equal("SUM(A1:A10)", f.expression)
     assert_nil(f.cached_value)
-    assert_equal(true, f.calculate_always)
+    assert_true(f.calculate_always?)
   end
 
   test "Xlsxrb.array_formula returns an array formula element and serializes in XML" do
@@ -842,9 +842,9 @@ class PublicApiTest < Test::Unit::TestCase
     assert_nil(rt.runs[3].font)
   end
 
-  test "WorkbookBuilder#workbook_property configures correctly" do
+  test "WorkbookBuilder#workbook_properties configures correctly" do
     wb = Xlsxrb.build do |w|
-      w.workbook_property(:test_prop, "test_val")
+      w.workbook_properties(test_prop: "test_val")
       w.sheet("S")
     end
     assert_equal("test_val", wb.unmapped_data.dig(:facade, :workbook_properties, :test_prop))
@@ -853,7 +853,7 @@ class PublicApiTest < Test::Unit::TestCase
   test "WorksheetBuilder#auto_filter configures correctly" do
     wb = Xlsxrb.build do |w|
       w.sheet("S") do |s|
-        s.auto_filter("A1:B10")
+        s.auto_filter = "A1:B10"
       end
     end
     assert_equal("A1:B10", wb.sheet(0).unmapped_data.dig(:facade, :auto_filter))
@@ -865,7 +865,7 @@ class PublicApiTest < Test::Unit::TestCase
         s.freeze_pane(row: 1, column: "B")
       end
     end
-    assert_equal({ row: 1, column: 1, col: 1 }, wb.sheet(0).unmapped_data.dig(:facade, :freeze_pane))
+    assert_equal({ row: 1, column: 1 }, wb.sheet(0).unmapped_data.dig(:facade, :freeze_pane))
   end
 
   test "WorksheetBuilder#header_footer configures correctly" do
@@ -877,17 +877,17 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal({ odd_header: "test" }, wb.sheet(0).unmapped_data.dig(:facade, :header_footer))
   end
 
-  test "WorkbookBuilder#core_property configures correctly" do
+  test "WorkbookBuilder#core_properties configures correctly" do
     wb = Xlsxrb.build do |w|
-      w.core_property(:creator, "test")
+      w.core_properties(creator: "test")
       w.sheet("S")
     end
     assert_equal({ creator: "test" }, wb.unmapped_data.dig(:facade, :core_properties))
   end
 
-  test "WorkbookBuilder#app_property configures correctly" do
+  test "WorkbookBuilder#app_properties configures correctly" do
     wb = Xlsxrb.build do |w|
-      w.app_property(:company, "test")
+      w.app_properties(company: "test")
       w.sheet("S")
     end
     assert_equal({ company: "test" }, wb.unmapped_data.dig(:facade, :app_properties))
@@ -911,9 +911,8 @@ class PublicApiTest < Test::Unit::TestCase
 
   test "Elements::Workbook provides document properties and protection accessors" do
     wb = Xlsxrb.build do |w|
-      w.core_property(:title, "Quarterly Report")
-      w.core_property(:creator, "Finance Team")
-      w.app_property(:company, "Acme Corp")
+      w.core_properties(title: "Quarterly Report", creator: "Finance Team")
+      w.app_properties(company: "Acme Corp")
       w.custom_property("Confidential", true, type: :boolean)
       w.workbook_protection(lock_structure: true)
       w.sheet("S") do |s|
@@ -925,7 +924,7 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal("Finance Team", wb.core_properties.creator)
     assert_equal("Acme Corp", wb.app_properties.company)
     assert_equal(true, wb.custom_properties["Confidential"].value)
-    assert_equal(true, wb.workbook_protection.lock_structure)
+    assert_true(wb.workbook_protection.lock_structure?)
 
     # Test round-trip via write and read
     binary = Xlsxrb.write(wb)
@@ -937,7 +936,7 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal(1, read_wb.custom_properties.size)
     assert_equal("Confidential", read_wb.custom_properties["Confidential"].name)
     assert_equal(true, read_wb.custom_properties["Confidential"].value)
-    assert_equal(true, read_wb.workbook_protection.lock_structure)
+    assert_true(read_wb.workbook_protection.lock_structure?)
   end
 
   test "WorksheetBuilder#split_pane configures correctly" do
@@ -1097,8 +1096,8 @@ class PublicApiTest < Test::Unit::TestCase
 
   test "WorkbookBuilder#print_area configures correctly" do
     wb = Xlsxrb.build do |w|
-      w.print_area("A1:A2")
       w.sheet("S")
+      w.print_area = "A1:A2"
     end
     val = wb.unmapped_data.dig(:facade, :defined_names)
     assert_not_nil(val)
@@ -1120,7 +1119,7 @@ class PublicApiTest < Test::Unit::TestCase
   test "WorksheetBuilder#print_options configures correctly" do
     wb = Xlsxrb.build do |w|
       w.sheet("S") do |s|
-        s.print_options(:headings, true)
+        s.print_options(headings: true)
       end
     end
     val = wb.sheet(0).unmapped_data.dig(:facade, :print_options)
@@ -1132,7 +1131,7 @@ class PublicApiTest < Test::Unit::TestCase
   test "WorksheetBuilder#sheet_properties configures correctly" do
     wb = Xlsxrb.build do |w|
       w.sheet("S") do |s|
-        s.sheet_properties(:tab_color, "FF0000")
+        s.sheet_properties(tab_color: "FF0000")
       end
     end
     val = wb.sheet(0).unmapped_data.dig(:facade, :sheet_properties)
@@ -1144,7 +1143,7 @@ class PublicApiTest < Test::Unit::TestCase
   test "WorksheetBuilder#sheet_view configures correctly" do
     wb = Xlsxrb.build do |w|
       w.sheet("S") do |s|
-        s.sheet_view(:zoom_scale, 150)
+        s.sheet_view(zoom_scale: 150)
       end
     end
     val = wb.sheet(0).unmapped_data.dig(:facade, :sheet_view)
@@ -1275,7 +1274,7 @@ class PublicApiTest < Test::Unit::TestCase
         s.column_break(5)
       end
     end
-    breaks = wb.sheet(0).unmapped_data.dig(:facade, :col_breaks)
+    breaks = wb.sheet(0).unmapped_data.dig(:facade, :column_breaks)
     assert_equal 2, breaks[0][:id]
     assert_equal 5, breaks[1][:id]
   end
@@ -1283,7 +1282,7 @@ class PublicApiTest < Test::Unit::TestCase
   test "WorksheetBuilder#auto_filter captures range" do
     wb = Xlsxrb.build do |w|
       w.sheet("S1") do |s|
-        s.auto_filter("A1:B10")
+        s.auto_filter = "A1:B10"
       end
     end
     filter = wb.sheet(0).unmapped_data.dig(:facade, :auto_filter)
@@ -1349,7 +1348,7 @@ class PublicApiTest < Test::Unit::TestCase
     end
     pane = wb.sheet(0).unmapped_data.dig(:facade, :freeze_pane)
     assert_equal 1, pane[:row]
-    assert_equal 1, pane[:col]
+    assert_equal 1, pane[:column]
   end
 
   test "WorksheetBuilder#split_pane captures values" do
@@ -1409,7 +1408,7 @@ class PublicApiTest < Test::Unit::TestCase
   test "WorkbookBuilder#print_area captures values" do
     wb = Xlsxrb.build do |w|
       w.sheet("Sheet1")
-      w.print_area("A1:B10", sheet: "Sheet1")
+      w.print_area = "A1:B10"
     end
     dn = wb.unmapped_data.dig(:facade, :defined_names)
     assert(dn.any? { |d| d[:name] == "_xlnm.Print_Area" })
@@ -1447,10 +1446,10 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal true, col.hidden?
   end
 
-  test "WorkbookBuilder#workbook_property captures values" do
+  test "WorkbookBuilder#workbook_properties captures values" do
     wb = Xlsxrb.build do |w|
       w.sheet("S1")
-      w.workbook_property(:date1904, true)
+      w.workbook_properties(date1904: true)
     end
     props = wb.unmapped_data.dig(:facade, :workbook_properties)
     assert_equal true, props[:date1904]
@@ -1639,7 +1638,7 @@ class PublicApiTest < Test::Unit::TestCase
         s.column_break("C")
       end
     end
-    breaks = wb.sheet(0).unmapped_data.dig(:facade, :col_breaks)
+    breaks = wb.sheet(0).unmapped_data.dig(:facade, :column_breaks)
     assert breaks
   end
 
@@ -1835,51 +1834,59 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal 12, builder.font_props[:size]
   end
 
-  test "StyleBuilder#bold method" do
+  test "StyleBuilder#bold= and bold? methods" do
     builder = Xlsxrb::StyleBuilder.new
-    builder.bold(true)
+    builder.bold = true
+    assert_equal true, builder.bold?
     assert_equal true, builder.font_props[:bold]
   end
 
-  test "StyleBuilder#italic method" do
+  test "StyleBuilder#italic= and italic? methods" do
     builder = Xlsxrb::StyleBuilder.new
-    builder.italic(true)
+    builder.italic = true
+    assert_equal true, builder.italic?
     assert_equal true, builder.font_props[:italic]
   end
 
-  test "StyleBuilder#font_size method" do
+  test "StyleBuilder#font_size= method" do
     builder = Xlsxrb::StyleBuilder.new
-    builder.font_size(16)
+    builder.font_size = 16
+    assert_equal 16, builder.font_size
     assert_equal 16, builder.font_props[:size]
   end
 
-  test "StyleBuilder#font_name method" do
+  test "StyleBuilder#font_name= method" do
     builder = Xlsxrb::StyleBuilder.new
-    builder.font_name("Times")
+    builder.font_name = "Times"
+    assert_equal "Times", builder.font_name
     assert_equal "Times", builder.font_props[:name]
   end
 
-  test "StyleBuilder#font_color method" do
+  test "StyleBuilder#font_color= method" do
     builder = Xlsxrb::StyleBuilder.new
-    builder.font_color("FF00FF")
+    builder.font_color = "FF00FF"
+    assert_equal "FF00FF", builder.font_color
     assert_equal "FF00FF", builder.font_props[:color]
   end
 
-  test "StyleBuilder#underline method" do
+  test "StyleBuilder#underline= method" do
     builder = Xlsxrb::StyleBuilder.new
-    builder.underline("double")
+    builder.underline = "double"
+    assert_equal "double", builder.underline
     assert_equal "double", builder.font_props[:underline]
   end
 
-  test "StyleBuilder#strike method" do
+  test "StyleBuilder#strike= and strike? methods" do
     builder = Xlsxrb::StyleBuilder.new
-    builder.strike(true)
+    builder.strike = true
+    assert_equal true, builder.strike?
     assert_equal true, builder.font_props[:strike]
   end
 
-  test "StyleBuilder#vert_align method" do
+  test "StyleBuilder#vert_align= method" do
     builder = Xlsxrb::StyleBuilder.new
-    builder.vert_align("superscript")
+    builder.vert_align = "superscript"
+    assert_equal "superscript", builder.vert_align
     assert_equal "superscript", builder.font_props[:vert_align]
   end
 
@@ -1890,9 +1897,10 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal "112233", builder.fill_props[:fg_color]
   end
 
-  test "StyleBuilder#fill_color method" do
+  test "StyleBuilder#fill_color= method" do
     builder = Xlsxrb::StyleBuilder.new
-    builder.fill_color("00FF00")
+    builder.fill_color = "00FF00"
+    assert_equal "00FF00", builder.fill_color
     assert_equal "00FF00", builder.fill_props[:fg_color]
     assert_equal "solid", builder.fill_props[:pattern]
   end
@@ -1957,45 +1965,51 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal true, builder.border_props[:diagonal_up]
   end
 
-  test "StyleBuilder#align_horizontal method" do
+  test "StyleBuilder#align_horizontal= method" do
     builder = Xlsxrb::StyleBuilder.new
-    builder.align_horizontal("center")
+    builder.align_horizontal = "center"
+    assert_equal "center", builder.align_horizontal
     assert_equal "center", builder.alignment[:horizontal]
   end
 
-  test "StyleBuilder#align_vertical method" do
+  test "StyleBuilder#align_vertical= method" do
     builder = Xlsxrb::StyleBuilder.new
-    builder.align_vertical("center")
+    builder.align_vertical = "center"
+    assert_equal "center", builder.align_vertical
     assert_equal "center", builder.alignment[:vertical]
   end
 
-  test "StyleBuilder#wrap_text method" do
+  test "StyleBuilder#wrap_text= and wrap_text? methods" do
     builder = Xlsxrb::StyleBuilder.new
-    builder.wrap_text(true)
+    builder.wrap_text = true
+    assert_equal true, builder.wrap_text?
     assert_equal true, builder.alignment[:wrap_text]
   end
 
-  test "StyleBuilder#shrink_to_fit method" do
+  test "StyleBuilder#shrink_to_fit= and shrink_to_fit? methods" do
     builder = Xlsxrb::StyleBuilder.new
-    builder.shrink_to_fit(true)
+    builder.shrink_to_fit = true
+    assert_equal true, builder.shrink_to_fit?
     assert_equal true, builder.alignment[:shrink_to_fit]
   end
 
-  test "StyleBuilder#text_rotation method" do
+  test "StyleBuilder#text_rotation= method" do
     builder = Xlsxrb::StyleBuilder.new
-    builder.text_rotation(45)
+    builder.text_rotation = 45
+    assert_equal 45, builder.text_rotation
     assert_equal 45, builder.alignment[:text_rotation]
   end
 
-  test "StyleBuilder#indent method" do
+  test "StyleBuilder#indent= method" do
     builder = Xlsxrb::StyleBuilder.new
-    builder.indent(2)
+    builder.indent = 2
+    assert_equal 2, builder.indent
     assert_equal 2, builder.alignment[:indent]
   end
 
-  test "StyleBuilder#number_format method" do
+  test "StyleBuilder#number_format= method" do
     builder = Xlsxrb::StyleBuilder.new
-    builder.number_format(14)
+    builder.number_format = 14
     assert_equal 14, builder.number_format
   end
   test "WorksheetBuilder#row handles Hash values" do
@@ -2069,7 +2083,7 @@ class PublicApiTest < Test::Unit::TestCase
   test "Writer handles all sheet configuration options" do
     io = StringIO.new
     Xlsxrb.write(io) do |w|
-      w.workbook_property(:update_links, "always")
+      w.workbook_properties(update_links: "always")
       w.style("bold", font: { bold: true })
 
       w.sheet("Test") do |s|
@@ -2083,11 +2097,11 @@ class PublicApiTest < Test::Unit::TestCase
         s.selection("A1", sqref: "A1:A2", pane: "topRight")
 
         s.page_margins(left: 0.5, right: 0.5, top: 0.5, bottom: 0.5, header: 0.2, footer: 0.2)
-        s.print_options(:grid_lines, true)
+        s.print_options(grid_lines: true)
         s.page_setup(paper_size: 9, orientation: "landscape")
         s.header_footer(odd_header: "&L&T")
 
-        s.sheet_view(:show_grid_lines, false)
+        s.sheet_view(show_grid_lines: false)
         s.sheet_protection(password: "secret", sheet: true)
       end
     end
@@ -2131,21 +2145,21 @@ class PublicApiTest < Test::Unit::TestCase
   end
   def test_workbook_builder_public_methods
     wb = Xlsxrb::WorkbookBuilder.new(strict_excel_mode: false)
-    wb.workbook_property(:update_links, "always")
+    wb.workbook_properties(update_links: "always")
 
     # Check defined_name
     wb.defined_name("MyName", "Sheet1!$A$1", hidden: true)
 
     # Check print_area
-    wb.print_area("A1:D10", sheet: "Sheet1")
+    wb.print_area = "A1:D10"
 
     # Check print_titles
     wb.print_titles(rows: "1:2", columns: "A:B", sheet: "Sheet1")
 
     # Check properties
     wb.workbook_protection(password: "secret", lock_structure: true)
-    wb.core_property(:title, "Test Title")
-    wb.app_property(:company, "MyCompany")
+    wb.core_properties(title: "Test Title")
+    wb.app_properties(company: "MyCompany")
     wb.properties(core: { creator: "Me" }, app: { manager: "Boss" })
     wb.custom_property("MyCustomProp", "Value", type: :string)
 
@@ -2168,7 +2182,7 @@ class PublicApiTest < Test::Unit::TestCase
     wb = Xlsxrb::WorkbookBuilder.new(strict_excel_mode: false)
     wb.sheet("Sheet1") do |sheet|
       # sheet properties
-      sheet.sheet_properties(:tab_color, "FF0000")
+      sheet.sheet_properties(tab_color: "FF0000")
       sheet.page_setup(orientation: "landscape")
       sheet.page_margins(left: 0.5)
 
@@ -2320,7 +2334,7 @@ class PublicApiTest < Test::Unit::TestCase
           s.row(%w[Header1 Header2 Header3])
           s.row([1, 2, 3])
           s.merge("A1:B1")
-          s.auto_filter("A1:C2")
+          s.auto_filter = "A1:C2"
         end
       end
 
@@ -2416,7 +2430,7 @@ class PublicApiTest < Test::Unit::TestCase
     wb_built = Xlsxrb.build do |w|
       w.sheet("Formatted") do |s|
         s.sheet_format(default_row_height: 24.5, default_column_width: 18.0)
-        s.sheet_format(:outline_level_row, 2)
+        s.sheet_format(outline_level_row: 2)
         s.row(["Header 1", "Header 2"])
       end
     end
@@ -2556,7 +2570,7 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal("B2:B5", dv_cfg.sqref)
     assert_equal(:list, dv_cfg.type)
     assert_equal('"Alice,Bob,Charlie"', dv_cfg.formula1)
-    assert_equal(true, dv_cfg.allow_blank)
+    assert_true(dv_cfg.allow_blank?)
     assert_equal("Invalid Name", dv_cfg.error_title)
     assert_equal("Select a valid student name", dv_cfg.error)
 
@@ -2685,13 +2699,13 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal("History_", Xlsxrb.sanitize_sheet_name("History"))
   end
 
-  test "StreamWriter#sheet_names and WorksheetProxy#sheet_names report workbook sheets" do
+  test "StreamWriter#sheet_names reports workbook sheets and WorksheetProxy#name reports sheet name" do
     io = StringIO.new
     Xlsxrb.write(io) do |w|
       assert_equal([], w.sheet_names)
       w.sheet("Sheet1") do |s|
         s.row(["Hello"])
-        assert_equal(["Sheet1"], s.sheet_names)
+        assert_equal("Sheet1", s.name)
       end
       assert_equal(["Sheet1"], w.sheet_names)
 
@@ -2699,7 +2713,7 @@ class PublicApiTest < Test::Unit::TestCase
       assert_equal("Sales_ 2026", name)
       w.sheet(name) do |s|
         s.row([1])
-        assert_equal(["Sheet1", "Sales_ 2026"], s.sheet_names)
+        assert_equal("Sales_ 2026", s.name)
       end
       assert_equal(["Sheet1", "Sales_ 2026"], w.sheet_names)
     end
@@ -2806,11 +2820,11 @@ class PublicApiTest < Test::Unit::TestCase
       assert_equal "Sheet1", b.first_sheet
 
       # show_sheet_tabs
-      assert_nil b.show_sheet_tabs
+      assert_equal true, b.show_sheet_tabs?
       assert_equal false, (b.show_sheet_tabs = false)
-      assert_equal false, b.show_sheet_tabs
+      assert_equal false, b.show_sheet_tabs?
       assert_nil(b.show_sheet_tabs = nil)
-      assert_nil b.show_sheet_tabs
+      assert_equal true, b.show_sheet_tabs?
       assert_equal false, b.send(:show_sheet_tabs=, false)
 
       # tab_ratio
@@ -2842,13 +2856,13 @@ class PublicApiTest < Test::Unit::TestCase
         assert_equal "0000FF", s.send(:tab_color=, "0000FF")
 
         # fit_to_page
-        assert_equal false, s.fit_to_page
+        assert_equal false, s.fit_to_page?
         assert_equal true, (s.fit_to_page = true)
-        assert_equal true, s.fit_to_page
+        assert_equal true, s.fit_to_page?
         assert_equal false, (s.fit_to_page = false)
-        assert_equal false, s.fit_to_page
+        assert_equal false, s.fit_to_page?
         assert_nil(s.fit_to_page = nil)
-        assert_equal false, s.fit_to_page
+        assert_equal false, s.fit_to_page?
         assert_equal true, s.send(:fit_to_page=, true)
 
         # code_name
@@ -2899,11 +2913,11 @@ class PublicApiTest < Test::Unit::TestCase
         s.row([1, 2])
         s.table("A1:B1", columns: %w[A B]) do |t|
           assert_nil t.totals_row_count
-          assert_nil t.totals_row
+          assert_equal false, t.totals_row?
           assert_equal true, (t.totals_row = true)
-          assert_equal true, t.totals_row
+          assert_equal true, t.totals_row?
           assert_equal false, (t.totals_row = false)
-          assert_equal false, t.totals_row
+          assert_equal false, t.totals_row?
           assert_equal true, t.send(:totals_row=, true)
           assert_equal false, t.send(:totals_row=, false)
 
@@ -2911,6 +2925,27 @@ class PublicApiTest < Test::Unit::TestCase
           assert_equal 1, (t.totals_row_count = 1)
           assert_equal 1, t.totals_row_count
           assert_equal 1, t.send(:totals_row_count=, 1)
+
+          # TableBuilder boolean predicate accessors
+          assert_equal false, t.show_row_stripes?
+          t.show_row_stripes = true
+          assert_equal true, t.show_row_stripes?
+
+          assert_equal false, t.show_column_stripes?
+          t.show_column_stripes = true
+          assert_equal true, t.show_column_stripes?
+
+          assert_equal false, t.show_first_column?
+          t.show_first_column = true
+          assert_equal true, t.show_first_column?
+
+          assert_equal false, t.show_last_column?
+          t.show_last_column = true
+          assert_equal true, t.show_last_column?
+
+          assert_equal true, t.auto_filter?
+          t.auto_filter = false
+          assert_equal false, t.auto_filter?
         end
       end
     end
@@ -2933,10 +2968,11 @@ class PublicApiTest < Test::Unit::TestCase
       assert_nil w.first_sheet
       assert_equal "S1", w.send(:first_sheet=, "S1")
 
-      assert_nil w.show_sheet_tabs
+      assert_equal true, w.show_sheet_tabs?
       assert_equal false, (w.show_sheet_tabs = false)
+      assert_equal false, w.show_sheet_tabs?
       assert_nil(w.show_sheet_tabs = nil)
-      assert_nil w.show_sheet_tabs
+      assert_equal true, w.show_sheet_tabs?
       assert_equal true, w.send(:show_sheet_tabs=, true)
 
       assert_nil w.tab_ratio
@@ -2954,13 +2990,13 @@ class PublicApiTest < Test::Unit::TestCase
         assert_nil s.tab_color
         assert_equal "112233", s.send(:tab_color=, "112233")
 
-        assert_equal false, s.fit_to_page
+        assert_equal false, s.fit_to_page?
         assert_equal true, (s.fit_to_page = true)
-        assert_equal true, s.fit_to_page
+        assert_equal true, s.fit_to_page?
         assert_equal false, (s.fit_to_page = false)
-        assert_equal false, s.fit_to_page
+        assert_equal false, s.fit_to_page?
         assert_nil(s.fit_to_page = nil)
-        assert_equal false, s.fit_to_page
+        assert_equal false, s.fit_to_page?
         assert_equal true, s.send(:fit_to_page=, true)
 
         assert_nil s.code_name
@@ -3175,7 +3211,7 @@ class PublicApiTest < Test::Unit::TestCase
     builder.row([1, 2], cell_styles: [:b, nil], row_style: :r)
     rows = builder.instance_variable_get(:@rows)
     row = rows.last
-    assert_equal(:r, row.unmapped_data[:style_index])
+    assert_equal(:r, row.style_index)
     assert_equal(:b, row.cells[0].style)
   end
 
@@ -3212,21 +3248,21 @@ class PublicApiTest < Test::Unit::TestCase
         s.data_validation("A1:A10") { |v| v.list = %w[X Y] }
         s.sheet_protection(sheet: true)
         s.selection("B2:C5")
-        s.sheet_property(:tab_color, "FF0000")
+        s.sheet_properties(tab_color: "FF0000")
         s.sheet_properties(enable_format_conditions_calculation: true)
         s.print_options(grid_lines: true)
         s.sheet_view(show_grid_lines: false)
       end
     end
     ws = wb.sheet(0)
-    assert_equal(true, wb.workbook_protection.lock_structure)
+    assert_true(wb.workbook_protection.lock_structure?)
     assert_equal(1, ws.data_validations.size)
-    assert_equal(true, ws.sheet_protection.sheet)
+    assert_true(ws.sheet_protection.sheet?)
     assert_equal "B2:C5", ws.selection.sqref
     assert_equal "FF0000", ws.sheet_properties.tab_color
-    assert ws.sheet_properties.enable_format_conditions_calculation
-    assert ws.print_options.grid_lines
-    assert_equal false, ws.sheet_view.show_grid_lines
+    assert ws.sheet_properties.enable_format_conditions_calculation?
+    assert ws.print_options.grid_lines?
+    assert_false ws.sheet_view.show_grid_lines?
   end
 
   test "Commit 4: page breaks, column spelling, and image accessors" do
@@ -3250,7 +3286,7 @@ class PublicApiTest < Test::Unit::TestCase
     wb = Xlsxrb.build do |b|
       b.defined_name("GlobalRate", "0.15", scope: :workbook)
       b.sheet("S1") do |s|
-        s.auto_filter("A1:D10")
+        s.auto_filter = "A1:D10"
         s.filter_column("B", %w[Active Pending])
         s.filter_column(:C, ["High"])
         s.defined_name("LocalRef", columns: "B", rows: 2, scope: "S1")
@@ -3357,8 +3393,8 @@ class PublicApiTest < Test::Unit::TestCase
       b.style(:headline, bold: true, font_size: 16)
       builder_styles = b.styles
       b.sheet("Main") do |s|
-        ret_af = s.auto_filter("A1:C10")
-        assert_nil ret_af
+        s.auto_filter = "A1:C10"
+        assert_equal "A1:C10", s.auto_filter
         ret_fc = s.filter_column("A", ["Val"])
         assert_nil ret_fc
         ret_sort = s.sort_state("A1:C10", [{ col_id: 0 }])
@@ -3399,61 +3435,29 @@ class PublicApiTest < Test::Unit::TestCase
         assert_instance_of(Xlsxrb::Elements::PrintOptions, s.print_options)
 
         # Keyword arguments return nil
-        ret_sv = s.sheet_view(show_grid_lines: false, zoom_scale: 120)
+        ret_sv = s.sheet_view(show_grid_lines: false, zoom_scale: 120, show_zeros: false)
         assert_nil(ret_sv)
-        assert_equal(false, s.sheet_view.show_grid_lines)
+        assert_false(s.sheet_view.show_grid_lines?)
+        assert_false(s.sheet_view.show_zeros?)
         assert_equal(120, s.sheet_view.zoom_scale)
 
-        ret_sf = s.sheet_format(default_row_height: 25.5, default_column_width: 14.0)
+        ret_sf = s.sheet_format(default_row_height: 25.5, default_column_width: 14.0, outline_level_row: 3)
         assert_nil(ret_sf)
         assert_equal(25.5, s.sheet_format.default_row_height)
         assert_equal(14.0, s.sheet_format.default_column_width)
-
-        ret_sp = s.sheet_properties(tab_color: "FF0000", filter_mode: true)
-        assert_nil(ret_sp)
-        assert_equal("FF0000", s.sheet_properties.tab_color)
-        assert_equal(true, s.sheet_properties.filter_mode)
-
-        ret_po = s.print_options(grid_lines: true, headings: false)
-        assert_nil(ret_po)
-        assert_equal(true, s.print_options.grid_lines)
-        assert_equal(false, s.print_options.headings)
-
-        # 2 positional arguments return nil
-        assert_nil(s.sheet_view(:show_zeros, false))
-        assert_equal(false, s.sheet_view.show_zeros)
-
-        assert_nil(s.sheet_format(:outline_level_row, 3))
         assert_equal(3, s.sheet_format.outline_level_row)
 
-        assert_nil(s.sheet_properties(:code_name, "SheetCode"))
+        ret_sp = s.sheet_properties(tab_color: "FF0000", filter_mode: true, code_name: "SheetCode")
+        assert_nil(ret_sp)
+        assert_equal("FF0000", s.sheet_properties.tab_color)
+        assert_true(s.sheet_properties.filter_mode?)
         assert_equal("SheetCode", s.sheet_properties.code_name)
 
-        assert_nil(s.print_options(:horizontal_centered, true))
-        assert_equal(true, s.print_options.horizontal_centered)
-
-        # 1 positional Hash argument returns nil
-        assert_nil(s.sheet_view({ view: "pageLayout" }))
-        assert_equal("pageLayout", s.sheet_view.view)
-
-        assert_nil(s.sheet_format({ thick_top: true }))
-        assert_equal(true, s.sheet_format.thick_top)
-
-        assert_nil(s.sheet_properties({ fit_to_page: true }))
-        assert_equal(true, s.sheet_properties.fit_to_page)
-
-        assert_nil(s.print_options({ vertical_centered: true }))
-        assert_equal(true, s.print_options.vertical_centered)
-
-        # 1 positional Value Object argument returns nil
-        existing_sv = s.sheet_view
-        assert_nil(s.sheet_view(existing_sv))
-        existing_sf = s.sheet_format
-        assert_nil(s.sheet_format(existing_sf))
-        existing_sp = s.sheet_properties
-        assert_nil(s.sheet_properties(existing_sp))
-        existing_po = s.print_options
-        assert_nil(s.print_options(existing_po))
+        ret_po = s.print_options(grid_lines: true, headings: false, horizontal_centered: true)
+        assert_nil(ret_po)
+        assert_true(s.print_options.grid_lines?)
+        assert_false(s.print_options.headings?)
+        assert_true(s.print_options.horizontal_centered?)
 
         # Setter methods = accept Hash and Value Object
         s.sheet_view = { zoom_scale: 150 }
@@ -3472,9 +3476,9 @@ class PublicApiTest < Test::Unit::TestCase
         assert_equal("0000FF", s.sheet_properties.tab_color)
 
         s.print_options = { grid_lines: false }
-        assert_equal(false, s.print_options.grid_lines)
+        assert_false(s.print_options.grid_lines?)
         s.print_options = Xlsxrb::Elements::PrintOptions.new(grid_lines: true)
-        assert_equal(true, s.print_options.grid_lines)
+        assert_true(s.print_options.grid_lines?)
       end
     end
 
@@ -3494,32 +3498,23 @@ class PublicApiTest < Test::Unit::TestCase
         assert_instance_of(Xlsxrb::Elements::PrintOptions, w.print_options)
 
         # Keyword args return nil
-        assert_nil(proxy.sheet_view(show_grid_lines: false, zoom_scale: 125))
-        assert_equal(false, proxy.sheet_view.show_grid_lines)
+        assert_nil(proxy.sheet_view(show_grid_lines: false, zoom_scale: 125, tab_selected: true))
+        assert_false(proxy.sheet_view.show_grid_lines?)
         assert_equal(125, proxy.sheet_view.zoom_scale)
+        assert_true(proxy.sheet_view.tab_selected?)
 
-        assert_nil(proxy.sheet_format(default_row_height: 28.0, default_column_width: 16.0))
+        assert_nil(proxy.sheet_format(default_row_height: 28.0, default_column_width: 16.0, zero_height: true))
         assert_equal(28.0, proxy.sheet_format.default_row_height)
         assert_equal(16.0, proxy.sheet_format.default_column_width)
+        assert_true(proxy.sheet_format.zero_height?)
 
-        assert_nil(proxy.sheet_properties(tab_color: "AABBCC"))
+        assert_nil(proxy.sheet_properties(tab_color: "AABBCC", code_name: "CodeStream"))
         assert_equal("AABBCC", proxy.sheet_properties.tab_color)
-
-        assert_nil(proxy.print_options(headings: true))
-        assert_equal(true, proxy.print_options.headings)
-
-        # 2 positional args
-        assert_nil(proxy.sheet_view(:tab_selected, true))
-        assert_equal(true, proxy.sheet_view.tab_selected)
-
-        assert_nil(proxy.sheet_format(:zero_height, true))
-        assert_equal(true, proxy.sheet_format.zero_height)
-
-        assert_nil(proxy.sheet_properties(:code_name, "CodeStream"))
         assert_equal("CodeStream", proxy.sheet_properties.code_name)
 
-        assert_nil(proxy.print_options(:horizontal_centered, false))
-        assert_equal(false, proxy.print_options.horizontal_centered)
+        assert_nil(proxy.print_options(headings: true, horizontal_centered: false))
+        assert_true(proxy.print_options.headings?)
+        assert_false(proxy.print_options.horizontal_centered?)
 
         # Setters = on proxy and writer
         proxy.sheet_view = { zoom_scale: 110 }
@@ -3529,7 +3524,7 @@ class PublicApiTest < Test::Unit::TestCase
         proxy.sheet_properties = { tab_color: "112233" }
         assert_equal("112233", proxy.sheet_properties.tab_color)
         proxy.print_options = { grid_lines: true }
-        assert_equal(true, proxy.print_options.grid_lines)
+        assert_true(proxy.print_options.grid_lines?)
 
         w.sheet_view = { zoom_scale: 100 }
         assert_equal(100, w.sheet_view.zoom_scale)
@@ -3538,7 +3533,7 @@ class PublicApiTest < Test::Unit::TestCase
         w.sheet_properties = { tab_color: "FFFFFF" }
         assert_equal("FFFFFF", w.sheet_properties.tab_color)
         w.print_options = { grid_lines: false }
-        assert_equal(false, w.print_options.grid_lines)
+        assert_false(w.print_options.grid_lines?)
 
         proxy.row([1, 2, 3])
       end
@@ -3549,13 +3544,12 @@ class PublicApiTest < Test::Unit::TestCase
     # 1. WorkbookBuilder getters and escape_formulas
     wb = Xlsxrb.build(escape_formulas: true) do |b|
       assert_equal(true, b.escape_formulas?)
-      assert_equal(true, b.escape_formulas)
 
-      b.core_property(:creator, "Tester")
+      b.core_properties(creator: "Tester")
       assert_equal("Tester", b.core_properties.creator)
       assert_instance_of(Xlsxrb::Elements::CoreProperties, b.core_properties)
 
-      b.app_property(:company, "Acme Corp")
+      b.app_properties(company: "Acme Corp")
       assert_equal("Acme Corp", b.app_properties.company)
       assert_instance_of(Xlsxrb::Elements::AppProperties, b.app_properties)
 
@@ -3564,13 +3558,13 @@ class PublicApiTest < Test::Unit::TestCase
       assert_instance_of(Xlsxrb::Elements::CustomProperty, b.custom_properties["Department"])
 
       b.workbook_protection(lock_structure: true)
-      assert_equal(true, b.workbook_protection.lock_structure)
+      assert_true(b.workbook_protection.lock_structure?)
       assert_instance_of(Xlsxrb::Elements::WorkbookProtection, b.workbook_protection)
       b.workbook_protection = { lock_structure: false }
-      assert_equal(false, b.workbook_protection.lock_structure)
+      assert_false(b.workbook_protection.lock_structure?)
 
       b.workbook_properties = { update_links: "never", filter_privacy: true }
-      assert_equal(true, b.workbook_properties.filter_privacy)
+      assert_true(b.workbook_properties.filter_privacy?)
       assert_instance_of(Xlsxrb::Elements::WorkbookProperties, b.workbook_properties)
 
       b.defined_name("TAX_RATE", "0.10")
@@ -3592,13 +3586,12 @@ class PublicApiTest < Test::Unit::TestCase
     Tempfile.create(["sw_symmetry", ".xlsx"]) do |f|
       Xlsxrb.write(f.path, escape_formulas: true) do |w|
         assert_equal(true, w.escape_formulas?)
-        assert_equal(true, w.escape_formulas)
 
-        w.core_property(:creator, "StreamTester")
+        w.core_properties(creator: "StreamTester")
         assert_equal("StreamTester", w.core_properties.creator)
         assert_instance_of(Xlsxrb::Elements::CoreProperties, w.core_properties)
 
-        w.app_property(:company, "StreamCorp")
+        w.app_properties(company: "StreamCorp")
         assert_equal("StreamCorp", w.app_properties.company)
         assert_instance_of(Xlsxrb::Elements::AppProperties, w.app_properties)
 
@@ -3607,13 +3600,13 @@ class PublicApiTest < Test::Unit::TestCase
         assert_instance_of(Xlsxrb::Elements::CustomProperty, w.custom_properties["Client"])
 
         w.workbook_protection(lock_structure: true)
-        assert_equal(true, w.workbook_protection.lock_structure)
+        assert_true(w.workbook_protection.lock_structure?)
         assert_instance_of(Xlsxrb::Elements::WorkbookProtection, w.workbook_protection)
         w.workbook_protection = { lock_structure: false }
-        assert_equal(false, w.workbook_protection.lock_structure)
+        assert_false(w.workbook_protection.lock_structure?)
 
         w.workbook_properties = { update_links: "never", filter_privacy: true }
-        assert_equal(true, w.workbook_properties.filter_privacy)
+        assert_true(w.workbook_properties.filter_privacy?)
         assert_instance_of(Xlsxrb::Elements::WorkbookProperties, w.workbook_properties)
 
         w.defined_name("DISCOUNT", "0.05")
@@ -3699,5 +3692,346 @@ class PublicApiTest < Test::Unit::TestCase
 
     # Invalid coordinates fallback to unmodified formula
     assert_equal("A2*2", Xlsxrb.expand_formula("A2*2", from_ref: "invalid", to_ref: "B2"))
+  end
+
+  test "property accessors and columns are consistent across builders" do
+    # 1. WorksheetBuilder
+    Xlsxrb.build do |b|
+      b.sheet("Sheet1") do |s|
+        # print_area getter/setter
+        assert_nil s.print_area
+        s.print_area = "A1:E20"
+        assert_equal "A1:E20", s.print_area
+        s.print_area = nil
+        assert_nil s.print_area
+
+        # auto_filter getter/setter
+        assert_nil s.auto_filter
+        s.auto_filter = "A1:D10"
+        assert_equal "A1:D10", s.auto_filter
+        s.auto_filter = nil
+        assert_nil s.auto_filter
+
+        # columns 0-arg reader
+        assert_equal [], s.columns
+        s.column(0, width: 15)
+        cols = s.columns
+        assert_equal 1, cols.size
+        assert_instance_of Xlsxrb::Elements::Column, cols.first
+
+        # page_setup
+        assert_instance_of Xlsxrb::Elements::PageSetup, s.page_setup
+        ret = s.page_setup(orientation: :landscape)
+        assert_nil ret
+        assert_equal :landscape, s.page_setup.orientation
+        s.page_setup = { orientation: :portrait }
+        assert_equal :portrait, s.page_setup.orientation
+
+        # page_margins
+        assert_nil s.page_margins
+        ret = s.page_margins(left: 1.0, right: 1.0)
+        assert_nil ret
+        assert_instance_of Xlsxrb::Elements::PageMargins, s.page_margins
+        assert_equal 1.0, s.page_margins.left
+        s.page_margins = { left: 0.5 }
+        assert_equal 0.5, s.page_margins.left
+
+        # header_footer
+        assert_instance_of Xlsxrb::Elements::HeaderFooter, s.header_footer
+        ret = s.header_footer(odd_header: "&CTest")
+        assert_nil ret
+        assert_equal "&CTest", s.header_footer.odd_header
+        s.header_footer = { odd_header: "&CUpdated" }
+        assert_equal "&CUpdated", s.header_footer.odd_header
+
+        # sheet_protection
+        assert_nil s.sheet_protection
+        ret = s.sheet_protection(sheet: true, password: "pw")
+        assert_nil ret
+        assert_instance_of Xlsxrb::Elements::SheetProtection, s.sheet_protection
+        assert_true s.sheet_protection.sheet?
+        s.sheet_protection = false
+        assert_nil s.sheet_protection
+        s.sheet_protection = true
+        assert_true s.sheet_protection.sheet?
+
+        # freeze_pane
+        assert_nil s.freeze_pane
+        ret = s.freeze_pane(row: 2, column: 1)
+        assert_nil ret
+        assert_instance_of Xlsxrb::Elements::FreezePane, s.freeze_pane
+        assert_equal 2, s.freeze_pane.row
+        s.freeze_pane = nil
+        assert_nil s.freeze_pane
+
+        # split_pane
+        assert_nil s.split_pane
+        ret = s.split_pane(x_split: 100, y_split: 200)
+        assert_nil ret
+        assert_instance_of Xlsxrb::Elements::SplitPane, s.split_pane
+        assert_equal 100, s.split_pane.x_split
+        s.split_pane = nil
+        assert_nil s.split_pane
+
+        # selection
+        assert_nil s.selection
+        ret = s.selection("B2")
+        assert_nil ret
+        sel = s.selection
+        assert_instance_of Xlsxrb::Elements::Selection, sel
+        assert_equal "B2", sel.active_cell
+        s.selection = { active_cell: "C3" }
+        assert_equal "C3", s.selection.active_cell
+
+        # sort_state
+        assert_nil s.sort_state
+        ret = s.sort_state("A1:D10", [{ ref: "B1:B10", descending: true }])
+        assert_nil ret
+        assert_instance_of Xlsxrb::Elements::SortState, s.sort_state
+        assert_equal "A1:D10", s.sort_state.ref
+        s.sort_state = nil
+        assert_nil s.sort_state
+
+        # outline_properties
+        assert_equal({}, s.outline_properties)
+        ret = s.outline_properties(summary_below: false)
+        assert_nil ret
+        assert_equal false, s.outline_properties[:summary_below]
+        s.outline_properties = { summary_below: true }
+        assert_equal true, s.outline_properties[:summary_below]
+
+        # print_titles
+        assert_nil s.print_titles
+        ret = s.print_titles(rows: "1:2")
+        assert_nil ret
+        assert_instance_of Xlsxrb::Elements::PrintTitles, s.print_titles
+        assert_equal "1:2", s.print_titles.rows
+        s.print_titles = nil
+        assert_nil s.print_titles
+
+        # TableBuilder
+        s.row([1, 2])
+        s.table("A1:B1") do |t|
+          assert_nil t.column("Col1")
+          assert_nil t.column("Col2", totals_row_function: "sum")
+          tbl_cols = t.columns
+          assert_equal 2, tbl_cols.size
+          assert_equal "Col1", tbl_cols[0].name
+          assert_equal "Col2", tbl_cols[1].name
+          assert_equal "sum", tbl_cols[1].totals_row_function
+        end
+      end
+    end
+
+    # 2. StreamWriter and WorksheetProxy
+    io = StringIO.new
+    Xlsxrb.write(io) do |w|
+      w.sheet("StreamSheet") do |s|
+        # print_area
+        assert_nil s.print_area
+        assert_nil w.print_area
+        s.print_area = "A1:B10"
+        assert_equal "A1:B10", s.print_area
+        assert_equal "A1:B10", w.print_area
+        s.print_area = nil
+        assert_nil s.print_area
+        assert_nil w.print_area
+
+        # auto_filter
+        assert_nil s.auto_filter
+        assert_nil w.auto_filter
+        s.auto_filter = "A1:C5"
+        assert_equal "A1:C5", s.auto_filter
+        assert_equal "A1:C5", w.auto_filter
+        s.auto_filter = nil
+        assert_nil s.auto_filter
+        assert_nil w.auto_filter
+
+        # columns
+        assert_equal [], s.columns
+        assert_equal [], w.columns
+        s.column(0, width: 20)
+        assert_equal 1, s.columns.size
+        assert_instance_of Xlsxrb::Elements::Column, s.columns.first
+        assert_equal 1, w.columns.size
+
+        # page_setup
+        assert_instance_of Xlsxrb::Elements::PageSetup, s.page_setup
+        ret = s.page_setup(orientation: :landscape)
+        assert_nil ret
+        assert_equal :landscape, s.page_setup.orientation
+        s.page_setup = { orientation: :portrait }
+        assert_equal :portrait, s.page_setup.orientation
+
+        # page_margins
+        assert_nil s.page_margins
+        ret = s.page_margins(left: 0.75)
+        assert_nil ret
+        assert_instance_of Xlsxrb::Elements::PageMargins, s.page_margins
+        assert_equal 0.75, s.page_margins.left
+        s.page_margins = { left: 0.5 }
+        assert_equal 0.5, s.page_margins.left
+
+        # header_footer
+        assert_instance_of Xlsxrb::Elements::HeaderFooter, s.header_footer
+        ret = s.header_footer(odd_header: "Header")
+        assert_nil ret
+        assert_equal "Header", s.header_footer.odd_header
+        s.header_footer = { odd_header: "Updated" }
+        assert_equal "Updated", s.header_footer.odd_header
+
+        # sheet_protection
+        assert_nil s.sheet_protection
+        ret = s.sheet_protection(sheet: true)
+        assert_nil ret
+        assert_instance_of Xlsxrb::Elements::SheetProtection, s.sheet_protection
+        assert_true s.sheet_protection.sheet?
+        s.sheet_protection = nil
+        assert_nil s.sheet_protection
+
+        # freeze_pane
+        assert_nil s.freeze_pane
+        ret = s.freeze_pane(row: 1)
+        assert_nil ret
+        assert_instance_of Xlsxrb::Elements::FreezePane, s.freeze_pane
+        s.freeze_pane = nil
+        assert_nil s.freeze_pane
+
+        # split_pane
+        assert_nil s.split_pane
+        ret = s.split_pane(x_split: 50, y_split: 60)
+        assert_nil ret
+        assert_instance_of Xlsxrb::Elements::SplitPane, s.split_pane
+        s.split_pane = nil
+        assert_nil s.split_pane
+
+        # selection
+        assert_nil s.selection
+        ret = s.selection("D4")
+        assert_nil ret
+        assert_instance_of Xlsxrb::Elements::Selection, s.selection
+        assert_equal "D4", s.selection.active_cell
+        s.selection = { active_cell: "E5" }
+        assert_equal "E5", s.selection.active_cell
+
+        # sort_state
+        assert_nil s.sort_state
+        ret = s.sort_state("A1:C10", [{ col_id: 0, descending: true }])
+        assert_nil ret
+        assert_instance_of Xlsxrb::Elements::SortState, s.sort_state
+        s.sort_state = nil
+        assert_nil s.sort_state
+
+        # outline_properties
+        assert_equal({}, s.outline_properties)
+        ret = s.outline_properties(summary_below: false)
+        assert_nil ret
+        assert_equal false, s.outline_properties[:summary_below]
+        s.outline_properties = { summary_below: true }
+        assert_equal true, s.outline_properties[:summary_below]
+
+        # print_titles
+        assert_nil s.print_titles
+        ret = s.print_titles(rows: "1:1")
+        assert_nil ret
+        assert_instance_of Xlsxrb::Elements::PrintTitles, s.print_titles
+        assert_equal "1:1", s.print_titles.rows
+        s.print_titles = nil
+        assert_nil s.print_titles
+      end
+    end
+  end
+
+  test "builder boolean predicate methods across TableBuilder, DataValidationBuilder, and ConditionalFormatBuilder" do
+    # TableBuilder
+    tb = Xlsxrb::TableBuilder.new("A1:D10")
+    assert_equal false, tb.show_row_stripes?
+    tb.show_row_stripes = true
+    assert_equal true, tb.show_row_stripes?
+
+    assert_equal false, tb.show_column_stripes?
+    tb.show_column_stripes = true
+    assert_equal true, tb.show_column_stripes?
+
+    assert_equal false, tb.show_first_column?
+    tb.show_first_column = true
+    assert_equal true, tb.show_first_column?
+
+    assert_equal false, tb.show_last_column?
+    tb.show_last_column = true
+    assert_equal true, tb.show_last_column?
+
+    assert_equal false, tb.totals_row?
+    tb.totals_row = true
+    assert_equal true, tb.totals_row?
+    tb.totals_row = false
+    assert_equal false, tb.totals_row?
+
+    assert_equal true, tb.auto_filter?
+    tb.auto_filter = false
+    assert_equal false, tb.auto_filter?
+
+    assert_false tb.respond_to?(:show_row_stripes)
+    assert_false tb.respond_to?(:show_column_stripes)
+    assert_false tb.respond_to?(:show_first_column)
+    assert_false tb.respond_to?(:show_last_column)
+    assert_false tb.respond_to?(:totals_row)
+    assert_false tb.respond_to?(:auto_filter)
+
+    # DataValidationBuilder
+    dv = Xlsxrb::DataValidationBuilder.new("A1:A10")
+    assert_equal false, dv.allow_blank?
+    dv.allow_blank = true
+    assert_equal true, dv.allow_blank?
+
+    assert_equal false, dv.show_input_message?
+    dv.show_input_message = true
+    assert_equal true, dv.show_input_message?
+
+    assert_equal false, dv.show_error_message?
+    dv.show_error_message = true
+    assert_equal true, dv.show_error_message?
+
+    assert_false dv.respond_to?(:allow_blank)
+    assert_false dv.respond_to?(:show_input_message)
+    assert_false dv.respond_to?(:show_error_message)
+
+    # ConditionalFormatBuilder
+    cf = Xlsxrb::ConditionalFormatBuilder.new("B1:B10")
+    assert_equal false, cf.bold?
+    cf.bold = true
+    assert_equal true, cf.bold?
+
+    assert_equal false, cf.italic?
+    cf.italic = true
+    assert_equal true, cf.italic?
+
+    assert_equal false, cf.stop_if_true?
+    cf.stop_if_true = true
+    assert_equal true, cf.stop_if_true?
+
+    assert_equal false, cf.above_average?
+    cf.above_average = true
+    assert_equal true, cf.above_average?
+
+    assert_equal false, cf.equal_average?
+    cf.equal_average = true
+    assert_equal true, cf.equal_average?
+
+    assert_equal false, cf.percent?
+    cf.percent = true
+    assert_equal true, cf.percent?
+
+    assert_equal false, cf.bottom?
+    cf.bottom = true
+    assert_equal true, cf.bottom?
+
+    assert_false cf.respond_to?(:bold)
+    assert_false cf.respond_to?(:italic)
+    assert_false cf.respond_to?(:stop_if_true)
+    assert_false cf.respond_to?(:above_average)
+    assert_false cf.respond_to?(:equal_average)
+    assert_false cf.respond_to?(:percent)
+    assert_false cf.respond_to?(:bottom)
   end
 end

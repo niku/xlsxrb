@@ -232,8 +232,7 @@ module Xlsxrb
       sub: "subscript",
       baseline: "baseline"
     }.freeze
-    OMITTED = Object.new.freeze
-    private_constant :COLORS, :CSS_COLORS, :BORDER_STYLES, :BORDER_INDEX_MAP, :OMITTED
+    private_constant :COLORS, :CSS_COLORS, :BORDER_STYLES, :BORDER_INDEX_MAP
 
     # Normalizes a color definition (CSS color name, hex code, or RGB integer) to an OpenXML hex color string.
     #
@@ -370,33 +369,33 @@ module Xlsxrb
     def apply_options!(**opts)
       if opts.key?(:font)
         font_opts = opts[:font] || {}
-        bold(font_opts[:bold]) if font_opts.key?(:bold)
-        italic(font_opts[:italic]) if font_opts.key?(:italic)
-        font_size(font_opts[:size]) if font_opts.key?(:size)
-        font_name(font_opts[:name]) if font_opts.key?(:name)
-        font_color(font_opts[:color]) if font_opts.key?(:color)
-        underline(font_opts[:underline]) if font_opts.key?(:underline)
-        strike(font_opts[:strike]) if font_opts.key?(:strike)
-        vert_align(font_opts[:vert_align]) if font_opts.key?(:vert_align)
-        superscript(font_opts[:superscript]) if font_opts.key?(:superscript)
-        subscript(font_opts[:subscript]) if font_opts.key?(:subscript)
+        self.bold = font_opts[:bold] if font_opts.key?(:bold)
+        self.italic = font_opts[:italic] if font_opts.key?(:italic)
+        self.font_size = font_opts[:size] if font_opts.key?(:size)
+        self.font_name = font_opts[:name] if font_opts.key?(:name)
+        self.font_color = font_opts[:color] if font_opts.key?(:color)
+        self.underline = font_opts[:underline] if font_opts.key?(:underline)
+        self.strike = font_opts[:strike] if font_opts.key?(:strike)
+        self.vert_align = font_opts[:vert_align] if font_opts.key?(:vert_align)
+        self.superscript = font_opts[:superscript] if font_opts.key?(:superscript)
+        self.subscript = font_opts[:subscript] if font_opts.key?(:subscript)
       else
-        bold(opts[:bold]) if opts.key?(:bold)
-        italic(opts[:italic]) if opts.key?(:italic)
-        font_size(opts[:font_size]) if opts.key?(:font_size)
-        font_name(opts[:font_name]) if opts.key?(:font_name)
-        font_color(opts[:font_color]) if opts.key?(:font_color)
-        underline(opts[:underline]) if opts.key?(:underline)
-        strike(opts[:strike]) if opts.key?(:strike)
-        vert_align(opts[:vert_align]) if opts.key?(:vert_align)
-        superscript(opts[:superscript]) if opts.key?(:superscript)
-        subscript(opts[:subscript]) if opts.key?(:subscript)
+        self.bold = opts[:bold] if opts.key?(:bold)
+        self.italic = opts[:italic] if opts.key?(:italic)
+        self.font_size = opts[:font_size] if opts.key?(:font_size)
+        self.font_name = opts[:font_name] if opts.key?(:font_name)
+        self.font_color = opts[:font_color] if opts.key?(:font_color)
+        self.underline = opts[:underline] if opts.key?(:underline)
+        self.strike = opts[:strike] if opts.key?(:strike)
+        self.vert_align = opts[:vert_align] if opts.key?(:vert_align)
+        self.superscript = opts[:superscript] if opts.key?(:superscript)
+        self.subscript = opts[:subscript] if opts.key?(:subscript)
       end
 
       if opts.key?(:fill)
         fill_opts = opts[:fill] || {}
         if fill_opts.key?(:color)
-          fill_color(fill_opts[:color])
+          self.fill_color = fill_opts[:color]
         else
           fill_pattern(
             fill_opts[:pattern] || "solid",
@@ -405,7 +404,7 @@ module Xlsxrb
           )
         end
       else
-        fill_color(opts[:fill_color]) if opts.key?(:fill_color)
+        self.fill_color = opts[:fill_color] if opts.key?(:fill_color)
         if opts.key?(:fill_pattern)
           pattern = opts[:fill_pattern] || {}
           fill_pattern(
@@ -432,32 +431,32 @@ module Xlsxrb
         border_bottom(**opts[:border_bottom]) if opts.key?(:border_bottom) && opts[:border_bottom]
       end
 
-      number_format(opts[:number_format]) if opts.key?(:number_format)
+      self.number_format = opts[:number_format] if opts.key?(:number_format)
 
       if opts.key?(:alignment)
         align_opts = opts[:alignment] || {}
-        align_horizontal(align_opts[:horizontal]) if align_opts.key?(:horizontal)
-        align_vertical(align_opts[:vertical]) if align_opts.key?(:vertical)
-        wrap_text(align_opts[:wrap_text]) if align_opts.key?(:wrap_text)
-        text_rotation(align_opts[:text_rotation]) if align_opts.key?(:text_rotation)
-        indent(align_opts[:indent]) if align_opts.key?(:indent)
-        shrink_to_fit(align_opts[:shrink_to_fit]) if align_opts.key?(:shrink_to_fit)
+        self.align_horizontal = align_opts[:horizontal] if align_opts.key?(:horizontal)
+        self.align_vertical = align_opts[:vertical] if align_opts.key?(:vertical)
+        self.wrap_text = align_opts[:wrap_text] if align_opts.key?(:wrap_text)
+        self.text_rotation = align_opts[:text_rotation] if align_opts.key?(:text_rotation)
+        self.indent = align_opts[:indent] if align_opts.key?(:indent)
+        self.shrink_to_fit = align_opts[:shrink_to_fit] if align_opts.key?(:shrink_to_fit)
       else
-        align_horizontal(opts[:align_horizontal]) if opts.key?(:align_horizontal)
-        align_vertical(opts[:align_vertical]) if opts.key?(:align_vertical)
-        wrap_text(opts[:wrap_text]) if opts.key?(:wrap_text)
-        text_rotation(opts[:text_rotation]) if opts.key?(:text_rotation)
-        indent(opts[:indent]) if opts.key?(:indent)
-        shrink_to_fit(opts[:shrink_to_fit]) if opts.key?(:shrink_to_fit)
+        self.align_horizontal = opts[:align_horizontal] if opts.key?(:align_horizontal)
+        self.align_vertical = opts[:align_vertical] if opts.key?(:align_vertical)
+        self.wrap_text = opts[:wrap_text] if opts.key?(:wrap_text)
+        self.text_rotation = opts[:text_rotation] if opts.key?(:text_rotation)
+        self.indent = opts[:indent] if opts.key?(:indent)
+        self.shrink_to_fit = opts[:shrink_to_fit] if opts.key?(:shrink_to_fit)
       end
 
       if opts.key?(:protection)
         prot_opts = opts[:protection] || {}
-        locked(prot_opts[:locked]) if prot_opts.key?(:locked)
-        hidden(prot_opts[:hidden]) if prot_opts.key?(:hidden)
+        self.locked = prot_opts[:locked] if prot_opts.key?(:locked)
+        self.hidden = prot_opts[:hidden] if prot_opts.key?(:hidden)
       else
-        locked(opts[:locked]) if opts.key?(:locked)
-        hidden(opts[:hidden]) if opts.key?(:hidden)
+        self.locked = opts[:locked] if opts.key?(:locked)
+        self.hidden = opts[:hidden] if opts.key?(:hidden)
       end
 
       self
@@ -469,20 +468,21 @@ module Xlsxrb
     # @param opts [Hash] The font properties.
     # @return [Hash, void]
     # @api public
-    #: (**untyped) -> (Hash[Symbol, untyped] | void)
+    #: () -> Hash[Symbol, untyped]
+    #: (**untyped) -> void
     def font(**opts)
       return @font_props if opts.empty?
 
-      bold(opts[:bold]) if opts.key?(:bold)
-      italic(opts[:italic]) if opts.key?(:italic)
-      font_size(opts[:size]) if opts.key?(:size)
-      font_name(opts[:name]) if opts.key?(:name)
-      font_color(opts[:color]) if opts.key?(:color)
-      underline(opts[:underline]) if opts.key?(:underline)
-      strike(opts[:strike]) if opts.key?(:strike)
-      vert_align(opts[:vert_align]) if opts.key?(:vert_align)
-      superscript(opts[:superscript]) if opts.key?(:superscript)
-      subscript(opts[:subscript]) if opts.key?(:subscript)
+      self.bold = opts[:bold] if opts.key?(:bold)
+      self.italic = opts[:italic] if opts.key?(:italic)
+      self.font_size = opts[:size] if opts.key?(:size)
+      self.font_name = opts[:name] if opts.key?(:name)
+      self.font_color = opts[:color] if opts.key?(:color)
+      self.underline = opts[:underline] if opts.key?(:underline)
+      self.strike = opts[:strike] if opts.key?(:strike)
+      self.vert_align = opts[:vert_align] if opts.key?(:vert_align)
+      self.superscript = opts[:superscript] if opts.key?(:superscript)
+      self.subscript = opts[:subscript] if opts.key?(:subscript)
       nil
     end
 
@@ -494,18 +494,6 @@ module Xlsxrb
     def font=(opts)
       font(**opts)
       opts
-    end
-
-    # Sets or returns whether font is bold.
-    # @param value [Boolean, Object]
-    # @return [Boolean, void]
-    # @api public
-    #: (?untyped value) -> (bool | void)
-    def bold(value = OMITTED)
-      return bold? if value.equal?(OMITTED)
-
-      @font_props[:bold] = value ? true : false
-      nil
     end
 
     # Sets the font to bold.
@@ -525,18 +513,6 @@ module Xlsxrb
       @font_props[:bold] ? true : false
     end
 
-    # Sets or returns whether font is italic.
-    # @param value [Boolean, Object]
-    # @return [Boolean, void]
-    # @api public
-    #: (?untyped value) -> (bool | void)
-    def italic(value = OMITTED)
-      return italic? if value.equal?(OMITTED)
-
-      @font_props[:italic] = value ? true : false
-      nil
-    end
-
     # Sets the font to italic.
     # @param value [Boolean]
     # @return [Boolean]
@@ -554,17 +530,12 @@ module Xlsxrb
       @font_props[:italic] ? true : false
     end
 
-    # Sets or gets the font size in points.
-    # @param size_value [Integer, Float, Object, nil] The size in points (supports fractional sizes such as 10.5).
-    # @return [Integer, Float, void, nil]
+    # Gets the font size in points.
+    # @return [Integer, Float, nil]
     # @api public
-    #: (?Numeric? size_value) -> (Numeric | void | nil)
-    def font_size(size_value = OMITTED)
-      return @font_props[:size] if size_value.equal?(OMITTED) || size_value.nil?
-
-      val = size_value.is_a?(Float) && (size_value % 1).zero? ? size_value.to_i : size_value
-      @font_props[:size] = val
-      nil
+    #: () -> (Integer | Float | nil)
+    def font_size
+      @font_props[:size]
     end
 
     # Sets the font size in points.
@@ -578,16 +549,12 @@ module Xlsxrb
       size_value
     end
 
-    # Gets or sets the font name.
-    # @param name [String, Object] The font name.
-    # @return [String, void, nil]
+    # Gets the font name.
+    # @return [String, nil]
     # @api public
-    #: (?untyped name) -> (String | void | nil)
-    def font_name(name = OMITTED)
-      return @font_props[:name] if name.equal?(OMITTED)
-
-      @font_props[:name] = name
-      nil
+    #: () -> String?
+    def font_name
+      @font_props[:name]
     end
 
     # Sets the font name.
@@ -599,16 +566,12 @@ module Xlsxrb
       @font_props[:name] = name
     end
 
-    # Gets or sets the font color.
-    # @param color [String, Symbol, Object] The color.
-    # @return [String, Symbol, void, nil]
+    # Gets the font color.
+    # @return [String, nil]
     # @api public
-    #: (?untyped color) -> (String | Symbol | void | nil)
-    def font_color(color = OMITTED)
-      return @font_props[:color] if color.equal?(OMITTED)
-
-      @font_props[:color] = resolve_color(color)
-      nil
+    #: () -> String?
+    def font_color
+      @font_props[:color]
     end
 
     # Sets the font color.
@@ -621,23 +584,12 @@ module Xlsxrb
       color
     end
 
-    # Sets or gets the font underline style.
-    # @param val [String, Symbol, Boolean, Object] The underline style (e.g., 'single', :double, :single_accounting, :double_accounting).
-    # @return [String, Symbol, Boolean, void, nil]
+    # Gets the font underline style.
+    # @return [String, Symbol, Boolean, nil]
     # @api public
-    #: (?untyped val) -> (String | Symbol | bool | void | nil)
-    def underline(val = OMITTED)
-      return @font_props[:underline] if val.equal?(OMITTED)
-
-      mapped = if [true, "single"].include?(val)
-                 "single"
-               elsif val == false
-                 nil
-               else
-                 UNDERLINE_MAP[val.to_sym] || val.to_s
-               end
-      @font_props[:underline] = mapped
-      nil
+    #: () -> (String | Symbol | bool | nil)
+    def underline
+      @font_props[:underline]
     end
 
     # Sets the font underline style.
@@ -646,7 +598,14 @@ module Xlsxrb
     # @api public
     #: (String | Symbol | bool val) -> (String | Symbol | bool)
     def underline=(val)
-      underline(val)
+      mapped = if [true, "single"].include?(val)
+                 "single"
+               elsif val == false
+                 nil
+               else
+                 UNDERLINE_MAP[val.to_sym] || val.to_s
+               end
+      @font_props[:underline] = mapped
       val
     end
 
@@ -656,18 +615,6 @@ module Xlsxrb
     #: () -> bool
     def underline?
       !@font_props[:underline].nil? && @font_props[:underline] != false
-    end
-
-    # Sets or returns whether font has strikethrough.
-    # @param value [Boolean, Object]
-    # @return [Boolean, void]
-    # @api public
-    #: (?untyped value) -> (bool | void)
-    def strike(value = OMITTED)
-      return strike? if value.equal?(OMITTED)
-
-      @font_props[:strike] = value ? true : false
-      nil
     end
 
     # Sets the font strikethrough.
@@ -687,17 +634,12 @@ module Xlsxrb
       @font_props[:strike] ? true : false
     end
 
-    # Gets or sets the vertical alignment of the font.
-    # @param value [String, Symbol, Object] The alignment value ('superscript', 'subscript', 'baseline', :superscript, :subscript).
-    # @return [String, void, nil]
+    # Gets the vertical alignment of the font.
+    # @return [String, nil]
     # @api public
-    #: (?untyped value) -> (String | void | nil)
-    def vert_align(value = OMITTED)
-      return @font_props[:vert_align] if value.equal?(OMITTED)
-
-      mapped = VERT_ALIGN_MAP[value.to_sym] || value.to_s
-      @font_props[:vert_align] = mapped
-      nil
+    #: () -> String?
+    def vert_align
+      @font_props[:vert_align]
     end
 
     # Sets the vertical alignment of the font.
@@ -706,20 +648,19 @@ module Xlsxrb
     # @api public
     #: (untyped val) -> untyped
     def vert_align=(val)
-      vert_align(val)
+      mapped = VERT_ALIGN_MAP[val.to_sym] || val.to_s
+      @font_props[:vert_align] = mapped
       val
     end
 
-    # Sets or gets whether the font is superscript.
-    # @param value [Boolean, Object] Whether to apply superscript.
-    # @return [Boolean, void]
+    # Sets the font to superscript.
+    # @param val [Boolean]
+    # @return [Boolean]
     # @api public
-    #: (?untyped value) -> (bool | void)
-    def superscript(value = OMITTED)
-      return superscript? if value.equal?(OMITTED)
-
-      @font_props[:vert_align] = value ? "superscript" : "baseline"
-      nil
+    #: (untyped val) -> untyped
+    def superscript=(val)
+      @font_props[:vert_align] = val ? "superscript" : "baseline"
+      val
     end
 
     # Returns whether superscript is enabled.
@@ -730,26 +671,14 @@ module Xlsxrb
       @font_props[:vert_align] == "superscript"
     end
 
-    # Sets the font to superscript.
+    # Sets the font to subscript.
     # @param val [Boolean]
     # @return [Boolean]
     # @api public
     #: (untyped val) -> untyped
-    def superscript=(val)
-      superscript(val)
+    def subscript=(val)
+      @font_props[:vert_align] = val ? "subscript" : "baseline"
       val
-    end
-
-    # Sets or gets whether the font is subscript.
-    # @param value [Boolean, Object] Whether to apply subscript.
-    # @return [Boolean, void]
-    # @api public
-    #: (?untyped value) -> (bool | void)
-    def subscript(value = OMITTED)
-      return subscript? if value.equal?(OMITTED)
-
-      @font_props[:vert_align] = value ? "subscript" : "baseline"
-      nil
     end
 
     # Returns whether subscript is enabled.
@@ -760,29 +689,20 @@ module Xlsxrb
       @font_props[:vert_align] == "subscript"
     end
 
-    # Sets the font to subscript.
-    # @param val [Boolean]
-    # @return [Boolean]
-    # @api public
-    #: (untyped val) -> untyped
-    def subscript=(val)
-      subscript(val)
-      val
-    end
-
     # --- Fill Properties ---
 
     # Sets or gets the fill pattern.
-    # @param pattern [String, Symbol, Object] The pattern type.
+    # @param pattern [String, Symbol, nil] The pattern type.
     # @param fg_color [String, Symbol, nil] The foreground color.
     # @param bg_color [String, Symbol, nil] The background color.
     # @return [String, Symbol, void, nil]
     # @api public
-    #: (?untyped pattern, ?fg_color: String | Symbol | nil, ?bg_color: String | Symbol | nil) -> (untyped | void)
-    def fill_pattern(pattern = OMITTED, fg_color: nil, bg_color: nil)
-      return @fill_props[:pattern] if pattern.equal?(OMITTED)
+    #: () -> (String | Symbol | untyped)
+    #: (?untyped pattern, ?fg_color: String | Symbol | nil, ?bg_color: String | Symbol | nil) -> void
+    def fill_pattern(pattern = nil, fg_color: nil, bg_color: nil)
+      return @fill_props[:pattern] if pattern.nil? && fg_color.nil? && bg_color.nil?
 
-      @fill_props[:pattern] = pattern
+      @fill_props[:pattern] = pattern if pattern
       @fill_props[:fg_color] = fg_color if fg_color
       @fill_props[:bg_color] = bg_color if bg_color
       nil
@@ -802,17 +722,12 @@ module Xlsxrb
       pattern
     end
 
-    # Gets or sets a solid fill color.
-    # @param color [String, Symbol, Object] The color.
-    # @return [String, Symbol, void, nil]
+    # Gets a solid fill color.
+    # @return [String, nil]
     # @api public
-    #: (?untyped color) -> (String | Symbol | void | nil)
-    def fill_color(color = OMITTED)
-      return @fill_props[:fg_color] if color.equal?(OMITTED)
-
-      @fill_props[:pattern] = "solid"
-      @fill_props[:fg_color] = resolve_color(color)
-      nil
+    #: () -> String?
+    def fill_color
+      @fill_props[:fg_color]
     end
 
     # Sets a solid fill color.
@@ -821,21 +736,23 @@ module Xlsxrb
     # @api public
     #: (String | Symbol color) -> (String | Symbol)
     def fill_color=(color)
-      fill_color(color)
+      @fill_props[:pattern] = "solid"
+      @fill_props[:fg_color] = resolve_color(color)
       color
     end
 
     # Configures fill properties or returns current fill properties.
-    # @param pattern [String, Symbol, Object]
+    # @param pattern [String, Symbol, nil]
     # @param fg_color [String, Symbol, nil]
     # @param bg_color [String, Symbol, nil]
     # @return [Hash, void]
     # @api public
-    #: (?pattern: untyped, ?fg_color: String | Symbol | nil, ?bg_color: String | Symbol | nil) -> (Hash[Symbol, untyped] | void)
-    def fill(pattern: OMITTED, fg_color: nil, bg_color: nil)
-      return @fill_props if pattern.equal?(OMITTED) && fg_color.nil? && bg_color.nil?
+    #: () -> Hash[Symbol, untyped]
+    #: (?pattern: untyped, ?fg_color: String | Symbol | nil, ?bg_color: String | Symbol | nil) -> void
+    def fill(pattern: nil, fg_color: nil, bg_color: nil)
+      return @fill_props if pattern.nil? && fg_color.nil? && bg_color.nil?
 
-      pat = pattern.equal?(OMITTED) ? "solid" : pattern
+      pat = pattern || "solid"
       fill_pattern(pat, fg_color: resolve_color(fg_color), bg_color: resolve_color(bg_color))
       nil
     end
@@ -855,14 +772,15 @@ module Xlsxrb
     end
 
     # Sets or gets a gradient fill.
-    # @param type [String, Object] The gradient type.
+    # @param type [String, nil] The gradient type.
     # @param degree [Numeric, nil] The degree.
     # @param stops [Array] The gradient stops.
     # @return [Hash, void, nil]
     # @api public
-    #: (?type: untyped, ?degree: Numeric | nil, ?stops: Array[untyped]) -> (Hash[Symbol, untyped] | void | nil)
-    def fill_gradient(type: OMITTED, degree: nil, stops: [])
-      return @fill_props[:gradient] if type.equal?(OMITTED)
+    #: () -> Hash[Symbol, untyped]?
+    #: (?type: untyped, ?degree: Numeric | nil, ?stops: Array[untyped]) -> void
+    def fill_gradient(type: nil, degree: nil, stops: [])
+      return @fill_props[:gradient] if type.nil? && degree.nil? && stops.empty?
 
       @fill_props[:gradient] = {
         type: type,
@@ -884,7 +802,8 @@ module Xlsxrb
     # @param diagonal [Hash, nil] Options for diagonal border.
     # @return [Hash, void]
     # @api public
-    #: (?all: Hash[Symbol, untyped]?, ?left: Hash[Symbol, untyped]?, ?right: Hash[Symbol, untyped]?, ?top: Hash[Symbol, untyped]?, ?bottom: Hash[Symbol, untyped]?, ?diagonal: Hash[Symbol, untyped]?) -> (Hash[Symbol, untyped] | void)
+    #: () -> Hash[Symbol, untyped]
+    #: (?all: Hash[Symbol, untyped]?, ?left: Hash[Symbol, untyped]?, ?right: Hash[Symbol, untyped]?, ?top: Hash[Symbol, untyped]?, ?bottom: Hash[Symbol, untyped]?, ?diagonal: Hash[Symbol, untyped]?) -> void
     def border(all: nil, left: nil, right: nil, top: nil, bottom: nil, diagonal: nil)
       return @border_props if all.nil? && left.nil? && right.nil? && top.nil? && bottom.nil? && diagonal.nil?
 
@@ -1006,16 +925,17 @@ module Xlsxrb
     # @param relative_indent [Integer, nil] Relative indentation level.
     # @return [Hash, void]
     # @api public
-    #: (?horizontal: (String | Symbol)?, ?vertical: (String | Symbol)?, ?wrap_text: bool?, ?text_rotation: Integer?, ?indent: Integer?, ?shrink_to_fit: bool?, ?reading_order: Integer?, ?justify_last_line: bool?, ?relative_indent: Integer?) -> (Hash[Symbol, untyped] | void)
+    #: () -> Hash[Symbol, untyped]
+    #: (?horizontal: (String | Symbol)?, ?vertical: (String | Symbol)?, ?wrap_text: bool?, ?text_rotation: Integer?, ?indent: Integer?, ?shrink_to_fit: bool?, ?reading_order: Integer?, ?justify_last_line: bool?, ?relative_indent: Integer?) -> void
     def alignment(horizontal: nil, vertical: nil, wrap_text: nil, text_rotation: nil, indent: nil, shrink_to_fit: nil, reading_order: nil, justify_last_line: nil, relative_indent: nil)
       return @alignment if horizontal.nil? && vertical.nil? && wrap_text.nil? && text_rotation.nil? && indent.nil? && shrink_to_fit.nil? && reading_order.nil? && justify_last_line.nil? && relative_indent.nil?
 
-      align_horizontal(horizontal) unless horizontal.nil?
-      align_vertical(vertical) unless vertical.nil?
-      wrap_text(wrap_text) unless wrap_text.nil?
-      text_rotation(text_rotation) unless text_rotation.nil?
-      indent(indent) unless indent.nil?
-      shrink_to_fit(shrink_to_fit) unless shrink_to_fit.nil?
+      self.align_horizontal = horizontal unless horizontal.nil?
+      self.align_vertical = vertical unless vertical.nil?
+      self.wrap_text = wrap_text unless wrap_text.nil?
+      self.text_rotation = text_rotation unless text_rotation.nil?
+      self.indent = indent unless indent.nil?
+      self.shrink_to_fit = shrink_to_fit unless shrink_to_fit.nil?
       @alignment[:reading_order] = reading_order unless reading_order.nil?
       @alignment[:justify_last_line] = justify_last_line unless justify_last_line.nil?
       @alignment[:relative_indent] = relative_indent unless relative_indent.nil?
@@ -1033,16 +953,12 @@ module Xlsxrb
       opts
     end
 
-    # Gets or sets horizontal alignment.
-    # @param value [String, Symbol, Object] The alignment.
-    # @return [String, Symbol, void, nil]
+    # Gets horizontal alignment.
+    # @return [String, Symbol, nil]
     # @api public
-    #: (?untyped value) -> (String | Symbol | void | nil)
-    def align_horizontal(value = OMITTED)
-      return @alignment[:horizontal] if value.equal?(OMITTED)
-
-      @alignment[:horizontal] = value
-      nil
+    #: () -> (String | Symbol | nil)
+    def align_horizontal
+      @alignment[:horizontal]
     end
 
     # Sets horizontal alignment.
@@ -1054,16 +970,12 @@ module Xlsxrb
       @alignment[:horizontal] = value
     end
 
-    # Gets or sets vertical alignment.
-    # @param value [String, Symbol, Object] The alignment.
-    # @return [String, Symbol, void, nil]
+    # Gets vertical alignment.
+    # @return [String, Symbol, nil]
     # @api public
-    #: (?untyped value) -> (String | Symbol | void | nil)
-    def align_vertical(value = OMITTED)
-      return @alignment[:vertical] if value.equal?(OMITTED)
-
-      @alignment[:vertical] = value
-      nil
+    #: () -> (String | Symbol | nil)
+    def align_vertical
+      @alignment[:vertical]
     end
 
     # Sets vertical alignment.
@@ -1073,18 +985,6 @@ module Xlsxrb
     #: (String | Symbol value) -> (String | Symbol)
     def align_vertical=(value)
       @alignment[:vertical] = value
-    end
-
-    # Sets or gets text wrapping.
-    # @param value [Boolean, Object] Whether to wrap text.
-    # @return [Boolean, void]
-    # @api public
-    #: (?untyped value) -> (bool | void)
-    def wrap_text(value = OMITTED)
-      return wrap_text? if value.equal?(OMITTED)
-
-      @alignment[:wrap_text] = value ? true : false
-      nil
     end
 
     # Sets text wrapping.
@@ -1104,18 +1004,6 @@ module Xlsxrb
       @alignment[:wrap_text] ? true : false
     end
 
-    # Sets or gets shrink to fit.
-    # @param value [Boolean, Object] Whether to shrink text.
-    # @return [Boolean, void]
-    # @api public
-    #: (?untyped value) -> (bool | void)
-    def shrink_to_fit(value = OMITTED)
-      return shrink_to_fit? if value.equal?(OMITTED)
-
-      @alignment[:shrink_to_fit] = value ? true : false
-      nil
-    end
-
     # Sets shrink to fit.
     # @param value [Boolean]
     # @return [Boolean]
@@ -1133,16 +1021,12 @@ module Xlsxrb
       @alignment[:shrink_to_fit] ? true : false
     end
 
-    # Gets or sets text rotation.
-    # @param value [Numeric, Object] The rotation angle.
-    # @return [Numeric, void, nil]
+    # Gets text rotation.
+    # @return [Numeric, nil]
     # @api public
-    #: (?untyped value) -> (Numeric | void | nil)
-    def text_rotation(value = OMITTED)
-      return @alignment[:text_rotation] if value.equal?(OMITTED)
-
-      @alignment[:text_rotation] = value
-      nil
+    #: () -> (Numeric | nil)
+    def text_rotation
+      @alignment[:text_rotation]
     end
 
     # Sets text rotation.
@@ -1154,16 +1038,12 @@ module Xlsxrb
       @alignment[:text_rotation] = value
     end
 
-    # Gets or sets text indent.
-    # @param value [Numeric, Object] The indent level.
-    # @return [Numeric, void, nil]
+    # Gets text indent.
+    # @return [Integer, nil]
     # @api public
-    #: (?untyped value) -> (Numeric | void | nil)
-    def indent(value = OMITTED)
-      return @alignment[:indent] if value.equal?(OMITTED)
-
-      @alignment[:indent] = value.to_i
-      nil
+    #: () -> (Integer | nil)
+    def indent
+      @alignment[:indent]
     end
 
     # Sets text indent.
@@ -1185,12 +1065,13 @@ module Xlsxrb
     # @param hidden [Boolean, nil]
     # @return [Hash, void]
     # @api public
-    #: (?locked: bool?, ?hidden: bool?) -> (Hash[Symbol, untyped] | void)
+    #: () -> Hash[Symbol, untyped]
+    #: (?locked: bool?, ?hidden: bool?) -> void
     def protection(locked: nil, hidden: nil)
       return @protection if locked.nil? && hidden.nil?
 
-      @protection[:locked] = locked unless locked.nil?
-      @protection[:hidden] = hidden unless hidden.nil?
+      self.locked = locked unless locked.nil?
+      self.hidden = hidden unless hidden.nil?
       nil
     end
 
@@ -1203,19 +1084,6 @@ module Xlsxrb
     def protection=(opts)
       protection(**opts)
       opts
-    end
-
-    # Sets or gets whether the cell is locked.
-    #
-    # @param value [Boolean, Object]
-    # @return [Boolean, void]
-    # @api public
-    #: (?untyped value) -> (bool | void)
-    def locked(value = OMITTED)
-      return locked? if value.equal?(OMITTED)
-
-      @protection[:locked] = value ? true : false
-      nil
     end
 
     # Sets whether the cell is locked.
@@ -1234,19 +1102,6 @@ module Xlsxrb
     #: () -> bool
     def locked?
       @protection[:locked] != false
-    end
-
-    # Sets or gets whether the cell formula is hidden.
-    #
-    # @param value [Boolean, Object]
-    # @return [Boolean, void]
-    # @api public
-    #: (?untyped value) -> (bool | void)
-    def hidden(value = OMITTED)
-      return hidden? if value.equal?(OMITTED)
-
-      @protection[:hidden] = value ? true : false
-      nil
     end
 
     # Sets whether the cell formula is hidden.
@@ -1269,16 +1124,12 @@ module Xlsxrb
 
     # --- Number Format ---
 
-    # Sets or gets the number format.
-    # @param num_fmt_id [String, Integer, Object, nil] The format id or format string.
-    # @return [String, Integer, void, nil]
+    # Gets the number format.
+    # @return [String, Integer, nil]
     # @api public
-    #: (?String | Integer | Object | nil num_fmt_id) -> (String | Integer | void | nil)
-    def number_format(num_fmt_id = OMITTED)
-      return @num_fmt_id if num_fmt_id.equal?(OMITTED) || num_fmt_id.nil?
-
-      @num_fmt_id = num_fmt_id
-      nil
+    #: () -> (String | Integer | nil)
+    def number_format
+      @num_fmt_id
     end
 
     # Sets the number format.

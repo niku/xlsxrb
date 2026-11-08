@@ -249,13 +249,13 @@ module Xlsxrb
       @options[:data_labels] = value
     end
 
-    # Gets whether to plot visible cells only.
+    # Returns whether to plot visible cells only.
     #
-    # @return [Boolean, nil]
+    # @return [Boolean]
     # @api public
-    #: () -> bool?
-    def plot_visible_only
-      @options[:plot_visible_only]
+    #: () -> bool
+    def plot_visible_only?
+      @options[:plot_visible_only] ? true : false
     end
 
     # Sets whether to plot visible cells only.
@@ -403,13 +403,13 @@ module Xlsxrb
       @options[:secondary_value_axis] = value
     end
 
-    # Gets whether to show the legend key in data labels.
+    # Returns whether to show the legend key in data labels.
     #
-    # @return [Boolean, nil]
+    # @return [Boolean]
     # @api public
-    #: () -> bool?
-    def show_legend_key
-      @options[:show_legend_key]
+    #: () -> bool
+    def show_legend_key?
+      @options[:show_legend_key] ? true : false
     end
 
     # Sets whether to show the legend key in data labels.
@@ -637,13 +637,13 @@ module Xlsxrb
         @options[:data_labels] = value
       end
 
-      # Gets line smoothing for this series.
+      # Returns line smoothing for this series.
       #
-      # @return [Boolean, nil]
+      # @return [Boolean]
       # @api public
-      #: () -> bool?
-      def smooth
-        @options[:smooth]
+      #: () -> bool
+      def smooth?
+        @options[:smooth] ? true : false
       end
 
       # Sets line smoothing for this series.

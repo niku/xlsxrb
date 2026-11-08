@@ -33,7 +33,7 @@ Even in cases where proxy patterns (e.g. `WorksheetProxy`) or OOXML builder mapp
    * Streaming: `Xlsxrb.read` (streaming read, $O(1)$ memory) and `Xlsxrb.write` (streaming write).
    * In-Memory: `Xlsxrb.load` (in-memory parsing into `Elements::Workbook` with immediate file close) and `Xlsxrb.build` (declarative document creation).
 
-   `Xlsxrb.modify`, `Workbook#update_sheet`, and `Worksheet#update_cell` are deprecated; runtime transformations use `Xlsxrb.read` -> `Xlsxrb.write` streaming pipelines, while template report generation uses declarative `Xlsxrb.write` DSL scripts. Users should not instantiate low-level internal classes (such as `Xlsxrb::Ooxml::WorkbookWriter`) directly.
+   `Xlsxrb.modify`, `Workbook#update_sheet`, and `Worksheet#update_cell` were removed in 0.2.0 in favor of `Xlsxrb.read` -> `Xlsxrb.write` streaming pipelines and `Xlsxrb.load` for in-memory inspection. Users should not instantiate low-level internal classes (such as `Xlsxrb::Ooxml::WorkbookWriter`) directly.
 
 2. The `@api public` Contract (SemVer Guarantee):
    Any module, class, or method tagged with `# @api public` in its YARD documentation is guaranteed to follow Semantic Versioning.
@@ -50,7 +50,7 @@ Even in cases where proxy patterns (e.g. `WorksheetProxy`) or OOXML builder mapp
 
 ```
 lib/
-  xlsxrb.rb                          # Facade: Xlsxrb.read / .write / .build / .modify
+  xlsxrb.rb                          # Facade: Xlsxrb.read / .write / .load / .build
   xlsxrb/
     version.rb                       # Xlsxrb::VERSION
     dsl_helpers.rb                   # DSL normalization and validation helpers
@@ -147,10 +147,9 @@ Acts as the primary bridge, offering symmetric In-Memory and Streaming APIs.
 | :--- | :--- | :--- |
 | `Xlsxrb.read(source, &block)` | Streaming | Streams sheets (`StreamSheet`) and rows (`StreamRow`) with $O(1)$ constant memory. |
 | `Xlsxrb.write(target, &block)` | Streaming | Streams rows directly to file/IO with minimal memory. |
-| `Xlsxrb.read(source)` | In-Memory | Loads from file path, IO, or raw binary string into a `Workbook`. |
 | `Xlsxrb.write(target, wb)` / `Xlsxrb.write(wb)` | In-Memory | Saves `Workbook` to file/IO, or returns raw binary string (single argument). |
-| `Xlsxrb.build(&block)` | In-Memory | Builds an immutable `Workbook` using DSL. |
-| `Xlsxrb.modify(source, target, &block)` | In-Memory | Updates cells/sheets of an existing workbook. |
+| `Xlsxrb.load(source, **opts)` | In-Memory | Loads from file path, IO, or raw binary string into an immutable `Workbook`. |
+| `Xlsxrb.build(**opts, &block)` | In-Memory | Builds an immutable `Workbook` using DSL. |
 
 ### Facade Expansion Policy
 
@@ -180,14 +179,14 @@ Examples:
 s.style("header", bold: true, font_size: 14, font_color: "FFFF0000")
 
 s.style("header") do |style|
-  style.bold(true)
-  style.font_size(14)
-  style.font_color("FFFF0000")
+  style.bold = true
+  style.font_size = 14
+  style.font_color = "FFFF0000"
 end
 
-w.add_chart(type: :bar, title: "Sales", series: [{ cat_ref: "A1:A3", val_ref: "B1:B3" }])
+s.chart(type: :bar, title: "Sales", series: [{ cat_ref: "A1:A3", val_ref: "B1:B3" }])
 
-w.add_chart do |chart|
+s.chart do |chart|
   chart.type = :bar
   chart.title = "Sales"
   chart.series(cat_ref: "A1:A3", val_ref: "B1:B3")
@@ -343,7 +342,7 @@ Key memory invariant: only one Row / Cell (plus the shared-string table) is pars
 caller's block
   │
   ▼  block receives a StreamWriter context object
-  │  context.add_row([val1, val2, ...])
+  │  s.row([val1, val2, ...])
   │
   ▼
 Ooxml::WorksheetWriter     ── converts array → <row><c>…</c></row> XML

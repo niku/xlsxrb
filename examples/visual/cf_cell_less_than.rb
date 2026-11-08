@@ -3,7 +3,7 @@
 require "xlsxrb"
 output_path = ARGV[0] || "cf_cell_less_than.xlsx"
 Xlsxrb.write(output_path) do |wb|
-  wb.style("center") { |style| style.align_horizontal("center") }
+  wb.style("center") { |style| style.align_horizontal = "center" }
   wb.sheet("CF Less") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)

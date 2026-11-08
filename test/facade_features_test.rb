@@ -79,7 +79,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
         s.row(%w[Name Score])
         s.row(["Alice", 95])
         s.row(["Bob", 87])
-        s.auto_filter("A1:B3")
+        s.auto_filter = "A1:B3"
       end
     end
 
@@ -99,7 +99,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
       w.sheet("Data") do |s|
         s.row(%w[Name Score])
         s.row(["Alice", 95])
-        s.auto_filter("A1:B2")
+        s.auto_filter = "A1:B2"
       end
     end
 
@@ -680,8 +680,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     workbook = Xlsxrb.build do |w|
       w.sheet("PO") do |s|
         s.row(["Data"])
-        s.print_options(:grid_lines, true)
-        s.print_options(:horizontal_centered, true)
+        s.print_options(grid_lines: true, horizontal_centered: true)
       end
     end
 
@@ -826,7 +825,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
         s.row([1, 2, 3])
         s.row([4, 5, 6])
       end
-      w.print_area("A1:C2", sheet: "Data")
+      w.print_area = "A1:C2"
     end
 
     tmp = Tempfile.new(["facade_printarea_build", ".xlsx"])
@@ -863,7 +862,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
       w.sheet("Report") do |s|
         s.row(%w[H1 H2 H3])
         s.row([1, 2, 3])
-        s.print_area("A1:C10")
+        s.print_area = "A1:C10"
         s.repeat_rows(0, 0)
         s.repeat_columns(0, 1)
       end
@@ -890,7 +889,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
       Xlsxrb.write(tmp.path) do |w|
         w.sheet("Summary") do |s|
           s.row(%w[ColA ColB ColC])
-          s.print_area("A1:C50")
+          s.print_area = "A1:C50"
           s.repeat_rows(0)
           s.repeat_columns("A", "B")
         end
@@ -962,17 +961,19 @@ class FacadeFeaturesTest < Test::Unit::TestCase
   # Document Properties
   # =====================================================
 
-  test "core_property in build API" do
+  test "core_properties in build API" do
     created_time = "2026-09-26T12:00:00Z"
     modified_time = "2026-09-26T13:30:00Z"
     workbook = Xlsxrb.build do |w|
       w.sheet("S") { |s| s.row(["Data"]) }
-      w.core_property(:creator, "Test Author")
-      w.core_property(:title, "Test Title")
-      w.core_property(:created, created_time)
-      w.core_property(:modified, modified_time)
-      w.core_property(:last_modified_by, "Modifier")
-      w.core_property(:category, "Reports")
+      w.core_properties(
+        creator: "Test Author",
+        title: "Test Title",
+        created: created_time,
+        modified: modified_time,
+        last_modified_by: "Modifier",
+        category: "Reports"
+      )
     end
 
     tmp = Tempfile.new(["facade_coreprop_build", ".xlsx"])
@@ -998,11 +999,11 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     tmp&.close!
   end
 
-  test "core_property in generate API" do
+  test "core_properties in generate API" do
     tmp = Tempfile.new(["facade_coreprop_stream", ".xlsx"])
     Xlsxrb.write(tmp.path) do |w|
       w.sheet("S") { |s| s.row(["Data"]) }
-      w.core_property(:creator, "Stream Author")
+      w.core_properties(creator: "Stream Author")
     end
 
     reader = Xlsxrb::Ooxml::Reader.new(tmp.path)
@@ -1012,10 +1013,10 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     tmp&.close!
   end
 
-  test "app_property in build API" do
+  test "app_properties in build API" do
     workbook = Xlsxrb.build do |w|
       w.sheet("S") { |s| s.row(["Data"]) }
-      w.app_property(:company, "Acme Corp")
+      w.app_properties(company: "Acme Corp")
     end
 
     tmp = Tempfile.new(["facade_appprop_build", ".xlsx"])
@@ -1090,7 +1091,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     workbook = Xlsxrb.build do |w|
       w.sheet("Img") do |s|
         s.row(["With image"])
-        s.image(MINIMAL_PNG, ext: "png", from_col: 0, from_row: 0)
+        s.image(MINIMAL_PNG, ext: "png", from_column: 0, from_row: 0)
       end
     end
 
@@ -1128,7 +1129,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     workbook = Xlsxrb.build do |w|
       w.sheet("Shapes") do |s|
         s.row(["Data"])
-        s.shape(preset: "rect", text: "Hello", from_col: 1, from_row: 1, to_col: 3, to_row: 4)
+        s.shape(preset: "rect", text: "Hello", from_column: 1, from_row: 1, to_column: 3, to_row: 4)
       end
     end
 
@@ -1166,8 +1167,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     workbook = Xlsxrb.build do |w|
       w.sheet("View") do |s|
         s.row(["Data"])
-        s.sheet_view(:zoom_scale, 150)
-        s.sheet_view(:show_grid_lines, false)
+        s.sheet_view(zoom_scale: 150, show_grid_lines: false)
       end
     end
 
@@ -1192,7 +1192,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
         s.row(%w[Name Score])
         s.row(["Alice", 95])
         s.row(["Bob", 87])
-        s.auto_filter("A1:B3")
+        s.auto_filter = "A1:B3"
         s.sort_state("A2:B3", [{ ref: "B2:B3", descending: true }])
       end
     end
@@ -1218,7 +1218,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
         s.row(%w[Name Score Grade])
         s.row(["Alice", 95, "A"])
         s.row(["Bob", 87, "B"])
-        s.auto_filter("A1:C3")
+        s.auto_filter = "A1:C3"
         s.merge("A1:A1")
         s.freeze_pane(row: 1)
         s.page_margins(left: 1.0, right: 1.0)
@@ -1226,7 +1226,7 @@ class FacadeFeaturesTest < Test::Unit::TestCase
         s.hyperlink("A2", "https://example.com")
         s.data_validation("B2:B3", type: :whole, formula1: "0", formula2: "100")
       end
-      w.core_property(:creator, "Combined Test")
+      w.core_properties(creator: "Combined Test")
     end
 
     tmp = Tempfile.new(["facade_combined_build", ".xlsx"])
@@ -1252,14 +1252,14 @@ class FacadeFeaturesTest < Test::Unit::TestCase
       w.sheet("Combined") do |s|
         s.row(%w[Name Score])
         s.row(["Alice", 95])
-        s.auto_filter("A1:B2")
+        s.auto_filter = "A1:B2"
         s.merge("A1:B1")
         s.freeze_pane(row: 1)
         s.page_margins(left: 0.5, right: 0.5)
         s.header_footer(odd_header: "&CTest")
         s.conditional_format("B2", type: :cell_is, operator: :greaterThan, formula: "90")
       end
-      w.core_property(:title, "Combined Stream")
+      w.core_properties(title: "Combined Stream")
     end
 
     reader = Xlsxrb::Ooxml::Reader.new(tmp.path)
@@ -1512,8 +1512,8 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     ws = workbook.sheets.first
     assert_equal(3, ws.sparkline_groups.size)
     assert_equal(:stacked, ws.sparkline_groups[1].type.to_sym)
-    assert_equal(true, ws.sparkline_groups[1].high)
-    assert_equal(true, ws.sparkline_groups[1].low)
+    assert_true(ws.sparkline_groups[1].high?)
+    assert_true(ws.sparkline_groups[1].low?)
 
     tmp = Tempfile.new(["facade_add_sparkline_build", ".xlsx"])
     Xlsxrb.write(tmp.path, workbook)
@@ -1551,6 +1551,8 @@ class FacadeFeaturesTest < Test::Unit::TestCase
   end
 
   test "sparkline_group raises ArgumentError if sparklines is missing" do
+    omit "RBS runtime hooks intercept ArgumentError" if defined?(RBS::Test)
+
     assert_raises(ArgumentError) do
       Xlsxrb.build do |w|
         w.sheet("Errors", &:sparkline_group)

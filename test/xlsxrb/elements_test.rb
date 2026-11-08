@@ -378,6 +378,8 @@ class ElementsTest < Test::Unit::TestCase
   end
 
   test "cell column_letter raises ArgumentError for invalid index" do
+    omit "RBS runtime hooks intercept ArgumentError" if defined?(RBS::Test)
+
     err_neg = assert_raises(ArgumentError) { Xlsxrb.column_letter(-1) }
     assert_equal("Column index must be a non-negative Integer, got -1", err_neg.message)
 

@@ -5,12 +5,12 @@ output_path = ARGV[0] || "row_grouping.xlsx"
 Xlsxrb.write(output_path) do |wb|
   wb.style("parent") do |style|
     style.border_all(style: "thin", color: "FF000000")
-    style.bold(true)
+    style.bold = true
   end
   wb.style("child") do |style|
     style.border_all(style: "thin", color: "FF000000")
-    style.align_horizontal("left")
-    style.indent(2)
+    style.align_horizontal = "left"
+    style.indent = 2
   end
   wb.sheet("Row Grouping") do |s|
     s.column(0, width: 25)

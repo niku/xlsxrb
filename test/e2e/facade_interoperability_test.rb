@@ -278,7 +278,7 @@ class FacadeInteroperabilityTest < Test::Unit::TestCase
         s.row([1, "Alice", "Engineering", 120_000])
         s.row([2, "Bob", "Marketing", 95_000])
         s.row([3, "Charlie", "Sales", 110_000])
-        s.table("A1:D4", columns: %w[ID Name Department Salary], name: "EmployeesTable", style: "TableStyleMedium9", total_row: false)
+        s.table("A1:D4", columns: %w[ID Name Department Salary], name: "EmployeesTable", style: "TableStyleMedium9", totals_row: false)
       end
     end
 
@@ -294,7 +294,7 @@ class FacadeInteroperabilityTest < Test::Unit::TestCase
         s.row([1, "Alice", "Engineering", 120_000])
         s.row([2, "Bob", "Marketing", 95_000])
         s.row([3, "Charlie", "Sales", 110_000])
-        s.table("A1:D4", columns: %w[ID Name Department Salary], name: "EmployeesTable", style: "TableStyleMedium9", total_row: false)
+        s.table("A1:D4", columns: %w[ID Name Department Salary], name: "EmployeesTable", style: "TableStyleMedium9", totals_row: false)
       end
     end
 

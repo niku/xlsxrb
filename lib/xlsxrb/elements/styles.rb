@@ -31,7 +31,15 @@ module Xlsxrb
       # @api public
       #: () -> Array[Elements::Font]
       def fonts
-        @fonts ||= (@data[:fonts] || EMPTY_ARRAY).map { |f| f.is_a?(Elements::Font) ? f : Elements::Font.new(**f) }.freeze
+        @fonts ||= (@data[:fonts] || EMPTY_ARRAY).map do |f|
+          if f.is_a?(Elements::Font)
+            f
+          else
+            f = f.dup
+            f[:size] ||= f[:sz] if f.key?(:sz)
+            Elements::Font.new(**f)
+          end
+        end.freeze
       end
 
       # Returns array of fill entries from the styles.
@@ -40,7 +48,15 @@ module Xlsxrb
       # @api public
       #: () -> Array[Elements::Fill]
       def fills
-        @fills ||= (@data[:fills] || EMPTY_ARRAY).map { |f| f.is_a?(Elements::Fill) ? f : Elements::Fill.new(**f) }.freeze
+        @fills ||= (@data[:fills] || EMPTY_ARRAY).map do |f|
+          if f.is_a?(Elements::Fill)
+            f
+          else
+            f = f.dup
+            f[:pattern_type] ||= f[:pattern] if f.key?(:pattern)
+            Elements::Fill.new(**f)
+          end
+        end.freeze
       end
 
       # Returns array of border entries from the styles.

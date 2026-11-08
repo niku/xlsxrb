@@ -4,8 +4,8 @@ require "xlsxrb"
 output_path = ARGV[0] || "align_horizontal_justify.xlsx"
 Xlsxrb.write(output_path) do |wb|
   wb.style("justify_align") do |s|
-    s.align_horizontal("justify")
-    s.wrap_text(true)
+    s.align_horizontal = "justify"
+    s.wrap_text = true
   end
   wb.sheet("Alignment") do |s|
     s.column(0, width: 25)

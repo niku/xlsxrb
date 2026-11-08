@@ -121,7 +121,7 @@ class XsdValidationTest < Test::Unit::TestCase
           s.row(["Widget B", 200, "Pending"])
           s.row(["Widget C", 300, "Active"])
 
-          s.auto_filter("A1:C4")
+          s.auto_filter = "A1:C4"
           s.merge("A6:C6")
           s.freeze_pane(row: 1, column: 0)
 
@@ -160,7 +160,7 @@ class XsdValidationTest < Test::Unit::TestCase
           s.row([2, "Bob", "Design", 80_000])
           s.row([3, "Charlie", "Marketing", 75_000])
 
-          s.table("A1:D4", columns: %w[ID Name Department Salary], name: "EmployeesTable", style: "TableStyleMedium9", total_row: false)
+          s.table("A1:D4", columns: %w[ID Name Department Salary], name: "EmployeesTable", style: "TableStyleMedium9", totals_row: false)
         end
       end
 

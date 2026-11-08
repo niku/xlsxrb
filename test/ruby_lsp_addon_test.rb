@@ -42,7 +42,7 @@ class RubyLspAddonTest < Test::Unit::TestCase
     labels = results.map(&:label)
 
     assert_includes(labels, "sheet")
-    assert_includes(labels, "workbook_property")
+    assert_includes(labels, "workbook_properties")
     assert_includes(labels, "style")
     assert_includes(labels, "workbook_protection")
 
@@ -148,12 +148,16 @@ class RubyLspAddonTest < Test::Unit::TestCase
     results = request_completions(source, line: 1, character: 8)
     labels = results.map(&:label)
 
-    assert_includes(labels, "title")
-    assert_includes(labels, "categories")
+    assert_includes(labels, "title=")
+    assert_includes(labels, "category_axis")
     assert_includes(labels, "series")
     assert_includes(labels, "legend")
+    assert_includes(labels, "type")
+    assert_includes(labels, "plot_visible_only?")
+    assert_includes(labels, "view3d")
+    assert_includes(labels, "show_legend_key?")
 
-    title_item = results.find { |i| i.label == "title" }
+    title_item = results.find { |i| i.label == "title=" }
     assert_includes(title_item.detail, "Xlsxrb::ChartBuilder")
   end
 
@@ -172,6 +176,8 @@ class RubyLspAddonTest < Test::Unit::TestCase
     assert_includes(labels, "fill")
     assert_includes(labels, "border")
     assert_includes(labels, "number_format")
+    assert_includes(labels, "bold=")
+    assert_includes(labels, "font_size=")
 
     font_item = results.find { |i| i.label == "font" }
     assert_includes(font_item.detail, "Xlsxrb::StyleBuilder")
@@ -229,7 +235,7 @@ class RubyLspAddonTest < Test::Unit::TestCase
     labels = results.map(&:label)
 
     assert_includes(labels, "row_at")
-    assert_includes(labels, "cell_value")
+    assert_includes(labels, "name")
     assert_includes(labels, "cells")
 
     row_at_item = results.find { |i| i.label == "row_at" }
@@ -247,8 +253,8 @@ class RubyLspAddonTest < Test::Unit::TestCase
     assert_includes(res_c.map(&:label), "value")
 
     # Chart heuristic
-    res_cb = request_completions("chart.title", line: 0, character: 8)
-    assert_includes(res_cb.map(&:label), "title")
+    res_cb = request_completions("chart.title=", line: 0, character: 8)
+    assert_includes(res_cb.map(&:label), "title=")
 
     # Style heuristic
     res_sb = request_completions("style.font", line: 0, character: 8)

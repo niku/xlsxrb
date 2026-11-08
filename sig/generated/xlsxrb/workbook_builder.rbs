@@ -9,7 +9,7 @@ module Xlsxrb
   #       sheet.row(["Product", "Revenue"])
   #       sheet.row(["Widget", 1000])
   #     end
-  #     builder.core_property(:creator, "Reporting System")
+  #     builder.core_properties(creator: "Reporting System")
   #   end
   #
   # @api public
@@ -22,9 +22,12 @@ module Xlsxrb
     # : (?strict_excel_mode: bool, ?escape_formulas: bool, ?default_font: untyped?) -> void
     def initialize: (?strict_excel_mode: bool, ?escape_formulas: bool, ?default_font: untyped?) -> void
 
-    # @return [Boolean] Whether to treat strings starting with formula prefixes as plain text.
-    # : bool
-    attr_accessor escape_formulas: untyped
+    # Sets whether to treat strings starting with formula prefixes as plain text.
+    #
+    # @param val [Boolean]
+    # @return [Boolean]
+    # : (bool) -> bool
+    attr_writer escape_formulas: untyped
 
     # Returns whether formula escaping is enabled.
     #
@@ -124,12 +127,20 @@ module Xlsxrb
     # : (String | Symbol | Integer | nil)
     attr_accessor first_sheet: untyped
 
-    # Gets or sets whether sheet tabs are visible in the workbook window.
+    # Sets whether sheet tabs are visible in the workbook window.
     #
+    # @param visible [Boolean, nil]
     # @return [Boolean, nil]
     # @api public
-    # : bool?
-    attr_accessor show_sheet_tabs: untyped
+    # : (bool? visible) -> bool?
+    attr_writer show_sheet_tabs: untyped
+
+    # Returns whether sheet tabs are visible in the workbook window.
+    #
+    # @return [Boolean]
+    # @api public
+    # : () -> bool
+    def show_sheet_tabs?: () -> bool
 
     # Gets or sets the ratio between the sheet tabs bar and the horizontal scroll bar (0-1000).
     #
@@ -153,25 +164,22 @@ module Xlsxrb
     # : (String | Symbol | nil name) -> String?
     def code_name=: (String | Symbol | nil name) -> String?
 
-    # Sets a workbook-level property.
+    # Configures or queries workbook-level properties.
+    #
+    # When called with no arguments, returns the {Elements::WorkbookProperties} value object.
+    # When called with keyword options, configures properties and returns nil.
     #
     # @note **SECURITY WARNING:** If you set `:update_links` to anything other than `"never"`,
     #   you may expose end-users to malicious external reference vulnerabilities (e.g., CSV/DDE Injection)
     #   when they open the generated Excel file. Ensure you fully trust the exported data.
     #
-    # @param name [Symbol] Property name (e.g. :update_links).
-    # @param value [String, Integer, Boolean] Property value.
-    # @return [void]
-    # @api public
-    # : (Symbol name, String | Integer | bool value) -> void
-    def workbook_property: (Symbol name, String | Integer | bool value) -> void
-
-    # Returns workbook-level properties.
-    #
-    # @return [Elements::WorkbookProperties]
+    # @param opts [Hash] Workbook properties map.
+    # @return [Elements::WorkbookProperties, void]
     # @api public
     # : () -> Elements::WorkbookProperties
+    # : (**untyped opts) -> void
     def workbook_properties: () -> Elements::WorkbookProperties
+                           | (**untyped opts) -> void
 
     # Sets workbook-level properties.
     #
@@ -235,16 +243,15 @@ module Xlsxrb
     # : () -> Array[Elements::DefinedName]
     def defined_names: () -> Array[Elements::DefinedName]
 
-    # Sets or gets the print area for a sheet.
+    # Returns the print area range for the sheet, or nil if none.
     #
-    # @param range [String, Object, nil] Cell range (e.g. "A1:G50").
     # @param sheet [String, nil] Target sheet name (defaults to latest or "Sheet1").
-    # @return [String, nil, void]
+    # @return [String, nil]
     # @api public
-    # : (?untyped range, ?sheet: String?) -> (String | nil | void)
-    def print_area: (?untyped range, ?sheet: untyped) -> untyped
+    # : (?sheet: String?) -> String?
+    def print_area: (?sheet: String?) -> String?
 
-    # Sets the print area for the worksheet.
+    # Sets the print area for the current worksheet.
     #
     # @param range [String, nil] Cell range (e.g. "A1:G50").
     # @return [String, nil]
@@ -252,23 +259,28 @@ module Xlsxrb
     # : (String? range) -> String?
     def print_area=: (String? range) -> String?
 
-    # Sets repeating print titles (rows and/or columns) for pagination.
+    # Sets or gets repeating print titles (rows and/or columns) for pagination.
+    #
+    # When called with no row/column arguments, returns the {Elements::PrintTitles} value object or nil.
+    # When called with row/column arguments, sets repeating print titles and returns nil.
     #
     # @param rows [String, nil] Repeating row range (e.g. "1:2").
     # @param columns [String, nil] Repeating column range (e.g. "A:B").
     # @param sheet [String, nil] Target sheet name.
-    # @return [void]
+    # @return [Elements::PrintTitles, nil, void]
     # @api public
+    # : () -> Elements::PrintTitles?
     # : (?rows: (String | Integer | Range[Integer])?, ?columns: (String | Integer | Symbol | Range[untyped])?, ?sheet: String?) -> void
-    def print_titles: (?rows: (String | Integer | Range[Integer])?, ?columns: (String | Integer | Symbol | Range[untyped])?, ?sheet: String?) -> void
+    def print_titles: () -> Elements::PrintTitles?
+                    | (?rows: (String | Integer | Range[Integer])?, ?columns: (String | Integer | Symbol | Range[untyped])?, ?sheet: String?) -> void
 
     # Sets repeating print titles.
     #
-    # @param opts [Elements::PrintTitles, Hash] Options with :rows and/or :columns.
-    # @return [Elements::PrintTitles, Hash]
+    # @param opts [Elements::PrintTitles, Hash, nil] Options with :rows and/or :columns.
+    # @return [Elements::PrintTitles, Hash, nil]
     # @api public
-    # : (Elements::PrintTitles | Hash[Symbol, untyped] opts) -> (Elements::PrintTitles | Hash[Symbol, untyped])
-    def print_titles=: (Elements::PrintTitles | Hash[Symbol, untyped] opts) -> (Elements::PrintTitles | Hash[Symbol, untyped])
+    # : (Elements::PrintTitles | Hash[Symbol, untyped] | nil opts) -> (Elements::PrintTitles | Hash[Symbol, untyped] | nil)
+    def print_titles=: (Elements::PrintTitles | Hash[Symbol, untyped] | nil opts) -> (Elements::PrintTitles | Hash[Symbol, untyped] | nil)
 
     # Sets repeating title rows for pagination on the target or active sheet.
     #
@@ -312,37 +324,47 @@ module Xlsxrb
     # : (untyped opts) -> void
     def workbook_protection=: (untyped opts) -> void
 
-    # Sets a Dublin Core document metadata property.
+    # Configures or queries Dublin Core document metadata properties.
     #
-    # @param name [Symbol] Core property name (:creator, :title, :subject, :description, etc.).
-    # @param value [String, Integer, Time] Property value.
-    # @return [void]
-    # @api public
-    # : (Symbol name, String | Integer | Time value) -> void
-    def core_property: (Symbol name, String | Integer | Time value) -> void
-
-    # Returns core document properties.
+    # When called with no arguments, returns the {Elements::CoreProperties} value object.
+    # When called with keyword options, configures properties and returns nil.
     #
-    # @return [Elements::CoreProperties]
+    # @param opts [Hash] Core properties map (:creator, :title, :subject, :description, etc.).
+    # @return [Elements::CoreProperties, void]
     # @api public
     # : () -> Elements::CoreProperties
+    # : (**untyped opts) -> void
     def core_properties: () -> Elements::CoreProperties
+                       | (**untyped opts) -> void
 
-    # Sets an extended application metadata property.
+    # Replaces core document properties.
     #
-    # @param name [Symbol] Application property name (:company, :manager, :app_version, etc.).
-    # @param value [String, Integer, Time] Property value.
+    # @param props [Hash, Elements::CoreProperties]
     # @return [void]
     # @api public
-    # : (Symbol name, String | Integer | Time value) -> void
-    def app_property: (Symbol name, String | Integer | Time value) -> void
+    # : (Hash[Symbol, untyped] | Elements::CoreProperties props) -> void
+    def core_properties=: (Hash[Symbol, untyped] | Elements::CoreProperties props) -> void
 
-    # Returns application document properties.
+    # Configures or queries extended application metadata properties.
     #
-    # @return [Elements::AppProperties]
+    # When called with no arguments, returns the {Elements::AppProperties} value object.
+    # When called with keyword options, configures properties and returns nil.
+    #
+    # @param opts [Hash] Application properties map (:company, :manager, :app_version, etc.).
+    # @return [Elements::AppProperties, void]
     # @api public
     # : () -> Elements::AppProperties
+    # : (**untyped opts) -> void
     def app_properties: () -> Elements::AppProperties
+                      | (**untyped opts) -> void
+
+    # Replaces application document properties.
+    #
+    # @param props [Hash, Elements::AppProperties]
+    # @return [void]
+    # @api public
+    # : (Hash[Symbol, untyped] | Elements::AppProperties props) -> void
+    def app_properties=: (Hash[Symbol, untyped] | Elements::AppProperties props) -> void
 
     # Sets multiple core, app, and/or custom properties simultaneously.
     #
@@ -380,6 +402,9 @@ module Xlsxrb
     def build: () -> Elements::Workbook
 
     private
+
+    # : (String? range, ?sheet: String?) -> String?
+    def set_print_area: (String? range, ?sheet: String?) -> String?
 
     # : (untyped range) -> untyped
     def absolute_range: (untyped range) -> untyped

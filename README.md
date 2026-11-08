@@ -165,7 +165,7 @@ end
 ### Template Migration & AI Code Generation
 
 > [!NOTE]
-> `Xlsxrb.modify` is deprecated. Runtime data transformations are handled with streaming pipelines (`Xlsxrb.read` -> `Xlsxrb.write`), while template-based report generation is performed by converting templates into declarative `Xlsxrb.write` DSL code.
+> `Xlsxrb.modify` was removed in 0.2.0 in favor of `Xlsxrb.read` -> `Xlsxrb.write` and `Xlsxrb.load`. Runtime data transformations are handled with streaming pipelines (`Xlsxrb.read` -> `Xlsxrb.write`), while template-based report generation is performed by converting templates into declarative `Xlsxrb.write` DSL scripts.
 
 To migrate an existing Excel template (`template.xlsx`) into reproducible Ruby code, inspect the template structure with `Xlsxrb.load` and provide it to an AI coding assistant:
 

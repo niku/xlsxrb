@@ -47,8 +47,10 @@ module Xlsxrb
         # : (?Integer? length) -> String?
         def read: (?Integer? length) -> String?
 
-        # : (?Integer chunk_size) ?{ (String) -> void } -> (void | Enumerator[String, void])
-        def each_chunk: (?untyped chunk_size) ?{ (?) -> untyped } -> untyped
+        # : (?Integer chunk_size) { (String) -> void } -> void
+        # : (?Integer chunk_size) -> Enumerator[String, void]
+        def each_chunk: (?Integer chunk_size) { (String) -> void } -> void
+                      | (?Integer chunk_size) -> Enumerator[String, void]
 
         # : () -> void
         def close: () -> void
@@ -82,16 +84,20 @@ module Xlsxrb
       def read_entry: (String name) -> String?
 
       # Yields (entry_name, data_string) for each file in the archive.
-      # : () ?{ (String, String?) -> void } -> (void | Enumerator[[String, String?], void])
-      def each_entry: () ?{ (?) -> untyped } -> untyped
+      # : () { (String, String?) -> void } -> void
+      # : () -> Enumerator[[String, String?], void]
+      def each_entry: () { (String, String?) -> void } -> void
+                    | () -> Enumerator[[ String, String? ], void]
 
       # Opens an EntryStreamIO for an entry by name.
       # : (String entry_name, ?encoding: (Encoding | String | false | nil)) -> EntryStreamIO
       def open_entry_io: (String entry_name, ?encoding: Encoding | String | false | nil) -> EntryStreamIO
 
       # Yields inflated binary chunks directly from the compressed stream.
-      # : (String entry_name, ?chunk_size: Integer, ?encoding: (Encoding | String | false | nil)) ?{ (String) -> void } -> (void | Enumerator[String, void])
-      def each_entry_chunk: (untyped entry_name, ?chunk_size: untyped, ?encoding: untyped) ?{ (?) -> untyped } -> untyped
+      # : (String entry_name, ?chunk_size: Integer, ?encoding: (Encoding | String | false | nil)) { (String) -> void } -> void
+      # : (String entry_name, ?chunk_size: Integer, ?encoding: (Encoding | String | false | nil)) -> Enumerator[String, void]
+      def each_entry_chunk: (String entry_name, ?chunk_size: Integer, ?encoding: Encoding | String | false | nil) { (String) -> void } -> void
+                          | (String entry_name, ?chunk_size: Integer, ?encoding: Encoding | String | false | nil) -> Enumerator[String, void]
 
       # Returns true if the archive contains the specified entry.
       # : (String name) -> bool

@@ -1292,8 +1292,7 @@ class OoxmlTest < Test::Unit::TestCase
 
   test "WorkbookParser and Xlsxrb.read extract and round-trip activeTab and fullCalcOnLoad" do
     bytes = Xlsxrb.write do |w|
-      w.workbook_property(:active_sheet, 1)
-      w.workbook_property(:full_calc_on_load, true)
+      w.workbook_properties(active_sheet: 1, full_calc_on_load: true)
       w.sheet("First") { |s| s.row(["A"]) }
       w.sheet("Second") { |s| s.row(["B"]) }
     end

@@ -11,8 +11,8 @@ module Xlsxrb
           require "xlsxrb"
           output_path = ARGV[0] || "cell_numbers.xlsx"
           Xlsxrb.write(output_path) do |w|
-            w.style("currency") { |s| s.number_format("$#,##0.00") }
-            w.style("percent") { |s| s.number_format("0.0%") }
+            w.style("currency") { |s| s.number_format = "$#,##0.00" }
+            w.style("percent") { |s| s.number_format = "0.0%" }
             w.sheet("Numbers") do |s|
               s.row(["Format", "Value"])
               s.row(["Integer", 12345])
@@ -29,7 +29,7 @@ module Xlsxrb
           require "date"
           output_path = ARGV[0] || "cell_dates.xlsx"
           Xlsxrb.write(output_path) do |w|
-            w.style("custom_date") { |s| s.number_format("yyyy-mm-dd") }
+            w.style("custom_date") { |s| s.number_format = "yyyy-mm-dd" }
             w.sheet("Dates") do |s|
               s.row(["Format", "Date Value"])
               s.row(["Default Date", Date.new(2026, 7, 1)])
@@ -44,7 +44,7 @@ module Xlsxrb
           require "time"
           output_path = ARGV[0] || "cell_times.xlsx"
           Xlsxrb.write(output_path) do |w|
-            w.style("time_fmt") { |s| s.number_format("hh:mm:ss") }
+            w.style("time_fmt") { |s| s.number_format = "hh:mm:ss" }
             w.sheet("Times") do |s|
               s.row(["Format", "Time Value"])
               s.row(["DateTime", Time.new(2026, 7, 1, 12, 34, 56)])
@@ -103,9 +103,9 @@ module Xlsxrb
           require "xlsxrb"
           output_path = ARGV[0] || "font_families.xlsx"
           Xlsxrb.write(output_path) do |w|
-            w.style("arial") { |s| s.font_name("Arial") }
-            w.style("times") { |s| s.font_name("Times New Roman") }
-            w.style("courier") { |s| s.font_name("Courier New") }
+            w.style("arial") { |s| s.font_name = "Arial" }
+            w.style("times") { |s| s.font_name = "Times New Roman" }
+            w.style("courier") { |s| s.font_name = "Courier New" }
             w.sheet("Fonts") do |s|
               s.row(["Font Family", "Preview"])
               s.row(["Arial", "Hello Arial"], cell_styles: { 1 => "arial" })
@@ -120,9 +120,9 @@ module Xlsxrb
           require "xlsxrb"
           output_path = ARGV[0] || "font_sizes.xlsx"
           Xlsxrb.write(output_path) do |w|
-            w.style("size_10") { |s| s.font_size(10) }
-            w.style("size_16") { |s| s.font_size(16) }
-            w.style("size_24") { |s| s.font_size(24) }
+            w.style("size_10") { |s| s.font_size = 10 }
+            w.style("size_16") { |s| s.font_size = 16 }
+            w.style("size_24") { |s| s.font_size = 24 }
             w.sheet("Font Sizes") do |s|
               s.row(["Size", "Text"])
               s.row(["10pt", "Small Text"], cell_styles: { 1 => "size_10" })
@@ -137,9 +137,9 @@ module Xlsxrb
           require "xlsxrb"
           output_path = ARGV[0] || "font_colors.xlsx"
           Xlsxrb.write(output_path) do |w|
-            w.style("red") { |s| s.font_color("FFC00000") }
-            w.style("green") { |s| s.font_color("FF00B050") }
-            w.style("blue") { |s| s.font_color("FF0070C0") }
+            w.style("red") { |s| s.font_color = "FFC00000" }
+            w.style("green") { |s| s.font_color = "FF00B050" }
+            w.style("blue") { |s| s.font_color = "FF0070C0" }
             w.sheet("Colors") do |s|
               s.row(["Color", "Preview"])
               s.row(["Red", "Red Text"], cell_styles: { 1 => "red" })
@@ -154,10 +154,10 @@ module Xlsxrb
           require "xlsxrb"
           output_path = ARGV[0] || "font_styles.xlsx"
           Xlsxrb.write(output_path) do |w|
-            w.style("bold") { |s| s.bold(true) }
-            w.style("italic") { |s| s.italic(true) }
-            w.style("underline") { |s| s.underline(true) }
-            w.style("strike") { |s| s.strike(true) }
+            w.style("bold") { |s| s.bold = true }
+            w.style("italic") { |s| s.italic = true }
+            w.style("underline") { |s| s.underline = true }
+            w.style("strike") { |s| s.strike = true }
             w.sheet("Styles") do |s|
               s.row(["Style", "Preview"])
               s.row(["Bold", "Bold Text"], cell_styles: { 1 => "bold" })
@@ -173,8 +173,8 @@ module Xlsxrb
           require "xlsxrb"
           output_path = ARGV[0] || "font_vertical_align.xlsx"
           Xlsxrb.write(output_path) do |w|
-            w.style("super") { |s| s.vert_align("superscript") }
-            w.style("sub") { |s| s.vert_align("subscript") }
+            w.style("super") { |s| s.vert_align = "superscript" }
+            w.style("sub") { |s| s.vert_align = "subscript" }
             w.sheet("Vertical Align") do |s|
               s.row(["Format", "Text"])
               s.row(["Superscript", "x2"], cell_styles: { 1 => "super" })
@@ -248,8 +248,8 @@ module Xlsxrb
           require "xlsxrb"
           output_path = ARGV[0] || "fill_solid_colors.xlsx"
           Xlsxrb.write(output_path) do |w|
-            w.style("red_fill") { |s| s.fill_color("FFFFC7CE") }
-            w.style("green_fill") { |s| s.fill_color("FFC6EFCE") }
+            w.style("red_fill") { |s| s.fill_color = "FFFFC7CE" }
+            w.style("green_fill") { |s| s.fill_color = "FFC6EFCE" }
             w.sheet("Fills") do |s|
               s.row(["Color", "Preview"])
               s.row(["Red", "Red Fill"], cell_styles: { 1 => "red_fill" })
@@ -295,11 +295,11 @@ module Xlsxrb
           require "xlsxrb"
           output_path = ARGV[0] || "align_horizontal.xlsx"
           Xlsxrb.write(output_path) do |w|
-            w.style("left") { |s| s.align_horizontal("left") }
-            w.style("center") { |s| s.align_horizontal("center") }
-            w.style("right") { |s| s.align_horizontal("right") }
+            w.style("left") { |s| s.align_horizontal = "left" }
+            w.style("center") { |s| s.align_horizontal = "center" }
+            w.style("right") { |s| s.align_horizontal = "right" }
             w.sheet("Alignment") do |s|
-              s.print_options(:grid_lines, true)
+              s.print_options(grid_lines: true)
               s.column(0, width: 20)
               s.column(1, width: 20)
               s.column(2, width: 20)
@@ -313,11 +313,11 @@ module Xlsxrb
           require "xlsxrb"
           output_path = ARGV[0] || "align_vertical.xlsx"
           Xlsxrb.write(output_path) do |w|
-            w.style("top") { |s| s.align_vertical("top") }
-            w.style("center") { |s| s.align_vertical("center") }
-            w.style("bottom") { |s| s.align_vertical("bottom") }
+            w.style("top") { |s| s.align_vertical = "top" }
+            w.style("center") { |s| s.align_vertical = "center" }
+            w.style("bottom") { |s| s.align_vertical = "bottom" }
             w.sheet("Vertical Alignment") do |s|
-              s.print_options(:grid_lines, true)
+              s.print_options(grid_lines: true)
               s.row(["Top", "Center", "Bottom"], cell_styles: { 0 => "top", 1 => "center", 2 => "bottom" }, height: 40)
             end
           end
@@ -328,10 +328,10 @@ module Xlsxrb
           require "xlsxrb"
           output_path = ARGV[0] || "align_text_rotation.xlsx"
           Xlsxrb.write(output_path) do |w|
-            w.style("rot_45") { |s| s.text_rotation(45) }
-            w.style("rot_90") { |s| s.text_rotation(90) }
+            w.style("rot_45") { |s| s.text_rotation = 45 }
+            w.style("rot_90") { |s| s.text_rotation = 90 }
             w.sheet("Rotation") do |s|
-              s.print_options(:grid_lines, true)
+              s.print_options(grid_lines: true)
               s.row(["Rotated 45", "Rotated 90"], cell_styles: { 0 => "rot_45", 1 => "rot_90" }, height: 50)
             end
           end
@@ -342,9 +342,9 @@ module Xlsxrb
           require "xlsxrb"
           output_path = ARGV[0] || "align_text_wrap.xlsx"
           Xlsxrb.write(output_path) do |w|
-            w.style("wrap") { |s| s.wrap_text(true) }
+            w.style("wrap") { |s| s.wrap_text = true }
             w.sheet("Text Wrap") do |s|
-              s.print_options(:grid_lines, true)
+              s.print_options(grid_lines: true)
               s.column(0, width: 15)
               s.row(["This is a long sentence that wraps inside the cell."], cell_styles: { 0 => "wrap" })
             end
@@ -356,10 +356,10 @@ module Xlsxrb
           require "xlsxrb"
           output_path = ARGV[0] || "align_indent.xlsx"
           Xlsxrb.write(output_path) do |w|
-            w.style("indent_1") { |s| s.indent(1) }
-            w.style("indent_3") { |s| s.indent(3) }
+            w.style("indent_1") { |s| s.indent = 1 }
+            w.style("indent_3") { |s| s.indent = 3 }
             w.sheet("Indent") do |s|
-              s.print_options(:grid_lines, true)
+              s.print_options(grid_lines: true)
               s.row(["No Indent"])
               s.row(["Indent 1"], cell_styles: { 0 => "indent_1" })
               s.row(["Indent 3"], cell_styles: { 0 => "indent_3" })
@@ -615,7 +615,7 @@ module Xlsxrb
               s.row(["Name", "Department"])
               s.row(["Alice", "HR"])
               s.row(["Bob", "Eng"])
-              s.auto_filter("A1:B3")
+              s.auto_filter = "A1:B3"
             end
             w.defined_name("_xlnm._FilterDatabase", "Filter!$A$1:$B$3", sheet: "Filter", hidden: true)
           end

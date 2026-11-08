@@ -19,9 +19,11 @@ class ChartBuilderTest < Test::Unit::TestCase
     assert_equal("Q1 Revenue", builder.title)
     assert_equal({ position: "r" }, builder.legend)
     assert_equal(10, builder.style)
-    assert_equal(true, builder.plot_visible_only)
+    assert_equal(true, builder.plot_visible_only?)
     assert_equal("zero", builder.display_blanks_as)
-    assert_equal(false, builder.show_legend_key)
+    assert_equal(false, builder.show_legend_key?)
+    assert_false(builder.respond_to?(:plot_visible_only))
+    assert_false(builder.respond_to?(:show_legend_key))
 
     ret_s1 = builder.series do |s|
       s.name = "Target"
@@ -34,7 +36,8 @@ class ChartBuilderTest < Test::Unit::TestCase
       assert_equal("Sheet1!$A$2:$A$5", s.categories)
       assert_equal("Sheet1!$B$2:$B$5", s.values)
       assert_equal({ color: "00AA00" }, s.fill)
-      assert_equal(false, s.smooth)
+      assert_equal(false, s.smooth?)
+      assert_false(s.respond_to?(:smooth))
     end
     assert_nil(ret_s1)
 

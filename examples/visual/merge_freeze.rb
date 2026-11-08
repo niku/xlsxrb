@@ -7,11 +7,11 @@ output_path = ARGV[0] || "merge_freeze.xlsx"
 Xlsxrb.write(output_path) do |wb|
   wb.style("title") do |style|
     style.border_all(style: "thin", color: "FF000000")
-    style.align_horizontal("center")
+    style.align_horizontal = "center"
   end
   wb.style("border") { |style| style.border_all(style: "thin", color: "FF000000") }
   wb.sheet("Merge & Freeze") do |s|
-    s.sheet_properties(:fit_to_page, true)
+    s.sheet_properties(fit_to_page: true)
     s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.column(0, width: 25)
     s.column(1, width: 25)
