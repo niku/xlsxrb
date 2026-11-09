@@ -2776,6 +2776,11 @@ class ElementsTest < Test::Unit::TestCase
     refute_equal(st, st.to_h)
   end
 
+  test "MetadataRecord#to_h keeps nested arrays such as heading pairs" do
+    app = Xlsxrb::Elements::AppProperties.new(heading_pairs: [["Worksheets", 2]], titles_of_parts: %w[Data Summary])
+    assert_equal({ heading_pairs: [["Worksheets", 2]], titles_of_parts: %w[Data Summary] }, app.to_h)
+  end
+
   test "ADR 0004 & 0006 metadata predicates and normalization" do
     # AppProperties predicates
     app_t = Xlsxrb::Elements::AppProperties.new(scale_crop: true, links_up_to_date: true, shared_doc: true, hyperlinks_changed: true)

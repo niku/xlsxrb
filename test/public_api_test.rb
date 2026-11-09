@@ -81,6 +81,31 @@ class PublicApiTest < Test::Unit::TestCase
     assert_raise(Xlsxrb::Error) { Xlsxrb.write("not a workbook") }
   end
 
+  test "load and write a file whose app.xml has HeadingPairs, as Excel writes it" do
+    source = StringIO.new
+    Xlsxrb.write(source) { |w| w.sheet("Data") { |s| s.row(["x", 1]) } }
+    app_xml = <<~XML.delete("\n")
+      <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+      <Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties" xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes">
+      <Application>Microsoft Excel</Application>
+      <HeadingPairs><vt:vector size="2" baseType="variant"><vt:variant><vt:lpstr>Worksheets</vt:lpstr></vt:variant><vt:variant><vt:i4>1</vt:i4></vt:variant></vt:vector></HeadingPairs>
+      <TitlesOfParts><vt:vector size="1" baseType="lpstr"><vt:lpstr>Data</vt:lpstr></vt:vector></TitlesOfParts>
+      </Properties>
+    XML
+    reader = Xlsxrb::Ooxml::ZipReader.new(StringIO.new(source.string))
+    patched = StringIO.new
+    Xlsxrb::Ooxml::ZipWriter.open(patched) do |z|
+      reader.entry_names.each { |name| z.add_binary_entry(name, name == "docProps/app.xml" ? app_xml : reader.read_entry(name).b) }
+      z.add_binary_entry("docProps/app.xml", app_xml) unless reader.entry_names.include?("docProps/app.xml")
+    end
+
+    loaded = Xlsxrb.load(patched.string)
+    assert_equal([["Worksheets", 1]], loaded.app_properties.heading_pairs)
+
+    rewritten = Xlsxrb.load(Xlsxrb.write(loaded))
+    assert_equal([["x", 1]], rewritten.sheets.first.rows.map { |r| r.cells.map(&:value) })
+  end
+
   test "round-trip preserves numeric types" do
     tmp = Tempfile.new(["numeric_rt", ".xlsx"])
     begin

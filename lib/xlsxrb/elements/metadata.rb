@@ -25,7 +25,9 @@ module Xlsxrb
       def to_h
         res = super.compact.transform_values do |val|
           if val.is_a?(Array)
-            val.map { |v| v.respond_to?(:to_h) && !v.is_a?(String) ? v.to_h : v }
+            # Nested Arrays, such as the [name, count] pairs of AppProperties#heading_pairs,
+            # respond to to_h but are not key-value pairs, so they stay as they are.
+            val.map { |v| v.respond_to?(:to_h) && !v.is_a?(String) && !v.is_a?(Array) ? v.to_h : v }
           elsif val.respond_to?(:to_h) && !val.is_a?(String) && !val.is_a?(Hash)
             val.to_h
           else
