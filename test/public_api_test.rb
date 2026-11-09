@@ -403,6 +403,21 @@ class PublicApiTest < Test::Unit::TestCase
     assert_raise_message(/at least one sheet/) { Xlsxrb.write(Xlsxrb::Elements::Workbook.new(sheets: [])) }
   end
 
+  test "chart display units keep their built-in unit when the label is styled" do
+    xml = <<~XML
+      <c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
+        <c:chart><c:plotArea><c:barChart><c:barDir val="col"/><c:axId val="1"/><c:axId val="2"/></c:barChart>
+          <c:valAx><c:axId val="2"/><c:dispUnits><c:builtInUnit val="thousands"/><c:dispUnitsLbl><c:spPr><a:ln w="19050"/></c:spPr></c:dispUnitsLbl></c:dispUnits></c:valAx>
+        </c:plotArea></c:chart>
+      </c:chartSpace>
+    XML
+    listener = Xlsxrb::Ooxml::Reader::ChartTypeListener.new
+    parser = REXML::Parsers::SAX2Parser.new(xml)
+    parser.listen(listener)
+    parser.parse
+    assert_equal({ built_in_unit: "thousands", label: { line_width: 1.5 } }, listener.val_axis_disp_units)
+  end
+
   test "page setup omits a DPI of zero" do
     built = Xlsxrb.build do |b|
       b.sheet("S") do |s|

@@ -1859,7 +1859,7 @@ module Xlsxrb
               @inside_disp_units_lbl_ln = true
               if attributes["w"]
                 du = @val_axis_disp_units
-                du = {} unless du.is_a?(Hash)
+                du = du.is_a?(String) ? { built_in_unit: du } : {} unless du.is_a?(Hash)
                 @val_axis_disp_units = du
                 (du[:label] ||= {})[:line_width] = attributes["w"].to_i / 12_700.0
               end
@@ -1965,7 +1965,7 @@ module Xlsxrb
               end
             elsif @inside_disp_units_lbl_ln && attributes["val"]
               du = @val_axis_disp_units
-              du = {} unless du.is_a?(Hash)
+              du = du.is_a?(String) ? { built_in_unit: du } : {} unless du.is_a?(Hash)
               @val_axis_disp_units = du
               (du[:label] ||= {})[:line_dash] = attributes["val"]
             elsif @inside_ax_sp_pr && @inside_ax_ln && attributes["val"]
@@ -2079,7 +2079,7 @@ module Xlsxrb
               @current_err_bars[:no_fill] = true
             elsif @inside_disp_units_lbl_sp_pr
               du = @val_axis_disp_units
-              du = {} unless du.is_a?(Hash)
+              du = du.is_a?(String) ? { built_in_unit: du } : {} unless du.is_a?(Hash)
               @val_axis_disp_units = du
               (du[:label] ||= {})[:no_fill] = true
             elsif @inside_legend_sp_pr
@@ -3179,7 +3179,7 @@ module Xlsxrb
           when "dispUnitsLbl"
             if @disp_units_lbl_font
               du = @val_axis_disp_units
-              du = {} unless du.is_a?(Hash)
+              du = du.is_a?(String) ? { built_in_unit: du } : {} unless du.is_a?(Hash)
               @val_axis_disp_units = du
               (du[:label] ||= {})[:font] = @disp_units_lbl_font
             end
@@ -3456,12 +3456,12 @@ module Xlsxrb
             end
           elsif @inside_disp_units_lbl_sp_pr && @inside_disp_units_lbl_ln && @inside_disp_units_lbl_solid_fill
             du = @val_axis_disp_units
-            du = {} unless du.is_a?(Hash)
+            du = du.is_a?(String) ? { built_in_unit: du } : {} unless du.is_a?(Hash)
             @val_axis_disp_units = du
             (du[:label] ||= {})[:line_color] = color_value
           elsif @inside_disp_units_lbl_sp_pr && @inside_disp_units_lbl_solid_fill
             du = @val_axis_disp_units
-            du = {} unless du.is_a?(Hash)
+            du = du.is_a?(String) ? { built_in_unit: du } : {} unless du.is_a?(Hash)
             @val_axis_disp_units = du
             (du[:label] ||= {})[:fill_color] = color_value
           elsif @inside_wall_sp_pr && @inside_wall_ln && @inside_wall_solid_fill && @current_wall
