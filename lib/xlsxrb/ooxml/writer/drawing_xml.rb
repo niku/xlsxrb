@@ -1038,9 +1038,11 @@ module Xlsxrb
               ser_order = ser[:order] || idx
               parts << "<c:ser><c:idx val=\"#{idx}\"/><c:order val=\"#{ser_order}\"/>"
               parts << "<c:tx><c:strRef><c:f>#{xml_escape(ser[:name])}</c:f>#{str_cache_xml(ser[:name])}</c:strRef></c:tx>" if ser[:name]
+              head_end = parts.size
               iin = ser[:invert_if_negative]
               parts << %(<c:invertIfNegative val="#{iin ? 1 : 0}"/>) unless iin.nil?
               parts << %(<c:explosion val="#{ser[:explosion]}"/>) if ser[:explosion]
+              options_end = parts.size
               ser[:data_points]&.each do |dp|
                 parts << "<c:dPt><c:idx val=\"#{dp[:idx]}\"/>"
                 dp_iin = dp[:invert_if_negative]
@@ -1082,6 +1084,7 @@ module Xlsxrb
                 parts << "<c:spPr>#{dp_sp_children}</c:spPr>" unless dp_sp_children.empty?
                 parts << "</c:dPt>"
               end
+              data_points_end = parts.size
               if ser[:fill_color] || ser[:no_fill] || ser[:line_color] || ser[:no_line] || ser[:line_width] || ser[:line_cap] || ser[:line_join] || ser[:line_dash]
                 parts << "<c:spPr>"
                 parts << %(<a:solidFill>#{color_xml(ser[:fill_color])}</a:solidFill>) if ser[:fill_color]
@@ -1103,6 +1106,7 @@ module Xlsxrb
                 end
                 parts << "</c:spPr>"
               end
+              shape_end = parts.size
               if ser[:marker_symbol] || ser[:marker_size] || ser[:marker_fill] || ser[:marker_no_fill] || ser[:marker_line_color] || ser[:marker_line_dash] || ser[:marker_no_line]
                 parts << "<c:marker>"
                 parts << %(<c:symbol val="#{xml_escape(ser[:marker_symbol])}"/>) if ser[:marker_symbol]
@@ -1123,6 +1127,13 @@ module Xlsxrb
                 end
                 parts << "</c:marker>"
               end
+              # The series schemas order these children spPr, then invertIfNegative, marker, or
+              # explosion (by chart type), then dPt.
+              options = parts[head_end...options_end]
+              data_points = parts[options_end...data_points_end]
+              shape = parts[data_points_end...shape_end]
+              marker = parts[shape_end..]
+              parts[head_end..] = shape + options + marker + data_points
               if (dl = ser[:data_labels] || chart[:data_labels])
                 parts << "<c:dLbls>"
                 dl[:labels]&.each do |lbl|

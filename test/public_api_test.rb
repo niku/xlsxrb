@@ -418,6 +418,16 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal({ built_in_unit: "thousands", label: { line_width: 1.5 } }, listener.val_axis_disp_units)
   end
 
+  test "chart series write spPr before invertIfNegative, markers, and data points" do
+    writer = Xlsxrb::Ooxml::Writer.new
+    bar = { type: :bar, series: [{ val_ref: "S!$A$1:$A$2", name: "S!$B$1", fill_color: "FF0000", invert_if_negative: false, data_points: [{ idx: 0, fill_color: "00FF00" }] }] }
+    ser = writer.send(:generate_chart_xml, bar)[%r{<c:ser>.*?</c:ser>}m]
+    assert_equal(%w[idx order tx spPr invertIfNegative dPt], ser.scan(/<c:(idx|order|tx|spPr|invertIfNegative|dPt|marker)\b/).flatten.uniq)
+    line = { type: :line, series: [{ val_ref: "S!$A$1:$A$2", line_color: "FF0000", marker_symbol: "circle", data_points: [{ idx: 0, marker_symbol: "square" }] }] }
+    ser = writer.send(:generate_chart_xml, line)[%r{<c:ser>.*?</c:ser>}m]
+    assert_equal(%w[idx order spPr marker dPt], ser.scan(/<c:(idx|order|spPr|marker|dPt)\b/).flatten.uniq)
+  end
+
   test "page setup omits a DPI of zero" do
     built = Xlsxrb.build do |b|
       b.sheet("S") do |s|
