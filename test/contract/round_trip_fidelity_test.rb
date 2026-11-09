@@ -85,7 +85,7 @@ class RoundTripFidelityTest < Test::Unit::TestCase
         assert_equal([{ name: "DataRange", hidden: false, value: "Sheet1!$A$1:$B$2" }], roundtrip_wb.defined_names.map(&:to_h))
 
         s = roundtrip_wb.sheet(0)
-        assert_equal({ row: 1, column: 1, state: :frozen, active_pane: "bottomRight" }, s.freeze_pane.to_h)
+        assert_equal({ row: 1, column: 1, top_left_cell: "B2", state: :frozen, active_pane: "bottomRight" }, s.freeze_pane.to_h)
         assert_equal({ show_grid_lines: false, tab_selected: true, zoom_scale: 120 }, s.sheet_view.to_h)
         assert_equal({ orientation: "landscape", paper_size: 9 }, s.page_setup.to_h)
         assert_equal(0.7, s.page_margins.left)

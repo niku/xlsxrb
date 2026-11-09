@@ -284,48 +284,49 @@ module Xlsxrb
 
     # Worksheet freeze pane settings (<pane>).
     # @api public
+    #
+    # +top_left_cell+ is the first visible cell of the bottom-right pane (the topLeftCell
+    # attribute). When nil, the writer uses the cell just past the frozen rows and columns.
     class FreezePane < Data
       attr_reader row(): untyped
 
       attr_reader column(): untyped
 
-      attr_reader top_row(): untyped
-
-      attr_reader left_column(): untyped
+      attr_reader top_left_cell(): untyped
 
       attr_reader active_pane(): untyped
 
       attr_reader state(): untyped
 
-      def self.new: (untyped row, untyped column, untyped top_row, untyped left_column, untyped active_pane, untyped state) -> instance
-                  | (row: untyped, column: untyped, top_row: untyped, left_column: untyped, active_pane: untyped, state: untyped) -> instance
+      def self.new: (untyped row, untyped column, untyped top_left_cell, untyped active_pane, untyped state) -> instance
+                  | (row: untyped, column: untyped, top_left_cell: untyped, active_pane: untyped, state: untyped) -> instance
 
-      def self.members: () -> [ :row, :column, :top_row, :left_column, :active_pane, :state ]
+      def self.members: () -> [ :row, :column, :top_left_cell, :active_pane, :state ]
 
-      def members: () -> [ :row, :column, :top_row, :left_column, :active_pane, :state ]
+      def members: () -> [ :row, :column, :top_left_cell, :active_pane, :state ]
     end
 
     # Worksheet split pane settings (<pane>).
     # @api public
+    #
+    # +top_left_cell+ is the first visible cell of the bottom-right pane (the topLeftCell attribute).
     class SplitPane < Data
       attr_reader x_split(): untyped
 
       attr_reader y_split(): untyped
 
-      attr_reader top_row(): untyped
-
-      attr_reader left_column(): untyped
+      attr_reader top_left_cell(): untyped
 
       attr_reader active_pane(): untyped
 
       attr_reader state(): untyped
 
-      def self.new: (untyped x_split, untyped y_split, untyped top_row, untyped left_column, untyped active_pane, untyped state) -> instance
-                  | (x_split: untyped, y_split: untyped, top_row: untyped, left_column: untyped, active_pane: untyped, state: untyped) -> instance
+      def self.new: (untyped x_split, untyped y_split, untyped top_left_cell, untyped active_pane, untyped state) -> instance
+                  | (x_split: untyped, y_split: untyped, top_left_cell: untyped, active_pane: untyped, state: untyped) -> instance
 
-      def self.members: () -> [ :x_split, :y_split, :top_row, :left_column, :active_pane, :state ]
+      def self.members: () -> [ :x_split, :y_split, :top_left_cell, :active_pane, :state ]
 
-      def members: () -> [ :x_split, :y_split, :top_row, :left_column, :active_pane, :state ]
+      def members: () -> [ :x_split, :y_split, :top_left_cell, :active_pane, :state ]
     end
 
     # Worksheet selection / active cell (<selection>).

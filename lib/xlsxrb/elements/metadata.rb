@@ -427,23 +427,28 @@ module Xlsxrb
 
     # Worksheet freeze pane settings (<pane>).
     # @api public
-    FreezePane = Data.define(:row, :column, :top_row, :left_column, :active_pane, :state) do
+    #
+    # +top_left_cell+ is the first visible cell of the bottom-right pane (the topLeftCell
+    # attribute). When nil, the writer uses the cell just past the frozen rows and columns.
+    FreezePane = Data.define(:row, :column, :top_left_cell, :active_pane, :state) do
       include MetadataRecord
 
-      #: (?row: Integer?, ?column: (Integer | String | Symbol)?, ?top_row: Integer?, ?left_column: (Integer | String | Symbol)?, ?active_pane: String?, ?state: Symbol?, **untyped) -> void
-      def initialize(row: nil, column: nil, top_row: nil, left_column: nil, active_pane: nil, state: :frozen, **_extra)
-        super(**{ row: row, column: column, top_row: top_row, left_column: left_column, active_pane: active_pane, state: state || :frozen })
+      #: (?row: Integer?, ?column: (Integer | String | Symbol)?, ?top_left_cell: String?, ?active_pane: String?, ?state: Symbol?, **untyped) -> void
+      def initialize(row: nil, column: nil, top_left_cell: nil, active_pane: nil, state: :frozen, **_extra)
+        super(**{ row: row, column: column, top_left_cell: top_left_cell, active_pane: active_pane, state: state || :frozen })
       end
     end
 
     # Worksheet split pane settings (<pane>).
     # @api public
-    SplitPane = Data.define(:x_split, :y_split, :top_row, :left_column, :active_pane, :state) do
+    #
+    # +top_left_cell+ is the first visible cell of the bottom-right pane (the topLeftCell attribute).
+    SplitPane = Data.define(:x_split, :y_split, :top_left_cell, :active_pane, :state) do
       include MetadataRecord
 
-      #: (?x_split: (Integer | Float)?, ?y_split: (Integer | Float)?, ?top_row: Integer?, ?left_column: Integer?, ?active_pane: String?, ?state: String?, **untyped) -> void
-      def initialize(x_split: nil, y_split: nil, top_row: nil, left_column: nil, active_pane: nil, state: nil, **_extra)
-        super(**{ x_split: x_split, y_split: y_split, top_row: top_row, left_column: left_column, active_pane: active_pane, state: state })
+      #: (?x_split: (Integer | Float)?, ?y_split: (Integer | Float)?, ?top_left_cell: String?, ?active_pane: String?, ?state: String?, **untyped) -> void
+      def initialize(x_split: nil, y_split: nil, top_left_cell: nil, active_pane: nil, state: nil, **_extra)
+        super(**{ x_split: x_split, y_split: y_split, top_left_cell: top_left_cell, active_pane: active_pane, state: state })
       end
     end
 

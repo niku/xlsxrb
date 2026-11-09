@@ -134,6 +134,38 @@ class PublicApiTest < Test::Unit::TestCase
     assert_raise(Xlsxrb::ZipError) { Xlsxrb.load("\x00\x01not a zip".b) }
   end
 
+  test "freeze and split panes keep their top-left cell" do
+    pane_tag = ->(data) { Xlsxrb::Ooxml::ZipReader.new(StringIO.new(data)).read_entry("xl/worksheets/sheet1.xml")[/<pane[^>]*>/] }
+
+    built = Xlsxrb.build do |b|
+      b.sheet("S") do |s|
+        s.freeze_pane(row: 1, column: 2, top_left_cell: "D10")
+        s.row(%w[a b c])
+      end
+    end
+    assert_equal("D10", built.sheets.first.freeze_pane.top_left_cell)
+    data = Xlsxrb.write(built)
+    assert_include(pane_tag.call(data), 'topLeftCell="D10"')
+    loaded = Xlsxrb.load(data)
+    assert_equal([1, 2, "D10"], loaded.sheets.first.freeze_pane.then { |fp| [fp.row, fp.column, fp.top_left_cell] })
+    assert_include(pane_tag.call(Xlsxrb.write(loaded)), 'topLeftCell="D10"')
+
+    io = StringIO.new
+    Xlsxrb.write(io) { |w| w.sheet("S") { |s| s.freeze_pane(row: 1, top_left_cell: "A20") } }
+    assert_include(pane_tag.call(io.string), 'topLeftCell="A20"')
+
+    sheet = built.sheets.first.with(freeze_pane: Xlsxrb::Elements::FreezePane.new(row: 2, column: 1, top_left_cell: "C7"))
+    assert_include(pane_tag.call(Xlsxrb.write(built.with(sheets: [sheet]))), 'topLeftCell="C7"')
+
+    default = Xlsxrb.build { |b| b.sheet("S") { |s| s.freeze_pane(row: 1, column: 1) } }
+    assert_include(pane_tag.call(Xlsxrb.write(default)), 'topLeftCell="B2"')
+
+    split = built.sheets.first.with(freeze_pane: nil, split_pane: Xlsxrb::Elements::SplitPane.new(x_split: 1200, y_split: 600, top_left_cell: "E9"))
+    split_data = Xlsxrb.write(built.with(sheets: [split]))
+    assert_include(pane_tag.call(split_data), 'topLeftCell="E9"')
+    assert_equal("E9", Xlsxrb.load(split_data).sheets.first.split_pane.top_left_cell)
+  end
+
   test "round-trip preserves numeric types" do
     tmp = Tempfile.new(["numeric_rt", ".xlsx"])
     begin

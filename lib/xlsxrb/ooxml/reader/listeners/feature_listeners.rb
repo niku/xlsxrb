@@ -898,6 +898,7 @@ module Xlsxrb
                     row: row_val,
                     column: col_val,
                     col: col_val,
+                    top_left_cell: tlc,
                     state: :frozen
                   }
                 else

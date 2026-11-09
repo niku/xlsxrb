@@ -78,6 +78,7 @@
 - Remove constant `Xlsxrb::MAX_COL` in favor of `Xlsxrb::MAX_COLUMN`.
 - Remove `Xlsxrb::Error::DIV0`..`VALUE` cell error constants on the exception class in favor of `Elements::CellError::*`.
 - Remove `Elements::RichTextRun#sz` in favor of `font_size`.
+- Replace the `top_row` and `left_column` members of `Elements::FreezePane` and `Elements::SplitPane` with `top_left_cell`. Neither member was read or written.
 - Remove the `escape_formulas:` option of `Xlsxrb.write`, `Xlsxrb.build`, `StreamWriter`, `WorkbookBuilder`, and `WorksheetBuilder`, with its `escape_formulas?` and `escape_formulas=` accessors. It was passed down to the worksheet writer but never used: output was identical with and without it. Strings are always written as text cells, which Excel does not evaluate as formulas, with or without the option.
 - Remove deprecated `Xlsxrb.modify`, `Elements::Workbook#update_sheet`, and `Elements::Worksheet#update_cell` in favor of streaming transformations (`Xlsxrb.read` + `Xlsxrb.write`) or template generation via `Xlsxrb.write`.
 - Remove Hash-like access (`#[]`, `#key?`, `#dig`, `#fetch`, `#merge`, and `== Hash`) on `Elements::MetadataRecord` value objects and `Elements::Hyperlink#[]` in favor of direct reader method calls and `#to_h`.
@@ -109,6 +110,7 @@
 
 ### Fixed
 - Wrap keyword arguments with double splat in Data.define constructors across Elements to prevent heap corruption and segfaults in CRuby 4.0 Ractors.
+- Keep the top-left cell of freeze and split panes. `freeze_pane(top_left_cell:)` and the reader both used a `top_left_cell` that `Elements::FreezePane` and `Elements::SplitPane` did not have, so the value objects dropped it and the writer always wrote the cell just past the frozen rows and columns; the reader also did not read `topLeftCell` for frozen panes.
 - Write worksheets whose `selection` is an Array, one selection per pane, as `Elements::Worksheet` accepts. `Xlsxrb.write` called `to_h` on the Array and raised `TypeError`.
 - Write workbooks loaded from files whose `docProps/app.xml` lists `HeadingPairs`, as files saved by Excel do. `MetadataRecord#to_h` called `to_h` on the `[name, count]` pairs of `AppProperties#heading_pairs`, so `Xlsxrb.write` raised `TypeError`.
 - Keep the date or time number format on `Date` and `Time` cell values that are given a cell style without a `number_format` (for example `cell_styles: [:bold]`). The style replaced the automatic `yyyy-mm-dd` format, so Excel showed the serial number. Such cells now get a variant of their style that adds the default format, in both `Xlsxrb.write` blocks and `Xlsxrb.build`.
