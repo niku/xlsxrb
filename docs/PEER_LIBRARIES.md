@@ -84,29 +84,33 @@ The OpenXML (ECMA-376) specification defines two ways to store text in cells:
 
 The following benchmarks evaluate processing 1,000,000 cells (100,000 rows × 10 columns) containing standard business data (integers, strings, floats, booleans, and dates) across 3 isolated subprocess runs.
 
+Environment: Ruby 4.0.9 on aarch64-linux (the `ruby:4.0` Docker image on Apple silicon), measured on 2026-11-09. All libraries run with YJIT enabled (`RUBY_YJIT_ENABLE=1`), because Rails 7.2 and later enable YJIT by default (`config.yjit`). CRuby itself does not enable YJIT by default. xlsxrb writes with its default ZIP compression level 1 ([ADR 0009](adr/0009-default-zip-compression-level.md)); the other writers use zlib's default level 6, so their files are smaller.
+
 ### Write Performance (1,000,000 cells)
 
 | Library | Version | Model | String Storage | Time (Median) | Time (Mean) | Peak Memory | GC Count |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| xlsxrb (Streaming) | - | Streaming | SST (Shared) | 0.95 s | 0.95 s | 67.6 MB | 34.0 |
-| xlsxtream | 3.1.0 | Streaming | Inline String | 1.16 s | 1.17 s | 17.0 MB | 323.0 |
-| fast_excel | 0.5.0 | Streaming | SST (Shared) | 2.02 s | 2.14 s | 148.3 MB | 210.0 |
-| xlsxrb (In-Memory) | - | In-Memory | SST (Shared) | 2.42 s | 2.57 s | 209.0 MB | 16.0 |
-| write_xlsx | 1.15.0 | In-Memory | SST (Shared) | 4.39 s | 4.42 s | 217.4 MB | 25.0 |
-| caxlsx | 4.5.0 | In-Memory | Inline String | 5.28 s | 5.28 s | 177.4 MB | 24.0 |
-| rubyXL | 3.4.38 | In-Memory | Inline String | 43.13 s | 43.65 s | 2167.2 MB | 101.0 |
+| xlsxrb (Streaming) | - | Streaming | SST (Shared) | 0.46 s | 0.47 s | 67.9 MB | 14 |
+| xlsxtream | 3.1.0 | Streaming | Inline String | 1.04 s | 1.06 s | 19.5 MB | 1038 |
+| fast_excel | 0.6.1 | Streaming | SST (Shared) | 1.61 s | 1.60 s | 151.0 MB | 211 |
+| xlsxrb (In-Memory) | - | In-Memory | SST (Shared) | 1.86 s | 1.82 s | 379.3 MB | 13 |
+| write_xlsx | 1.15.1 | In-Memory | SST (Shared) | 2.40 s | 2.41 s | 212.3 MB | 27 |
+| caxlsx | 4.5.0 | In-Memory | Inline String | 2.66 s | 2.67 s | 183.5 MB | 23 |
+| rubyXL | 3.4.38 | In-Memory | Inline String | 36.37 s | 36.03 s | 2183.0 MB | 103 |
 
 ### Read Performance (1,000,000 cells)
 
 | Library | Version | Model | Time (Median) | Time (Mean) | Peak Memory | GC Count |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| xlsxrb (Streaming) | - | Streaming | 1.73 s | 1.72 s | 136.2 MB | 45.0 |
-| xlsxrb (In-Memory) | - | In-Memory | 4.33 s | 4.46 s | 304.3 MB | 77.0 |
-| simple_xlsx_reader | 5.1.0 | Streaming | 4.38 s | 4.41 s | 32.8 MB | 918.0 |
-| creek | 2.6.3 | Streaming | 7.12 s | 7.05 s | 840.1 MB | 419.0 |
-| roo | 3.0.0 | Streaming | 10.95 s | 10.33 s | 123.4 MB | 196.0 |
-| xsv | 1.4.1 | Streaming | 14.56 s | 14.59 s | 73.6 MB | 2028.0 |
-| rubyXL | 3.4.38 | In-Memory | 30.74 s | 30.78 s | 2289.6 MB | 146.0 |
+| xlsxrb (Streaming) | - | Streaming | 1.74 s | 1.74 s | 73.2 MB | 90 |
+| simple_xlsx_reader | 5.1.0 | Streaming | 3.82 s | 3.85 s | 32.5 MB | 1164 |
+| xlsxrb (In-Memory) | - | In-Memory | 4.18 s | 4.22 s | 521.6 MB | 45 |
+| creek | 2.6.3 | Streaming | 7.52 s | 7.55 s | 826.7 MB | 586 |
+| roo | 4.0.0 | Streaming | 8.35 s | 8.44 s | 135.0 MB | 125 |
+| xsv | 1.4.1 | Streaming | 13.61 s | 13.61 s | 66.5 MB | 817 |
+| rubyXL | 3.4.38 | In-Memory | 34.41 s | 36.98 s | 2198.7 MB | 139 |
+
+Peak memory of the xlsxrb in-memory model is higher than in the 2026-08-19 measurement (write 209.0 MB, read 304.3 MB), which was taken in a different environment without YJIT.
 
 ---
 
@@ -117,5 +121,7 @@ The benchmark suite leverages [`bundler/inline`](https://bundler.io/v2.5/guides/
 To run the suite on your machine:
 
 ```bash
-ruby benchmark.rb 100000 10
+RUBY_YJIT_ENABLE=1 ruby benchmark.rb 100000 10
 ```
+
+Omit `RUBY_YJIT_ENABLE=1` to measure the interpreter.

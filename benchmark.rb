@@ -12,12 +12,12 @@ gemfile(true) do
   gem "rubyzip", ">= 2.3.0"
   gem "caxlsx", "4.5.0"
   gem "xlsxtream", "3.1.0"
-  gem "fast_excel", "0.5.0", platform: :mri
+  gem "fast_excel", "0.6.1", platform: :mri
   gem "rubyXL", "3.4.38"
-  gem "roo", "3.0.0"
+  gem "roo", "4.0.0"
   gem "creek", "2.6.3"
   gem "xsv", "1.4.1"
-  gem "write_xlsx", "1.15.0"
+  gem "write_xlsx", "1.15.1"
   gem "simple_xlsx_reader", "5.1.0"
 end
 
@@ -188,7 +188,7 @@ RUNNER_SCRIPT = <<~'RUBY'
   when ["xlsxrb_inmemory", "read"]
     require_relative "lib/xlsxrb"
     measure do
-      wb = Xlsxrb.read(filename).load
+      wb = Xlsxrb.load(filename)
       count = 0
       wb.sheets.each do |sheet|
         sheet.rows.each do |row|
@@ -238,7 +238,6 @@ RUNNER_SCRIPT = <<~'RUBY'
       end
     end
   when ["simple_xlsx_reader", "read"]
-    gem "rubyzip", "~> 1.3.0"
     require "simple_xlsx_reader"
     measure do
       doc = SimpleXlsxReader.open(filename)
@@ -340,9 +339,9 @@ puts "\n=== Benchmarking Write Performance ==="
 write_targets = [
   ["xlsxtream 3.1.0", "xlsxtream", "Streaming", "Inline String"],
   ["xlsxrb (Streaming)", "xlsxrb_stream", "Streaming", "SST (Shared)"],
-  ["fast_excel 0.5.0 (C)", "fast_excel", "Streaming", "SST (Shared)"],
+  ["fast_excel 0.6.1 (C)", "fast_excel", "Streaming", "SST (Shared)"],
   ["caxlsx 4.5.0", "caxlsx", "In-Memory", "Inline String"],
-  ["write_xlsx 1.15.0", "write_xlsx", "In-Memory", "SST (Shared)"],
+  ["write_xlsx 1.15.1", "write_xlsx", "In-Memory", "SST (Shared)"],
   ["xlsxrb (In-Memory)", "xlsxrb_inmemory", "In-Memory", "SST (Shared)"],
   ["rubyXL 3.4.38", "rubyXL", "In-Memory", "Inline String"]
 ]
@@ -365,7 +364,7 @@ read_targets = [
   ["xlsxrb (Streaming)", "xlsxrb_stream", "Streaming"],
   ["xlsxrb (In-Memory)", "xlsxrb_inmemory", "In-Memory"],
   ["creek 2.6.3", "creek", "Streaming"],
-  ["roo 3.0.0", "roo", "Streaming"],
+  ["roo 4.0.0", "roo", "Streaming"],
   ["simple_xlsx_reader 5.1.0", "simple_xlsx_reader", "Streaming"],
   ["xsv 1.4.1", "xsv", "Streaming"],
   ["rubyXL 3.4.38", "rubyXL", "In-Memory"]

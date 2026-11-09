@@ -236,7 +236,7 @@ For full details, see [docs/SPEC_SOURCES.md](docs/SPEC_SOURCES.md).
 
 ## Benchmarks
 
-Benchmark processing 1,000,000 cells (100,000 rows × 10 cols) across popular Ruby gems:
+Benchmark processing 1,000,000 cells (100,000 rows × 10 cols) across popular Ruby gems, with YJIT enabled for every library (Rails 7.2 and later enable YJIT by default):
 
 <p align="center">
   <img src="docs/assets/benchmark_results.svg" width="100%" alt="Ruby XLSX Performance Benchmarks"/>
@@ -244,7 +244,7 @@ Benchmark processing 1,000,000 cells (100,000 rows × 10 cols) across popular Ru
 
 For detailed metrics (peak memory, GC count, mean/median times) and architectural tradeoffs (SST vs. Inline Strings), see [docs/PEER_LIBRARIES.md](docs/PEER_LIBRARIES.md).
 
-To reproduce locally: `ruby benchmark.rb 100000 10`
+To reproduce locally: `RUBY_YJIT_ENABLE=1 ruby benchmark.rb 100000 10`
 
 ## Quality Assurance & Testing
 
