@@ -891,7 +891,8 @@ module Xlsxrb
 
         # : (untyped chart) -> untyped
         def generate_chart_xml(chart)
-          chart_type = CHART_TYPE_MAP[chart[:type]] || "barChart"
+          # Charts read from files carry the element name ("lineChart") as their type.
+          chart_type = CHART_TYPE_MAP[chart[:type]] || CHART_TYPE_MAP.values.find { |element| element == chart[:type].to_s } || "barChart"
           parts = [
             XML_HEADER,
             %(<c:chartSpace xmlns:c="#{C_NS}" xmlns:a="#{A_NS}" xmlns:r="#{DOC_REL_NS}">)

@@ -376,6 +376,19 @@ class PublicApiTest < Test::Unit::TestCase
     assert_include(written, '<cellStyles count="2"><cellStyle name="Heading 1" xfId="1" builtinId="16"/><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>')
   end
 
+  test "loaded charts keep their chart type when written" do
+    built = Xlsxrb.build do |b|
+      b.sheet("S") do |s|
+        s.row(%w[a b])
+        s.row([1, 2])
+        s.chart(type: :line, series: [{ cat_ref: "S!$A$1:$B$1", val_ref: "S!$A$2:$B$2" }])
+      end
+    end
+    loaded = Xlsxrb.load(Xlsxrb.write(built))
+    chart_xml = Xlsxrb::Ooxml::ZipReader.new(StringIO.new(Xlsxrb.write(loaded))).read_entry("xl/charts/chart1.xml")
+    assert_match(%r{<c:plotArea><c:layout/><c:lineChart>}, chart_xml)
+  end
+
   test "page setup omits a DPI of zero" do
     built = Xlsxrb.build do |b|
       b.sheet("S") do |s|
