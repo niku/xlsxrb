@@ -778,6 +778,11 @@ module Xlsxrb
     end
 
     # Cell comment or note (<comment>).
+    #
+    # +anchor+ places the comment box: the eight integers of the VML note's <x:Anchor>, that is
+    # the left column, x offset, top row, y offset, right column, x offset, bottom row, and
+    # y offset (0-based columns and rows, offsets in pixels). Without it, the box is placed
+    # next to the cell.
     # @api public
     class Comment < Data
       attr_reader ref(): untyped
@@ -794,12 +799,14 @@ module Xlsxrb
 
       attr_reader visible(): untyped
 
-      def self.new: (untyped ref, untyped text, untyped author, untyped r_id, untyped shape_id, untyped author_id, untyped visible) -> instance
-                  | (ref: untyped, text: untyped, author: untyped, r_id: untyped, shape_id: untyped, author_id: untyped, visible: untyped) -> instance
+      attr_reader anchor(): untyped
 
-      def self.members: () -> [ :ref, :text, :author, :r_id, :shape_id, :author_id, :visible ]
+      def self.new: (untyped ref, untyped text, untyped author, untyped r_id, untyped shape_id, untyped author_id, untyped visible, untyped anchor) -> instance
+                  | (ref: untyped, text: untyped, author: untyped, r_id: untyped, shape_id: untyped, author_id: untyped, visible: untyped, anchor: untyped) -> instance
 
-      def members: () -> [ :ref, :text, :author, :r_id, :shape_id, :author_id, :visible ]
+      def self.members: () -> [ :ref, :text, :author, :r_id, :shape_id, :author_id, :visible, :anchor ]
+
+      def members: () -> [ :ref, :text, :author, :r_id, :shape_id, :author_id, :visible, :anchor ]
     end
 
     # Threaded comment (<threadedComment>).

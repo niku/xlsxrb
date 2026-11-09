@@ -1672,7 +1672,8 @@ module Xlsxrb
             parts << '<v:textbox style="mso-direction-alt:auto"><div style="text-align:left"></div></v:textbox>'
             parts << '<x:ClientData ObjectType="Note">'
             parts << "<x:MoveWithCells/><x:SizeWithCells/>"
-            parts << "<x:Anchor>#{col + 1}, 15, #{row}, 10, #{col + 3}, 15, #{row + 4}, 4</x:Anchor>"
+            anchor = c[:anchor] || Xlsxrb::Elements::Comment.default_anchor(col, row)
+            parts << "<x:Anchor>#{anchor.join(", ")}</x:Anchor>"
             parts << "<x:AutoFill>False</x:AutoFill>"
             parts << "<x:Row>#{row}</x:Row>"
             parts << "<x:Column>#{col}</x:Column>"

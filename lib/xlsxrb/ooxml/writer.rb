@@ -1674,8 +1674,8 @@ module Xlsxrb
       end
 
       # Adds a comment on a cell.
-      # : (untyped cell_address, untyped text, ?author: ::String, ?sheet: untyped?, ?guid: untyped?, ?shape_id: untyped?, ?visible: bool) -> untyped
-      def add_comment(cell_address, text, author: "Author", sheet: nil, guid: nil, shape_id: nil, visible: false)
+      # : (untyped cell_address, untyped text, ?author: ::String, ?sheet: untyped?, ?guid: untyped?, ?shape_id: untyped?, ?visible: bool, ?anchor: Array[Integer]?) -> untyped
+      def add_comment(cell_address, text, author: "Author", sheet: nil, guid: nil, shape_id: nil, visible: false, anchor: nil)
         validate_cell_address!(cell_address)
         sheet_name = sheet || @sheet_order.first
         raise ArgumentError, "unknown sheet: #{sheet_name}" unless @comments_data.key?(sheet_name)
@@ -1684,6 +1684,7 @@ module Xlsxrb
         entry[:guid] = guid if guid
         entry[:shape_id] = shape_id if shape_id
         entry[:visible] = true if visible
+        entry[:anchor] = anchor if anchor
         @comments_data[sheet_name] << entry
       end
 

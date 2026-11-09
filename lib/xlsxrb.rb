@@ -1672,25 +1672,41 @@ module Xlsxrb
       c_parser.listen(c_listener)
       c_parser.parse
       comments = c_listener.comments
-      visible = visible_comment_refs(zip_reader, listener.relationships, base_dir)
-      comments.each { |c| c[:visible] = true if visible.include?(c[:ref].to_s.upcase) } unless visible.empty?
+      notes = vml_notes(zip_reader, listener.relationships, base_dir)
+      unless notes.empty?
+        comments.each do |c|
+          note = notes[c[:ref].to_s.upcase]
+          next unless note
+
+          c[:visible] = true if note[:visible]
+          c[:anchor] = note[:anchor] if note[:anchor]
+        end
+      end
       comments
     end
 
-    # Returns the cell references of the comments that the sheet's legacy VML drawing shows
-    # permanently (<x:Visible/> in the note's client data).
-    #: (Ooxml::ZipReader zip_reader, Array[Hash[Symbol, untyped]] relationships, String base_dir) -> Set[String]
-    def visible_comment_refs(zip_reader, relationships, base_dir)
+    # Reads the comment notes of the sheet's legacy VML drawing, keyed by cell reference:
+    # whether each is shown permanently (<x:Visible/>) and its <x:Anchor> box position.
+    #: (Ooxml::ZipReader zip_reader, Array[Hash[Symbol, untyped]] relationships, String base_dir) -> Hash[String, Hash[Symbol, untyped]]
+    def vml_notes(zip_reader, relationships, base_dir)
       rel = relationships.find { |r| r[:type]&.end_with?("/vmlDrawing") }
       vml = rel && zip_reader.read_entry(resolve_relative_path(base_dir, rel[:target]))
-      return Set.new if vml.nil? || !vml.include?("Visible")
+      return {} if vml.nil?
 
-      vml.split("</v:shape>").each_with_object(Set.new) do |shape, refs|
-        next unless shape.include?('ObjectType="Note"') && shape.include?("<x:Visible")
+      vml.split("</v:shape>").each_with_object({}) do |shape, notes|
+        next unless shape.include?('ObjectType="Note"')
 
         row = shape[%r{<x:Row>\s*(\d+)\s*</x:Row>}, 1]
         col = shape[%r{<x:Column>\s*(\d+)\s*</x:Column>}, 1]
-        refs << "#{Elements::Cell._column_letter(col.to_i)}#{row.to_i + 1}" if row && col
+        next unless row && col
+
+        anchor = shape[%r{<x:Anchor>([\d,\s]+)</x:Anchor>}, 1]&.split(",")&.map(&:to_i)
+        # The writer's default box reads back as no anchor, as it was built.
+        anchor = nil if anchor&.size != 8 || anchor == Elements::Comment.default_anchor(col.to_i, row.to_i)
+        notes["#{Elements::Cell._column_letter(col.to_i)}#{row.to_i + 1}"] = {
+          visible: shape.include?("<x:Visible"),
+          anchor: anchor
+        }
       end
     end
 

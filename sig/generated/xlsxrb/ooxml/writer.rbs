@@ -604,8 +604,8 @@ module Xlsxrb
       def shapes: (?sheet: untyped) -> untyped
 
       # Adds a comment on a cell.
-      # : (untyped cell_address, untyped text, ?author: ::String, ?sheet: untyped?, ?guid: untyped?, ?shape_id: untyped?, ?visible: bool) -> untyped
-      def add_comment: (untyped cell_address, untyped text, ?author: untyped, ?sheet: untyped, ?guid: untyped, ?shape_id: untyped, ?visible: untyped) -> untyped
+      # : (untyped cell_address, untyped text, ?author: ::String, ?sheet: untyped?, ?guid: untyped?, ?shape_id: untyped?, ?visible: bool, ?anchor: Array[Integer]?) -> untyped
+      def add_comment: (untyped cell_address, untyped text, ?author: untyped, ?sheet: untyped, ?guid: untyped, ?shape_id: untyped, ?visible: untyped, ?anchor: untyped) -> untyped
 
       # Returns comment definitions for the first (or given) sheet.
       # : (?sheet: untyped?) -> untyped

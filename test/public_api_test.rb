@@ -526,6 +526,27 @@ class PublicApiTest < Test::Unit::TestCase
     assert_include(vml.call(io.string), "<x:Visible/>")
   end
 
+  test "comments keep the position of their box" do
+    vml = ->(d) { Xlsxrb::Ooxml::ZipReader.new(StringIO.new(d)).read_entry("xl/drawings/vmlDrawing1.vml") }
+    built = Xlsxrb.build do |b|
+      b.sheet("S") do |s|
+        s.row(%w[a b])
+        s.comment("B1", "default box")
+      end
+    end
+    data = Xlsxrb.write(built)
+    assert_equal(["<x:Anchor>2, 15, 0, 10, 4, 15, 4, 4</x:Anchor>"], vml.call(data).scan(%r{<x:Anchor>[^<]*</x:Anchor>}))
+
+    loaded = Xlsxrb.load(data)
+    assert_nil(loaded.sheets.first.comments.first.anchor, "the default box reads back as no anchor")
+    moved = loaded.sheets.first.comments.first.with(anchor: [5, 0, 1, 0, 7, 0, 4, 0])
+    rewritten = Xlsxrb.write(loaded.with(sheets: [loaded.sheets.first.with(comments: [moved])]))
+    assert_include(vml.call(rewritten), "<x:Anchor>5, 0, 1, 0, 7, 0, 4, 0</x:Anchor>")
+    Xlsxrb.read(StringIO.new(rewritten)) { |sheet| assert_equal([5, 0, 1, 0, 7, 0, 4, 0], sheet.comments.first.anchor) }
+
+    assert_raise_message(/comment anchor must be an Array of 8 Integers/) { Xlsxrb::Elements::Comment.new(ref: "A1", anchor: [1, 2]) }
+  end
+
   test "page setup omits a DPI of zero" do
     built = Xlsxrb.build do |b|
       b.sheet("S") do |s|

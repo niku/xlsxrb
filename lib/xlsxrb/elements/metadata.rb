@@ -1271,15 +1271,22 @@ module Xlsxrb
     end
 
     # Cell comment or note (<comment>).
+    #
+    # +anchor+ places the comment box: the eight integers of the VML note's <x:Anchor>, that is
+    # the left column, x offset, top row, y offset, right column, x offset, bottom row, and
+    # y offset (0-based columns and rows, offsets in pixels). Without it, the box is placed
+    # next to the cell.
     # @api public
-    Comment = Data.define(:ref, :text, :author, :r_id, :shape_id, :author_id, :visible) do
+    Comment = Data.define(:ref, :text, :author, :r_id, :shape_id, :author_id, :visible, :anchor) do
       include MetadataRecord
 
       private :visible
 
-      #: (?ref: String?, ?text: String?, ?author: String?, ?r_id: String?, ?shape_id: Integer?, ?author_id: Integer?, ?visible: bool?) -> void
-      def initialize(ref: nil, text: nil, author: nil, r_id: nil, shape_id: nil, author_id: nil, visible: false)
-        super(**{ ref: ref, text: text, author: author, r_id: r_id, shape_id: shape_id, author_id: author_id, visible: visible })
+      #: (?ref: String?, ?text: String?, ?author: String?, ?r_id: String?, ?shape_id: Integer?, ?author_id: Integer?, ?visible: bool?, ?anchor: Array[Integer]?) -> void
+      def initialize(ref: nil, text: nil, author: nil, r_id: nil, shape_id: nil, author_id: nil, visible: false, anchor: nil)
+        raise ArgumentError, "comment anchor must be an Array of 8 Integers, got #{anchor.inspect}" unless anchor.nil? || (anchor.is_a?(Array) && anchor.size == 8 && anchor.all?(Integer))
+
+        super(**{ ref: ref, text: text, author: author, r_id: r_id, shape_id: shape_id, author_id: author_id, visible: visible, anchor: anchor&.dup&.freeze })
       end
 
       # Returns whether the comment is visible by default.
@@ -1288,6 +1295,18 @@ module Xlsxrb
       #: () -> bool
       def visible?
         visible ? true : false
+      end
+
+      # The anchor of a comment box without an explicit anchor: next to the cell at the
+      # 0-based +column+ and +row+, two columns wide and four rows high.
+      #
+      # @param column [Integer]
+      # @param row [Integer]
+      # @return [Array<Integer>]
+      # @api private
+      #: (Integer column, Integer row) -> Array[Integer]
+      def self.default_anchor(column, row)
+        [column + 1, 15, row, 10, column + 3, 15, row + 4, 4]
       end
 
       # Returns whether the comment has no text.

@@ -420,7 +420,8 @@ module Xlsxrb
               ref: c[:ref] || c[:cell],
               author: c[:author],
               text: c[:text],
-              visible: c[:visible] || false
+              visible: c[:visible] || false,
+              anchor: c[:anchor]
             )
           end
         end.freeze
