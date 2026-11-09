@@ -251,6 +251,7 @@ module Xlsxrb
 
       def write_auxiliary_parts(zip)
         drawing_idx = 0
+        media_idx = 0
         comment_idx = 0
         tc_idx = 0
         table_idx = 0
@@ -288,9 +289,11 @@ module Xlsxrb
             end
 
             sheet_images.each do |img|
-              media_path = "xl/media/image#{drawing_idx}.#{img[:ext] || "png"}"
-              zip.add_binary_entry(media_path, img[:file_data])
-              drawing_rels_data << { type: :image, target: "../media/image#{drawing_idx}.#{img[:ext] || "png"}" }
+              # One media file per image: a sheet can hold several.
+              media_idx += 1
+              media_name = "image#{media_idx}.#{img[:ext] || "png"}"
+              zip.add_binary_entry("xl/media/#{media_name}", img[:file_data])
+              drawing_rels_data << { type: :image, target: "../media/#{media_name}" }
               drawing_parts << { kind: :pic, img: img, rid_index: drawing_rels_data.size }
             end
 

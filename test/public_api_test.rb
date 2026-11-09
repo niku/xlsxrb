@@ -243,6 +243,32 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal(comment.text.to_a, Xlsxrb.load(Xlsxrb.write(loaded)).sheets.first.comments.first.text.to_a)
   end
 
+  test "each image on a sheet gets its own media file" do
+    png = File.binread(File.join(__dir__, "../docs/assets/lsp_autocompletion.png"))
+    check = lambda do |data|
+      entries = Xlsxrb::Ooxml::ZipReader.new(StringIO.new(data)).read_all
+      assert_equal(%w[xl/media/image1.png xl/media/image2.png xl/media/image3.png], entries.keys.grep(%r{\Axl/media/}).sort)
+      targets = entries.select { |name, _| name.start_with?("xl/drawings/_rels/") }.values.join.scan(/Target="([^"]+)"/).flatten
+      assert_equal(%w[../media/image1.png ../media/image2.png ../media/image3.png], targets.sort)
+      assert_equal(3, Xlsxrb.load(data).sheets.sum { |s| s.images.size })
+    end
+    add_images = lambda do |w|
+      w.sheet("A") do |s|
+        s.row([1])
+        s.image(png, ext: "png", from_row: 0)
+        s.image(png, ext: "png", from_row: 5)
+      end
+      w.sheet("B") do |s|
+        s.row([1])
+        s.image(png, ext: "png", from_row: 0)
+      end
+    end
+    check.call(Xlsxrb.write(Xlsxrb.build(&add_images)))
+    io = StringIO.new
+    Xlsxrb.write(io, &add_images)
+    check.call(io.string)
+  end
+
   test "streamed sheets link to their own drawings, comments, and tables" do
     png = File.binread(File.join(__dir__, "../docs/assets/lsp_autocompletion.png"))
     io = StringIO.new
