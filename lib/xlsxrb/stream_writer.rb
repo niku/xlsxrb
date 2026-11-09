@@ -3520,8 +3520,10 @@ module Xlsxrb
       sheet_data[:cells] = @current_cells if @current_cells && !@current_cells.empty?
       @current_cells = nil
 
-      temp_wb_writer = Ooxml::WorkbookWriter.new(sheets: [sheet_data])
-      info = temp_wb_writer.prepare_sheet_auxiliary(sheet_data, @current_sheet_index - 1)
+      # One writer for all sheets, so that drawing, comment, table, and pivot part numbers
+      # continue across sheets as write_package_parts numbers the parts.
+      @auxiliary_writer ||= Ooxml::WorkbookWriter.new(sheets: [])
+      info = @auxiliary_writer.prepare_sheet_auxiliary(sheet_data, @current_sheet_index - 1)
 
       @current_row_writer.finish(
         drawing_rid: info[:drawing_rid],

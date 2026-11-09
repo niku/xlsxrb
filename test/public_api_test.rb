@@ -243,6 +243,31 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal(comment.text.to_a, Xlsxrb.load(Xlsxrb.write(loaded)).sheets.first.comments.first.text.to_a)
   end
 
+  test "streamed sheets link to their own drawings, comments, and tables" do
+    png = File.binread(File.join(__dir__, "../docs/assets/lsp_autocompletion.png"))
+    io = StringIO.new
+    Xlsxrb.write(io) do |w|
+      2.times do |i|
+        w.sheet("S#{i}") do |s|
+          s.row(%w[A B])
+          s.row([1, 2])
+          s.image(png, ext: "png", from_row: 3 + i)
+          s.comment("A1", "note #{i}")
+          s.threaded_comment("B1", "thread #{i}", author: "x")
+          s.table("A1:B2", name: "T#{i}", columns: %w[A B])
+        end
+      end
+    end
+    rels = Xlsxrb::Ooxml::ZipReader.new(StringIO.new(io.string)).read_entry("xl/worksheets/_rels/sheet2.xml.rels")
+    %w[drawings/drawing2.xml comments2.xml threadedComments/threadedComment2.xml tables/table2.xml].each { |part| assert_include(rels, part) }
+
+    sheets = Xlsxrb.load(io.string).sheets
+    assert_equal([["note 0"], ["note 1"]], sheets.map { |s| s.comments.map { |c| c.text.to_s } })
+    assert_equal([["thread 0"], ["thread 1"]], sheets.map { |s| s.threaded_comments.map(&:text) })
+    assert_equal([["T0"], ["T1"]], sheets.map { |s| s.tables.map(&:name) })
+    assert_equal([[3], [4]], sheets.map { |s| s.images.map(&:from_row) })
+  end
+
   test "page setup omits a DPI of zero" do
     built = Xlsxrb.build do |b|
       b.sheet("S") do |s|
