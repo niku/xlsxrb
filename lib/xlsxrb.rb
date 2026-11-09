@@ -2542,7 +2542,12 @@ module Xlsxrb
             source
           end
         else
-          source
+          # Not XLSX or encrypted bytes and not an existing file: report the path rather than
+          # parsing the path string itself as ZIP content.
+          raise Errno::EISDIR, source if File.directory?(source)
+
+          shown = source.length > 200 || source.include?("\n") ? "#{source[0, 60].inspect}... (#{source.bytesize} bytes)" : source
+          raise Errno::ENOENT, shown
         end
       elsif source.respond_to?(:read) && source.respond_to?(:pos) && source.respond_to?(:seek)
         begin

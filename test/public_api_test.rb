@@ -125,6 +125,15 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal("C2", Xlsxrb.load(data).sheets.first.selection.active_cell)
   end
 
+  test "read and load report a missing path as Errno::ENOENT" do
+    assert_raise_message("No such file or directory - missing.xlsx") { Xlsxrb.load("missing.xlsx") }
+    assert_raise(Errno::ENOENT) { Xlsxrb.read("missing.xlsx") { |_sheet| nil } }
+    assert_raise(Errno::EISDIR) { Xlsxrb.load(Dir.tmpdir) }
+    assert_raise_message(/\ANo such file or directory - "x{60}"\.\.\. \(500 bytes\)\z/) { Xlsxrb.load("x" * 500) }
+    # Bytes that are not an XLSX archive are still a format error, not a missing file.
+    assert_raise(Xlsxrb::ZipError) { Xlsxrb.load("\x00\x01not a zip".b) }
+  end
+
   test "round-trip preserves numeric types" do
     tmp = Tempfile.new(["numeric_rt", ".xlsx"])
     begin
