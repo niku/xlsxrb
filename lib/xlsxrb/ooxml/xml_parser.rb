@@ -17,15 +17,20 @@ begin
       end
     end
     if defined?(REXML::Security)
+      # REXML keeps these limits in class variables, which non-main Ractors cannot read.
+      # Move them to module instance variables, carrying over the values the application
+      # has already set (e.g. 0 to disable entity expansion).
+      current_limit = REXML::Security.entity_expansion_limit
+      current_text_limit = REXML::Security.entity_expansion_text_limit
       prev_verbose = $VERBOSE
       $VERBOSE = nil
       begin
         REXML::Security.instance_eval do
-          @entity_expansion_limit = 10_000
-          @entity_expansion_text_limit = 10_240
+          @entity_expansion_limit = current_limit
+          @entity_expansion_text_limit = current_text_limit
 
           def self.entity_expansion_limit
-            @entity_expansion_limit || 10_000
+            @entity_expansion_limit
           end
 
           def self.entity_expansion_limit=(val)
@@ -33,7 +38,7 @@ begin
           end
 
           def self.entity_expansion_text_limit
-            @entity_expansion_text_limit || 10_240
+            @entity_expansion_text_limit
           end
 
           def self.entity_expansion_text_limit=(val)

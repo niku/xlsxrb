@@ -130,4 +130,21 @@ class SecurityResilienceTest < Test::Unit::TestCase
       end
     end
   end
+
+  # 7. Loading xlsxrb must not loosen REXML entity expansion limits set by the application
+  def test_require_preserves_rexml_entity_expansion_limits
+    script = <<~RUBY
+      require "rexml/document"
+      REXML::Security.entity_expansion_limit = 0
+      REXML::Security.entity_expansion_text_limit = 512
+      require "xlsxrb"
+      print REXML::Security.entity_expansion_limit, ",", REXML::Security.entity_expansion_text_limit
+      REXML::Security.entity_expansion_limit = 3
+      print ",", REXML::Security.entity_expansion_limit
+    RUBY
+    lib_dir = File.expand_path("../lib", __dir__)
+    stdout, stderr, status = Open3.capture3(RbConfig.ruby, "-I", lib_dir, "-e", script)
+    assert_true status.success?, stderr
+    assert_equal "0,512,3", stdout
+  end
 end
