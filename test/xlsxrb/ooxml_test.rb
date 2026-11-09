@@ -339,6 +339,11 @@ class OoxmlTest < Test::Unit::TestCase
     assert_equal(content, reader.read_entry("streamed.xml"))
     assert_equal("plain", reader.read_entry("plain.txt"))
     assert_external_zip_test(buf)
+
+    # Without a central directory, the local header walk skips the 8-byte data descriptor
+    fallback = Xlsxrb::Ooxml::ZipReader.new(StringIO.new(buf.byteslice(0, cd)))
+    assert_equal(content, fallback.read_entry("streamed.xml"))
+    assert_equal("plain", fallback.read_entry("plain.txt"))
   end
 
   test "Xlsxrb.write to unseekable output reads back" do

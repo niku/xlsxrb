@@ -571,6 +571,7 @@ module Xlsxrb
           header = io.read(26)
           break unless header && header.bytesize == 26
 
+          version_needed  = header[0, 2].unpack1("v")
           gp_flag         = header[2, 2].unpack1("v")
           method          = header[4, 2].unpack1("v")
           crc             = header[10, 4].unpack1("V")
@@ -590,7 +591,8 @@ module Xlsxrb
           has_data_descriptor = gp_flag.anybits?(0x08)
 
           if has_data_descriptor && compressed_size.zero?
-            entry_data, = find_data_descriptor_stream(io, method)
+            # A ZIP64 entry (version needed 4.5) carries 8-byte sizes in its data descriptor.
+            entry_data, = find_data_descriptor_stream(io, method, zip64: version_needed >= 45)
             @cached_entries ||= {}
             @cached_entries[norm_name] = entry_data
             @cached_entries[entry_name] = entry_data if entry_name != norm_name
@@ -624,15 +626,17 @@ module Xlsxrb
         result
       end
 
-      def find_data_descriptor_stream(io, method)
+      def find_data_descriptor_stream(io, method, zip64: false)
         if method == 8
           inflater = Zlib::Inflate.new(-Zlib::MAX_WBITS)
           result = +""
           chunk_size = 4096
+          fed = 0
           begin
             while !inflater.finished? && (chunk = io.read(chunk_size))
               break if chunk.empty?
 
+              fed += chunk.bytesize
               inflated = inflater.inflate(chunk)
               limit = @max_uncompressed_size || MAX_UNCOMPRESSED_SIZE
               raise ZipBombError, "ZIP bomb detected: Uncompressed size exceeds #{limit} bytes" if result.bytesize + inflated.bytesize > limit
@@ -642,19 +646,22 @@ module Xlsxrb
           rescue Zlib::BufError, Zlib::DataError
             # Inflation ended
           ensure
-            remaining_bytes = inflater.avail_in
+            # Ruby's Zlib::Inflate drops input past the end of the deflate stream (avail_in
+            # is 0), so rewind by what was read beyond the compressed length (total_in).
+            remaining_bytes = fed - inflater.total_in
             inflater.close
           end
 
           io.seek(-remaining_bytes, IO::SEEK_CUR) if io.respond_to?(:seek) && remaining_bytes.positive?
 
           desc_sig = io.read(4)
+          sizes_len = zip64 ? 16 : 8
           if desc_sig == [0x50, 0x4B, 0x07, 0x08].pack("C4")
-            io.read(12)
+            io.read(4 + sizes_len)
           elsif desc_sig == [0x50, 0x4B, 0x03, 0x04].pack("C4") || desc_sig == [0x50, 0x4B, 0x01, 0x02].pack("C4")
             io.seek(-4, IO::SEEK_CUR) if io.respond_to?(:seek)
           elsif desc_sig
-            io.read(8)
+            io.read(sizes_len)
           end
 
           [result, 0]

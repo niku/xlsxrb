@@ -134,7 +134,7 @@ module Xlsxrb
 
       def parse_catalog_from_local_headers: (untyped io) -> untyped
 
-      def find_data_descriptor_stream: (untyped io, untyped method) -> untyped
+      def find_data_descriptor_stream: (untyped io, untyped method, ?zip64: untyped) -> untyped
 
       def decompress: (untyped raw, untyped method) -> untyped
 
