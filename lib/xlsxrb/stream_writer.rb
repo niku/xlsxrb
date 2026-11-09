@@ -145,8 +145,8 @@ module Xlsxrb
       @styles = {} # { style_name => StyleBuilder }
       @style_writer = Ooxml::Writer.new(default_font: default_font)
       @style_name_to_id = {}
-      style("__xlsxrb_date", number_format: "yyyy-mm-dd")
-      style("__xlsxrb_time", number_format: "yyyy-mm-dd hh:mm:ss")
+      style("__xlsxrb_date", number_format: DslHelpers::DATE_NUMBER_FORMAT)
+      style("__xlsxrb_time", number_format: DslHelpers::TIME_NUMBER_FORMAT)
       # Workbook-level settings
       @defined_names = []
       @core_properties = {}
@@ -1712,6 +1712,7 @@ module Xlsxrb
 
       values = DslHelpers.normalize_row_values(values)
       cell_styles = DslHelpers.normalize_row_styles(cell_styles)
+      cell_styles = with_date_style_variants(values, cell_styles) if cell_styles
 
       if @current_charts && !@current_charts.empty?
         @current_cells ||= {}
@@ -3410,6 +3411,33 @@ module Xlsxrb
     end
 
     private
+
+    # Gives Date and Time values whose named cell style has no number format a variant of
+    # that style with the default date or time format, registered on first use.
+    #: (Array[untyped] values, untyped cell_styles) -> untyped
+    def with_date_style_variants(values, cell_styles)
+      styles_for_cells = cell_styles.is_a?(Array) ? cell_styles : nil
+      values.each_with_index do |value, idx|
+        next unless value.is_a?(Date) || value.is_a?(Time)
+
+        style_name = styles_for_cells ? styles_for_cells[idx] : cell_styles
+        next unless style_name.is_a?(String) || style_name.is_a?(Symbol)
+
+        variant = DslHelpers.date_style_variant(value, style_name.to_s, @styles[style_name.to_s])
+        next unless variant
+
+        variant_name, number_format = variant
+        unless @style_name_to_id.key?(variant_name)
+          variant_builder = @styles[style_name.to_s].with_number_format(variant_name, number_format)
+          @styles[variant_name] = variant_builder
+          @style_name_to_id[variant_name] = variant_builder.register_with(@style_writer)
+        end
+        styles_for_cells ||= Array.new(values.size, cell_styles)
+        styles_for_cells = styles_for_cells.dup if styles_for_cells.equal?(cell_styles)
+        styles_for_cells[idx] = variant_name
+      end
+      styles_for_cells || cell_styles
+    end
 
     def ensure_sheet_started!
       sheet if @current_sheet.nil?

@@ -1057,6 +1057,7 @@ namespace :mutant do
           "Xlsxrb::DslHelpers.area_ref",
           "Xlsxrb::DslHelpers.chunked_sqrefs",
           "Xlsxrb::DslHelpers.validate_runs!",
+          "Xlsxrb::DslHelpers.date_style_variant",
           "Xlsxrb::DslHelpers.quote_sheet_name",
           "Xlsxrb::DslHelpers.format_absolute_reference",
           "Xlsxrb::DslHelpers.normalize_defined_name_value",

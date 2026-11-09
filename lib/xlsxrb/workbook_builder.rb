@@ -755,6 +755,25 @@ module Xlsxrb
         end
       end
 
+      # Date and Time cells styled without a number format get a variant of their style
+      # that keeps the default date or time format.
+      date_variants = {}
+      sheets.each do |sheet|
+        sheet.rows.each do |row|
+          row.cells.each do |cell|
+            style_name = cell.style
+            next unless style_name.is_a?(String) || style_name.is_a?(Symbol)
+
+            variant = DslHelpers.date_style_variant(cell.value, style_name.to_s, all_style_builders[style_name.to_s])
+            next unless variant
+
+            variant_name, number_format = variant
+            date_variants[[style_name.to_s, cell.value.is_a?(Time)]] = variant
+            all_style_builders[variant_name] ||= all_style_builders[style_name.to_s].with_number_format(variant_name, number_format)
+          end
+        end
+      end
+
       if all_style_builders.empty?
         if @default_font
           temp_writer = Ooxml::Writer.new(default_font: @default_font)
@@ -838,6 +857,9 @@ module Xlsxrb
 
           new_cells = row.cells.map do |cell|
             raw_cell_style = cell.style || cell.style_index
+            dated = (cell.value.is_a?(Date) || cell.value.is_a?(Time)) && (raw_cell_style.is_a?(String) || raw_cell_style.is_a?(Symbol))
+            date_variant = dated ? date_variants[[raw_cell_style.to_s, cell.value.is_a?(Time)]] : nil
+            raw_cell_style = date_variant.first if date_variant
             resolved_cell_style = if (raw_cell_style.is_a?(String) || raw_cell_style.is_a?(Symbol)) && style_name_to_id.key?(raw_cell_style.to_s)
                                     style_name_to_id[raw_cell_style.to_s]
                                   elsif raw_cell_style.nil?
@@ -846,7 +868,7 @@ module Xlsxrb
                                     raw_cell_style
                                   end
 
-            target_fmt = cell.format_code || col_fmt_map[cell.column_index]
+            target_fmt = cell.format_code || date_variant&.last || col_fmt_map[cell.column_index]
 
             if resolved_cell_style == (cell.style || cell.style_index) && target_fmt == cell.format_code
               cell

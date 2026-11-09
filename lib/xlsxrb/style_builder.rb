@@ -358,6 +358,31 @@ module Xlsxrb
     #: Hash[Symbol, untyped]
     attr_reader :border_props
 
+    # Copies the option hashes, so a copy can change without affecting the original.
+    #: (StyleBuilder source) -> void
+    def initialize_copy(source)
+      super
+      @font_props = @font_props.dup
+      @fill_props = @fill_props.dup
+      @border_props = @border_props.dup
+      @alignment = @alignment.dup
+      @protection = @protection.dup
+    end
+
+    # Returns a copy of this style named +name+ that uses +number_format+.
+    #
+    # @param name [String] Name of the copy.
+    # @param number_format [String, Integer] Number format of the copy.
+    # @return [StyleBuilder]
+    # @api private
+    #: (String name, String | Integer number_format) -> StyleBuilder
+    def with_number_format(name, number_format)
+      copy = dup
+      copy.instance_variable_set(:@name, name)
+      copy.number_format = number_format
+      copy
+    end
+
     # Applies option-style definitions so callers can use add_style(name, **opts)
     # as an alternative to block-based fluent chaining.
     # Applies option-style definitions so callers can use add_style(name, **opts)

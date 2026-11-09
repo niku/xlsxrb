@@ -105,6 +105,7 @@
 
 ### Fixed
 - Wrap keyword arguments with double splat in Data.define constructors across Elements to prevent heap corruption and segfaults in CRuby 4.0 Ractors.
+- Keep the date or time number format on `Date` and `Time` cell values that are given a cell style without a `number_format` (for example `cell_styles: [:bold]`). The style replaced the automatic `yyyy-mm-dd` format, so Excel showed the serial number. Such cells now get a variant of their style that adds the default format, in both `Xlsxrb.write` blocks and `Xlsxrb.build`.
 - Inherit `sheet_format` `default_column_width` as the width of columns that define `style:` without `width:`. The column writer still looked up the removed `default_col_width` key and dropped the width.
 - Raise `ArgumentError` when `rows:` or `columns:` on `data_validation` and `conditional_format` reach outside the Excel grid (for example `rows: 1..Xlsxrb::MAX_ROW`, which is one past the last 0-based row) instead of writing an invalid reference such as `A2:A1048577`.
 - Keep the REXML entity expansion limits that the application set before `require "xlsxrb"`. Loading xlsxrb reset `REXML::Security.entity_expansion_limit` and `entity_expansion_text_limit` to the REXML defaults, which undid hardening such as an application setting the limit to 0 to disable entity expansion.

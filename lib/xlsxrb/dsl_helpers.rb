@@ -184,6 +184,28 @@ module Xlsxrb
       styles_array
     end
 
+    # Number formats given to Date and Time cell values that have no format of their own.
+    DATE_NUMBER_FORMAT = "yyyy-mm-dd"
+    TIME_NUMBER_FORMAT = "yyyy-mm-dd hh:mm:ss"
+
+    # Decides whether a Date or Time value styled with +style_builder+ needs a variant of
+    # that style carrying the default date or time number format. Without it, a style such
+    # as bold: true replaces the date format and Excel shows the bare serial number.
+    #
+    # @param value [Object] Cell value.
+    # @param style_name [String] Name of the cell's style.
+    # @param style_builder [StyleBuilder, nil] The style's definition.
+    # @return [Array(String, String), nil] Variant style name and number format, or nil.
+    #: (untyped value, String style_name, StyleBuilder? style_builder) -> [String, String]?
+    def self.date_style_variant(value, style_name, style_builder)
+      return nil if style_builder.nil? || style_builder.number_format
+
+      case value
+      when Date then ["#{style_name}__xlsxrb_date", DATE_NUMBER_FORMAT]
+      when Time then ["#{style_name}__xlsxrb_time", TIME_NUMBER_FORMAT]
+      end
+    end
+
     # Validates row index and height against Excel limits in strict mode.
     #
     # @param row_index [Integer]

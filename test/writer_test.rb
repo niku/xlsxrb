@@ -8895,6 +8895,60 @@ class WriterTest < Test::Unit::TestCase
     end
   end
 
+  test "Date and Time cells keep their number format when styled without one" do
+    date = Date.new(2026, 1, 2)
+    time = Time.utc(2026, 1, 2, 3, 4, 5)
+    # An explicit number format still wins: the date reads back as its serial number.
+    expected = [[[date, "yyyy-mm-dd"], [time, "yyyy-mm-dd hh:mm:ss"], ["text", "General"]], [[46_025, "#,##0"]]]
+    read_back = lambda do |data|
+      wb = Xlsxrb.load(data)
+      rows = wb.sheets.first.rows
+      first = rows.first.cells.first
+      assert_true(wb.styles.font(wb.styles.cell_xf(first.style_index).font_id).bold?, "bold survives on the date cell")
+      rows.map do |r|
+        r.cells.map do |c|
+          shown = if !c.date_format? then c.value
+                  elsif c.format_code.include?("h") then c.to_time
+                  else c.to_date
+                  end
+          [shown, c.format_code]
+        end
+      end
+    end
+
+    io = StringIO.new
+    Xlsxrb.write(io) do |w|
+      w.style(:hl, bold: true)
+      w.style(:money, number_format: "#,##0")
+      w.sheet("S") do |s|
+        s.row([date, time, "text"], cell_styles: :hl)
+        s.row([Date.new(2026, 1, 3)], cell_styles: [:money])
+      end
+    end
+    assert_equal(expected, read_back.call(io.string))
+
+    built = Xlsxrb.build do |b|
+      b.style(:hl, bold: true)
+      b.style(:money, number_format: "#,##0")
+      b.sheet("S") do |s|
+        s.row([date, time, "text"], cell_styles: %i[hl hl hl])
+        s.row([Date.new(2026, 1, 3)], cell_styles: [:money])
+      end
+    end
+    assert_equal(expected, read_back.call(Xlsxrb.write(built)))
+  end
+
+  test "StyleBuilder#with_number_format copies the style without changing it" do
+    original = Xlsxrb::StyleBuilder.new("hl")
+    original.apply_options!(bold: true, fill_color: "FFFF00")
+    copy = original.with_number_format("hl_date", "yyyy-mm-dd")
+
+    assert_equal(["hl_date", "yyyy-mm-dd", true], [copy.name, copy.number_format, copy.bold?])
+    assert_equal(["hl", nil], [original.name, original.number_format])
+    copy.italic = true
+    assert_false(original.italic?)
+  end
+
   test "omitted or nil compression_level writes with DEFAULT_COMPRESSION_LEVEL" do
     rows = Array.new(300) { |i| ["Product #{i}", i * 10, i * 1.5] }
     stream = lambda do |**opts|

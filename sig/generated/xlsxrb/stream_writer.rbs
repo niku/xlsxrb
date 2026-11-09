@@ -2022,6 +2022,11 @@ module Xlsxrb
 
     private
 
+    # Gives Date and Time values whose named cell style has no number format a variant of
+    # that style with the default date or time format, registered on first use.
+    # : (Array[untyped] values, untyped cell_styles) -> untyped
+    def with_date_style_variants: (Array[untyped] values, untyped cell_styles) -> untyped
+
     def ensure_sheet_started!: () -> untyped
 
     # : (String? range, ?sheet: String?) -> String?

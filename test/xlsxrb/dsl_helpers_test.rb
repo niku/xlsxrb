@@ -331,6 +331,20 @@ class DslHelpersTest < Test::Unit::TestCase
     assert_equal(["A2:A3 A5:A6", "C2:C3 C5:C6"], Xlsxrb::DslHelpers.chunked_sqrefs(col_runs, row_runs, 2))
   end
 
+  test "date_style_variant gives styled Date and Time values a style with the default format" do
+    plain = Xlsxrb::StyleBuilder.new("hl")
+    formatted = Xlsxrb::StyleBuilder.new("money")
+    formatted.number_format = "#,##0"
+
+    assert_equal(%w[hl__xlsxrb_date yyyy-mm-dd], Xlsxrb::DslHelpers.date_style_variant(Date.new(2026, 1, 2), "hl", plain))
+    assert_equal(%w[hl__xlsxrb_date yyyy-mm-dd], Xlsxrb::DslHelpers.date_style_variant(DateTime.new(2026, 1, 2), "hl", plain))
+    assert_equal(["hl__xlsxrb_time", "yyyy-mm-dd hh:mm:ss"], Xlsxrb::DslHelpers.date_style_variant(Time.utc(2026, 1, 2), "hl", plain))
+    assert_nil(Xlsxrb::DslHelpers.date_style_variant(Date.new(2026, 1, 2), "money", formatted))
+    assert_nil(Xlsxrb::DslHelpers.date_style_variant(Date.new(2026, 1, 2), "missing", nil))
+    assert_nil(Xlsxrb::DslHelpers.date_style_variant(46_024, "hl", plain))
+    assert_nil(Xlsxrb::DslHelpers.date_style_variant("2026-01-02", "hl", plain))
+  end
+
   test "chunked_sqrefs accepts the first and last Excel row and column" do
     last_row = Xlsxrb::MAX_ROW - 1
     last_col = Xlsxrb::MAX_COLUMN - 1

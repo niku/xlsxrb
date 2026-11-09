@@ -73,6 +73,19 @@ module Xlsxrb
     # : Hash[Symbol, untyped]
     attr_reader border_props: untyped
 
+    # Copies the option hashes, so a copy can change without affecting the original.
+    # : (StyleBuilder source) -> void
+    def initialize_copy: (StyleBuilder source) -> void
+
+    # Returns a copy of this style named +name+ that uses +number_format+.
+    #
+    # @param name [String] Name of the copy.
+    # @param number_format [String, Integer] Number format of the copy.
+    # @return [StyleBuilder]
+    # @api private
+    # : (String name, String | Integer number_format) -> StyleBuilder
+    def with_number_format: (String name, String | Integer number_format) -> StyleBuilder
+
     # Applies option-style definitions so callers can use add_style(name, **opts)
     # as an alternative to block-based fluent chaining.
     # Applies option-style definitions so callers can use add_style(name, **opts)
