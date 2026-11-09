@@ -1078,11 +1078,12 @@ module Xlsxrb
             mapped_va = StyleBuilder::VERT_ALIGN_MAP[va_val.to_sym] || va_val.to_s
             builder.empty_tag("vertAlign", { val: mapped_va })
           end
+          # sz, color, and name follow vertAlign in this order, as in CT_Font and Excel's output.
+          sz_val = font[:sz] || font[:size]
+          builder.empty_tag("sz", { val: sz_val.to_s }) if sz_val
           color_attrs = color_tag_attrs(font[:color] || font)
           builder.empty_tag("color", color_attrs) if color_attrs
           builder.empty_tag("name", { val: font[:name] }) if font[:name]
-          sz_val = font[:sz] || font[:size]
-          builder.empty_tag("sz", { val: sz_val.to_s }) if sz_val
         end
       end
 

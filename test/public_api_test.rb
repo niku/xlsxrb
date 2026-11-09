@@ -347,6 +347,12 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal([[3], [4]], sheets.map { |s| s.images.map(&:from_row) })
   end
 
+  test "differential format fonts write sz before color and name" do
+    styles = Xlsxrb::Elements::Styles.new(dxfs: [{ font: { bold: true, size: 10, color: "FF9C0006", name: "Cambria" } }])
+    writer = Xlsxrb::Ooxml::WorkbookWriter.new(sheets: [{ name: "S", rows: [] }], styles: styles)
+    assert_include(writer.send(:build_styles_xml), '<dxf><font><b/><sz val="10"/><color rgb="FF9C0006"/><name val="Cambria"/></font></dxf>')
+  end
+
   test "page setup omits a DPI of zero" do
     built = Xlsxrb.build do |b|
       b.sheet("S") do |s|
