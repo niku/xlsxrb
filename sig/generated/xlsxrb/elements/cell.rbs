@@ -74,6 +74,11 @@ module Xlsxrb
       # rubocop:disable Style/OptionalBooleanParameter
       def self.fast_create: (untyped row_index, untyped column_index, untyped value, ?untyped style_index, ?untyped formula, ?untyped raw_value, ?untyped format_code, ?untyped date1904) -> untyped
 
+      # Assigns instance variables directly, in the same order as #initialize, for
+      # fast_create. One method call instead of one instance_variable_set per variable.
+      # : (untyped row_index, untyped column_index, untyped value, untyped style_index, untyped formula, String? raw_value, String? format_code, bool date1904) -> Cell
+      def init_fast: (untyped row_index, untyped column_index, untyped value, untyped style_index, untyped formula, String? raw_value, String? format_code, bool date1904) -> Cell
+
       # @api private
       # : (untyped formula) -> Elements::Formula?
       def self.normalize_formula: (untyped formula) -> Elements::Formula?

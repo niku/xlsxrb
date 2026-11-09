@@ -102,25 +102,32 @@ module Xlsxrb
       # @api private
       # rubocop:disable Style/OptionalBooleanParameter
       def self.fast_create(row_index, column_index, value, style_index = nil, formula = nil, raw_value = nil, format_code = nil, date1904 = false)
-        inst = allocate
-        inst.instance_variable_set(:@row_index, row_index)
-        inst.instance_variable_set(:@column_index, column_index)
-        inst.instance_variable_set(:@value, value)
-        inst.instance_variable_set(:@formula, normalize_formula(formula))
-        inst.instance_variable_set(:@style, (style_index.is_a?(Integer) ? nil : style_index))
-        inst.instance_variable_set(:@style_index, (style_index.is_a?(Integer) ? style_index : nil))
-        inst.instance_variable_set(:@unmapped_data, EMPTY_HASH)
-        inst.instance_variable_set(:@errors, EMPTY_ERRORS)
-        inst.instance_variable_set(:@hyperlink, nil)
-        inst.instance_variable_set(:@comment, nil)
-        inst.instance_variable_set(:@raw_value, raw_value)
-        inst.instance_variable_set(:@format_code, format_code)
-        inst.instance_variable_set(:@date1904, date1904 ? true : false)
-        inst.instance_variable_set(:@threaded_comments, EMPTY_ARRAY)
-        inst.freeze
-        inst
+        allocate.__send__(:init_fast, row_index, column_index, value, style_index, formula, raw_value, format_code, date1904)
       end
       # rubocop:enable Style/OptionalBooleanParameter
+
+      # Assigns instance variables directly, in the same order as #initialize, for
+      # fast_create. One method call instead of one instance_variable_set per variable.
+      #: (untyped row_index, untyped column_index, untyped value, untyped style_index, untyped formula, String? raw_value, String? format_code, bool date1904) -> Cell
+      def init_fast(row_index, column_index, value, style_index, formula, raw_value, format_code, date1904)
+        integer_style = style_index.is_a?(Integer)
+        @row_index = row_index
+        @column_index = column_index
+        @value = value
+        @formula = formula.nil? ? nil : self.class.normalize_formula(formula)
+        @style = integer_style ? nil : style_index
+        @style_index = integer_style ? style_index : nil
+        @unmapped_data = EMPTY_HASH
+        @errors = EMPTY_ERRORS
+        @hyperlink = nil
+        @comment = nil
+        @raw_value = raw_value
+        @format_code = format_code
+        @date1904 = date1904 ? true : false
+        @threaded_comments = EMPTY_ARRAY
+        freeze
+      end
+      private :init_fast
 
       # @api private
       #: (untyped formula) -> Elements::Formula?
