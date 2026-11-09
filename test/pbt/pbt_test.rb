@@ -127,11 +127,11 @@ class PbtTest < Test::Unit::TestCase
       bold: bold,
       italic: italic,
       underline: underline,
-      sz: sz,
-      color: colors[color_idx],
+      font_size: sz,
+      font_color: colors[color_idx],
       fill_color: colors[fill_idx],
-      horizontal: horizontals[h_idx],
-      vertical: verticals[v_idx],
+      align_horizontal: horizontals[h_idx],
+      align_vertical: verticals[v_idx],
       number_format: nfs[nf_idx]
     }
   end

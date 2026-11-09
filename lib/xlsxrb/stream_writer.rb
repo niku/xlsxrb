@@ -1712,7 +1712,11 @@ module Xlsxrb
 
       values = DslHelpers.normalize_row_values(values)
       cell_styles = DslHelpers.normalize_row_styles(cell_styles)
-      cell_styles = with_date_style_variants(values, cell_styles) if cell_styles
+      if cell_styles
+        check_style_names!(cell_styles)
+        cell_styles = with_date_style_variants(values, cell_styles)
+      end
+      DslHelpers.check_style_name!(row_style, @style_name_to_id)
 
       if @current_charts && !@current_charts.empty?
         @current_cells ||= {}
@@ -1802,6 +1806,7 @@ module Xlsxrb
 
       sheet if @current_sheet.nil?
 
+      DslHelpers.check_style_name!(style, @style_name_to_id)
       style_id = if style.is_a?(Hash)
                    inline_name = "__inline_col_#{style.hash}"
                    style(inline_name, **style) unless @style_name_to_id.key?(inline_name)
@@ -3411,6 +3416,16 @@ module Xlsxrb
     end
 
     private
+
+    # Raises ArgumentError for any cell style name that has not been defined.
+    #: (untyped cell_styles) -> void
+    def check_style_names!(cell_styles)
+      if cell_styles.is_a?(Array)
+        cell_styles.each { |name| DslHelpers.check_style_name!(name, @style_name_to_id) }
+      else
+        DslHelpers.check_style_name!(cell_styles, @style_name_to_id)
+      end
+    end
 
     # Gives Date and Time values whose named cell style has no number format a variant of
     # that style with the default date or time format, registered on first use.

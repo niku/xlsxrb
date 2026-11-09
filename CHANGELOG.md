@@ -34,6 +34,8 @@
 - Rename `Elements::WorkbookProperties` member `:active_tab` to `:active_sheet`, and rename `Elements::Workbook#active_tab` to `#active_sheet_index`.
 - Unify `Elements::Worksheet` constructor parameter `sheet_calc_pr:` to `sheet_calc_properties:` and simplify `#with` to canonical keyword arguments.
 - Change the default ZIP deflate level from zlib's default (6) to 1, exposed as `Xlsxrb::DEFAULT_COMPRESSION_LEVEL` and used when `compression_level` is omitted or `nil`. Writes are 17 to 43% faster and files 5 to 41% larger in the measurements of [ADR 0009](docs/adr/0009-default-zip-compression-level.md); pass `compression_level: 6` for the previous output.
+- Raise `ArgumentError` for style options that `style` does not know (for example `bolt: true` or `size:` instead of `font_size:`), with a suggestion for the closest valid key, and for a nested group given together with its flat keys (`font: { size: 14 }, bold: true`). These options were silently ignored.
+- Raise `ArgumentError` when a cell, row, or column refers to a style name that was never defined, with a suggestion for the closest defined name. Such cells were silently written unstyled. `:default` and `:none`, style indexes, and styles defined later in an `Xlsxrb.build` block are still accepted.
 - Lower the minimum required Ruby version from 4.0 to 3.4, and replace the Ruby 4.0-only `Array#rfind` in the drawing reader with `reverse_each.find`.
 
 ### Removed

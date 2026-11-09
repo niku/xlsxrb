@@ -753,6 +753,13 @@ module Xlsxrb
           sb.apply_options!(**raw_row_style)
           all_style_builders[inline_name] = sb
         end
+
+        # Style names that were never defined are a mistake, not an unstyled cell.
+        sheet.columns.each { |col| DslHelpers.check_style_name!(col.style_index, all_style_builders) }
+        sheet.rows.each do |row|
+          DslHelpers.check_style_name!(row.style_index || row.unmapped_data&.[](:style_index), all_style_builders)
+          row.cells.each { |cell| DslHelpers.check_style_name!(cell.style, all_style_builders) }
+        end
       end
 
       # Date and Time cells styled without a number format get a variant of their style

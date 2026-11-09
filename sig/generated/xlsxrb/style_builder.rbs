@@ -73,6 +73,15 @@ module Xlsxrb
     # : Hash[Symbol, untyped]
     attr_reader border_props: untyped
 
+    # Top-level keys accepted by #apply_options!.
+    OPTION_KEYS: untyped
+
+    # Keys accepted inside the nested option hashes.
+    NESTED_OPTION_KEYS: untyped
+
+    # Flat keys that the nested form of each group replaces; giving both is ambiguous.
+    FLAT_KEYS_BY_GROUP: untyped
+
     # Copies the option hashes, so a copy can change without affecting the original.
     # : (StyleBuilder source) -> void
     def initialize_copy: (StyleBuilder source) -> void
@@ -555,6 +564,13 @@ module Xlsxrb
     def register_with: (untyped writer) -> Integer
 
     private
+
+    # Raises ArgumentError for option keys #apply_options! does not know, and for a nested
+    # group (font:, fill:, ...) given together with its flat keys, which would be ignored.
+    # : (Hash[Symbol, untyped] opts) -> void
+    def check_options!: (Hash[Symbol, untyped] opts) -> void
+
+    def unknown_option_message: (untyped key, untyped allowed, untyped kind) -> untyped
 
     def resolve_color: (untyped color) -> untyped
   end

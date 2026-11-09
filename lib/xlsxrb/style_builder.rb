@@ -358,6 +358,35 @@ module Xlsxrb
     #: Hash[Symbol, untyped]
     attr_reader :border_props
 
+    # Top-level keys accepted by #apply_options!.
+    OPTION_KEYS = %i[
+      font bold italic font_size font_name font_color underline strike vert_align superscript subscript
+      fill fill_color fill_pattern fill_gradient
+      border border_all border_left border_right border_top border_bottom
+      number_format
+      alignment align_horizontal align_vertical wrap_text text_rotation indent shrink_to_fit
+      protection locked hidden
+    ].freeze
+
+    # Keys accepted inside the nested option hashes.
+    NESTED_OPTION_KEYS = {
+      font: %i[bold italic size name color underline strike vert_align superscript subscript].freeze,
+      fill: %i[color pattern fg_color bg_color].freeze,
+      fill_pattern: %i[pattern fg_color bg_color].freeze,
+      border: %i[all left right top bottom].freeze,
+      alignment: %i[horizontal vertical wrap_text text_rotation indent shrink_to_fit].freeze,
+      protection: %i[locked hidden].freeze
+    }.freeze
+
+    # Flat keys that the nested form of each group replaces; giving both is ambiguous.
+    FLAT_KEYS_BY_GROUP = {
+      font: %i[bold italic font_size font_name font_color underline strike vert_align superscript subscript].freeze,
+      fill: %i[fill_color fill_pattern].freeze,
+      border: %i[border_all border_left border_right border_top border_bottom].freeze,
+      alignment: %i[align_horizontal align_vertical wrap_text text_rotation indent shrink_to_fit].freeze,
+      protection: %i[locked hidden].freeze
+    }.freeze
+
     # Copies the option hashes, so a copy can change without affecting the original.
     #: (StyleBuilder source) -> void
     def initialize_copy(source)
@@ -392,6 +421,8 @@ module Xlsxrb
     # @api public
     #: (**untyped) -> self
     def apply_options!(**opts)
+      check_options!(opts)
+
       if opts.key?(:font)
         font_opts = opts[:font] || {}
         self.bold = font_opts[:bold] if font_opts.key?(:bold)
@@ -1197,6 +1228,36 @@ module Xlsxrb
     end
 
     private
+
+    # Raises ArgumentError for option keys #apply_options! does not know, and for a nested
+    # group (font:, fill:, ...) given together with its flat keys, which would be ignored.
+    #: (Hash[Symbol, untyped] opts) -> void
+    def check_options!(opts)
+      opts.each_key { |key| raise ArgumentError, unknown_option_message(key, OPTION_KEYS, "style option") unless OPTION_KEYS.include?(key) }
+
+      NESTED_OPTION_KEYS.each do |group, allowed|
+        nested = opts[group]
+        next unless nested.is_a?(Hash)
+
+        nested.each_key { |key| raise ArgumentError, unknown_option_message(key, allowed, "#{group}: option") unless allowed.include?(key) }
+      end
+
+      FLAT_KEYS_BY_GROUP.each do |group, flat_keys|
+        next unless opts.key?(group)
+
+        mixed = flat_keys.select { |key| opts.key?(key) }
+        next if mixed.empty?
+
+        raise ArgumentError, "Give #{group} options either as #{group}: { ... } or as flat keys, not both (got #{group}: and #{mixed.map(&:inspect).join(", ")})"
+      end
+    end
+
+    def unknown_option_message(key, allowed, kind)
+      suggestion = DslHelpers.closest_name(key, allowed)
+      message = "Unknown #{kind} #{key.inspect}"
+      message << "; did you mean #{suggestion.to_sym.inspect}?" if suggestion
+      message << " (valid: #{allowed.map(&:inspect).join(", ")})"
+    end
 
     def resolve_color(color)
       self.class.resolve_color(color)

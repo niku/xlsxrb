@@ -77,6 +77,27 @@ module Xlsxrb
     # : (untyped styles) -> untyped
     def self.normalize_row_styles: (untyped styles) -> untyped
 
+    # Style names that select the workbook's default cell format.
+    DEFAULT_STYLE_NAMES: untyped
+
+    # Returns the candidate closest to +word+ (by DidYouMean), or nil.
+    #
+    # @param word [String, Symbol]
+    # @param candidates [Array<String, Symbol>]
+    # @return [String, nil]
+    # : (String | Symbol word, Array[String | Symbol] candidates) -> String?
+    def self.closest_name: (String | Symbol word, Array[String | Symbol] candidates) -> String?
+
+    # Raises ArgumentError when +name+ is a style name that has not been defined.
+    # Integers (style indexes), Hashes (inline styles), nil, and DEFAULT_STYLE_NAMES pass.
+    #
+    # @param name [Object] Style reference given by the caller.
+    # @param defined_names [Array<String>, Hash{String => Object}] Defined style names.
+    # @return [void]
+    # @raise [ArgumentError] if +name+ is an undefined style name.
+    # : (untyped name, untyped defined_names) -> void
+    def self.check_style_name!: (untyped name, untyped defined_names) -> void
+
     # Number formats given to Date and Time cell values that have no format of their own.
     DATE_NUMBER_FORMAT: ::String
 

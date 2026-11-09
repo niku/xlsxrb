@@ -184,6 +184,41 @@ module Xlsxrb
       styles_array
     end
 
+    # Style names that select the workbook's default cell format.
+    DEFAULT_STYLE_NAMES = [:default, :none, "default", "none"].freeze
+
+    # Returns the candidate closest to +word+ (by DidYouMean), or nil.
+    #
+    # @param word [String, Symbol]
+    # @param candidates [Array<String, Symbol>]
+    # @return [String, nil]
+    #: (String | Symbol word, Array[String | Symbol] candidates) -> String?
+    def self.closest_name(word, candidates)
+      return nil unless defined?(DidYouMean::SpellChecker)
+
+      DidYouMean::SpellChecker.new(dictionary: candidates.map(&:to_s)).correct(word.to_s).first
+    end
+
+    # Raises ArgumentError when +name+ is a style name that has not been defined.
+    # Integers (style indexes), Hashes (inline styles), nil, and DEFAULT_STYLE_NAMES pass.
+    #
+    # @param name [Object] Style reference given by the caller.
+    # @param defined_names [Array<String>, Hash{String => Object}] Defined style names.
+    # @return [void]
+    # @raise [ArgumentError] if +name+ is an undefined style name.
+    #: (untyped name, untyped defined_names) -> void
+    def self.check_style_name!(name, defined_names)
+      return unless name.is_a?(String) || name.is_a?(Symbol)
+      return if DEFAULT_STYLE_NAMES.include?(name) || defined_names.include?(name.to_s)
+
+      user_names = defined_names.to_a.map { |n| n.is_a?(Array) ? n.first : n }.map(&:to_s).reject { |n| n.start_with?("__") }.sort
+      message = "Undefined style #{name.inspect}"
+      suggestion = closest_name(name, user_names)
+      message << "; did you mean #{suggestion.to_sym.inspect}?" if suggestion
+      message << (user_names.empty? ? " (no styles are defined; define one with style(name, ...))" : " (defined styles: #{user_names.map { |n| n.to_sym.inspect }.join(", ")})")
+      raise ArgumentError, message
+    end
+
     # Number formats given to Date and Time cell values that have no format of their own.
     DATE_NUMBER_FORMAT = "yyyy-mm-dd"
     TIME_NUMBER_FORMAT = "yyyy-mm-dd hh:mm:ss"

@@ -636,7 +636,7 @@ class PublicApiTest < Test::Unit::TestCase
   test "style supports options form in build API" do
     workbook = Xlsxrb.build do |w|
       w.sheet("Styled") do |s|
-        s.style("header", bold: true, size: 12, font_color: "FF0000FF")
+        s.style("header", bold: true, font_size: 12, font_color: "FF0000FF")
         s.row(%w[Name Score], cell_styles: %w[header header])
       end
     end

@@ -83,13 +83,13 @@ class XsdValidationTest < Test::Unit::TestCase
     begin
       Xlsxrb.write(tmp.path) do |w|
         w.style("header",
-                font: { bold: true, size: 14, color: "FFFFFFFF", font_name: "Arial" },
+                font: { bold: true, size: 14, color: "FFFFFFFF", name: "Arial" },
                 fill: { pattern: "solid", fg_color: "FF4F81BD" },
                 alignment: { horizontal: "center", vertical: "center", wrap_text: true },
                 border: { bottom: { style: "double", color: "FF000000" } })
 
         w.style("currency_cell",
-                num_fmt: "$#,##0.00;($#,##0.00);\"-\"",
+                number_format: "$#,##0.00;($#,##0.00);\"-\"",
                 font: { italic: true },
                 border: {
                   left: { style: "thin", color: "FFCCCCCC" },

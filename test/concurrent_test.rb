@@ -99,7 +99,7 @@ class ConcurrentTest < Test::Unit::TestCase
         xlsx_bin = Xlsxrb.write do |wb|
           wb.sheet("Data") do |s|
             s.row(["Worker", i, 123.45, Date.new(2026, 10, 23), { formula: "B1*2", value: i * 2 }])
-            s.style("A1", bold: true, color: "0000FF")
+            s.style("A1", bold: true, font_color: "0000FF")
           end
           wb.sheet("Info") do |s|
             s.row(["Metadata", "Ractor-#{i}"])

@@ -396,4 +396,55 @@ class StyleBuilderTest < Test::Unit::TestCase
     assert_equal(true, sb.alignment[:justify_last_line])
     assert_equal(3, sb.alignment[:relative_indent])
   end
+
+  test "apply_options! rejects unknown keys with a suggestion" do
+    error = assert_raise(ArgumentError) { Xlsxrb::StyleBuilder.new("h").apply_options!(bolt: true) }
+    assert_match(/\AUnknown style option :bolt; did you mean :bold\?/, error.message)
+
+    error = assert_raise(ArgumentError) { Xlsxrb::StyleBuilder.new("h").apply_options!(font: { sise: 14 }) }
+    assert_match(/\AUnknown font: option :sise; did you mean :size\?/, error.message)
+
+    error = assert_raise(ArgumentError) { Xlsxrb::StyleBuilder.new("h").apply_options!(alignment: { horizontal: :center, wrap: true }) }
+    assert_match(/\AUnknown alignment: option :wrap/, error.message)
+  end
+
+  test "apply_options! rejects a nested group mixed with its flat keys" do
+    error = assert_raise(ArgumentError) { Xlsxrb::StyleBuilder.new("h").apply_options!(font: { size: 14 }, bold: true) }
+    assert_equal("Give font options either as font: { ... } or as flat keys, not both (got font: and :bold)", error.message)
+
+    style = Xlsxrb::StyleBuilder.new("h").apply_options!(font: { size: 14, bold: true }, fill_color: "FFFF00")
+    assert_equal([14, true], [style.font_size, style.bold?])
+  end
+
+  test "undefined style names raise in streaming and in-memory writers" do
+    {
+      "cell style" => ->(w) { w.sheet("S") { |s| s.row(["x"], cell_styles: [:headr]) } },
+      "single cell style" => ->(w) { w.sheet("S") { |s| s.row(%w[x y], cell_styles: :headr) } },
+      "row style" => ->(w) { w.sheet("S") { |s| s.row(["x"], row_style: :headr) } },
+      "column style" => ->(w) { w.sheet("S") { |s| s.column(0, style: :headr) } }
+    }.each do |label, body|
+      error = assert_raise(ArgumentError, "stream #{label}") do
+        Xlsxrb.write(StringIO.new) do |w|
+          w.style(:header, bold: true)
+          body.call(w)
+        end
+      end
+      assert_equal("Undefined style :headr; did you mean :header? (defined styles: :header)", error.message, "stream #{label}")
+    end
+
+    error = assert_raise(ArgumentError) do
+      Xlsxrb.build { |b| b.sheet("S") { |s| s.row(["x"], cell_styles: [:header]) } }
+    end
+    assert_equal("Undefined style :header (no styles are defined; define one with style(name, ...))", error.message)
+  end
+
+  test "default style names, style indexes, and styles defined later in build are accepted" do
+    assert_nothing_raised do
+      Xlsxrb.write(StringIO.new) { |w| w.sheet("S") { |s| s.row(%w[x y z], cell_styles: [:default, "none", 0]) } }
+      Xlsxrb.build do |b|
+        b.sheet("S") { |s| s.row(["x"], cell_styles: [:late]) }
+        b.style(:late, bold: true)
+      end
+    end
+  end
 end

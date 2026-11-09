@@ -2022,6 +2022,10 @@ module Xlsxrb
 
     private
 
+    # Raises ArgumentError for any cell style name that has not been defined.
+    # : (untyped cell_styles) -> void
+    def check_style_names!: (untyped cell_styles) -> void
+
     # Gives Date and Time values whose named cell style has no number format a variant of
     # that style with the default date or time format, registered on first use.
     # : (Array[untyped] values, untyped cell_styles) -> untyped

@@ -9102,6 +9102,7 @@ class WriterTest < Test::Unit::TestCase
   test "multiple sheet.column calls merge attributes and maintain column sorting in in-memory mode" do
     doc = Xlsxrb.build do |w|
       w.sheet("Cols") do |s|
+        s.style(:heading, bold: true)
         s.column(2, width: 30.0)
         s.column(0, width: 10.0)
         s.column(0, style: :heading, hidden: true)
@@ -9114,7 +9115,7 @@ class WriterTest < Test::Unit::TestCase
     cols = sheet.columns
     assert_equal([0, 1, 2], cols.map(&:index))
     assert_equal(10.0, cols[0].width)
-    assert_equal(:heading, cols[0].style_index)
+    assert_true(doc.styles.font(doc.styles.cell_xf(cols[0].style_index).font_id).bold?)
     assert_equal(true, cols[0].hidden?)
     assert_equal(20.0, cols[1].width)
     assert_equal(30.0, cols[2].width)
