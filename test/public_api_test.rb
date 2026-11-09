@@ -353,6 +353,29 @@ class PublicApiTest < Test::Unit::TestCase
     assert_include(writer.send(:build_styles_xml), '<dxf><font><b/><sz val="10"/><color rgb="FF9C0006"/><name val="Cambria"/></font></dxf>')
   end
 
+  test "loaded named cell styles and their base formats are written back" do
+    styles_xml = <<~XML
+      <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+      <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+        <fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="15"/><name val="Calibri"/></font></fonts>
+        <fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills>
+        <borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>
+        <cellStyleXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/><xf numFmtId="0" fontId="1" fillId="0" borderId="0"/></cellStyleXfs>
+        <cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="1" applyFont="1"/></cellXfs>
+        <cellStyles count="2"><cellStyle name="Heading 1" xfId="1" builtinId="16"/><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>
+      </styleSheet>
+    XML
+    base = Xlsxrb::Ooxml::ZipReader.new(StringIO.new(Xlsxrb.write(Xlsxrb.build { |b| b.sheet("S") { |s| s.row(["x"]) } }))).read_all
+    io = StringIO.new
+    Xlsxrb::Ooxml::ZipWriter.open(io) { |zip| base.merge("xl/styles.xml" => styles_xml).each { |name, data| zip.add_entry(name, data) } }
+
+    loaded = Xlsxrb.load(io.string)
+    assert_equal([["Heading 1", 1, 16], ["Normal", 0, 0]], loaded.styles.cell_styles.map { |cs| [cs.name, cs.xf_id, cs.builtin_id] })
+    written = Xlsxrb::Ooxml::ZipReader.new(StringIO.new(Xlsxrb.write(loaded))).read_entry("xl/styles.xml")
+    assert_match(%r{<cellStyleXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/><xf numFmtId="0" fontId="1"}, written)
+    assert_include(written, '<cellStyles count="2"><cellStyle name="Heading 1" xfId="1" builtinId="16"/><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>')
+  end
+
   test "page setup omits a DPI of zero" do
     built = Xlsxrb.build do |b|
       b.sheet("S") do |s|

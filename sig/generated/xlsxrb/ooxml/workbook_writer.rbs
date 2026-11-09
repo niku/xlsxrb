@@ -62,6 +62,10 @@ module Xlsxrb
 
       def extract_dxf_from_rule!: (untyped rule) -> untyped
 
+      # Writes one <xf> of cellXfs, or of cellStyleXfs when style_xf_count is nil. An xfId that
+      # points past the written cellStyleXfs is dropped, so it falls back to the first entry.
+      def write_xf: (untyped builder, untyped format, style_xf_count: untyped) -> untyped
+
       def write_dxf_font: (untyped builder, untyped font) -> untyped
 
       def write_dxf_fill: (untyped builder, untyped fill) -> untyped

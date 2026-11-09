@@ -8,7 +8,7 @@ require_relative "../elements/styles"
 module Xlsxrb
   module Ooxml
     # SAX-based parser for xl/styles.xml.
-    # Returns an Elements::Styles (Hash) with :num_fmts, :fonts, :fills, :borders, :cell_xfs, :cell_style_xfs.
+    # Returns an Elements::Styles (Hash) with :num_fmts, :fonts, :fills, :borders, :cell_xfs, :cell_style_xfs, :cell_styles.
     class StylesParser
       #: (String? xml_string) -> Elements::Styles
       def self.parse(xml_string)
@@ -35,6 +35,7 @@ module Xlsxrb
             borders: [],
             cell_xfs: [],
             cell_style_xfs: [],
+            cell_styles: [],
             dxfs: []
           }
           @context = []
@@ -110,6 +111,8 @@ module Xlsxrb
             @in_cell_xfs = true
           when "cellStyleXfs"
             @in_cell_style_xfs = true
+          when "cellStyle"
+            @result[:cell_styles] << { name: attrs["name"], xf_id: attrs["xfId"]&.to_i, builtin_id: attrs["builtinId"]&.to_i }.compact
           when "xf"
             handle_xf(attrs)
           when "alignment"

@@ -931,9 +931,16 @@ module Xlsxrb
           end
         end
 
-        # cellStyleXfs
-        b.tag("cellStyleXfs", { count: "1" }) do |_|
-          b.empty_tag("xf", { numFmtId: "0", fontId: "0", fillId: "0", borderId: "0" })
+        # cellStyleXfs: the base formats that cellXfs and named cell styles refer to by xfId.
+        style_xfs = if @styles.respond_to?(:cell_style_xfs)
+                      @styles.cell_style_xfs
+                    else
+                      @styles&.dig(:cell_style_xfs) || []
+                    end
+        style_xf_count = [style_xfs.size, 1].max
+        b.tag("cellStyleXfs", { count: style_xf_count.to_s }) do |_|
+          style_xfs.each { |xf| write_xf(b, xf, style_xf_count: nil) }
+          b.empty_tag("xf", { numFmtId: "0", fontId: "0", fillId: "0", borderId: "0" }) if style_xfs.empty?
         end
 
         # Cell XFs (formatting)
@@ -944,50 +951,25 @@ module Xlsxrb
                      end
         xf_count = [xf_entries.size, 1].max
         b.tag("cellXfs", { count: xf_count.to_s }) do |_|
-          xf_entries.each do |xf|
-            xf = xf.to_h if xf.is_a?(Elements::MetadataRecord)
-            attrs = {
-              numFmtId: (xf[:num_fmt_id] || 0).to_s,
-              fontId: (xf[:font_id] || 0).to_s,
-              fillId: (xf[:fill_id] || 0).to_s,
-              borderId: (xf[:border_id] || 0).to_s
-            }
-            attrs[:xfId] = xf[:xf_id].to_s if xf[:xf_id]
-            attrs[:applyNumberFormat] = "1" if xf[:num_fmt_id]&.to_i&.positive?
-            attrs[:applyFont] = "1" if xf[:font_id]&.to_i&.positive?
-            attrs[:applyFill] = "1" if xf[:fill_id]&.to_i&.positive?
-            attrs[:applyBorder] = "1" if xf[:border_id]&.to_i&.positive?
-            attrs[:applyAlignment] = "1" if xf[:alignment]
-            attrs[:applyProtection] = "1" if xf[:protection]
-
-            if xf[:alignment] || xf[:protection]
-              b.tag("xf", attrs) do |_|
-                if xf[:alignment]
-                  align_attrs = {}
-                  align_attrs[:horizontal] = xf[:alignment][:horizontal] if xf[:alignment][:horizontal]
-                  align_attrs[:vertical] = xf[:alignment][:vertical] if xf[:alignment][:vertical]
-                  align_attrs[:wrapText] = "1" if xf[:alignment][:wrap_text]
-                  align_attrs[:textRotation] = xf[:alignment][:text_rotation].to_s if xf[:alignment][:text_rotation]
-                  align_attrs[:indent] = xf[:alignment][:indent].to_s if xf[:alignment][:indent]
-                  align_attrs[:relativeIndent] = xf[:alignment][:relative_indent].to_s if xf[:alignment][:relative_indent]
-                  align_attrs[:shrinkToFit] = "1" if xf[:alignment][:shrink_to_fit]
-                  align_attrs[:readingOrder] = xf[:alignment][:reading_order].to_s if xf[:alignment][:reading_order]
-                  align_attrs[:justifyLastLine] = "1" if xf[:alignment][:justify_last_line]
-                  b.empty_tag("alignment", align_attrs)
-                end
-                if xf[:protection]
-                  prot_attrs = {}
-                  prot_attrs[:locked] = xf[:protection][:locked] ? "1" : "0" unless xf[:protection][:locked].nil?
-                  prot_attrs[:hidden] = xf[:protection][:hidden] ? "1" : "0" unless xf[:protection][:hidden].nil?
-                  b.empty_tag("protection", prot_attrs)
-                end
-              end
-            else
-              b.empty_tag("xf", attrs)
-            end
-          end
+          xf_entries.each { |xf| write_xf(b, xf, style_xf_count: style_xf_count) }
           # Add default if empty
           b.empty_tag("xf", { numFmtId: "0", fontId: "0", fillId: "0", borderId: "0" }) if xf_entries.empty?
+        end
+
+        # Named cell styles, such as Normal and Heading 1, kept from a loaded workbook.
+        cell_styles = if @styles.respond_to?(:cell_styles)
+                        @styles.cell_styles
+                      else
+                        @styles&.dig(:cell_styles) || []
+                      end
+        cell_styles = cell_styles.map { |cs| cs.is_a?(Elements::MetadataRecord) ? cs.to_h : cs }
+                                 .select { |cs| cs[:name] && cs[:xf_id].to_i < style_xf_count }
+        unless cell_styles.empty?
+          b.tag("cellStyles", { count: cell_styles.size.to_s }) do |_|
+            cell_styles.each do |cs|
+              b.empty_tag("cellStyle", { name: cs[:name], xfId: cs[:xf_id].to_i.to_s, builtinId: cs[:builtin_id]&.to_s }.compact)
+            end
+          end
         end
 
         # Differential formats (for conditional formatting)
@@ -1049,6 +1031,48 @@ module Xlsxrb
 
       def extract_dxf_from_rule!(rule)
         DslHelpers.extract_dxf_from_rule!(rule)
+      end
+
+      # Writes one <xf> of cellXfs, or of cellStyleXfs when style_xf_count is nil. An xfId that
+      # points past the written cellStyleXfs is dropped, so it falls back to the first entry.
+      def write_xf(builder, format, style_xf_count:)
+        format = format.to_h if format.is_a?(Elements::MetadataRecord)
+        attrs = {
+          numFmtId: (format[:num_fmt_id] || 0).to_s,
+          fontId: (format[:font_id] || 0).to_s,
+          fillId: (format[:fill_id] || 0).to_s,
+          borderId: (format[:border_id] || 0).to_s
+        }
+        attrs[:xfId] = format[:xf_id].to_s if style_xf_count && format[:xf_id] && format[:xf_id].to_i < style_xf_count
+        attrs[:applyNumberFormat] = "1" if format[:num_fmt_id]&.to_i&.positive?
+        attrs[:applyFont] = "1" if format[:font_id]&.to_i&.positive?
+        attrs[:applyFill] = "1" if format[:fill_id]&.to_i&.positive?
+        attrs[:applyBorder] = "1" if format[:border_id]&.to_i&.positive?
+        attrs[:applyAlignment] = "1" if format[:alignment]
+        attrs[:applyProtection] = "1" if format[:protection]
+        return builder.empty_tag("xf", attrs) unless format[:alignment] || format[:protection]
+
+        builder.tag("xf", attrs) do |_|
+          if format[:alignment]
+            align_attrs = {}
+            align_attrs[:horizontal] = format[:alignment][:horizontal] if format[:alignment][:horizontal]
+            align_attrs[:vertical] = format[:alignment][:vertical] if format[:alignment][:vertical]
+            align_attrs[:wrapText] = "1" if format[:alignment][:wrap_text]
+            align_attrs[:textRotation] = format[:alignment][:text_rotation].to_s if format[:alignment][:text_rotation]
+            align_attrs[:indent] = format[:alignment][:indent].to_s if format[:alignment][:indent]
+            align_attrs[:relativeIndent] = format[:alignment][:relative_indent].to_s if format[:alignment][:relative_indent]
+            align_attrs[:shrinkToFit] = "1" if format[:alignment][:shrink_to_fit]
+            align_attrs[:readingOrder] = format[:alignment][:reading_order].to_s if format[:alignment][:reading_order]
+            align_attrs[:justifyLastLine] = "1" if format[:alignment][:justify_last_line]
+            builder.empty_tag("alignment", align_attrs)
+          end
+          if format[:protection]
+            prot_attrs = {}
+            prot_attrs[:locked] = format[:protection][:locked] ? "1" : "0" unless format[:protection][:locked].nil?
+            prot_attrs[:hidden] = format[:protection][:hidden] ? "1" : "0" unless format[:protection][:hidden].nil?
+            builder.empty_tag("protection", prot_attrs)
+          end
+        end
       end
 
       def write_dxf_font(builder, font)
