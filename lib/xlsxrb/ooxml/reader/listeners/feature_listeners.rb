@@ -1508,12 +1508,18 @@ module Xlsxrb
           @inside_pivot_field = false
           @inside_items = false
           @current_items = []
+          @definition_depth = 0
         end
 
         def start_element(_uri, local_name, qname, attributes)
           name = element_name(local_name, qname)
           case name
           when "pivotTableDefinition"
+            # Excel 2010 and later also write an x14:pivotTableDefinition inside extLst;
+            # only the outermost element describes the pivot table.
+            @definition_depth += 1
+            return if @definition_depth > 1
+
             @pivot_table = {
               name: attributes["name"],
               cache_id: attributes["cacheId"]&.to_i
@@ -1669,7 +1675,8 @@ module Xlsxrb
           when "items"
             @inside_items = false
           when "pivotTableDefinition"
-            if @pivot_table
+            @definition_depth -= 1
+            if @pivot_table && @definition_depth.zero?
               @pivot_table[:fields] = @fields
               @pivot_table[:row_fields] = @row_fields
               @pivot_table[:column_fields] = @col_fields

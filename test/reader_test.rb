@@ -1374,6 +1374,30 @@ class ReaderTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "PivotTableListener keeps the name and location when extLst holds an x14:pivotTableDefinition" do
+    pivot_xml = <<~XML
+      <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+      <pivotTableDefinition xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" name="PivotTable2" cacheId="3" dataCaption="Values">
+        <location ref="A3:B12" firstHeaderRow="1" firstDataRow="1" firstDataCol="1"/>
+        <pivotFields count="2"><pivotField axis="axisRow" showAll="0"/><pivotField dataField="1" showAll="0"/></pivotFields>
+        <rowFields count="1"><field x="0"/></rowFields>
+        <dataFields count="1"><dataField name="Sum of Total" fld="1" baseField="0" baseItem="0"/></dataFields>
+        <extLst>
+          <ext uri="{962EF5D1-5CA2-4c93-8EF4-DBF5C05439D2}" xmlns:x14="http://schemas.microsoft.com/office/spreadsheetml/2009/9/main">
+            <x14:pivotTableDefinition hideValuesRow="1" xmlns:xm="http://schemas.microsoft.com/office/excel/2006/main"/>
+          </ext>
+        </extLst>
+      </pivotTableDefinition>
+    XML
+    listener = Xlsxrb::Ooxml::Reader::PivotTableListener.new
+    parser = REXML::Parsers::SAX2Parser.new(pivot_xml)
+    parser.listen(listener)
+    parser.parse
+    pt = listener.pivot_table
+    assert_equal(["PivotTable2", 3, "A3:B12", [0]], [pt[:name], pt[:cache_id], pt[:ref], pt[:row_fields]])
+    assert_equal(1, pt[:data_fields].first[:fld])
+  end
+
   test "reader parses pivotField showAll, compact, outline, subtotalTop, numFmtId, sortType" do
     require "xlsxrb/ooxml/reader"
     pivot_xml = <<~XML
