@@ -93,7 +93,9 @@ module Xlsxrb
             # Nested Arrays, such as the [name, count] pairs of AppProperties#heading_pairs,
             # respond to to_h but are not key-value pairs, so they stay as they are.
             val.map { |v| v.respond_to?(:to_h) && !v.is_a?(String) && !v.is_a?(Array) ? v.to_h : v }
-          elsif val.respond_to?(:to_h) && !val.is_a?(String) && !val.is_a?(Hash)
+          elsif val.respond_to?(:to_h) && !val.is_a?(String) && !val.is_a?(Hash) && !val.is_a?(RichText)
+            # RichText is Enumerable over its runs, so Enumerable#to_h would treat each run as a
+            # key-value pair. It stays a value object, which the writers accept as cell and comment text.
             val.to_h
           else
             val

@@ -231,6 +231,18 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal([300, 300], [again.sheets.first.page_setup.horizontal_dpi, again.sheets.first.page_setup.vertical_dpi])
   end
 
+  test "workbooks with rich-text comments are written back with their formatting" do
+    loaded = Xlsxrb.load(File.join(__dir__, "fixtures/reader_generated/reader_comment_rich_text_generated_by_sdk.xlsx"))
+    comment = loaded.sheets.first.comments.first
+    assert_kind_of(Xlsxrb::Elements::RichText, comment.to_h[:text])
+
+    again = Xlsxrb.load(Xlsxrb.write(loaded.with(sheets: [loaded.sheets.first.with(unmapped_data: {})])))
+    written = again.sheets.first.comments.first
+    assert_equal(["A1", "TestAuthor", "Important note text"], [written.ref, written.author, written.text.map { |run| run[:text] }.join])
+    assert_equal(true, written.text.first[:font][:bold])
+    assert_equal(comment.text.to_a, Xlsxrb.load(Xlsxrb.write(loaded)).sheets.first.comments.first.text.to_a)
+  end
+
   test "page setup omits a DPI of zero" do
     built = Xlsxrb.build do |b|
       b.sheet("S") do |s|
