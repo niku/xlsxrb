@@ -104,6 +104,7 @@
 
 ### Fixed
 - Wrap keyword arguments with double splat in Data.define constructors across Elements to prevent heap corruption and segfaults in CRuby 4.0 Ractors.
+- Inherit `sheet_format` `default_column_width` as the width of columns that define `style:` without `width:`. The column writer still looked up the removed `default_col_width` key and dropped the width.
 
 ## [0.1.18] - 2026-11-07
 

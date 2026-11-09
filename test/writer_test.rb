@@ -9063,11 +9063,11 @@ class WriterTest < Test::Unit::TestCase
     assert_operator(sheet_xml.index('min="1"'), :<, sheet_xml.index('min="2"'))
   end
 
-  test "column with style inherits default_col_width from sheet_format" do
+  test "column with style inherits default_column_width from sheet_format" do
     doc = Xlsxrb.build do |w|
       w.sheet("FormatCols") do |s|
         s.style(:highlight, fill_color: "FFFF00")
-        s.sheet_format(default_col_width: 18.5)
+        s.sheet_format(default_column_width: 18.5)
         s.column(0, style: :highlight)
         s.row(["Styled Column"])
       end
@@ -9075,6 +9075,21 @@ class WriterTest < Test::Unit::TestCase
 
     data = Xlsxrb.write(doc)
     sheet_xml = read_xml_from_xlsx(data, "xl/worksheets/sheet1.xml")
+    assert_include(sheet_xml, '<col min="1" max="1" width="18.5" customWidth="1"')
+  end
+
+  test "streamed column with style inherits default_column_width from sheet_format" do
+    io = StringIO.new
+    Xlsxrb.write(io) do |w|
+      w.style(:highlight, fill_color: "FFFF00")
+      w.sheet("FormatCols") do |s|
+        s.sheet_format(default_column_width: 18.5)
+        s.column(0, style: :highlight)
+        s.row(["Styled Column"])
+      end
+    end
+
+    sheet_xml = read_xml_from_xlsx(io.string.b, "xl/worksheets/sheet1.xml")
     assert_include(sheet_xml, '<col min="1" max="1" width="18.5" customWidth="1"')
   end
 

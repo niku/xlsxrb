@@ -1541,7 +1541,7 @@ module Xlsxrb
       # --- Columns ---
 
       def write_columns(columns)
-        default_width = @sheet_format ? (@sheet_format[:default_col_width] || @sheet_format["default_col_width"]) : nil
+        default_width = @sheet_format.to_h[:default_column_width]
         @builder.open_tag("cols")
         columns.each do |col|
           if col.is_a?(Elements::Column)
