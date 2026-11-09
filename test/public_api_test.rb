@@ -478,6 +478,26 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal('<sheetProtection selectLockedCells="1"/>', written[/<sheetProtection[^>]*>/])
   end
 
+  test "fonts keep their family and scheme through load and write" do
+    styles_xml = <<~XML
+      <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+      <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+        <fonts count="1"><font><sz val="11"/><name val="Calibri"/><family val="2"/><scheme val="minor"/></font></fonts>
+        <fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills>
+        <borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>
+        <cellXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellXfs>
+      </styleSheet>
+    XML
+    base = Xlsxrb::Ooxml::ZipReader.new(StringIO.new(Xlsxrb.write(Xlsxrb.build { |b| b.sheet("S") { |s| s.row([1]) } }))).read_all
+    io = StringIO.new
+    Xlsxrb::Ooxml::ZipWriter.open(io) { |zip| base.merge("xl/styles.xml" => styles_xml).each { |name, data| zip.add_entry(name, data) } }
+
+    loaded = Xlsxrb.load(io.string)
+    assert_equal([2, "minor"], [loaded.styles.fonts.first.family, loaded.styles.fonts.first.scheme])
+    written = Xlsxrb::Ooxml::ZipReader.new(StringIO.new(Xlsxrb.write(loaded))).read_entry("xl/styles.xml")
+    assert_match(%r{<font><sz val="11(\.0)?"/><name val="Calibri"/><family val="2"/><scheme val="minor"/></font>}, written)
+  end
+
   test "page setup omits a DPI of zero" do
     built = Xlsxrb.build do |b|
       b.sheet("S") do |s|

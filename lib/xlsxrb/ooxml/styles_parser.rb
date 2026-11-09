@@ -93,6 +93,10 @@ module Xlsxrb
             handle_color(attrs)
           when "name"
             @current_font[:name] = attrs["val"] if @current_font
+          when "family"
+            @current_font[:family] = attrs["val"].to_i if @current_font && attrs["val"]
+          when "scheme"
+            @current_font[:scheme] = attrs["val"] if @current_font && attrs["val"]
           when "fill"
             @current_fill = {} if parent_context?("fills") || (@current_dxf && parent_context?("dxf"))
           when "patternFill"
