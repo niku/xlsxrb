@@ -4,7 +4,21 @@ module Xlsxrb
   module Ooxml
     # Writes ZIP archives using only stdlib (zlib).
     # Supports streaming: entries are written sequentially, central directory at close.
+    #
+    # Sizes, offsets, and entry counts that do not fit the 32-bit (16-bit for counts)
+    # fields switch to ZIP64 records for that value only, so archives below those
+    # limits are written exactly as plain ZIP.
     class ZipWriter
+      MAX_UINT32: ::Integer
+
+      MAX_UINT16: ::Integer
+
+      VERSION_DEFAULT: ::Integer
+
+      VERSION_ZIP64: ::Integer
+
+      DATA_DESCRIPTOR_FLAG: ::Integer
+
       def self.open: (untyped target, ?compression_level: untyped) ?{ (?) -> untyped } -> untyped
 
       # @return [Integer] Deflate compression level (0..9).
@@ -39,13 +53,23 @@ module Xlsxrb
 
       def determine_seekable: () -> untyped
 
+      # : (Integer value) -> bool
+      def zip64?: (Integer value) -> bool
+
+      # : () { () -> void } -> void
+      def patch_local_header: () { () -> void } -> void
+
+      # Data descriptor: signature + crc32 + compressed size + uncompressed size.
+      # ZIP64 entries store both sizes as 8-byte values (APPNOTE 4.3.9.1).
+      def write_data_descriptor: (untyped crc, untyped compressed_size, untyped uncompressed_size, zip64: untyped) -> untyped
+
       def write_bytes: (untyped data) -> untyped
 
       def write_raw_entry: (untyped path, untyped content_bytes) -> untyped
 
       def deflate: (untyped content) -> untyped
 
-      def write_local_header: (untyped path, untyped crc, untyped compressed_size, untyped uncompressed_size, ?gp_flag: untyped, ?count_bytes: untyped, ?method: untyped) -> untyped
+      def write_local_header: (untyped path, untyped crc, untyped compressed_size, untyped uncompressed_size, ?gp_flag: untyped, ?count_bytes: untyped, ?method: untyped, ?version: untyped) -> untyped
 
       def write_central_directory: () -> untyped
 

@@ -107,6 +107,7 @@
 - Inherit `sheet_format` `default_column_width` as the width of columns that define `style:` without `width:`. The column writer still looked up the removed `default_col_width` key and dropped the width.
 - Raise `ArgumentError` when `rows:` or `columns:` on `data_validation` and `conditional_format` reach outside the Excel grid (for example `rows: 1..Xlsxrb::MAX_ROW`, which is one past the last 0-based row) instead of writing an invalid reference such as `A2:A1048577`.
 - Keep the REXML entity expansion limits that the application set before `require "xlsxrb"`. Loading xlsxrb reset `REXML::Security.entity_expansion_limit` and `entity_expansion_text_limit` to the REXML defaults, which undid hardening such as an application setting the limit to 0 to disable entity expansion.
+- Write ZIP64 records when an entry size, a file offset, or the entry count exceeds the 32-bit (16-bit for counts) ZIP fields. Sizes were truncated to 32 bits, so a worksheet whose XML exceeded 4 GiB uncompressed produced a corrupt XLSX without an error. Archives below these limits are written unchanged, except that entries streamed to unseekable output are declared ZIP64 up front, because their size is unknown when the local header is written. `ZipReader` also reads the ZIP64 end of central directory record. See [ADR 0008](docs/adr/0008-zip64-only-when-a-limit-is-exceeded.md).
 
 ## [0.1.18] - 2026-11-07
 

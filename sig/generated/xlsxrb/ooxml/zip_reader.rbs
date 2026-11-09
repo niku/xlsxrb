@@ -145,6 +145,12 @@ module Xlsxrb
 
       def normalize_text_encoding: (untyped data) -> untyped
 
+      # Reads the entry count and central directory offset from the ZIP64 end of central
+      # directory record, located through the locator just before the end of central directory.
+      # Returns the given values unchanged when the archive has no ZIP64 record.
+      # : (untyped io, Integer eocd_pos, Integer total_entries, Integer cd_offset) -> [Integer, Integer]
+      def read_zip64_end_of_central_directory: (untyped io, Integer eocd_pos, Integer total_entries, Integer cd_offset) -> [ Integer, Integer ]
+
       # : (String extra_data, Integer usize, Integer csize, Integer offset) -> [Integer, Integer, Integer]
       def parse_zip64_extra: (String extra_data, Integer usize, Integer csize, Integer offset) -> [ Integer, Integer, Integer ]
     end

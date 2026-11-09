@@ -2,6 +2,8 @@
 
 require "test_helper"
 require "stringio"
+require "open3"
+require "tempfile"
 
 class OoxmlTest < Test::Unit::TestCase
   cover Xlsxrb::Ooxml::XmlBuilder
@@ -281,6 +283,139 @@ class OoxmlTest < Test::Unit::TestCase
     assert_equal(e1.compressed_size, e2.compressed_size)
     assert_equal(e1.uncompressed_size, e2.uncompressed_size)
     assert_equal(e1.method, e2.method)
+  end
+
+  test "zip_writer keeps plain ZIP records below the ZIP64 limits" do
+    io = StringIO.new
+    Xlsxrb::Ooxml::ZipWriter.open(io) do |w|
+      w.add_entry("a.txt", "plain")
+      w.start_entry("b.txt")
+      w.write_data("streamed")
+      w.finish_entry
+    end
+
+    data = io.string.b
+    assert_nil(data.index("PK\x06\x06".b))
+    assert_nil(data.index("PK\x06\x07".b))
+    assert_equal(20, data.byteslice(4, 2).unpack1("v"))
+    cd = data.index("PK\x01\x02".b)
+    assert_equal([20, 20], data.byteslice(cd + 4, 4).unpack("vv"))
+    assert_equal(0, data.byteslice(cd + 30, 2).unpack1("v")) # no extra field
+  end
+
+  test "zip_writer declares streamed entries on unseekable output as ZIP64 up front" do
+    content = "<a>streamed</a>"
+    buf = +"".b
+    sink = Object.new
+    sink.define_singleton_method(:write) do |d|
+      buf << d.b
+      d.bytesize
+    end
+    w = Xlsxrb::Ooxml::ZipWriter.new(sink)
+    w.start_entry("streamed.xml")
+    w.write_data(content)
+    w.finish_entry
+    w.add_entry("plain.txt", "plain")
+    w.close
+
+    # Local header: version needed 4.5, bit 3, zero CRC and sizes
+    assert_equal([45, 8], buf.byteslice(4, 4).unpack("vv"))
+    assert_equal([0, 0, 0], buf.byteslice(14, 12).unpack("VVV"))
+    # Data descriptor with 8-byte sizes
+    desc = buf.index("PK\x07\x08".b)
+    crc, csize, usize = buf.byteslice(desc + 4, 20).unpack("VQ<Q<")
+    assert_equal([Zlib.crc32(content), content.bytesize], [crc, usize])
+    # Central directory: the streamed entry lists both sizes in a ZIP64 extra field
+    cd = buf.index("PK\x01\x02".b)
+    assert_equal([45, 45, 8], buf.byteslice(cd + 4, 6).unpack("vvv"))
+    assert_equal([0xFFFF_FFFF, 0xFFFF_FFFF], buf.byteslice(cd + 20, 8).unpack("VV"))
+    assert_equal([1, 16, usize, csize], buf.byteslice(cd + 46 + "streamed.xml".bytesize, 20).unpack("vvQ<Q<"))
+    # Entries whose size is known up front, and the archive end, stay plain ZIP
+    cd2 = buf.index("PK\x01\x02".b, cd + 4)
+    assert_equal([20, 20, 0], buf.byteslice(cd2 + 4, 6).unpack("vvv"))
+    assert_nil(buf.index("PK\x06\x06".b))
+
+    reader = Xlsxrb::Ooxml::ZipReader.new(StringIO.new(buf))
+    assert_equal(content, reader.read_entry("streamed.xml"))
+    assert_equal("plain", reader.read_entry("plain.txt"))
+    assert_external_zip_test(buf)
+  end
+
+  test "Xlsxrb.write to unseekable output reads back" do
+    buf = +"".b
+    sink = Object.new
+    sink.define_singleton_method(:write) do |d|
+      buf << d.b
+      d.bytesize
+    end
+    Xlsxrb.write(sink) do |w|
+      w.sheet("Data") { |s| 50.times { |i| s.row(["row #{i}", i, i * 1.5]) } }
+    end
+
+    rows = Xlsxrb.load(buf).sheets.first.rows.map { |r| r.cells.map(&:value) }
+    assert_equal(50, rows.size)
+    assert_equal(["row 49", 49, 73.5], rows.last)
+    assert_external_zip_test(buf)
+  end
+
+  test "zip_writer writes ZIP64 records for sizes and offsets at or above the limit" do
+    payload = "<row>#{"x" * 200}</row>" * 50
+    binary = Random.new(1).bytes(300)
+    copy_source = StringIO.new
+    Xlsxrb::Ooxml::ZipWriter.open(copy_source) { |w| w.add_binary_entry("copied.bin", binary) }
+    source_reader = Xlsxrb::Ooxml::ZipReader.open(StringIO.new(copy_source.string))
+
+    seekable = StringIO.new
+    unseekable_buf = +"".b
+    unseekable = Object.new
+    unseekable.define_singleton_method(:write) do |d|
+      unseekable_buf << d.b
+      d.bytesize
+    end
+
+    [seekable, unseekable].each do |out|
+      w = Xlsxrb::Ooxml::ZipWriter.new(out)
+      # Lower the threshold so that a small archive takes every ZIP64 path.
+      w.instance_variable_set(:@zip64_limit, 100)
+      w.add_entry("raw.xml", payload)
+      w.start_entry("streamed.xml")
+      payload.each_char.each_slice(1000) { |chunk| w.write_data(chunk.join) }
+      w.finish_entry
+      source_reader.copy_to_writer("copied.bin", w)
+      w.close
+    end
+
+    [seekable.string.b, unseekable_buf].each do |data|
+      assert_not_nil(data.index("PK\x06\x06".b), "ZIP64 end of central directory record")
+      assert_not_nil(data.index("PK\x06\x07".b), "ZIP64 end of central directory locator")
+      eocd = data.rindex("PK\x05\x06".b)
+      assert_equal([3, 3, 0xFFFF_FFFF, 0xFFFF_FFFF], data.byteslice(eocd + 8, 12).unpack("vvVV"))
+
+      reader = Xlsxrb::Ooxml::ZipReader.new(StringIO.new(data))
+      assert_not_nil(reader.send(:parse_catalog_from_central_directory, StringIO.new(data)))
+      assert_equal(payload, reader.read_entry("raw.xml"))
+      assert_equal(payload, reader.read_entry("streamed.xml"))
+      assert_equal(binary, reader.read_entry("copied.bin").b)
+      assert_equal(payload.bytesize, reader.entry_catalog["streamed.xml"].uncompressed_size)
+      assert_external_zip_test(data)
+    end
+  end
+
+  test "zip_writer writes ZIP64 end of central directory for 65,535 or more entries" do
+    io = StringIO.new
+    Xlsxrb::Ooxml::ZipWriter.open(io) do |w|
+      65_535.times { |i| w.add_entry("f#{i}.txt", i.to_s) }
+    end
+
+    data = io.string.b
+    eocd = data.rindex("PK\x05\x06".b)
+    assert_equal([0xFFFF, 0xFFFF], data.byteslice(eocd + 8, 4).unpack("vv"))
+    zip64_eocd = data.index("PK\x06\x06".b)
+    assert_equal([65_535, 65_535], data.byteslice(zip64_eocd + 24, 16).unpack("Q<Q<"))
+
+    reader = Xlsxrb::Ooxml::ZipReader.new(StringIO.new(data))
+    assert_equal(65_535, reader.entry_names.size)
+    assert_equal("65534", reader.read_entry("f65534.txt"))
   end
 
   test "zip_reader parses ZIP64 extra fields in central directory and local headers" do
@@ -1348,5 +1483,19 @@ class OoxmlTest < Test::Unit::TestCase
     assert_equal(false, sheet2["B1"].value)
     assert_equal(true, sheet2["C1"].value)
     assert_equal(false, sheet2["D1"].value)
+  end
+
+  private
+
+  # Cross-checks an archive with Info-ZIP `unzip -t`, which validates ZIP64 records and CRCs.
+  def assert_external_zip_test(data)
+    return unless system("unzip", "-v", out: File::NULL, err: File::NULL)
+
+    Tempfile.create(["zip64", ".zip"], binmode: true) do |f|
+      f.write(data)
+      f.flush
+      out, status = Open3.capture2e("unzip", "-t", f.path)
+      assert_true(status.success?, out)
+    end
   end
 end

@@ -482,6 +482,7 @@ module Xlsxrb
         return nil unless eocd_data && eocd_data.bytesize == 18
 
         _disk_num, _cd_disk, _disk_entries, total_entries, _cd_size, cd_offset, _comment_len = eocd_data.unpack("vvvvVVv")
+        total_entries, cd_offset = read_zip64_end_of_central_directory(io, eocd_pos, total_entries, cd_offset) if total_entries == 0xFFFF || cd_offset == 0xFFFF_FFFF
         return nil if cd_offset > file_size
 
         io.seek(cd_offset, IO::SEEK_SET)
@@ -707,6 +708,24 @@ module Xlsxrb
         else
           data.force_encoding(Encoding::UTF_8)
         end
+      end
+
+      # Reads the entry count and central directory offset from the ZIP64 end of central
+      # directory record, located through the locator just before the end of central directory.
+      # Returns the given values unchanged when the archive has no ZIP64 record.
+      #: (untyped io, Integer eocd_pos, Integer total_entries, Integer cd_offset) -> [Integer, Integer]
+      def read_zip64_end_of_central_directory(io, eocd_pos, total_entries, cd_offset)
+        return [total_entries, cd_offset] if eocd_pos < 20
+
+        io.seek(eocd_pos - 20, IO::SEEK_SET)
+        locator = io.read(20)
+        return [total_entries, cd_offset] unless locator && locator.bytesize == 20 && locator.start_with?("PK\x06\x07")
+
+        io.seek(locator.byteslice(8, 8).unpack1("Q<"), IO::SEEK_SET)
+        record = io.read(56)
+        return [total_entries, cd_offset] unless record && record.bytesize == 56 && record.start_with?("PK\x06\x06")
+
+        [record.byteslice(32, 8).unpack1("Q<"), record.byteslice(48, 8).unpack1("Q<")]
       end
 
       #: (String extra_data, Integer usize, Integer csize, Integer offset) -> [Integer, Integer, Integer]
