@@ -535,7 +535,9 @@ module Xlsxrb
                           %w[1 true].include?(val)
                         end
           end
-          @protection = prot unless prot.empty?
+          # The sheet attribute defaults to false: without it the element only records settings.
+          prot[:sheet] = false unless attributes.key?("sheet")
+          @protection = prot
         end
 
         private

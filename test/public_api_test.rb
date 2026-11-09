@@ -466,6 +466,18 @@ class PublicApiTest < Test::Unit::TestCase
     assert_include(xml, '<pivotField axis="axisRow" showAll="0" defaultSubtotal="0"><items count="2"><item x="0"/><item x="1"/></items></pivotField>')
   end
 
+  test "a sheetProtection element without the sheet attribute does not protect the sheet" do
+    base = Xlsxrb::Ooxml::ZipReader.new(StringIO.new(Xlsxrb.write(Xlsxrb.build { |b| b.sheet("S") { |s| s.row([1]) } }))).read_all
+    sheet_xml = base["xl/worksheets/sheet1.xml"].sub("</sheetData>", '</sheetData><sheetProtection selectLockedCells="1"/>')
+    io = StringIO.new
+    Xlsxrb::Ooxml::ZipWriter.open(io) { |zip| base.merge("xl/worksheets/sheet1.xml" => sheet_xml).each { |name, data| zip.add_entry(name, data) } }
+
+    loaded = Xlsxrb.load(io.string)
+    assert_equal(false, loaded.sheets.first.sheet_protection.sheet?)
+    written = Xlsxrb::Ooxml::ZipReader.new(StringIO.new(Xlsxrb.write(loaded))).read_entry("xl/worksheets/sheet1.xml")
+    assert_equal('<sheetProtection selectLockedCells="1"/>', written[/<sheetProtection[^>]*>/])
+  end
+
   test "page setup omits a DPI of zero" do
     built = Xlsxrb.build do |b|
       b.sheet("S") do |s|
