@@ -1365,6 +1365,8 @@ module Xlsxrb
         attrs[:pageOrder] = opts[:page_order].to_s if opts[:page_order]
         attrs[:blackAndWhite] = "1" if opts[:black_and_white]
         attrs[:draft] = "1" if opts[:draft]
+        attrs[:horizontalDpi] = opts[:horizontal_dpi].to_s if opts[:horizontal_dpi].to_i.positive?
+        attrs[:verticalDpi] = opts[:vertical_dpi].to_s if opts[:vertical_dpi].to_i.positive?
         @builder.empty_tag("pageSetup", attrs) unless attrs.empty?
       end
 

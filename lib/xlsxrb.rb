@@ -52,6 +52,24 @@ module Xlsxrb
   # Maximum number of individual cell/range references allowed in a single data validation element by Excel.
   MAX_REFS_PER_VALIDATION = 32_767
 
+  # <workbookProtection> attributes and the Elements::WorkbookProtection members they load into.
+  WORKBOOK_PROTECTION_ATTRIBUTES = {
+    "workbookPassword" => %i[workbook_password string],
+    "lockStructure" => %i[lock_structure bool],
+    "lockWindows" => %i[lock_windows bool],
+    "lockRevision" => %i[lock_revision bool],
+    "revisionsPassword" => %i[revisions_password string],
+    "workbookAlgorithmName" => %i[algorithm_name string],
+    "workbookHashValue" => %i[hash_value string],
+    "workbookSaltValue" => %i[salt_value string],
+    "workbookSpinCount" => %i[spin_count int],
+    "revisionsAlgorithmName" => %i[revisions_algorithm_name string],
+    "revisionsHashValue" => %i[revisions_hash_value string],
+    "revisionsSaltValue" => %i[revisions_salt_value string],
+    "revisionsSpinCount" => %i[revisions_spin_count int]
+  }.transform_values(&:freeze).freeze
+  private_constant :WORKBOOK_PROTECTION_ATTRIBUTES
+
   # ZIP deflate level used when no compression_level is given.
   # See docs/adr/0009-default-zip-compression-level.md.
   DEFAULT_COMPRESSION_LEVEL = 1
@@ -865,8 +883,16 @@ module Xlsxrb
         prot_match = workbook_xml.match(%r{<workbookProtection\b([^>]*)/>})
         if prot_match
           prot = {}
-          prot[:lock_structure] = true if prot_match[1].include?('lockStructure="1"') || prot_match[1].include?('lockStructure="true"')
-          prot[:lock_windows] = true if prot_match[1].include?('lockWindows="1"') || prot_match[1].include?('lockWindows="true"')
+          prot_match[1].scan(/([A-Za-z]+)="([^"]*)"/) do |attr, value|
+            key, kind = WORKBOOK_PROTECTION_ATTRIBUTES[attr]
+            next unless key
+
+            prot[key] = case kind
+                        when :bool then %w[1 true].include?(value)
+                        when :int then value.to_i
+                        else value
+                        end
+          end
           wb_unmapped[:workbook_protection] = prot unless prot.empty?
         end
       end
@@ -1106,7 +1132,7 @@ module Xlsxrb
       sd[:tables] = ws.tables.map { |t| t.respond_to?(:to_h) ? t.to_h : t } if ws.respond_to?(:tables) && ws.tables && !ws.tables.empty?
       sd[:merge_cells] = ws.merged_cells if ws.respond_to?(:merged_cells) && ws.merged_cells && !ws.merged_cells.empty?
       sd[:auto_filter] = ws.auto_filter if ws.respond_to?(:auto_filter) && ws.auto_filter
-      sd[:filter_columns] = ws.unmapped_data.dig(:facade, :filter_columns) || (ws.filter_columns.transform_values { |fc| fc.respond_to?(:to_h) ? fc.to_h : fc } if ws.respond_to?(:filter_columns) && ws.filter_columns && !ws.filter_columns.empty?)
+      sd[:filter_columns] = ws.unmapped_data.dig(:facade, :filter_columns) || (ws.filter_columns.transform_values { |fc| fc.respond_to?(:to_spec) ? fc.to_spec : fc } if ws.respond_to?(:filter_columns) && ws.filter_columns && !ws.filter_columns.empty?)
       sd[:sort_state] = ws.unmapped_data.dig(:facade, :sort_state) || (ws.sort_state.respond_to?(:to_h) ? ws.sort_state.to_h : ws.sort_state) if ws.respond_to?(:sort_state) && ws.sort_state
       sd[:pivot_tables] = ws.pivot_tables.map { |pt| pt.respond_to?(:to_h) ? pt.to_h : pt } if ws.respond_to?(:pivot_tables) && ws.pivot_tables && !ws.pivot_tables.empty?
       sd[:shapes] = ws.shapes.map { |s| s.respond_to?(:to_h) ? s.to_h : s } if ws.respond_to?(:shapes) && ws.shapes && !ws.shapes.empty?

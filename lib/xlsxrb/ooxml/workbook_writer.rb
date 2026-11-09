@@ -339,10 +339,10 @@ module Xlsxrb
                 c[:cell] || c[:ref],
                 c[:text],
                 author: c[:author] || "Author",
-                timestamp: c[:timestamp] || c[:dt],
+                timestamp: c[:timestamp] || c[:dt] || c[:created_at],
                 id: c[:id],
                 parent_id: c[:parent_id],
-                done: c[:done],
+                done: c.key?(:done) ? c[:done] : c[:resolved],
                 user_id: c[:user_id],
                 provider_id: c[:provider_id]
               )
@@ -605,9 +605,25 @@ module Xlsxrb
         # Workbook protection
         if @workbook_protection
           wp_attrs = {}
-          wp_attrs[:lockStructure] = "1" if @workbook_protection[:lock_structure]
-          wp_attrs[:lockWindows] = "1" if @workbook_protection[:lock_windows]
-          wp_attrs[:workbookPassword] = @workbook_protection[:password] if @workbook_protection[:password]
+          wp = @workbook_protection
+          legacy_password = wp[:workbook_password] || wp[:password]
+          wp_attrs[:workbookPassword] = legacy_password.to_s if legacy_password
+          wp_attrs[:lockStructure] = "1" if wp[:lock_structure]
+          wp_attrs[:lockWindows] = "1" if wp[:lock_windows]
+          wp_attrs[:lockRevision] = "1" if wp[:lock_revision]
+          wp_attrs[:revisionsPassword] = wp[:revisions_password].to_s if wp[:revisions_password]
+          if wp[:algorithm_name]
+            wp_attrs[:workbookAlgorithmName] = wp[:algorithm_name].to_s
+            wp_attrs[:workbookHashValue] = wp[:hash_value].to_s if wp[:hash_value]
+            wp_attrs[:workbookSaltValue] = wp[:salt_value].to_s if wp[:salt_value]
+            wp_attrs[:workbookSpinCount] = wp[:spin_count].to_s if wp[:spin_count]
+          end
+          if wp[:revisions_algorithm_name]
+            wp_attrs[:revisionsAlgorithmName] = wp[:revisions_algorithm_name].to_s
+            wp_attrs[:revisionsHashValue] = wp[:revisions_hash_value].to_s if wp[:revisions_hash_value]
+            wp_attrs[:revisionsSaltValue] = wp[:revisions_salt_value].to_s if wp[:revisions_salt_value]
+            wp_attrs[:revisionsSpinCount] = wp[:revisions_spin_count].to_s if wp[:revisions_spin_count]
+          end
           b.empty_tag("workbookProtection", wp_attrs) unless wp_attrs.empty?
         end
 

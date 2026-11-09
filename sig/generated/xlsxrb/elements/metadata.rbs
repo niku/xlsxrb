@@ -1,11 +1,38 @@
 # Generated from lib/xlsxrb/elements/metadata.rb with RBS::Inline
 
 module Xlsxrb
+  # Immutable value objects that describe workbook content and metadata.
   module Elements
+    # Rejects keyword arguments that a value object does not have.
+    #
+    # Prepended to the singleton class of each value object, so Klass.new(**opts) raises
+    # ArgumentError for an unknown key instead of dropping it. A class can declare
+    # KEY_ALIASES, mapping old key names to the member they were renamed to: an alias is
+    # dropped when its member is also given (readers emit both), and otherwise raises with
+    # the new name.
+    #
+    # @api private
+    module StrictKeywords
+      # : (*untyped args, **untyped kwargs) -> untyped
+      def new: (*untyped args, **untyped kwargs) -> untyped
+
+      # Removes alias keys whose member is also given; raises for any other unknown key.
+      #
+      # @param klass [Class] The value object class.
+      # @param kwargs [Hash{Symbol => Object}] Keyword arguments given to new.
+      # @return [Hash{Symbol => Object}]
+      # @raise [ArgumentError] for an unknown key or an alias given without its member.
+      # : (Class klass, Hash[Symbol, untyped] kwargs) -> Hash[Symbol, untyped]
+      def self.normalize: (Class klass, Hash[Symbol, untyped] kwargs) -> Hash[Symbol, untyped]
+    end
+
     # Shared mixin for metadata Data value objects.
     #
     # @api public
     module MetadataRecord
+      # : (Module base) -> void
+      def self.included: (Module base) -> void
+
       # Returns whether all attributes are nil or empty.
       #
       # @return [Boolean]
@@ -48,12 +75,14 @@ module Xlsxrb
 
       attr_reader content_status(): untyped
 
-      def self.new: (untyped title, untyped subject, untyped creator, untyped keywords, untyped description, untyped last_modified_by, untyped revision, untyped created, untyped modified, untyped category, untyped content_status) -> instance
-                  | (title: untyped, subject: untyped, creator: untyped, keywords: untyped, description: untyped, last_modified_by: untyped, revision: untyped, created: untyped, modified: untyped, category: untyped, content_status: untyped) -> instance
+      attr_reader language(): untyped
 
-      def self.members: () -> [ :title, :subject, :creator, :keywords, :description, :last_modified_by, :revision, :created, :modified, :category, :content_status ]
+      def self.new: (untyped title, untyped subject, untyped creator, untyped keywords, untyped description, untyped last_modified_by, untyped revision, untyped created, untyped modified, untyped category, untyped content_status, untyped language) -> instance
+                  | (title: untyped, subject: untyped, creator: untyped, keywords: untyped, description: untyped, last_modified_by: untyped, revision: untyped, created: untyped, modified: untyped, category: untyped, content_status: untyped, language: untyped) -> instance
 
-      def members: () -> [ :title, :subject, :creator, :keywords, :description, :last_modified_by, :revision, :created, :modified, :category, :content_status ]
+      def self.members: () -> [ :title, :subject, :creator, :keywords, :description, :last_modified_by, :revision, :created, :modified, :category, :content_status, :language ]
+
+      def members: () -> [ :title, :subject, :creator, :keywords, :description, :last_modified_by, :revision, :created, :modified, :category, :content_status, :language ]
     end
 
     # Application document properties (docProps/app.xml).
@@ -114,12 +143,14 @@ module Xlsxrb
 
       attr_reader refresh_all(): untyped
 
-      def self.new: (untyped date1904, untyped code_name, untyped active_sheet, untyped first_sheet, untyped show_sheet_tabs, untyped tab_ratio, untyped full_calc_on_load, untyped filter_privacy, untyped default_theme_version, untyped refresh_all) -> instance
-                  | (date1904: untyped, code_name: untyped, active_sheet: untyped, first_sheet: untyped, show_sheet_tabs: untyped, tab_ratio: untyped, full_calc_on_load: untyped, filter_privacy: untyped, default_theme_version: untyped, refresh_all: untyped) -> instance
+      attr_reader update_links(): untyped
 
-      def self.members: () -> [ :date1904, :code_name, :active_sheet, :first_sheet, :show_sheet_tabs, :tab_ratio, :full_calc_on_load, :filter_privacy, :default_theme_version, :refresh_all ]
+      def self.new: (untyped date1904, untyped code_name, untyped active_sheet, untyped first_sheet, untyped show_sheet_tabs, untyped tab_ratio, untyped full_calc_on_load, untyped filter_privacy, untyped default_theme_version, untyped refresh_all, untyped update_links) -> instance
+                  | (date1904: untyped, code_name: untyped, active_sheet: untyped, first_sheet: untyped, show_sheet_tabs: untyped, tab_ratio: untyped, full_calc_on_load: untyped, filter_privacy: untyped, default_theme_version: untyped, refresh_all: untyped, update_links: untyped) -> instance
 
-      def members: () -> [ :date1904, :code_name, :active_sheet, :first_sheet, :show_sheet_tabs, :tab_ratio, :full_calc_on_load, :filter_privacy, :default_theme_version, :refresh_all ]
+      def self.members: () -> [ :date1904, :code_name, :active_sheet, :first_sheet, :show_sheet_tabs, :tab_ratio, :full_calc_on_load, :filter_privacy, :default_theme_version, :refresh_all, :update_links ]
+
+      def members: () -> [ :date1904, :code_name, :active_sheet, :first_sheet, :show_sheet_tabs, :tab_ratio, :full_calc_on_load, :filter_privacy, :default_theme_version, :refresh_all, :update_links ]
     end
 
     # Workbook protection settings (<workbookProtection>).
@@ -143,12 +174,20 @@ module Xlsxrb
 
       attr_reader spin_count(): untyped
 
-      def self.new: (untyped workbook_password, untyped lock_structure, untyped lock_windows, untyped revisions_password, untyped lock_revision, untyped algorithm_name, untyped hash_value, untyped salt_value, untyped spin_count) -> instance
-                  | (workbook_password: untyped, lock_structure: untyped, lock_windows: untyped, revisions_password: untyped, lock_revision: untyped, algorithm_name: untyped, hash_value: untyped, salt_value: untyped, spin_count: untyped) -> instance
+      attr_reader revisions_algorithm_name(): untyped
 
-      def self.members: () -> [ :workbook_password, :lock_structure, :lock_windows, :revisions_password, :lock_revision, :algorithm_name, :hash_value, :salt_value, :spin_count ]
+      attr_reader revisions_hash_value(): untyped
 
-      def members: () -> [ :workbook_password, :lock_structure, :lock_windows, :revisions_password, :lock_revision, :algorithm_name, :hash_value, :salt_value, :spin_count ]
+      attr_reader revisions_salt_value(): untyped
+
+      attr_reader revisions_spin_count(): untyped
+
+      def self.new: (untyped workbook_password, untyped lock_structure, untyped lock_windows, untyped revisions_password, untyped lock_revision, untyped algorithm_name, untyped hash_value, untyped salt_value, untyped spin_count, untyped revisions_algorithm_name, untyped revisions_hash_value, untyped revisions_salt_value, untyped revisions_spin_count) -> instance
+                  | (workbook_password: untyped, lock_structure: untyped, lock_windows: untyped, revisions_password: untyped, lock_revision: untyped, algorithm_name: untyped, hash_value: untyped, salt_value: untyped, spin_count: untyped, revisions_algorithm_name: untyped, revisions_hash_value: untyped, revisions_salt_value: untyped, revisions_spin_count: untyped) -> instance
+
+      def self.members: () -> [ :workbook_password, :lock_structure, :lock_windows, :revisions_password, :lock_revision, :algorithm_name, :hash_value, :salt_value, :spin_count, :revisions_algorithm_name, :revisions_hash_value, :revisions_salt_value, :revisions_spin_count ]
+
+      def members: () -> [ :workbook_password, :lock_structure, :lock_windows, :revisions_password, :lock_revision, :algorithm_name, :hash_value, :salt_value, :spin_count, :revisions_algorithm_name, :revisions_hash_value, :revisions_salt_value, :revisions_spin_count ]
     end
 
     # Worksheet page setup properties (<pageSetup>).
@@ -184,12 +223,18 @@ module Xlsxrb
 
       attr_reader id(): untyped
 
-      def self.new: (untyped paper_size, untyped orientation, untyped scale, untyped fit_to_width, untyped fit_to_height, untyped first_page_number, untyped use_first_page_number, untyped black_and_white, untyped draft, untyped cell_comments, untyped use_printer_defaults, untyped copies, untyped horizontal_centered, untyped vertical_centered, untyped id) -> instance
-                  | (paper_size: untyped, orientation: untyped, scale: untyped, fit_to_width: untyped, fit_to_height: untyped, first_page_number: untyped, use_first_page_number: untyped, black_and_white: untyped, draft: untyped, cell_comments: untyped, use_printer_defaults: untyped, copies: untyped, horizontal_centered: untyped, vertical_centered: untyped, id: untyped) -> instance
+      attr_reader page_order(): untyped
 
-      def self.members: () -> [ :paper_size, :orientation, :scale, :fit_to_width, :fit_to_height, :first_page_number, :use_first_page_number, :black_and_white, :draft, :cell_comments, :use_printer_defaults, :copies, :horizontal_centered, :vertical_centered, :id ]
+      attr_reader horizontal_dpi(): untyped
 
-      def members: () -> [ :paper_size, :orientation, :scale, :fit_to_width, :fit_to_height, :first_page_number, :use_first_page_number, :black_and_white, :draft, :cell_comments, :use_printer_defaults, :copies, :horizontal_centered, :vertical_centered, :id ]
+      attr_reader vertical_dpi(): untyped
+
+      def self.new: (untyped paper_size, untyped orientation, untyped scale, untyped fit_to_width, untyped fit_to_height, untyped first_page_number, untyped use_first_page_number, untyped black_and_white, untyped draft, untyped cell_comments, untyped use_printer_defaults, untyped copies, untyped horizontal_centered, untyped vertical_centered, untyped id, untyped page_order, untyped horizontal_dpi, untyped vertical_dpi) -> instance
+                  | (paper_size: untyped, orientation: untyped, scale: untyped, fit_to_width: untyped, fit_to_height: untyped, first_page_number: untyped, use_first_page_number: untyped, black_and_white: untyped, draft: untyped, cell_comments: untyped, use_printer_defaults: untyped, copies: untyped, horizontal_centered: untyped, vertical_centered: untyped, id: untyped, page_order: untyped, horizontal_dpi: untyped, vertical_dpi: untyped) -> instance
+
+      def self.members: () -> [ :paper_size, :orientation, :scale, :fit_to_width, :fit_to_height, :first_page_number, :use_first_page_number, :black_and_white, :draft, :cell_comments, :use_printer_defaults, :copies, :horizontal_centered, :vertical_centered, :id, :page_order, :horizontal_dpi, :vertical_dpi ]
+
+      def members: () -> [ :paper_size, :orientation, :scale, :fit_to_width, :fit_to_height, :first_page_number, :use_first_page_number, :black_and_white, :draft, :cell_comments, :use_printer_defaults, :copies, :horizontal_centered, :vertical_centered, :id, :page_order, :horizontal_dpi, :vertical_dpi ]
     end
 
     # Worksheet page margins (<pageMargins>).
@@ -676,12 +721,16 @@ module Xlsxrb
 
       attr_reader show_button(): untyped
 
-      def self.new: (untyped column_id, untyped filters, untyped custom_filters, untyped dynamic_filter, untyped top10, untyped color_filter, untyped icon_filter, untyped hidden, untyped show_button) -> instance
-                  | (column_id: untyped, filters: untyped, custom_filters: untyped, dynamic_filter: untyped, top10: untyped, color_filter: untyped, icon_filter: untyped, hidden: untyped, show_button: untyped) -> instance
+      attr_reader blank(): untyped
 
-      def self.members: () -> [ :column_id, :filters, :custom_filters, :dynamic_filter, :top10, :color_filter, :icon_filter, :hidden, :show_button ]
+      attr_reader custom_filters_and(): untyped
 
-      def members: () -> [ :column_id, :filters, :custom_filters, :dynamic_filter, :top10, :color_filter, :icon_filter, :hidden, :show_button ]
+      def self.new: (untyped column_id, untyped filters, untyped custom_filters, untyped dynamic_filter, untyped top10, untyped color_filter, untyped icon_filter, untyped hidden, untyped show_button, untyped blank, untyped custom_filters_and) -> instance
+                  | (column_id: untyped, filters: untyped, custom_filters: untyped, dynamic_filter: untyped, top10: untyped, color_filter: untyped, icon_filter: untyped, hidden: untyped, show_button: untyped, blank: untyped, custom_filters_and: untyped) -> instance
+
+      def self.members: () -> [ :column_id, :filters, :custom_filters, :dynamic_filter, :top10, :color_filter, :icon_filter, :hidden, :show_button, :blank, :custom_filters_and ]
+
+      def members: () -> [ :column_id, :filters, :custom_filters, :dynamic_filter, :top10, :color_filter, :icon_filter, :hidden, :show_button, :blank, :custom_filters_and ]
     end
 
     # Workbook defined name (<definedName>).
@@ -772,12 +821,14 @@ module Xlsxrb
 
       attr_reader resolved(): untyped
 
-      def self.new: (untyped id, untyped ref, untyped text, untyped author, untyped author_id, untyped created_at, untyped parent_id, untyped resolved) -> instance
-                  | (id: untyped, ref: untyped, text: untyped, author: untyped, author_id: untyped, created_at: untyped, parent_id: untyped, resolved: untyped) -> instance
+      attr_reader provider_id(): untyped
 
-      def self.members: () -> [ :id, :ref, :text, :author, :author_id, :created_at, :parent_id, :resolved ]
+      def self.new: (untyped id, untyped ref, untyped text, untyped author, untyped author_id, untyped created_at, untyped parent_id, untyped resolved, untyped provider_id) -> instance
+                  | (id: untyped, ref: untyped, text: untyped, author: untyped, author_id: untyped, created_at: untyped, parent_id: untyped, resolved: untyped, provider_id: untyped) -> instance
 
-      def members: () -> [ :id, :ref, :text, :author, :author_id, :created_at, :parent_id, :resolved ]
+      def self.members: () -> [ :id, :ref, :text, :author, :author_id, :created_at, :parent_id, :resolved, :provider_id ]
+
+      def members: () -> [ :id, :ref, :text, :author, :author_id, :created_at, :parent_id, :resolved, :provider_id ]
     end
 
     # Data validation rule (<dataValidation>).
@@ -938,12 +989,14 @@ module Xlsxrb
 
       attr_reader calculated_column_formula(): untyped
 
-      def self.new: (untyped id, untyped name, untyped totals_row_function, untyped totals_row_label, untyped totals_row_formula, untyped data_dxf_id, untyped calculated_column_formula) -> instance
-                  | (id: untyped, name: untyped, totals_row_function: untyped, totals_row_label: untyped, totals_row_formula: untyped, data_dxf_id: untyped, calculated_column_formula: untyped) -> instance
+      attr_reader data_cell_style(): untyped
 
-      def self.members: () -> [ :id, :name, :totals_row_function, :totals_row_label, :totals_row_formula, :data_dxf_id, :calculated_column_formula ]
+      def self.new: (untyped id, untyped name, untyped totals_row_function, untyped totals_row_label, untyped totals_row_formula, untyped data_dxf_id, untyped calculated_column_formula, untyped data_cell_style) -> instance
+                  | (id: untyped, name: untyped, totals_row_function: untyped, totals_row_label: untyped, totals_row_formula: untyped, data_dxf_id: untyped, calculated_column_formula: untyped, data_cell_style: untyped) -> instance
 
-      def members: () -> [ :id, :name, :totals_row_function, :totals_row_label, :totals_row_formula, :data_dxf_id, :calculated_column_formula ]
+      def self.members: () -> [ :id, :name, :totals_row_function, :totals_row_label, :totals_row_formula, :data_dxf_id, :calculated_column_formula, :data_cell_style ]
+
+      def members: () -> [ :id, :name, :totals_row_function, :totals_row_label, :totals_row_formula, :data_dxf_id, :calculated_column_formula, :data_cell_style ]
     end
 
     # Table style information (<tableStyleInfo>).
@@ -1310,12 +1363,14 @@ module Xlsxrb
 
       attr_reader extend(): untyped
 
-      def self.new: (untyped name, untyped size, untyped bold, untyped italic, untyped underline, untyped strike, untyped color, untyped family, untyped scheme, untyped outline, untyped shadow, untyped condense, untyped extend) -> instance
-                  | (name: untyped, size: untyped, bold: untyped, italic: untyped, underline: untyped, strike: untyped, color: untyped, family: untyped, scheme: untyped, outline: untyped, shadow: untyped, condense: untyped, extend: untyped) -> instance
+      attr_reader vert_align(): untyped
 
-      def self.members: () -> [ :name, :size, :bold, :italic, :underline, :strike, :color, :family, :scheme, :outline, :shadow, :condense, :extend ]
+      def self.new: (untyped name, untyped size, untyped bold, untyped italic, untyped underline, untyped strike, untyped color, untyped family, untyped scheme, untyped outline, untyped shadow, untyped condense, untyped extend, untyped vert_align) -> instance
+                  | (name: untyped, size: untyped, bold: untyped, italic: untyped, underline: untyped, strike: untyped, color: untyped, family: untyped, scheme: untyped, outline: untyped, shadow: untyped, condense: untyped, extend: untyped, vert_align: untyped) -> instance
 
-      def members: () -> [ :name, :size, :bold, :italic, :underline, :strike, :color, :family, :scheme, :outline, :shadow, :condense, :extend ]
+      def self.members: () -> [ :name, :size, :bold, :italic, :underline, :strike, :color, :family, :scheme, :outline, :shadow, :condense, :extend, :vert_align ]
+
+      def members: () -> [ :name, :size, :bold, :italic, :underline, :strike, :color, :family, :scheme, :outline, :shadow, :condense, :extend, :vert_align ]
     end
 
     # Fill style definition in stylesheet (<fill>).

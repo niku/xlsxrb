@@ -584,7 +584,10 @@ module Xlsxrb
             lr = attributes["lockRevision"]
             prot[:lock_revision] = %w[1 true].include?(lr) unless lr.nil?
             wp = attributes["workbookPassword"]
-            prot[:password] = wp if wp
+            if wp
+              prot[:password] = wp
+              prot[:workbook_password] = wp
+            end
             an = attributes["workbookAlgorithmName"]
             if an
               prot[:algorithm_name] = an

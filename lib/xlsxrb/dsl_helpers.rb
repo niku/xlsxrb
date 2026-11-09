@@ -43,6 +43,26 @@ module Xlsxrb
       normalized
     end
 
+    # Normalizes workbook protection options. A plain-text +password+ is hashed into
+    # algorithm_name, hash_value, salt_value, and spin_count (as for sheet protection); a
+    # legacy 4-digit hexadecimal hash is kept as workbook_password.
+    #
+    # @param opts [Hash]
+    # @return [Hash]
+    #: (Hash[Symbol, untyped] opts) -> Hash[Symbol, untyped]
+    def self.normalize_workbook_protection(opts)
+      normalized = opts.dup
+      password = normalized.delete(:password)
+      return normalized if password.nil? || password.to_s.empty?
+
+      if password.to_s.match?(/\A[0-9A-Fa-f]{4}\z/)
+        normalized[:workbook_password] ||= password.to_s
+      else
+        normalized.merge!(Ooxml::Utils.hash_password(password.to_s))
+      end
+      normalized
+    end
+
     # Normalizes column index or letter or Range to an array of 0-based column integers.
     #
     # @param index [Integer, String, Symbol, Range, Array]

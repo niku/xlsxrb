@@ -589,17 +589,7 @@ module Xlsxrb
         fc = if filter.is_a?(Elements::FilterColumn)
                filter
              else
-               Elements::FilterColumn.new(
-                 column_id: filter[:column_id] || filter[:col_id] || col_id,
-                 hidden: filter[:hidden] || false,
-                 show_button: filter[:show_button] != false,
-                 filters: filter[:filters] || [],
-                 custom_filters: filter[:custom_filters] || [],
-                 top10: filter[:top10],
-                 dynamic_filter: filter[:dynamic_filter],
-                 color_filter: filter[:color_filter],
-                 icon_filter: filter[:icon_filter]
-               )
+               Elements::FilterColumn.from_spec(col_id, filter)
              end
         [col_id, fc]
       end.freeze

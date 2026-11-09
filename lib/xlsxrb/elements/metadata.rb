@@ -3,11 +3,76 @@
 # rbs_inline: enabled
 
 module Xlsxrb
+  # Immutable value objects that describe workbook content and metadata.
   module Elements
+    # Rejects keyword arguments that a value object does not have.
+    #
+    # Prepended to the singleton class of each value object, so Klass.new(**opts) raises
+    # ArgumentError for an unknown key instead of dropping it. A class can declare
+    # KEY_ALIASES, mapping old key names to the member they were renamed to: an alias is
+    # dropped when its member is also given (readers emit both), and otherwise raises with
+    # the new name.
+    #
+    # @api private
+    module StrictKeywords
+      #: (*untyped args, **untyped kwargs) -> untyped
+      def new(*args, **kwargs)
+        return super if kwargs.empty?
+
+        allowed = members
+        return super if kwargs.each_key.all? { |key| allowed.include?(key) }
+
+        super(*args, **StrictKeywords.normalize(self, kwargs))
+      end
+
+      # Removes alias keys whose member is also given; raises for any other unknown key.
+      #
+      # @param klass [Class] The value object class.
+      # @param kwargs [Hash{Symbol => Object}] Keyword arguments given to new.
+      # @return [Hash{Symbol => Object}]
+      # @raise [ArgumentError] for an unknown key or an alias given without its member.
+      #: (Class klass, Hash[Symbol, untyped] kwargs) -> Hash[Symbol, untyped]
+      def self.normalize(klass, kwargs)
+        params = klass.instance_method(:initialize).parameters
+        # Value objects with an options member collect other keys there through **extra.
+        return kwargs if params.any? { |type, _| type == :keyrest }
+
+        allowed = klass.members | params.filter_map { |type, name| name if %i[key keyreq].include?(type) }
+        aliases = klass.const_defined?(:KEY_ALIASES, false) ? klass.const_get(:KEY_ALIASES, false) : {}
+        result = kwargs.dup
+        kwargs.each_key do |key|
+          next if allowed.include?(key)
+
+          member = aliases[key]
+          if member && !kwargs[member].nil?
+            result.delete(key)
+            next
+          end
+
+          message = "unknown keyword: #{key.inspect} for #{klass.name}"
+          if member
+            message << "; use #{member.inspect}"
+          elsif defined?(DidYouMean::SpellChecker) && (suggestion = DidYouMean::SpellChecker.new(dictionary: allowed.map(&:to_s)).correct(key.to_s).first)
+            message << "; did you mean #{suggestion.to_sym.inspect}?"
+          end
+          raise ArgumentError, message
+        end
+        result
+      end
+    end
+
+    # Hyperlink is defined in types.rb, before this file, and does not include MetadataRecord.
+    Hyperlink.singleton_class.prepend(StrictKeywords)
+
     # Shared mixin for metadata Data value objects.
     #
     # @api public
     module MetadataRecord
+      #: (Module base) -> void
+      def self.included(base)
+        base.singleton_class.prepend(StrictKeywords)
+      end
+
       # Returns whether all attributes are nil or empty.
       #
       # @return [Boolean]
@@ -48,16 +113,17 @@ module Xlsxrb
     # @api public
     CoreProperties = Data.define(
       :title, :subject, :creator, :keywords, :description, :last_modified_by,
-      :revision, :created, :modified, :category, :content_status
+      :revision, :created, :modified, :category, :content_status,
+      :language
     ) do
       include MetadataRecord
 
-      #: (?title: String?, ?subject: String?, ?creator: String?, ?keywords: String?, ?description: String?, ?last_modified_by: String?, ?revision: String?, ?created: untyped, ?modified: untyped, ?category: String?, ?content_status: String?, **untyped) -> void
-      def initialize(title: nil, subject: nil, creator: nil, keywords: nil, description: nil, last_modified_by: nil, revision: nil, created: nil, modified: nil, category: nil, content_status: nil, **_extra)
+      #: (?title: String?, ?subject: String?, ?creator: String?, ?keywords: String?, ?description: String?, ?last_modified_by: String?, ?revision: String?, ?created: untyped, ?modified: untyped, ?category: String?, ?content_status: String?, ?language: String?) -> void
+      def initialize(title: nil, subject: nil, creator: nil, keywords: nil, description: nil, last_modified_by: nil, revision: nil, created: nil, modified: nil, category: nil, content_status: nil, language: nil)
         super(**{
           title: title, subject: subject, creator: creator, keywords: keywords, description: description,
           last_modified_by: last_modified_by, revision: revision, created: created, modified: modified,
-          category: category, content_status: content_status
+          category: category, content_status: content_status, language: language
         })
       end
     end
@@ -73,8 +139,8 @@ module Xlsxrb
 
       private :scale_crop, :links_up_to_date, :shared_doc, :hyperlinks_changed
 
-      #: (?app_name: String?, ?app_version: String?, ?doc_security: Integer?, ?scale_crop: bool?, ?heading_pairs: Array[untyped]?, ?titles_of_parts: Array[untyped]?, ?manager: String?, ?company: String?, ?links_up_to_date: bool?, ?shared_doc: bool?, ?hyperlink_base: String?, ?hyperlinks_changed: bool?, **untyped) -> void
-      def initialize(app_name: nil, app_version: nil, doc_security: nil, scale_crop: nil, heading_pairs: nil, titles_of_parts: nil, manager: nil, company: nil, links_up_to_date: nil, shared_doc: nil, hyperlink_base: nil, hyperlinks_changed: nil, **_extra)
+      #: (?app_name: String?, ?app_version: String?, ?doc_security: Integer?, ?scale_crop: bool?, ?heading_pairs: Array[untyped]?, ?titles_of_parts: Array[untyped]?, ?manager: String?, ?company: String?, ?links_up_to_date: bool?, ?shared_doc: bool?, ?hyperlink_base: String?, ?hyperlinks_changed: bool?) -> void
+      def initialize(app_name: nil, app_version: nil, doc_security: nil, scale_crop: nil, heading_pairs: nil, titles_of_parts: nil, manager: nil, company: nil, links_up_to_date: nil, shared_doc: nil, hyperlink_base: nil, hyperlinks_changed: nil)
         super(**{
           app_name: app_name, app_version: app_version, doc_security: doc_security, scale_crop: scale_crop,
           heading_pairs: heading_pairs, titles_of_parts: titles_of_parts, manager: manager, company: company,
@@ -121,18 +187,19 @@ module Xlsxrb
     WorkbookProperties = Data.define(
       :date1904, :code_name, :active_sheet, :first_sheet,
       :show_sheet_tabs, :tab_ratio, :full_calc_on_load, :filter_privacy,
-      :default_theme_version, :refresh_all
+      :default_theme_version, :refresh_all,
+      :update_links
     ) do
       include MetadataRecord
 
       private :date1904, :show_sheet_tabs, :full_calc_on_load, :filter_privacy, :refresh_all
 
-      #: (?date1904: bool?, ?code_name: String?, ?active_sheet: Integer?, ?first_sheet: Integer?, ?show_sheet_tabs: bool?, ?tab_ratio: Integer?, ?full_calc_on_load: bool?, ?filter_privacy: bool?, ?default_theme_version: String?, ?refresh_all: bool?, **untyped) -> void
-      def initialize(date1904: nil, code_name: nil, active_sheet: nil, first_sheet: nil, show_sheet_tabs: nil, tab_ratio: nil, full_calc_on_load: nil, filter_privacy: nil, default_theme_version: nil, refresh_all: nil, **_extra)
+      #: (?date1904: bool?, ?code_name: String?, ?active_sheet: Integer?, ?first_sheet: Integer?, ?show_sheet_tabs: bool?, ?tab_ratio: Integer?, ?full_calc_on_load: bool?, ?filter_privacy: bool?, ?default_theme_version: String?, ?refresh_all: bool?, ?update_links: String?) -> void
+      def initialize(date1904: nil, code_name: nil, active_sheet: nil, first_sheet: nil, show_sheet_tabs: nil, tab_ratio: nil, full_calc_on_load: nil, filter_privacy: nil, default_theme_version: nil, refresh_all: nil, update_links: nil)
         super(**{
           date1904: date1904, code_name: code_name, active_sheet: active_sheet, first_sheet: first_sheet,
           show_sheet_tabs: show_sheet_tabs, tab_ratio: tab_ratio, full_calc_on_load: full_calc_on_load,
-          filter_privacy: filter_privacy, default_theme_version: default_theme_version, refresh_all: refresh_all
+          filter_privacy: filter_privacy, default_theme_version: default_theme_version, refresh_all: refresh_all, update_links: update_links
         })
       end
 
@@ -181,18 +248,19 @@ module Xlsxrb
     # @api public
     WorkbookProtection = Data.define(
       :workbook_password, :lock_structure, :lock_windows, :revisions_password,
-      :lock_revision, :algorithm_name, :hash_value, :salt_value, :spin_count
+      :lock_revision, :algorithm_name, :hash_value, :salt_value, :spin_count,
+      :revisions_algorithm_name, :revisions_hash_value, :revisions_salt_value, :revisions_spin_count
     ) do
       include MetadataRecord
 
       private :lock_structure, :lock_windows, :lock_revision
 
-      #: (?workbook_password: String?, ?lock_structure: bool?, ?lock_windows: bool?, ?revisions_password: String?, ?lock_revision: bool?, ?algorithm_name: String?, ?hash_value: String?, ?salt_value: String?, ?spin_count: Integer?, **untyped) -> void
-      def initialize(workbook_password: nil, lock_structure: nil, lock_windows: nil, revisions_password: nil, lock_revision: nil, algorithm_name: nil, hash_value: nil, salt_value: nil, spin_count: nil, **_extra)
+      #: (?workbook_password: String?, ?lock_structure: bool?, ?lock_windows: bool?, ?revisions_password: String?, ?lock_revision: bool?, ?algorithm_name: String?, ?hash_value: String?, ?salt_value: String?, ?spin_count: Integer?, ?revisions_algorithm_name: String?, ?revisions_hash_value: String?, ?revisions_salt_value: String?, ?revisions_spin_count: Integer?) -> void
+      def initialize(workbook_password: nil, lock_structure: nil, lock_windows: nil, revisions_password: nil, lock_revision: nil, algorithm_name: nil, hash_value: nil, salt_value: nil, spin_count: nil, revisions_algorithm_name: nil, revisions_hash_value: nil, revisions_salt_value: nil, revisions_spin_count: nil)
         super(**{
           workbook_password: workbook_password, lock_structure: lock_structure, lock_windows: lock_windows,
           revisions_password: revisions_password, lock_revision: lock_revision, algorithm_name: algorithm_name,
-          hash_value: hash_value, salt_value: salt_value, spin_count: spin_count
+          hash_value: hash_value, salt_value: salt_value, spin_count: spin_count, revisions_algorithm_name: revisions_algorithm_name, revisions_hash_value: revisions_hash_value, revisions_salt_value: revisions_salt_value, revisions_spin_count: revisions_spin_count
         })
       end
 
@@ -227,20 +295,21 @@ module Xlsxrb
       :paper_size, :orientation, :scale, :fit_to_width, :fit_to_height,
       :first_page_number, :use_first_page_number, :black_and_white, :draft,
       :cell_comments, :use_printer_defaults, :copies, :horizontal_centered,
-      :vertical_centered, :id
+      :vertical_centered, :id,
+      :page_order, :horizontal_dpi, :vertical_dpi
     ) do
       include MetadataRecord
 
       private :use_first_page_number, :black_and_white, :draft, :use_printer_defaults, :horizontal_centered, :vertical_centered
 
-      #: (?paper_size: (Integer | String)?, ?orientation: (Symbol | String)?, ?scale: Integer?, ?fit_to_width: Integer?, ?fit_to_height: Integer?, ?first_page_number: Integer?, ?use_first_page_number: bool?, ?black_and_white: bool?, ?draft: bool?, ?cell_comments: String?, ?use_printer_defaults: bool?, ?copies: Integer?, ?horizontal_centered: bool?, ?vertical_centered: bool?, ?id: String?, **untyped) -> void
-      def initialize(paper_size: nil, orientation: nil, scale: nil, fit_to_width: nil, fit_to_height: nil, first_page_number: nil, use_first_page_number: nil, black_and_white: nil, draft: nil, cell_comments: nil, use_printer_defaults: nil, copies: nil, horizontal_centered: nil, vertical_centered: nil, id: nil, **_extra)
+      #: (?paper_size: (Integer | String)?, ?orientation: (Symbol | String)?, ?scale: Integer?, ?fit_to_width: Integer?, ?fit_to_height: Integer?, ?first_page_number: Integer?, ?use_first_page_number: bool?, ?black_and_white: bool?, ?draft: bool?, ?cell_comments: String?, ?use_printer_defaults: bool?, ?copies: Integer?, ?horizontal_centered: bool?, ?vertical_centered: bool?, ?id: String?, ?page_order: String?, ?horizontal_dpi: Integer?, ?vertical_dpi: Integer?) -> void
+      def initialize(paper_size: nil, orientation: nil, scale: nil, fit_to_width: nil, fit_to_height: nil, first_page_number: nil, use_first_page_number: nil, black_and_white: nil, draft: nil, cell_comments: nil, use_printer_defaults: nil, copies: nil, horizontal_centered: nil, vertical_centered: nil, id: nil, page_order: nil, horizontal_dpi: nil, vertical_dpi: nil)
         super(**{
           paper_size: paper_size, orientation: orientation, scale: scale, fit_to_width: fit_to_width,
           fit_to_height: fit_to_height, first_page_number: first_page_number, use_first_page_number: use_first_page_number,
           black_and_white: black_and_white, draft: draft, cell_comments: cell_comments,
           use_printer_defaults: use_printer_defaults, copies: copies, horizontal_centered: horizontal_centered,
-          vertical_centered: vertical_centered, id: id
+          vertical_centered: vertical_centered, id: id, page_order: page_order, horizontal_dpi: horizontal_dpi, vertical_dpi: vertical_dpi
         })
       end
 
@@ -298,8 +367,8 @@ module Xlsxrb
     PageMargins = Data.define(:left, :right, :top, :bottom, :header, :footer) do
       include MetadataRecord
 
-      #: (?left: Float?, ?right: Float?, ?top: Float?, ?bottom: Float?, ?header: Float?, ?footer: Float?, **untyped) -> void
-      def initialize(left: nil, right: nil, top: nil, bottom: nil, header: nil, footer: nil, **_extra)
+      #: (?left: Float?, ?right: Float?, ?top: Float?, ?bottom: Float?, ?header: Float?, ?footer: Float?) -> void
+      def initialize(left: nil, right: nil, top: nil, bottom: nil, header: nil, footer: nil)
         super(**{ left: left, right: right, top: top, bottom: bottom, header: header, footer: footer })
       end
     end
@@ -315,8 +384,8 @@ module Xlsxrb
 
       private :different_odd_even, :different_first, :scale_with_doc, :align_with_margins
 
-      #: (?odd_header: String?, ?odd_footer: String?, ?even_header: String?, ?even_footer: String?, ?first_header: String?, ?first_footer: String?, ?different_odd_even: bool?, ?different_first: bool?, ?scale_with_doc: bool?, ?align_with_margins: bool?, **untyped) -> void
-      def initialize(odd_header: nil, odd_footer: nil, even_header: nil, even_footer: nil, first_header: nil, first_footer: nil, different_odd_even: nil, different_first: nil, scale_with_doc: nil, align_with_margins: nil, **_extra)
+      #: (?odd_header: String?, ?odd_footer: String?, ?even_header: String?, ?even_footer: String?, ?first_header: String?, ?first_footer: String?, ?different_odd_even: bool?, ?different_first: bool?, ?scale_with_doc: bool?, ?align_with_margins: bool?) -> void
+      def initialize(odd_header: nil, odd_footer: nil, even_header: nil, even_footer: nil, first_header: nil, first_footer: nil, different_odd_even: nil, different_first: nil, scale_with_doc: nil, align_with_margins: nil)
         super(**{
           odd_header: odd_header, odd_footer: odd_footer, even_header: even_header,
           even_footer: even_footer, first_header: first_header, first_footer: first_footer,
@@ -365,8 +434,8 @@ module Xlsxrb
 
       private :grid_lines, :grid_lines_set, :headings, :horizontal_centered, :vertical_centered
 
-      #: (?grid_lines: bool?, ?grid_lines_set: bool?, ?headings: bool?, ?horizontal_centered: bool?, ?vertical_centered: bool?, **untyped) -> void
-      def initialize(grid_lines: nil, grid_lines_set: nil, headings: nil, horizontal_centered: nil, vertical_centered: nil, **_extra)
+      #: (?grid_lines: bool?, ?grid_lines_set: bool?, ?headings: bool?, ?horizontal_centered: bool?, ?vertical_centered: bool?) -> void
+      def initialize(grid_lines: nil, grid_lines_set: nil, headings: nil, horizontal_centered: nil, vertical_centered: nil)
         super(**{
           grid_lines: grid_lines, grid_lines_set: grid_lines_set, headings: headings,
           horizontal_centered: horizontal_centered, vertical_centered: vertical_centered
@@ -419,8 +488,8 @@ module Xlsxrb
     PrintTitles = Data.define(:rows, :columns) do
       include MetadataRecord
 
-      #: (?rows: String?, ?columns: String?, **untyped) -> void
-      def initialize(rows: nil, columns: nil, **_extra)
+      #: (?rows: String?, ?columns: String?) -> void
+      def initialize(rows: nil, columns: nil)
         super(**{ rows: rows, columns: columns })
       end
     end
@@ -433,8 +502,8 @@ module Xlsxrb
     FreezePane = Data.define(:row, :column, :top_left_cell, :active_pane, :state) do
       include MetadataRecord
 
-      #: (?row: Integer?, ?column: (Integer | String | Symbol)?, ?top_left_cell: String?, ?active_pane: String?, ?state: Symbol?, **untyped) -> void
-      def initialize(row: nil, column: nil, top_left_cell: nil, active_pane: nil, state: :frozen, **_extra)
+      #: (?row: Integer?, ?column: (Integer | String | Symbol)?, ?top_left_cell: String?, ?active_pane: String?, ?state: Symbol?) -> void
+      def initialize(row: nil, column: nil, top_left_cell: nil, active_pane: nil, state: :frozen)
         super(**{ row: row, column: column, top_left_cell: top_left_cell, active_pane: active_pane, state: state || :frozen })
       end
     end
@@ -446,8 +515,8 @@ module Xlsxrb
     SplitPane = Data.define(:x_split, :y_split, :top_left_cell, :active_pane, :state) do
       include MetadataRecord
 
-      #: (?x_split: (Integer | Float)?, ?y_split: (Integer | Float)?, ?top_left_cell: String?, ?active_pane: String?, ?state: String?, **untyped) -> void
-      def initialize(x_split: nil, y_split: nil, top_left_cell: nil, active_pane: nil, state: nil, **_extra)
+      #: (?x_split: (Integer | Float)?, ?y_split: (Integer | Float)?, ?top_left_cell: String?, ?active_pane: String?, ?state: String?) -> void
+      def initialize(x_split: nil, y_split: nil, top_left_cell: nil, active_pane: nil, state: nil)
         super(**{ x_split: x_split, y_split: y_split, top_left_cell: top_left_cell, active_pane: active_pane, state: state })
       end
     end
@@ -457,8 +526,8 @@ module Xlsxrb
     Selection = Data.define(:pane, :active_cell, :active_cell_id, :sqref) do
       include MetadataRecord
 
-      #: (?pane: String?, ?active_cell: String?, ?active_cell_id: Integer?, ?sqref: String?, **untyped) -> void
-      def initialize(pane: nil, active_cell: nil, active_cell_id: nil, sqref: nil, **_extra)
+      #: (?pane: String?, ?active_cell: String?, ?active_cell_id: Integer?, ?sqref: String?) -> void
+      def initialize(pane: nil, active_cell: nil, active_cell_id: nil, sqref: nil)
         super(**{ pane: pane, active_cell: active_cell, active_cell_id: active_cell_id, sqref: sqref })
       end
     end
@@ -475,8 +544,8 @@ module Xlsxrb
 
       private :sheet, :objects, :scenarios, :format_cells, :format_columns, :format_rows, :insert_columns, :insert_rows, :insert_hyperlinks, :delete_columns, :delete_rows, :select_locked_cells, :select_unlocked_cells, :sort, :auto_filter, :pivot_tables
 
-      #: (?password: String?, ?sheet: bool?, ?objects: bool?, ?scenarios: bool?, ?format_cells: bool?, ?format_columns: bool?, ?format_rows: bool?, ?insert_columns: bool?, ?insert_rows: bool?, ?insert_hyperlinks: bool?, ?delete_columns: bool?, ?delete_rows: bool?, ?select_locked_cells: bool?, ?select_unlocked_cells: bool?, ?sort: bool?, ?auto_filter: bool?, ?pivot_tables: bool?, ?algorithm_name: String?, ?hash_value: String?, ?salt_value: String?, ?spin_count: Integer?, **untyped) -> void
-      def initialize(password: nil, sheet: nil, objects: nil, scenarios: nil, format_cells: nil, format_columns: nil, format_rows: nil, insert_columns: nil, insert_rows: nil, insert_hyperlinks: nil, delete_columns: nil, delete_rows: nil, select_locked_cells: nil, select_unlocked_cells: nil, sort: nil, auto_filter: nil, pivot_tables: nil, algorithm_name: nil, hash_value: nil, salt_value: nil, spin_count: nil, **_extra)
+      #: (?password: String?, ?sheet: bool?, ?objects: bool?, ?scenarios: bool?, ?format_cells: bool?, ?format_columns: bool?, ?format_rows: bool?, ?insert_columns: bool?, ?insert_rows: bool?, ?insert_hyperlinks: bool?, ?delete_columns: bool?, ?delete_rows: bool?, ?select_locked_cells: bool?, ?select_unlocked_cells: bool?, ?sort: bool?, ?auto_filter: bool?, ?pivot_tables: bool?, ?algorithm_name: String?, ?hash_value: String?, ?salt_value: String?, ?spin_count: Integer?) -> void
+      def initialize(password: nil, sheet: nil, objects: nil, scenarios: nil, format_cells: nil, format_columns: nil, format_rows: nil, insert_columns: nil, insert_rows: nil, insert_hyperlinks: nil, delete_columns: nil, delete_rows: nil, select_locked_cells: nil, select_unlocked_cells: nil, sort: nil, auto_filter: nil, pivot_tables: nil, algorithm_name: nil, hash_value: nil, salt_value: nil, spin_count: nil)
         super(**{
           password: password, sheet: sheet, objects: objects, scenarios: scenarios,
           format_cells: format_cells, format_columns: format_columns, format_rows: format_rows,
@@ -792,8 +861,8 @@ module Xlsxrb
 
       private :custom_height, :zero_height, :thick_top, :thick_bottom
 
-      #: (?default_row_height: (Float | Integer)?, ?default_column_width: (Float | Integer)?, ?custom_height: bool?, ?zero_height: bool?, ?thick_top: bool?, ?thick_bottom: bool?, ?outline_level_row: Integer?, ?outline_level_column: Integer?, ?base_column_width: (Float | Integer)?, **untyped) -> void
-      def initialize(default_row_height: nil, default_column_width: nil, custom_height: nil, zero_height: nil, thick_top: nil, thick_bottom: nil, outline_level_row: nil, outline_level_column: nil, base_column_width: nil, **_extra)
+      #: (?default_row_height: (Float | Integer)?, ?default_column_width: (Float | Integer)?, ?custom_height: bool?, ?zero_height: bool?, ?thick_top: bool?, ?thick_bottom: bool?, ?outline_level_row: Integer?, ?outline_level_column: Integer?, ?base_column_width: (Float | Integer)?) -> void
+      def initialize(default_row_height: nil, default_column_width: nil, custom_height: nil, zero_height: nil, thick_top: nil, thick_bottom: nil, outline_level_row: nil, outline_level_column: nil, base_column_width: nil)
         super(**{
           default_row_height: default_row_height, default_column_width: default_column_width,
           custom_height: custom_height, zero_height: zero_height, thick_top: thick_top,
@@ -848,13 +917,13 @@ module Xlsxrb
 
       private :show_grid_lines, :show_row_col_headers, :show_ruler, :show_zeros, :right_to_left, :tab_selected, :window_protection, :show_formulas, :show_outline_symbols, :default_grid_color, :show_white_space
 
-      #: (?workbook_view_id: Integer?, ?show_grid_lines: bool?, ?show_row_col_headers: bool?, ?show_ruler: bool?, ?show_zeros: bool?, ?right_to_left: bool?, ?tab_selected: bool?, ?zoom_scale: Integer?, ?zoom_scale_normal: Integer?, ?zoom_scale_page_layout_view: Integer?, ?zoom_scale_sheet_layout_view: Integer?, ?view: String?, ?window_protection: bool?, ?show_formulas: bool?, ?show_outline_symbols: bool?, ?default_grid_color: bool?, ?show_white_space: bool?, ?top_left_cell: String?, ?color_id: Integer?, **untyped) -> void
+      #: (?workbook_view_id: Integer?, ?show_grid_lines: bool?, ?show_row_col_headers: bool?, ?show_ruler: bool?, ?show_zeros: bool?, ?right_to_left: bool?, ?tab_selected: bool?, ?zoom_scale: Integer?, ?zoom_scale_normal: Integer?, ?zoom_scale_page_layout_view: Integer?, ?zoom_scale_sheet_layout_view: Integer?, ?view: String?, ?window_protection: bool?, ?show_formulas: bool?, ?show_outline_symbols: bool?, ?default_grid_color: bool?, ?show_white_space: bool?, ?top_left_cell: String?, ?color_id: Integer?) -> void
       def initialize(
         workbook_view_id: nil, show_grid_lines: nil, show_row_col_headers: nil, show_ruler: nil,
         show_zeros: nil, right_to_left: nil, tab_selected: nil, zoom_scale: nil, zoom_scale_normal: nil,
         zoom_scale_page_layout_view: nil, zoom_scale_sheet_layout_view: nil, view: nil,
         window_protection: nil, show_formulas: nil, show_outline_symbols: nil, default_grid_color: nil, show_white_space: nil,
-        top_left_cell: nil, color_id: nil, **_extra
+        top_left_cell: nil, color_id: nil
       )
         super(**{
           workbook_view_id: workbook_view_id, show_grid_lines: show_grid_lines,
@@ -963,8 +1032,8 @@ module Xlsxrb
     PhoneticProperties = Data.define(:font_id, :type, :alignment) do
       include MetadataRecord
 
-      #: (?font_id: Integer?, ?type: String?, ?alignment: String?, **untyped) -> void
-      def initialize(font_id: nil, type: nil, alignment: nil, **_extra)
+      #: (?font_id: Integer?, ?type: String?, ?alignment: String?) -> void
+      def initialize(font_id: nil, type: nil, alignment: nil)
         super(**{ font_id: font_id, type: type, alignment: alignment })
       end
     end
@@ -976,8 +1045,8 @@ module Xlsxrb
 
       private :full_calc_on_load
 
-      #: (?full_calc_on_load: bool?, **untyped) -> void
-      def initialize(full_calc_on_load: nil, **_extra)
+      #: (?full_calc_on_load: bool?) -> void
+      def initialize(full_calc_on_load: nil)
         super(**{ full_calc_on_load: full_calc_on_load })
       end
 
@@ -1017,8 +1086,8 @@ module Xlsxrb
     BackgroundImage = Data.define(:r_id, :path, :extension, :data, :content_type) do
       include MetadataRecord
 
-      #: (?r_id: String?, ?path: String?, ?extension: String?, ?data: String?, ?content_type: String?, **untyped) -> void
-      def initialize(r_id: nil, path: nil, extension: nil, data: nil, content_type: nil, **_extra)
+      #: (?r_id: String?, ?path: String?, ?extension: String?, ?data: String?, ?content_type: String?) -> void
+      def initialize(r_id: nil, path: nil, extension: nil, data: nil, content_type: nil)
         super(**{ r_id: r_id, path: path, extension: extension, data: data, content_type: content_type })
       end
     end
@@ -1028,8 +1097,8 @@ module Xlsxrb
     TableStyles = Data.define(:default_table_style, :default_pivot_style, :styles) do
       include MetadataRecord
 
-      #: (?default_table_style: String?, ?default_pivot_style: String?, ?styles: Array[Hash[Symbol, untyped]]?, **untyped) -> void
-      def initialize(default_table_style: nil, default_pivot_style: nil, styles: nil, **_extra)
+      #: (?default_table_style: String?, ?default_pivot_style: String?, ?styles: Array[Hash[Symbol, untyped]]?) -> void
+      def initialize(default_table_style: nil, default_pivot_style: nil, styles: nil)
         super(**{ default_table_style: default_table_style, default_pivot_style: default_pivot_style, styles: styles })
       end
     end
@@ -1039,8 +1108,8 @@ module Xlsxrb
     Colors = Data.define(:indexed, :mru) do
       include MetadataRecord
 
-      #: (?indexed: Array[String]?, ?mru: Array[Hash[Symbol, untyped]]?, **untyped) -> void
-      def initialize(indexed: nil, mru: nil, **_extra)
+      #: (?indexed: Array[String]?, ?mru: Array[Hash[Symbol, untyped]]?) -> void
+      def initialize(indexed: nil, mru: nil)
         super(**{ indexed: indexed, mru: mru })
       end
     end
@@ -1050,8 +1119,8 @@ module Xlsxrb
     CustomProperty = Data.define(:name, :value, :type) do
       include MetadataRecord
 
-      #: (?name: String?, ?value: untyped, ?type: Symbol?, **untyped) -> void
-      def initialize(name: nil, value: nil, type: nil, **_extra)
+      #: (?name: String?, ?value: untyped, ?type: Symbol?) -> void
+      def initialize(name: nil, value: nil, type: nil)
         super(**{ name: name, value: value, type: type })
       end
 
@@ -1075,14 +1144,14 @@ module Xlsxrb
 
     # AutoFilter column configuration (<filterColumn>).
     # @api public
-    FilterColumn = Data.define(:column_id, :filters, :custom_filters, :dynamic_filter, :top10, :color_filter, :icon_filter, :hidden, :show_button) do
+    FilterColumn = Data.define(:column_id, :filters, :custom_filters, :dynamic_filter, :top10, :color_filter, :icon_filter, :hidden, :show_button, :blank, :custom_filters_and) do
       include MetadataRecord
 
       private :hidden, :show_button
 
-      #: (?column_id: Integer?, ?filters: Array[untyped]?, ?custom_filters: Array[untyped]?, ?dynamic_filter: Hash[Symbol, untyped]?, ?top10: Hash[Symbol, untyped]?, ?color_filter: Hash[Symbol, untyped]?, ?icon_filter: Hash[Symbol, untyped]?, ?hidden: bool?, ?show_button: bool?, **untyped) -> void
-      def initialize(column_id: nil, filters: nil, custom_filters: nil, dynamic_filter: nil, top10: nil, color_filter: nil, icon_filter: nil, hidden: false, show_button: true, **_extra)
-        super(**{ column_id: column_id, filters: filters, custom_filters: custom_filters, dynamic_filter: dynamic_filter, top10: top10, color_filter: color_filter, icon_filter: icon_filter, hidden: hidden || false, show_button: show_button != false })
+      #: (?column_id: Integer?, ?filters: Array[untyped]?, ?custom_filters: Array[untyped]?, ?dynamic_filter: Hash[Symbol, untyped]?, ?top10: Hash[Symbol, untyped]?, ?color_filter: Hash[Symbol, untyped]?, ?icon_filter: Hash[Symbol, untyped]?, ?hidden: bool?, ?show_button: bool?, ?blank: bool?, ?custom_filters_and: bool?) -> void
+      def initialize(column_id: nil, filters: nil, custom_filters: nil, dynamic_filter: nil, top10: nil, color_filter: nil, icon_filter: nil, hidden: false, show_button: true, blank: nil, custom_filters_and: nil)
+        super(**{ column_id: column_id, filters: filters, custom_filters: custom_filters, dynamic_filter: dynamic_filter, top10: top10, color_filter: color_filter, icon_filter: icon_filter, hidden: hidden || false, show_button: show_button != false, blank: blank, custom_filters_and: custom_filters_and })
       end
 
       # Returns whether the filter column is hidden.
@@ -1100,6 +1169,54 @@ module Xlsxrb
       def show_button?
         show_button ? true : false
       end
+
+      # Builds a FilterColumn from the filter Hash that the reader and Worksheet#filter_column
+      # use: { type: :filters, values: [...] }, { type: :custom, operator:, val: } or
+      # { type: :custom, filters: [...] }, { type: :dynamic, ... }, { type: :top10, ... },
+      # { type: :color_filter, ... }, or { type: :icon_filter, ... }. A Hash with member
+      # keys and no :type is passed to new as is.
+      #
+      # @param column_id [Integer] 0-based column within the filter range.
+      # @param spec [Hash]
+      # @return [FilterColumn]
+      # @raise [ArgumentError] for an unknown :type.
+      # @api private
+      #: (Integer column_id, Hash[Symbol, untyped] spec) -> FilterColumn
+      def self.from_spec(column_id, spec)
+        return new(column_id: column_id, **spec.except(:column_id)) unless spec.key?(:type)
+
+        base = { column_id: column_id, hidden: spec[:hidden] || spec[:hidden_button] || false, show_button: spec[:show_button] != false }
+        detail = spec.except(:type, :hidden, :hidden_button, :show_button)
+        case spec[:type].to_sym
+        when :filters then new(**base, filters: Array(detail[:values]), blank: detail[:blank])
+        when :custom then new(**base, custom_filters: detail[:filters] || [{ operator: detail[:operator], val: detail[:val] }], custom_filters_and: detail[:and])
+        when :dynamic then new(**base, dynamic_filter: detail)
+        when :top10 then new(**base, top10: detail)
+        when :color_filter then new(**base, color_filter: detail)
+        when :icon_filter then new(**base, icon_filter: detail)
+        else raise ArgumentError, "unknown filter type: #{spec[:type].inspect}"
+        end
+      end
+
+      # Returns the filter Hash that the worksheet writer emits (see .from_spec).
+      #
+      # @return [Hash{Symbol => Object}]
+      # @api private
+      #: () -> Hash[Symbol, untyped]
+      def to_spec
+        spec = if (filters && !filters.empty?) || blank then { type: :filters, values: filters || [], blank: blank }.compact
+               elsif custom_filters && custom_filters.size == 1 then { type: :custom, operator: custom_filters.first[:operator], val: custom_filters.first[:val] }
+               elsif custom_filters && !custom_filters.empty? then { type: :custom, filters: custom_filters, and: custom_filters_and }.compact
+               elsif dynamic_filter then { type: :dynamic, **dynamic_filter }
+               elsif top10 then { type: :top10, **top10 }
+               elsif color_filter then { type: :color_filter, **color_filter }
+               elsif icon_filter then { type: :icon_filter, **icon_filter }
+               else {}
+               end
+        spec[:hidden] = true if hidden?
+        spec[:show_button] = false unless show_button?
+        spec
+      end
     end
 
     # Workbook defined name (<definedName>).
@@ -1109,8 +1226,8 @@ module Xlsxrb
 
       private :hidden
 
-      #: (?name: String?, ?value: String?, ?local_sheet_id: Integer?, ?local_sheet_name: String?, ?hidden: bool?, ?comment: String?, **untyped) -> void
-      def initialize(name: nil, value: nil, local_sheet_id: nil, local_sheet_name: nil, hidden: nil, comment: nil, **_extra)
+      #: (?name: String?, ?value: String?, ?local_sheet_id: Integer?, ?local_sheet_name: String?, ?hidden: bool?, ?comment: String?) -> void
+      def initialize(name: nil, value: nil, local_sheet_id: nil, local_sheet_name: nil, hidden: nil, comment: nil)
         super(**{ name: name, value: value || "", local_sheet_id: local_sheet_id, local_sheet_name: local_sheet_name, hidden: hidden, comment: comment })
       end
 
@@ -1135,9 +1252,9 @@ module Xlsxrb
     PageBreak = Data.define(:id, :max, :min, :man, :pt) do
       include MetadataRecord
 
-      #: (?id: Integer?, ?max: Integer?, ?min: Integer?, ?man: (Integer | bool)?, ?pt: bool?, **untyped) -> void
+      #: (?id: Integer?, ?max: Integer?, ?min: Integer?, ?man: (Integer | bool)?, ?pt: bool?) -> void
       # rubocop:disable Naming/MethodParameterName
-      def initialize(id: nil, max: nil, min: nil, man: nil, pt: nil, **_extra)
+      def initialize(id: nil, max: nil, min: nil, man: nil, pt: nil)
         super(**{ id: id, max: max, min: min, man: man, pt: pt })
       end
       # rubocop:enable Naming/MethodParameterName
@@ -1158,8 +1275,8 @@ module Xlsxrb
 
       private :visible
 
-      #: (?ref: String?, ?text: String?, ?author: String?, ?r_id: String?, ?shape_id: Integer?, ?author_id: Integer?, ?visible: bool?, **untyped) -> void
-      def initialize(ref: nil, text: nil, author: nil, r_id: nil, shape_id: nil, author_id: nil, visible: false, **_extra)
+      #: (?ref: String?, ?text: String?, ?author: String?, ?r_id: String?, ?shape_id: Integer?, ?author_id: Integer?, ?visible: bool?) -> void
+      def initialize(ref: nil, text: nil, author: nil, r_id: nil, shape_id: nil, author_id: nil, visible: false)
         super(**{ ref: ref, text: text, author: author, r_id: r_id, shape_id: shape_id, author_id: author_id, visible: visible })
       end
 
@@ -1190,18 +1307,18 @@ module Xlsxrb
 
     # Threaded comment (<threadedComment>).
     # @api public
-    ThreadedComment = Data.define(:id, :ref, :text, :author, :author_id, :created_at, :parent_id, :resolved) do
+    ThreadedComment = Data.define(:id, :ref, :text, :author, :author_id, :created_at, :parent_id, :resolved, :provider_id) do
       include MetadataRecord
 
       private :resolved
 
-      #: (?id: String?, ?ref: String?, ?text: String?, ?author: String?, ?author_id: String?, ?created_at: untyped, ?parent_id: String?, ?resolved: bool?, **untyped) -> void
+      #: (?id: String?, ?ref: String?, ?text: String?, ?author: String?, ?author_id: String?, ?created_at: untyped, ?parent_id: String?, ?resolved: bool?, ?provider_id: String?) -> void
       def initialize(
         id: nil, ref: nil, text: nil, author: nil,
         author_id: nil, created_at: nil,
-        parent_id: nil, resolved: nil, **_extra
+        parent_id: nil, resolved: nil, provider_id: nil
       )
-        super(**{ id: id, ref: ref, text: text, author: author, author_id: author_id, created_at: created_at, parent_id: parent_id, resolved: resolved })
+        super(**{ id: id, ref: ref, text: text, author: author, author_id: author_id, created_at: created_at, parent_id: parent_id, resolved: resolved, provider_id: provider_id })
       end
 
       # Returns whether the threaded comment is resolved.
@@ -1231,8 +1348,8 @@ module Xlsxrb
 
       private :allow_blank, :show_input_message, :show_error_message, :show_drop_down
 
-      #: (?sqref: String?, ?type: String?, ?error_style: String?, ?operator: String?, ?allow_blank: bool?, ?show_input_message: bool?, ?show_error_message: bool?, ?prompt_title: String?, ?prompt: String?, ?error_title: String?, ?error: String?, ?formula1: String?, ?formula2: String?, ?ime_mode: String?, ?show_drop_down: bool?, **untyped) -> void
-      def initialize(sqref: nil, type: nil, error_style: nil, operator: nil, allow_blank: nil, show_input_message: nil, show_error_message: nil, prompt_title: nil, prompt: nil, error_title: nil, error: nil, formula1: nil, formula2: nil, ime_mode: nil, show_drop_down: nil, **_extra)
+      #: (?sqref: String?, ?type: String?, ?error_style: String?, ?operator: String?, ?allow_blank: bool?, ?show_input_message: bool?, ?show_error_message: bool?, ?prompt_title: String?, ?prompt: String?, ?error_title: String?, ?error: String?, ?formula1: String?, ?formula2: String?, ?ime_mode: String?, ?show_drop_down: bool?) -> void
+      def initialize(sqref: nil, type: nil, error_style: nil, operator: nil, allow_blank: nil, show_input_message: nil, show_error_message: nil, prompt_title: nil, prompt: nil, error_title: nil, error: nil, formula1: nil, formula2: nil, ime_mode: nil, show_drop_down: nil)
         super(**{
           sqref: sqref, type: type, error_style: error_style, operator: operator,
           allow_blank: allow_blank, show_input_message: show_input_message,
@@ -1418,16 +1535,16 @@ module Xlsxrb
 
     # Column definition in an OpenXML table (<tableColumn>).
     # @api public
-    TableColumn = Data.define(:id, :name, :totals_row_function, :totals_row_label, :totals_row_formula, :data_dxf_id, :calculated_column_formula) do
+    TableColumn = Data.define(:id, :name, :totals_row_function, :totals_row_label, :totals_row_formula, :data_dxf_id, :calculated_column_formula, :data_cell_style) do
       include MetadataRecord
 
-      #: (?id: Integer?, ?name: String?, ?totals_row_function: String?, ?totals_row_label: String?, ?totals_row_formula: String?, ?data_dxf_id: Integer?, ?calculated_column_formula: String?, **untyped) -> void
-      def initialize(id: nil, name: nil, totals_row_function: nil, totals_row_label: nil, totals_row_formula: nil, data_dxf_id: nil, calculated_column_formula: nil, **_extra)
+      #: (?id: Integer?, ?name: String?, ?totals_row_function: String?, ?totals_row_label: String?, ?totals_row_formula: String?, ?data_dxf_id: Integer?, ?calculated_column_formula: String?, ?data_cell_style: String?) -> void
+      def initialize(id: nil, name: nil, totals_row_function: nil, totals_row_label: nil, totals_row_formula: nil, data_dxf_id: nil, calculated_column_formula: nil, data_cell_style: nil)
         super(**{
           id: id, name: name, totals_row_function: totals_row_function,
           totals_row_label: totals_row_label, totals_row_formula: totals_row_formula,
           data_dxf_id: data_dxf_id,
-          calculated_column_formula: calculated_column_formula
+          calculated_column_formula: calculated_column_formula, data_cell_style: data_cell_style
         })
       end
     end
@@ -1439,8 +1556,8 @@ module Xlsxrb
 
       private :show_first_column, :show_last_column, :show_row_stripes, :show_column_stripes
 
-      #: (?name: String?, ?show_first_column: bool?, ?show_last_column: bool?, ?show_row_stripes: bool?, ?show_column_stripes: bool?, **untyped) -> void
-      def initialize(name: nil, show_first_column: nil, show_last_column: nil, show_row_stripes: nil, show_column_stripes: nil, **_extra)
+      #: (?name: String?, ?show_first_column: bool?, ?show_last_column: bool?, ?show_row_stripes: bool?, ?show_column_stripes: bool?) -> void
+      def initialize(name: nil, show_first_column: nil, show_last_column: nil, show_row_stripes: nil, show_column_stripes: nil)
         super(**{
           name: name, show_first_column: show_first_column, show_last_column: show_last_column,
           show_row_stripes: show_row_stripes, show_column_stripes: show_column_stripes
@@ -1568,8 +1685,8 @@ module Xlsxrb
     Sparkline = Data.define(:sqref, :formula) do
       include MetadataRecord
 
-      #: (?sqref: String?, ?formula: String?, **untyped) -> void
-      def initialize(sqref: nil, formula: nil, **_extra)
+      #: (?sqref: String?, ?formula: String?) -> void
+      def initialize(sqref: nil, formula: nil)
         super(**{ sqref: sqref, formula: formula })
       end
     end
@@ -1654,8 +1771,8 @@ module Xlsxrb
     ProtectedRange = Data.define(:name, :sqref, :security_descriptor, :password, :algorithm_name, :hash_value, :salt_value, :spin_count) do
       include MetadataRecord
 
-      #: (?name: String?, ?sqref: String?, ?security_descriptor: String?, ?password: String?, ?algorithm_name: String?, ?hash_value: String?, ?salt_value: String?, ?spin_count: Integer?, **untyped) -> void
-      def initialize(name: nil, sqref: nil, security_descriptor: nil, password: nil, algorithm_name: nil, hash_value: nil, salt_value: nil, spin_count: nil, **_extra)
+      #: (?name: String?, ?sqref: String?, ?security_descriptor: String?, ?password: String?, ?algorithm_name: String?, ?hash_value: String?, ?salt_value: String?, ?spin_count: Integer?) -> void
+      def initialize(name: nil, sqref: nil, security_descriptor: nil, password: nil, algorithm_name: nil, hash_value: nil, salt_value: nil, spin_count: nil)
         super(**{
           name: name, sqref: sqref, security_descriptor: security_descriptor, password: password,
           algorithm_name: algorithm_name, hash_value: hash_value, salt_value: salt_value, spin_count: spin_count
@@ -1674,8 +1791,8 @@ module Xlsxrb
 
       private :eval_error, :two_digit_text_year, :number_stored_as_text, :formula, :formula_range, :unlocked_formula, :empty_cell_reference, :list_data_validation, :calculated_column
 
-      #: (?sqref: String?, ?eval_error: bool?, ?two_digit_text_year: bool?, ?number_stored_as_text: bool?, ?formula: bool?, ?formula_range: bool?, ?unlocked_formula: bool?, ?empty_cell_reference: bool?, ?list_data_validation: bool?, ?calculated_column: bool?, **untyped) -> void
-      def initialize(sqref: nil, eval_error: nil, two_digit_text_year: nil, number_stored_as_text: nil, formula: nil, formula_range: nil, unlocked_formula: nil, empty_cell_reference: nil, list_data_validation: nil, calculated_column: nil, **_extra)
+      #: (?sqref: String?, ?eval_error: bool?, ?two_digit_text_year: bool?, ?number_stored_as_text: bool?, ?formula: bool?, ?formula_range: bool?, ?unlocked_formula: bool?, ?empty_cell_reference: bool?, ?list_data_validation: bool?, ?calculated_column: bool?) -> void
+      def initialize(sqref: nil, eval_error: nil, two_digit_text_year: nil, number_stored_as_text: nil, formula: nil, formula_range: nil, unlocked_formula: nil, empty_cell_reference: nil, list_data_validation: nil, calculated_column: nil)
         super(**{
           sqref: sqref, eval_error: eval_error, two_digit_text_year: two_digit_text_year,
           number_stored_as_text: number_stored_as_text, formula: formula, formula_range: formula_range,
@@ -1885,8 +2002,8 @@ module Xlsxrb
     HeaderFooterImage = Data.define(:position, :r_id, :path, :extension, :data, :content_type) do
       include MetadataRecord
 
-      #: (?position: String?, ?r_id: String?, ?path: String?, ?extension: String?, ?data: String?, ?content_type: String?, **untyped) -> void
-      def initialize(position: nil, r_id: nil, path: nil, extension: nil, data: nil, content_type: nil, **_extra)
+      #: (?position: String?, ?r_id: String?, ?path: String?, ?extension: String?, ?data: String?, ?content_type: String?) -> void
+      def initialize(position: nil, r_id: nil, path: nil, extension: nil, data: nil, content_type: nil)
         super(**{ position: position, r_id: r_id, path: path, extension: extension, data: data, content_type: content_type })
       end
     end
@@ -1894,15 +2011,15 @@ module Xlsxrb
     # Font style definition in stylesheet (<font>).
     # @api public
     # rubocop:disable Lint/DataDefineOverride
-    Font = Data.define(:name, :size, :bold, :italic, :underline, :strike, :color, :family, :scheme, :outline, :shadow, :condense, :extend) do
+    Font = Data.define(:name, :size, :bold, :italic, :underline, :strike, :color, :family, :scheme, :outline, :shadow, :condense, :extend, :vert_align) do
       # rubocop:enable Lint/DataDefineOverride
       include MetadataRecord
 
       private :bold, :italic, :strike, :outline, :shadow, :condense, :extend
 
-      #: (?name: String?, ?size: (Integer | Float)?, ?bold: bool?, ?italic: bool?, ?underline: (String | bool)?, ?strike: bool?, ?color: Hash[Symbol, untyped]?, ?family: Integer?, ?scheme: String?, ?outline: bool?, ?shadow: bool?, ?condense: bool?, ?extend: bool?, **untyped) -> void
-      def initialize(name: nil, size: nil, bold: nil, italic: nil, underline: nil, strike: nil, color: nil, family: nil, scheme: nil, outline: nil, shadow: nil, condense: nil, extend: nil, **_extra)
-        super(**{ name: name, size: size, bold: bold, italic: italic, underline: underline, strike: strike, color: color, family: family, scheme: scheme, outline: outline, shadow: shadow, condense: condense, extend: extend })
+      #: (?name: String?, ?size: (Integer | Float)?, ?bold: bool?, ?italic: bool?, ?underline: (String | bool)?, ?strike: bool?, ?color: Hash[Symbol, untyped]?, ?family: Integer?, ?scheme: String?, ?outline: bool?, ?shadow: bool?, ?condense: bool?, ?extend: bool?, ?vert_align: String?) -> void
+      def initialize(name: nil, size: nil, bold: nil, italic: nil, underline: nil, strike: nil, color: nil, family: nil, scheme: nil, outline: nil, shadow: nil, condense: nil, extend: nil, vert_align: nil)
+        super(**{ name: name, size: size, bold: bold, italic: italic, underline: underline, strike: strike, color: color, family: family, scheme: scheme, outline: outline, shadow: shadow, condense: condense, extend: extend, vert_align: vert_align })
       end
 
       # Returns whether the font is bold.
@@ -1967,8 +2084,8 @@ module Xlsxrb
     Fill = Data.define(:pattern_type, :fg_color, :bg_color) do
       include MetadataRecord
 
-      #: (?pattern_type: String?, ?fg_color: Hash[Symbol, untyped]?, ?bg_color: Hash[Symbol, untyped]?, **untyped) -> void
-      def initialize(pattern_type: nil, fg_color: nil, bg_color: nil, **_extra)
+      #: (?pattern_type: String?, ?fg_color: Hash[Symbol, untyped]?, ?bg_color: Hash[Symbol, untyped]?) -> void
+      def initialize(pattern_type: nil, fg_color: nil, bg_color: nil)
         super(**{ pattern_type: pattern_type, fg_color: fg_color, bg_color: bg_color })
       end
     end
@@ -1980,8 +2097,8 @@ module Xlsxrb
 
       private :diagonal_up, :diagonal_down
 
-      #: (?left: Hash[Symbol, untyped]?, ?right: Hash[Symbol, untyped]?, ?top: Hash[Symbol, untyped]?, ?bottom: Hash[Symbol, untyped]?, ?diagonal: Hash[Symbol, untyped]?, ?diagonal_up: bool?, ?diagonal_down: bool?, **untyped) -> void
-      def initialize(left: nil, right: nil, top: nil, bottom: nil, diagonal: nil, diagonal_up: nil, diagonal_down: nil, **_extra)
+      #: (?left: Hash[Symbol, untyped]?, ?right: Hash[Symbol, untyped]?, ?top: Hash[Symbol, untyped]?, ?bottom: Hash[Symbol, untyped]?, ?diagonal: Hash[Symbol, untyped]?, ?diagonal_up: bool?, ?diagonal_down: bool?) -> void
+      def initialize(left: nil, right: nil, top: nil, bottom: nil, diagonal: nil, diagonal_up: nil, diagonal_down: nil)
         super(**{ left: left, right: right, top: top, bottom: bottom, diagonal: diagonal, diagonal_up: diagonal_up, diagonal_down: diagonal_down })
       end
 
@@ -2012,8 +2129,8 @@ module Xlsxrb
 
       private :wrap_text, :shrink_to_fit, :justify_last_line
 
-      #: (?horizontal: (String | Symbol)?, ?vertical: (String | Symbol)?, ?wrap_text: bool?, ?text_rotation: Numeric?, ?indent: Integer?, ?relative_indent: Integer?, ?shrink_to_fit: bool?, ?reading_order: Integer?, ?justify_last_line: bool?, **untyped) -> void
-      def initialize(horizontal: nil, vertical: nil, wrap_text: nil, text_rotation: nil, indent: nil, relative_indent: nil, shrink_to_fit: nil, reading_order: nil, justify_last_line: nil, **_extra)
+      #: (?horizontal: (String | Symbol)?, ?vertical: (String | Symbol)?, ?wrap_text: bool?, ?text_rotation: Numeric?, ?indent: Integer?, ?relative_indent: Integer?, ?shrink_to_fit: bool?, ?reading_order: Integer?, ?justify_last_line: bool?) -> void
+      def initialize(horizontal: nil, vertical: nil, wrap_text: nil, text_rotation: nil, indent: nil, relative_indent: nil, shrink_to_fit: nil, reading_order: nil, justify_last_line: nil)
         super(**{ horizontal: horizontal, vertical: vertical, wrap_text: wrap_text, text_rotation: text_rotation, indent: indent, relative_indent: relative_indent, shrink_to_fit: shrink_to_fit, reading_order: reading_order, justify_last_line: justify_last_line })
       end
 
@@ -2049,8 +2166,8 @@ module Xlsxrb
 
       private :locked, :hidden
 
-      #: (?locked: bool?, ?hidden: bool?, **untyped) -> void
-      def initialize(locked: nil, hidden: nil, **_extra)
+      #: (?locked: bool?, ?hidden: bool?) -> void
+      def initialize(locked: nil, hidden: nil)
         super(**{ locked: locked, hidden: hidden })
       end
 
@@ -2083,12 +2200,12 @@ module Xlsxrb
 
       private :apply_number_format, :apply_font, :apply_fill, :apply_border, :apply_alignment, :apply_protection, :quote_prefix, :pivot_button
 
-      #: (?num_fmt_id: Integer?, ?font_id: Integer?, ?fill_id: Integer?, ?border_id: Integer?, ?xf_id: Integer?, ?apply_number_format: bool?, ?apply_font: bool?, ?apply_fill: bool?, ?apply_border: bool?, ?apply_alignment: bool?, ?apply_protection: bool?, ?alignment: (Elements::Alignment | Hash[Symbol, untyped])?, ?protection: (Elements::Protection | Hash[Symbol, untyped])?, ?quote_prefix: bool?, ?pivot_button: bool?, **untyped) -> void
+      #: (?num_fmt_id: Integer?, ?font_id: Integer?, ?fill_id: Integer?, ?border_id: Integer?, ?xf_id: Integer?, ?apply_number_format: bool?, ?apply_font: bool?, ?apply_fill: bool?, ?apply_border: bool?, ?apply_alignment: bool?, ?apply_protection: bool?, ?alignment: (Elements::Alignment | Hash[Symbol, untyped])?, ?protection: (Elements::Protection | Hash[Symbol, untyped])?, ?quote_prefix: bool?, ?pivot_button: bool?) -> void
       def initialize(
         num_fmt_id: nil, font_id: nil, fill_id: nil, border_id: nil, xf_id: nil,
         apply_number_format: nil, apply_font: nil, apply_fill: nil, apply_border: nil,
         apply_alignment: nil, apply_protection: nil, alignment: nil, protection: nil,
-        quote_prefix: nil, pivot_button: nil, **_extra
+        quote_prefix: nil, pivot_button: nil
       )
         align_obj = alignment.is_a?(Hash) ? Alignment.new(**alignment) : alignment
         prot_obj = protection.is_a?(Hash) ? Protection.new(**protection) : protection
@@ -2174,6 +2291,8 @@ module Xlsxrb
       #: (?font: (Elements::Font | Hash[Symbol, untyped])?, ?fill: (Elements::Fill | Hash[Symbol, untyped])?, ?border: (Elements::Border | Hash[Symbol, untyped])?, ?number_format: Hash[Symbol, untyped]?, ?alignment: (Elements::Alignment | Hash[Symbol, untyped])?, ?protection: (Elements::Protection | Hash[Symbol, untyped])?) -> void
       def initialize(font: nil, fill: nil, border: nil, number_format: nil, alignment: nil, protection: nil)
         f = font.is_a?(Hash) ? Font.new(**font) : font
+        # Differential fills from the styles reader name the pattern :pattern only.
+        fill = fill.merge(pattern_type: fill[:pattern]).except(:pattern) if fill.is_a?(Hash) && fill.key?(:pattern) && !fill.key?(:pattern_type)
         fi = fill.is_a?(Hash) ? Fill.new(**fill) : fill
         b = border.is_a?(Hash) ? Border.new(**border) : border
         align = alignment.is_a?(Hash) ? Alignment.new(**alignment) : alignment
@@ -2187,8 +2306,8 @@ module Xlsxrb
     CellStyle = Data.define(:name, :xf_id, :builtin_id) do
       include MetadataRecord
 
-      #: (?name: String?, ?xf_id: Integer?, ?builtin_id: Integer?, **untyped) -> void
-      def initialize(name: nil, xf_id: nil, builtin_id: nil, **_extra)
+      #: (?name: String?, ?xf_id: Integer?, ?builtin_id: Integer?) -> void
+      def initialize(name: nil, xf_id: nil, builtin_id: nil)
         super(**{ name: name, xf_id: xf_id, builtin_id: builtin_id })
       end
     end
@@ -2198,10 +2317,25 @@ module Xlsxrb
     Color = Data.define(:rgb, :indexed, :theme, :tint) do
       include MetadataRecord
 
-      #: (?rgb: String?, ?indexed: Integer?, ?theme: Integer?, ?tint: Float?, **untyped) -> void
-      def initialize(rgb: nil, indexed: nil, theme: nil, tint: nil, **_extra)
+      #: (?rgb: String?, ?indexed: Integer?, ?theme: Integer?, ?tint: Float?) -> void
+      def initialize(rgb: nil, indexed: nil, theme: nil, tint: nil)
         super(**{ rgb: rgb, indexed: indexed, theme: theme, tint: tint })
       end
     end
+
+    # Old key names that readers and builders still emit next to the member they were renamed to
+    # (see StrictKeywords).
+    FreezePane::KEY_ALIASES = { col: :column }.freeze
+    SplitPane::KEY_ALIASES = { row: :y_split, column: :x_split, col: :x_split }.freeze
+    SheetFormat::KEY_ALIASES = { default_col_width: :default_column_width, base_col_width: :base_column_width, outline_level_col: :outline_level_column }.freeze
+    Sparkline::KEY_ALIASES = { data_ref: :formula, location_ref: :sqref }.freeze
+    AppProperties::KEY_ALIASES = { application: :app_name }.freeze
+    WorkbookProperties::KEY_ALIASES = { active_sheet_index: :active_sheet }.freeze
+    TableColumn::KEY_ALIASES = { data_formula: :calculated_column_formula }.freeze
+    Font::KEY_ALIASES = { sz: :size }.freeze
+    Fill::KEY_ALIASES = { pattern: :pattern_type }.freeze
+    BackgroundImage::KEY_ALIASES = { ext: :extension, filename: :path, file_data: :data }.freeze
+    WorkbookProtection::KEY_ALIASES = { password: :workbook_password }.freeze
+    ThreadedComment::KEY_ALIASES = { dt: :created_at, timestamp: :created_at, done: :resolved, person_id: :author_id, user_id: :author_id }.freeze
   end
 end

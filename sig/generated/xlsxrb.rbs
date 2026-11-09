@@ -16,6 +16,9 @@ module Xlsxrb
   # Maximum number of individual cell/range references allowed in a single data validation element by Excel.
   MAX_REFS_PER_VALIDATION: ::Integer
 
+  # <workbookProtection> attributes and the Elements::WorkbookProtection members they load into.
+  WORKBOOK_PROTECTION_ATTRIBUTES: untyped
+
   # ZIP deflate level used when no compression_level is given.
   # See docs/adr/0009-default-zip-compression-level.md.
   DEFAULT_COMPRESSION_LEVEL: ::Integer

@@ -21,6 +21,15 @@ module Xlsxrb
     # : (Hash[Symbol, untyped] opts) -> Hash[Symbol, untyped]
     def self.normalize_protection_options: (Hash[Symbol, untyped] opts) -> Hash[Symbol, untyped]
 
+    # Normalizes workbook protection options. A plain-text +password+ is hashed into
+    # algorithm_name, hash_value, salt_value, and spin_count (as for sheet protection); a
+    # legacy 4-digit hexadecimal hash is kept as workbook_password.
+    #
+    # @param opts [Hash]
+    # @return [Hash]
+    # : (Hash[Symbol, untyped] opts) -> Hash[Symbol, untyped]
+    def self.normalize_workbook_protection: (Hash[Symbol, untyped] opts) -> Hash[Symbol, untyped]
+
     # Normalizes column index or letter or Range to an array of 0-based column integers.
     #
     # @param index [Integer, String, Symbol, Range, Array]

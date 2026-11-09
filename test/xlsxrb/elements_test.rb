@@ -2776,6 +2776,32 @@ class ElementsTest < Test::Unit::TestCase
     refute_equal(st, st.to_h)
   end
 
+  test "value objects reject unknown keys and old key names" do
+    error = assert_raise(ArgumentError) { Xlsxrb::Elements::FreezePane.new(colum: 1) }
+    assert_equal("unknown keyword: :colum for Xlsxrb::Elements::FreezePane; did you mean :column?", error.message)
+
+    error = assert_raise(ArgumentError) { Xlsxrb::Elements::FreezePane.new(col: 1) }
+    assert_equal("unknown keyword: :col for Xlsxrb::Elements::FreezePane; use :column", error.message)
+
+    error = assert_raise(ArgumentError) { Xlsxrb::Elements::Sparkline.new(location_ref: "E1", data_ref: "A1:D1") }
+    assert_match(/\Aunknown keyword: :(location_ref|data_ref) for Xlsxrb::Elements::Sparkline; use :(sqref|formula)\z/, error.message)
+
+    assert_raise_message(/\Aunknown keyword: :ref for Xlsxrb::Elements::Hyperlink/) { Xlsxrb::Elements::Hyperlink.new(url: "https://example.com", ref: "A1") }
+    assert_raise(ArgumentError) { Xlsxrb::Elements::FreezePane.new(row: 1).with(colum: 2) }
+  end
+
+  test "value objects drop an old key name given together with its member" do
+    pane = Xlsxrb::Elements::FreezePane.new(row: 1, column: 2, col: 2)
+    assert_equal({ row: 1, column: 2, state: :frozen }, pane.to_h)
+    sparkline = Xlsxrb::Elements::Sparkline.new(sqref: "E1", location_ref: "E1", formula: "S!A1:D1", data_ref: "S!A1:D1")
+    assert_equal({ sqref: "E1", formula: "S!A1:D1" }, sparkline.to_h)
+  end
+
+  test "value objects with an options member keep collecting extra keys there" do
+    chart = Xlsxrb::Elements::Chart.new(type: :bar, width: 480)
+    assert_equal(480, chart.options[:width])
+  end
+
   test "MetadataRecord#to_h keeps nested arrays such as heading pairs" do
     app = Xlsxrb::Elements::AppProperties.new(heading_pairs: [["Worksheets", 2]], titles_of_parts: %w[Data Summary])
     assert_equal({ heading_pairs: [["Worksheets", 2]], titles_of_parts: %w[Data Summary] }, app.to_h)

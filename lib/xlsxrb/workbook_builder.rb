@@ -476,7 +476,7 @@ module Xlsxrb
       if opts.empty?
         @workbook_protection ? Elements::WorkbookProtection.new(**@workbook_protection) : nil
       else
-        @workbook_protection = opts
+        @workbook_protection = DslHelpers.normalize_workbook_protection(opts)
         nil
       end
     end
@@ -488,7 +488,7 @@ module Xlsxrb
     # @api public
     #: (untyped opts) -> void
     def workbook_protection=(opts)
-      @workbook_protection = opts.is_a?(Elements::MetadataRecord) ? opts.to_h : opts
+      @workbook_protection = opts.is_a?(Elements::MetadataRecord) ? opts.to_h : (opts && DslHelpers.normalize_workbook_protection(opts))
     end
 
     # Configures or queries Dublin Core document metadata properties.

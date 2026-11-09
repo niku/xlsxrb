@@ -379,7 +379,7 @@ module Xlsxrb
                 when Elements::FilterColumn
                   v
                 when Hash
-                  Elements::FilterColumn.new(**v)
+                  Elements::FilterColumn.from_spec(column_id, v)
                 when Array
                   Elements::FilterColumn.new(column_id: column_id, filters: v)
                 else

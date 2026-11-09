@@ -64,6 +64,8 @@ Date cells: `cell.value` returns the Excel serial number. Use `row.values(type_c
 - `style(:name, ...)` raises `ArgumentError` for options it does not know (for example `size:` instead of `font_size:`), and cells, rows, and columns that name an undefined style raise `ArgumentError`. Both were silently ignored before, so code that "worked" may have been writing unstyled cells.
 - `escape_formulas:` is gone from `Xlsxrb.write` and `Xlsxrb.build`. It had no effect: strings are always written as text cells, which Excel does not evaluate.
 - `Xlsxrb.read` and `Xlsxrb.load` raise `Errno::ENOENT` for a path that does not exist, instead of `Xlsxrb::ZipError`.
+- `Elements` value objects raise `ArgumentError` for keywords they do not know, including 0.1.x names such as `col:`, `sz:`, `pattern:`, `data_ref:`, `dt:`, and `done:`. The message names the member to use. Before, such keys were dropped without an error.
+- `workbook_protection(password: "...")` now protects the workbook with a SHA-512 hash of the password, as `sheet_protection` does. Before, the password was dropped.
 - `Elements::FreezePane` and `Elements::SplitPane` have `top_left_cell` instead of `top_row` and `left_column`.
 - `rows:` and `columns:` on `data_validation` and `conditional_format` are 0-based and raise `ArgumentError` beyond the last Excel row or column.
 - `Date`, `Time`, and `DateTime` cell values keep their date or date-time number format when the cell has a style without a `number_format`, and `DateTime` keeps its time of day.

@@ -166,6 +166,84 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal("E9", Xlsxrb.load(split_data).sheets.first.split_pane.top_left_cell)
   end
 
+  test "workbook protection keeps its password through build, write, and load" do
+    built = Xlsxrb.build do |b|
+      b.workbook_protection(password: "secret", lock_structure: true)
+      b.sheet("S") { |s| s.row([1]) }
+    end
+    data = Xlsxrb.write(built)
+    tag = ->(d) { Xlsxrb::Ooxml::ZipReader.new(StringIO.new(d)).read_entry("xl/workbook.xml")[/<workbookProtection[^>]*>/] }
+    assert_match(/workbookAlgorithmName="SHA-512" workbookHashValue="[^"]+" workbookSaltValue="[^"]+" workbookSpinCount="100000"/, tag.call(data))
+
+    loaded = Xlsxrb.load(data)
+    assert_equal(["SHA-512", 100_000, true], [loaded.workbook_protection.algorithm_name, loaded.workbook_protection.spin_count, loaded.workbook_protection.lock_structure?])
+    assert_equal(tag.call(data), tag.call(Xlsxrb.write(loaded)))
+
+    io = StringIO.new
+    Xlsxrb.write(io) do |w|
+      w.workbook_protection = { password: "ABCD", lock_windows: true }
+      w.sheet("S") { |s| s.row([1]) }
+    end
+    assert_equal('<workbookProtection workbookPassword="ABCD" lockWindows="1"/>', tag.call(io.string))
+  end
+
+  test "filter columns are readable and written from value objects" do
+    specs = {
+      0 => { type: :filters, values: %w[1 5], blank: true },
+      1 => { type: :custom, operator: "greaterThan", val: "2" },
+      2 => { type: :custom, filters: [{ operator: "greaterThan", val: "1" }, { operator: "lessThan", val: "9" }], and: true },
+      3 => { type: :top10, top: true, percent: false, val: 3 }
+    }
+    built = Xlsxrb.build do |b|
+      b.sheet("S") do |s|
+        s.row(%w[a b c d])
+        s.auto_filter = "A1:D2"
+        specs.each { |col, spec| s.filter_column(col, spec) }
+      end
+    end
+    assert_equal(%w[1 5], built.sheets.first.filter_columns[0].filters)
+    data = Xlsxrb.write(built)
+    auto_filter = ->(d) { Xlsxrb::Ooxml::ZipReader.new(StringIO.new(d)).read_entry("xl/worksheets/sheet1.xml")[%r{<autoFilter.*?</autoFilter>}m] }
+
+    loaded = Xlsxrb.load(data)
+    assert_equal(specs, loaded.sheets.first.filter_columns.transform_values(&:to_spec))
+    Xlsxrb.read(StringIO.new(data)) { |sheet| assert_equal(specs, sheet.filter_columns.transform_values(&:to_spec)) }
+
+    from_value_objects = loaded.with(sheets: [loaded.sheets.first.with(unmapped_data: {})])
+    assert_equal(auto_filter.call(data), auto_filter.call(Xlsxrb.write(from_value_objects)))
+  end
+
+  test "loaded workbooks keep page setup DPI, font vertical alignment, and table column styles" do
+    built = Xlsxrb.build do |b|
+      b.style(:sup, superscript: true)
+      b.sheet("S") do |s|
+        s.page_setup(orientation: :landscape, horizontal_dpi: 300, vertical_dpi: 300, page_order: "overThenDown")
+        s.row(%w[x], cell_styles: [:sup])
+      end
+    end
+    loaded = Xlsxrb.load(Xlsxrb.write(built))
+    setup = loaded.sheets.first.page_setup
+    assert_equal([300, 300, "overThenDown"], [setup.horizontal_dpi, setup.vertical_dpi, setup.page_order])
+    font = loaded.styles.font(loaded.styles.cell_xf(loaded.sheets.first.rows.first.cells.first.style_index).font_id)
+    assert_equal("superscript", font.vert_align)
+
+    again = Xlsxrb.load(Xlsxrb.write(loaded.with(sheets: [loaded.sheets.first.with(unmapped_data: {})])))
+    assert_equal([300, 300], [again.sheets.first.page_setup.horizontal_dpi, again.sheets.first.page_setup.vertical_dpi])
+  end
+
+  test "page setup omits a DPI of zero" do
+    built = Xlsxrb.build do |b|
+      b.sheet("S") do |s|
+        s.row([1])
+        s.page_setup(horizontal_dpi: 0, vertical_dpi: 600)
+      end
+    end
+    data = Xlsxrb.write(built)
+    tag = Xlsxrb::Ooxml::ZipReader.new(StringIO.new(data)).read_entry("xl/worksheets/sheet1.xml")[/<pageSetup[^>]*>/]
+    assert_not_include(tag, "horizontalDpi")
+    assert_include(tag, 'verticalDpi="600"')
+  end
+
   test "round-trip preserves numeric types" do
     tmp = Tempfile.new(["numeric_rt", ".xlsx"])
     begin
@@ -293,7 +371,7 @@ class PublicApiTest < Test::Unit::TestCase
       name: "HiddenSheet",
       state: :hidden,
       comments: [{ ref: "A1", text: "Note on A1", author: "Tester" }],
-      hyperlinks: { "B1" => { ref: "B1", url: "https://example.com" } }
+      hyperlinks: { "B1" => { url: "https://example.com" } }
     )
     wb = Xlsxrb::Elements::Workbook.new(
       sheets: [ws],
@@ -929,10 +1007,16 @@ class PublicApiTest < Test::Unit::TestCase
 
   test "WorkbookBuilder#workbook_properties configures correctly" do
     wb = Xlsxrb.build do |w|
-      w.workbook_properties(test_prop: "test_val")
+      w.workbook_properties(code_name: "ThisWorkbook")
       w.sheet("S")
     end
-    assert_equal("test_val", wb.unmapped_data.dig(:facade, :workbook_properties, :test_prop))
+    assert_equal("ThisWorkbook", wb.workbook_properties.code_name)
+    assert_raise_message(/\Aunknown keyword: :test_prop for Xlsxrb::Elements::WorkbookProperties/) do
+      Xlsxrb.build do |w|
+        w.workbook_properties(test_prop: "test_val")
+        w.sheet("S")
+      end
+    end
   end
 
   test "WorksheetBuilder#auto_filter configures correctly" do
@@ -991,7 +1075,10 @@ class PublicApiTest < Test::Unit::TestCase
       w.workbook_protection(password: "123")
       w.sheet("S")
     end
-    assert_equal({ password: "123" }, wb.unmapped_data.dig(:facade, :workbook_protection))
+    # A plain-text password is stored as a SHA-512 hash, never as given.
+    protection = wb.workbook_protection
+    assert_equal(["SHA-512", 100_000], [protection.algorithm_name, protection.spin_count])
+    assert_not_include(wb.unmapped_data.dig(:facade, :workbook_protection), :password)
   end
 
   test "Elements::Workbook provides document properties and protection accessors" do
@@ -1075,13 +1162,13 @@ class PublicApiTest < Test::Unit::TestCase
   test "WorksheetBuilder#filter_column configures correctly" do
     wb = Xlsxrb.build do |w|
       w.sheet("S") do |s|
-        s.filter_column(0, { type: :value })
+        s.filter_column(0, { type: :filters, values: %w[A B] })
       end
     end
-    val = wb.sheet(0).unmapped_data.dig(:facade, :filter_columns)
-    assert_not_nil(val)
-    assert_not_equal([], val)
-    assert_not_equal({}, val)
+    assert_equal(%w[A B], wb.sheet(0).filter_columns[0].filters)
+    assert_raise_message("unknown filter type: :value") do
+      Xlsxrb.build { |w| w.sheet("S") { |s| s.filter_column(0, { type: :value }) } }
+    end
   end
 
   test "WorksheetBuilder#sort_state configures correctly" do
@@ -1377,11 +1464,13 @@ class PublicApiTest < Test::Unit::TestCase
   test "WorksheetBuilder#filter_column captures options" do
     wb = Xlsxrb.build do |w|
       w.sheet("S1") do |s|
-        s.filter_column(0, { val: "A" })
+        s.filter_column(0, { type: :custom, operator: "equal", val: "A" })
       end
     end
-    cols = wb.sheet(0).unmapped_data.dig(:facade, :filter_columns)
-    assert_equal "A", cols[0][:val]
+    assert_equal([{ operator: "equal", val: "A" }], wb.sheet(0).filter_columns[0].custom_filters)
+    assert_raise_message(/\Aunknown keyword: :val for Xlsxrb::Elements::FilterColumn/) do
+      Xlsxrb.build { |w| w.sheet("S1") { |s| s.filter_column(0, { val: "A" }) } }
+    end
   end
 
   test "WorksheetBuilder#sort_state captures ref" do
@@ -2260,7 +2349,7 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal "Me", workbook.unmapped_data[:facade][:core_properties][:creator]
     assert_equal "Boss", workbook.unmapped_data[:facade][:app_properties][:manager]
     assert_equal "MyCustomProp", workbook.unmapped_data[:facade][:custom_properties].first[:name]
-    assert_equal "secret", workbook.unmapped_data[:facade][:workbook_protection][:password]
+    assert_equal "SHA-512", workbook.unmapped_data[:facade][:workbook_protection][:algorithm_name]
   end
 
   def test_worksheet_builder_public_methods

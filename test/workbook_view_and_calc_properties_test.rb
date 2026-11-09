@@ -18,7 +18,7 @@ class WorkbookViewAndCalcPropertiesTest < Test::Unit::TestCase
   end
 
   test "write emits the active tab and full calculation on load from workbook properties" do
-    write_and_read({ update_links: "never", active_tab: 1, full_calc_on_load: true }) do |reader|
+    write_and_read({ update_links: "never", active_sheet: 1, full_calc_on_load: true }) do |reader|
       assert_equal(1, reader.workbook_views[:active_tab])
       assert_equal(true, reader.calc_properties[:full_calc_on_load])
     end

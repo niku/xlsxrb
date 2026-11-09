@@ -267,8 +267,8 @@ module Xlsxrb
       # @param display [String, nil] Optional friendly display label.
       # @param tooltip [String, nil] Optional hover ScreenTip text.
       # @param location [String, nil] Optional internal sheet/cell reference.
-      #: (?url: String?, ?display: String?, ?tooltip: String?, ?location: String?, **untyped) -> void
-      def initialize(url: nil, display: nil, tooltip: nil, location: nil, **_extra)
+      #: (?url: String?, ?display: String?, ?tooltip: String?, ?location: String?) -> void
+      def initialize(url: nil, display: nil, tooltip: nil, location: nil)
         super(**{ url: url, display: display, tooltip: tooltip, location: location })
       end
 

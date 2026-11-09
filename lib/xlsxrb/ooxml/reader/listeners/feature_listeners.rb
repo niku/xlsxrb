@@ -1913,14 +1913,20 @@ module Xlsxrb
           name = element_name(local_name, qname)
           case name
           when "threadedComment"
+            timestamp = attributes["dT"] || attributes["dt"]
             @current_comment = {
               ref: attributes["ref"],
-              dt: attributes["dT"] || attributes["dt"],
+              dt: timestamp,
+              created_at: timestamp,
               person_id: attributes["personId"],
+              author_id: attributes["personId"],
               id: attributes["id"]
             }
             @current_comment[:parent_id] = attributes["parentId"] if attributes["parentId"]
-            @current_comment[:done] = %w[1 true].include?(attributes["done"]) if attributes.key?("done")
+            if attributes.key?("done")
+              @current_comment[:done] = %w[1 true].include?(attributes["done"])
+              @current_comment[:resolved] = @current_comment[:done]
+            end
           when "text"
             if @current_comment
               @inside_text = true
