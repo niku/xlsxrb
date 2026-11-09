@@ -1012,7 +1012,7 @@ module Xlsxrb
       end
 
       # rubocop:disable Style/OptionalBooleanParameter
-      def self.fast_scan_cells_direct(xml, from, to, shared_strings, row_source, _prefix = "", styles = nil, date1904 = false, &block)
+      def self.fast_scan_cells_direct(xml, from, to, shared_strings, row_source, _prefix = "", styles = nil, date1904 = false, &)
         # rubocop:enable Style/OptionalBooleanParameter
         chunk = xml.byteslice(from, to - from)
         row_idx = row_source.is_a?(Hash) ? row_source[:row] : row_source
@@ -1031,7 +1031,7 @@ module Xlsxrb
           ref = r
           c_idx = if ref
                     expected_letter = COL_LETTERS[col_idx]
-                    if expected_letter && ref.start_with?(expected_letter) && ref.getbyte(expected_letter.bytesize)&.between?(48, 57)
+                    if expected_letter && ref.start_with?(expected_letter) && (digit = ref.getbyte(expected_letter.bytesize)) && digit >= 48 && digit <= 57
                       col_idx
                     else
                       c_len = 0
@@ -1058,7 +1058,7 @@ module Xlsxrb
           formula_expr = nil if formula_expr && formula_expr.empty?
           fmt_code = NumberFormatter.format_code_for(style_idx, styles) if styles && style_idx
           cell = Elements::Cell.fast_create(row_idx, c_idx, val, style_idx, formula_expr, raw_val, fmt_code, date1904)
-          block.call(cell)
+          yield cell
         end
 
         return if matched_any || (!chunk.include?("<c") && !chunk.include?(":c"))
@@ -1071,7 +1071,7 @@ module Xlsxrb
 
           c_idx = if r
                     expected_letter = COL_LETTERS[col_idx]
-                    if expected_letter && r.start_with?(expected_letter) && r.getbyte(expected_letter.bytesize)&.between?(48, 57)
+                    if expected_letter && r.start_with?(expected_letter) && (digit = r.getbyte(expected_letter.bytesize)) && digit >= 48 && digit <= 57
                       col_idx
                     else
                       c_len = 0
@@ -1099,7 +1099,7 @@ module Xlsxrb
           formula_expr = nil if formula_expr && formula_expr.empty?
           fmt_code = NumberFormatter.format_code_for(style_idx, styles) if styles && style_idx
           cell = Elements::Cell.fast_create(row_idx, c_idx, val, style_idx, formula_expr, raw_val, fmt_code, date1904)
-          block.call(cell)
+          yield cell
         end
       end
 
@@ -1125,7 +1125,7 @@ module Xlsxrb
           ref = r
           c_idx = if ref
                     expected_letter = COL_LETTERS[col_idx]
-                    if expected_letter && ref.start_with?(expected_letter) && ref.getbyte(expected_letter.bytesize)&.between?(48, 57)
+                    if expected_letter && ref.start_with?(expected_letter) && (digit = ref.getbyte(expected_letter.bytesize)) && digit >= 48 && digit <= 57
                       col_idx
                     else
                       c_len = 0
@@ -1168,7 +1168,7 @@ module Xlsxrb
 
           c_idx = if r
                     expected_letter = COL_LETTERS[col_idx]
-                    if expected_letter && r.start_with?(expected_letter) && r.getbyte(expected_letter.bytesize)&.between?(48, 57)
+                    if expected_letter && r.start_with?(expected_letter) && (digit = r.getbyte(expected_letter.bytesize)) && digit >= 48 && digit <= 57
                       col_idx
                     else
                       c_len = 0
