@@ -8895,6 +8895,27 @@ class WriterTest < Test::Unit::TestCase
     end
   end
 
+  test "omitted or nil compression_level writes with DEFAULT_COMPRESSION_LEVEL" do
+    rows = Array.new(300) { |i| ["Product #{i}", i * 10, i * 1.5] }
+    stream = lambda do |**opts|
+      io = StringIO.new
+      level = nil
+      Xlsxrb.write(io, **opts) do |w|
+        level = w.compression_level
+        w.sheet("Sheet1") { |s| rows.each { |row| s.row(row) } }
+      end
+      [io.string, level]
+    end
+    explicit, = stream.call(compression_level: Xlsxrb::DEFAULT_COMPRESSION_LEVEL)
+    assert_equal([explicit, Xlsxrb::DEFAULT_COMPRESSION_LEVEL], stream.call)
+    assert_equal([explicit, Xlsxrb::DEFAULT_COMPRESSION_LEVEL], stream.call(compression_level: nil))
+    assert_not_equal(explicit, stream.call(compression_level: 9).first)
+
+    wb = Xlsxrb.build { |b| b.sheet("Sheet1") { |s| rows.each { |row| s.row(row) } } }
+    assert_equal(Xlsxrb.write(wb, compression_level: Xlsxrb::DEFAULT_COMPRESSION_LEVEL), Xlsxrb.write(wb))
+    assert_equal(Xlsxrb.write(wb, compression_level: Xlsxrb::DEFAULT_COMPRESSION_LEVEL), wb.to_data)
+  end
+
   test "Xlsxrb.write in-memory supports configurable compression_level" do
     wb = Xlsxrb.build do |b|
       b.sheet("Sheet1") do |s|

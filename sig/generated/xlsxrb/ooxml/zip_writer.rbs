@@ -26,6 +26,7 @@ module Xlsxrb
 
       # @param io [IO, StringIO] Destination IO stream.
       # @param compression_level [Integer, nil] ZIP deflate compression level (0..9, or Zlib::DEFAULT_COMPRESSION).
+      #   nil selects {Xlsxrb::DEFAULT_COMPRESSION_LEVEL}.
       # : (untyped io, ?compression_level: Integer | nil) -> void
       def initialize: (untyped io, ?compression_level: Integer | nil) -> void
 

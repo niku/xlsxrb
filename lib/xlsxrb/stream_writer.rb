@@ -75,16 +75,16 @@ module Xlsxrb
     #   When set to `false`, strings are written directly as inline strings (`<c t="inlineStr">`), maintaining flat
     #   $O(1)$ constant memory regardless of row count or unique string cardinality. Note that disabling shared strings
     #   may slightly increase archive size (typically 3-5%) on datasets with high repetition.
-    # @param compression_level [Integer, nil] ZIP deflate compression level (0..9, or Zlib::DEFAULT_COMPRESSION).
-    #   Level 6 is standard. Level 4 accelerates compression by 20-40% with an ~10% size tradeoff,
-    #   recommended for high-throughput streaming exports. Level 0 disables compression (store only).
+    # @param compression_level [Integer, nil] ZIP deflate compression level (0..9, or Zlib::DEFAULT_COMPRESSION
+    #   for zlib's level 6). Defaults to {Xlsxrb::DEFAULT_COMPRESSION_LEVEL}. Higher levels write smaller files more slowly;
+    #   level 0 stores entries without compression. See docs/adr/0009-default-zip-compression-level.md.
     #: (untyped target, ?strict_excel_mode: bool, ?escape_formulas: bool, ?default_font: untyped?, ?shared_strings: bool, ?compression_level: Integer | nil) -> void
-    def initialize(target, strict_excel_mode: true, escape_formulas: false, default_font: nil, shared_strings: true, compression_level: Zlib::DEFAULT_COMPRESSION)
+    def initialize(target, strict_excel_mode: true, escape_formulas: false, default_font: nil, shared_strings: true, compression_level: DEFAULT_COMPRESSION_LEVEL)
       @target = target
       @strict_excel_mode = strict_excel_mode
       @escape_formulas = escape_formulas ? true : false
       @shared_strings = shared_strings ? true : false
-      @compression_level = compression_level || Zlib::DEFAULT_COMPRESSION
+      @compression_level = compression_level || DEFAULT_COMPRESSION_LEVEL
       @io = target.is_a?(String) ? File.open(target, "wb") : target
       @owns_io = target.is_a?(String)
       @zip = Ooxml::ZipWriter.new(@io, compression_level: @compression_level)

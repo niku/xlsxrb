@@ -19,7 +19,7 @@ module Xlsxrb
       VERSION_ZIP64 = 45
       DATA_DESCRIPTOR_FLAG = 0x0008
 
-      def self.open(target, compression_level: Zlib::DEFAULT_COMPRESSION, &block)
+      def self.open(target, compression_level: DEFAULT_COMPRESSION_LEVEL, &block)
         io = target.is_a?(String) ? File.open(target, "wb") : target
         writer = new(io, compression_level: compression_level)
         if block
@@ -39,9 +39,10 @@ module Xlsxrb
 
       # @param io [IO, StringIO] Destination IO stream.
       # @param compression_level [Integer, nil] ZIP deflate compression level (0..9, or Zlib::DEFAULT_COMPRESSION).
+      #   nil selects {Xlsxrb::DEFAULT_COMPRESSION_LEVEL}.
       #: (untyped io, ?compression_level: Integer | nil) -> void
-      def initialize(io, compression_level: Zlib::DEFAULT_COMPRESSION)
-        level = compression_level.nil? ? Zlib::DEFAULT_COMPRESSION : compression_level
+      def initialize(io, compression_level: DEFAULT_COMPRESSION_LEVEL)
+        level = compression_level.nil? ? DEFAULT_COMPRESSION_LEVEL : compression_level
         raise ArgumentError, "Invalid compression_level: #{compression_level.inspect}. Must be an Integer between 0 and 9 (or Zlib::DEFAULT_COMPRESSION)." unless level.is_a?(Integer) && (level == Zlib::DEFAULT_COMPRESSION || (0..9).cover?(level))
 
         @io = io

@@ -52,6 +52,10 @@ module Xlsxrb
   # Maximum number of individual cell/range references allowed in a single data validation element by Excel.
   MAX_REFS_PER_VALIDATION = 32_767
 
+  # ZIP deflate level used when no compression_level is given.
+  # See docs/adr/0009-default-zip-compression-level.md.
+  DEFAULT_COMPRESSION_LEVEL = 1
+
   # Base class for all exceptions raised by Xlsxrb.
   class Error < StandardError; end
 
@@ -951,11 +955,11 @@ module Xlsxrb
   #   When set to `false`, strings are emitted directly as inline strings (`<c t="inlineStr">`), providing flat
   #   $O(1)$ constant memory during streaming write. Disabling shared strings is recommended when streaming
   #   large datasets where cells contain unique text (e.g. log exports, transaction details).
-  # @param compression_level [Integer, nil] ZIP deflate compression level (0..9, or Zlib::DEFAULT_COMPRESSION).
-  #   Level 6 is standard. Level 4 accelerates compression by 20-40% with an ~10% size tradeoff,
-  #   recommended for high-throughput streaming exports. Level 0 disables compression (store only).
+  # @param compression_level [Integer, nil] ZIP deflate compression level (0..9, or Zlib::DEFAULT_COMPRESSION
+  #   for zlib's level 6). Defaults to {DEFAULT_COMPRESSION_LEVEL}. Higher levels write smaller files more slowly;
+  #   level 0 stores entries without compression. See docs/adr/0009-default-zip-compression-level.md.
   #: (?untyped target_or_workbook, ?Elements::Workbook | untyped workbook_or_nil, ?password: String?, ?encryption_mode: Symbol, ?strict_excel_mode: bool, ?escape_formulas: bool, ?default_font: untyped?, ?shared_strings: bool, ?compression_level: Integer | nil) ?{ (StreamWriter) -> void } -> untyped
-  def self.write(target_or_workbook = OMITTED_TARGET, workbook_or_nil = nil, password: nil, encryption_mode: :standard, strict_excel_mode: true, escape_formulas: false, default_font: nil, shared_strings: true, compression_level: Zlib::DEFAULT_COMPRESSION, &)
+  def self.write(target_or_workbook = OMITTED_TARGET, workbook_or_nil = nil, password: nil, encryption_mode: :standard, strict_excel_mode: true, escape_formulas: false, default_font: nil, shared_strings: true, compression_level: DEFAULT_COMPRESSION_LEVEL, &)
     if block_given?
       if target_or_workbook.equal?(OMITTED_TARGET)
         io = StringIO.new

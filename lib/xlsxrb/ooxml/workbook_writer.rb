@@ -33,7 +33,7 @@ module Xlsxrb
       def self.write(target, sheets:, shared_strings: [], shared_strings_index: nil, styles: nil,
                      defined_names: nil, core_properties: nil, app_properties: nil,
                      custom_properties: nil, workbook_protection: nil, workbook_properties: nil,
-                     compression_level: Zlib::DEFAULT_COMPRESSION)
+                     compression_level: DEFAULT_COMPRESSION_LEVEL)
         writer = new(sheets: sheets, shared_strings: shared_strings, shared_strings_index: shared_strings_index, styles: styles,
                      defined_names: defined_names, core_properties: core_properties,
                      app_properties: app_properties, custom_properties: custom_properties,
@@ -45,7 +45,7 @@ module Xlsxrb
       def initialize(sheets:, shared_strings: [], shared_strings_index: nil, styles: nil,
                      defined_names: nil, core_properties: nil, app_properties: nil,
                      custom_properties: nil, workbook_protection: nil, workbook_properties: nil,
-                     compression_level: Zlib::DEFAULT_COMPRESSION)
+                     compression_level: DEFAULT_COMPRESSION_LEVEL)
         @sheets = sheets
         @shared_strings = shared_strings || []
         @shared_strings_index = shared_strings_index
@@ -56,7 +56,7 @@ module Xlsxrb
         @custom_properties = custom_properties || []
         @workbook_protection = workbook_protection.is_a?(Elements::MetadataRecord) ? workbook_protection.to_h : workbook_protection
         @workbook_properties = workbook_properties.is_a?(Elements::MetadataRecord) ? workbook_properties.to_h : (workbook_properties || { update_links: "never" })
-        @compression_level = compression_level || Zlib::DEFAULT_COMPRESSION
+        @compression_level = compression_level || DEFAULT_COMPRESSION_LEVEL
         @drawing_count = 0
         @chart_count = 0
         @comment_count = 0

@@ -33,6 +33,7 @@
 - Rename `Elements::FilterColumn` member `:col_id` to `:column_id` (with backward-compatible keyword fallback).
 - Rename `Elements::WorkbookProperties` member `:active_tab` to `:active_sheet`, and rename `Elements::Workbook#active_tab` to `#active_sheet_index`.
 - Unify `Elements::Worksheet` constructor parameter `sheet_calc_pr:` to `sheet_calc_properties:` and simplify `#with` to canonical keyword arguments.
+- Change the default ZIP deflate level from zlib's default (6) to 1, exposed as `Xlsxrb::DEFAULT_COMPRESSION_LEVEL` and used when `compression_level` is omitted or `nil`. Writes are 17 to 43% faster and files 5 to 41% larger in the measurements of [ADR 0009](docs/adr/0009-default-zip-compression-level.md); pass `compression_level: 6` for the previous output.
 - Lower the minimum required Ruby version from 4.0 to 3.4, and replace the Ruby 4.0-only `Array#rfind` in the drawing reader with `reverse_each.find`.
 
 ### Removed
