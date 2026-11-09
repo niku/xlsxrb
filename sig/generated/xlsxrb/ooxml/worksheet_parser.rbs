@@ -51,6 +51,16 @@ module Xlsxrb
 
       STRICT_NUMERIC_RE: ::Regexp
 
+      # Returns str without leading and trailing whitespace, allocating a new String only
+      # when there is whitespace to remove (cell values rarely have any).
+      # : (String str) -> String
+      def self.strip_ws: (String str) -> String
+
+      # Retags a String captured from the binary scan buffer as UTF-8 in place, without
+      # copying. Only for Strings the caller has just created (e.g. regex captures).
+      # : (String? str) -> String?
+      def self.utf8!: (String? str) -> String?
+
       # Resolves a cell value from its type attribute and parsed XML content (<v> or <is>).
       # Consolidates parsing across fast-scan direct, row values, events, and listener paths.
       # : (String? type, String? raw_value, String? is_xml, Array[String | Elements::RichText | untyped] shared_strings) -> untyped
@@ -99,6 +109,9 @@ module Xlsxrb
 
       COL_MAP: untyped
 
+      # Captures r, s, and t directly when they appear in the order Excel and xlsxrb write them
+      # (groups 1 to 3). Any other attribute set or order falls back to capturing the raw
+      # attribute string (group 4, or group 8 for a self-closing cell) for ATTR_* lookups.
       CELL_FAST_RE: ::Regexp
 
       CELL_GENERIC_RE: ::Regexp

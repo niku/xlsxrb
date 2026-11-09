@@ -516,6 +516,23 @@ module Xlsxrb
       STRICT_NUMERIC_RE = /\A[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?\z/
       private_constant :STRICT_NUMERIC_RE
 
+      # Returns str without leading and trailing whitespace, allocating a new String only
+      # when there is whitespace to remove (cell values rarely have any).
+      #: (String str) -> String
+      def self.strip_ws(str)
+        first = str.getbyte(0)
+        return str if first.nil? || (first > 32 && str.getbyte(-1) > 32)
+
+        str.strip
+      end
+
+      # Retags a String captured from the binary scan buffer as UTF-8 in place, without
+      # copying. Only for Strings the caller has just created (e.g. regex captures).
+      #: (String? str) -> String?
+      def self.utf8!(str)
+        str&.force_encoding(Encoding::UTF_8)
+      end
+
       # Resolves a cell value from its type attribute and parsed XML content (<v> or <is>).
       # Consolidates parsing across fast-scan direct, row values, events, and listener paths.
       #: (String? type, String? raw_value, String? is_xml, Array[String | Elements::RichText | untyped] shared_strings) -> untyped
@@ -525,7 +542,7 @@ module Xlsxrb
           raw_value ? (shared_strings[raw_value.to_i] || "") : nil
         when "b"
           if raw_value
-            v = raw_value.strip
+            v = strip_ws(raw_value)
             v == "1" || v.casecmp?("true")
           end
         when "inlineStr", "str", "e"
@@ -540,7 +557,7 @@ module Xlsxrb
           raw_value ? numeric_cell_value(raw_value) : nil
         else
           if raw_value
-            text = raw_value.strip
+            text = strip_ws(raw_value)
             return nil if text.empty?
 
             if text.match?(STRICT_NUMERIC_RE)
@@ -566,7 +583,7 @@ module Xlsxrb
       # instead of silently becoming 0.
       #: (String raw) -> (Integer | Float)?
       def self.numeric_cell_value(raw)
-        text = raw.strip
+        text = strip_ws(raw)
         return nil if text.empty?
 
         raise(ParseError, "invalid numeric cell value: #{text.inspect}") unless text.match?(STRICT_NUMERIC_RE)
@@ -979,7 +996,10 @@ module Xlsxrb
         [COL_LETTERS[idx], idx]
       end.freeze
 
-      CELL_FAST_RE = %r{<(?:[a-zA-Z0-9_]+:)?c\b([^>]*(?<!/))>\s*(?:<(?:[a-zA-Z0-9_]+:)?f\b[^>]*?(?:/>|>([^<]*)</(?:[a-zA-Z0-9_]+:)?f>)\s*)?(?:<(?:[a-zA-Z0-9_]+:)?v>([^<]*)</(?:[a-zA-Z0-9_]+:)?v>\s*)?(?:<(?:[a-zA-Z0-9_]+:)?is>(.*?)</(?:[a-zA-Z0-9_]+:)?is>\s*)?.*?</(?:[a-zA-Z0-9_]+:)?c>|<(?:[a-zA-Z0-9_]+:)?c\b([^>]*)/?>}m
+      # Captures r, s, and t directly when they appear in the order Excel and xlsxrb write them
+      # (groups 1 to 3). Any other attribute set or order falls back to capturing the raw
+      # attribute string (group 4, or group 8 for a self-closing cell) for ATTR_* lookups.
+      CELL_FAST_RE = %r{<(?:[a-zA-Z0-9_]+:)?c(?:\s+r="([A-Za-z0-9]+)"(?:\s+s="(\d+)")?(?:\s+t="([a-zA-Z]+)")?\s*|\b([^>]*(?<!/)))>\s*(?:<(?:[a-zA-Z0-9_]+:)?f\b[^>]*?(?:/>|>([^<]*)</(?:[a-zA-Z0-9_]+:)?f>)\s*)?(?:<(?:[a-zA-Z0-9_]+:)?v>([^<]*)</(?:[a-zA-Z0-9_]+:)?v>\s*)?(?:<(?:[a-zA-Z0-9_]+:)?is>(.*?)</(?:[a-zA-Z0-9_]+:)?is>\s*)?.*?</(?:[a-zA-Z0-9_]+:)?c>|<(?:[a-zA-Z0-9_]+:)?c\b([^>]*)/?>}m
       CELL_GENERIC_RE = %r{<(?:[a-zA-Z0-9_]+:)?c\b([^>]*?)(?:>\s*(?:<(?:[a-zA-Z0-9_]+:)?f\b[^>]*?(?:/>|>([^<]*)</(?:[a-zA-Z0-9_]+:)?f>)\s*)?(?:<(?:[a-zA-Z0-9_]+:)?v>([^<]*)</(?:[a-zA-Z0-9_]+:)?v>\s*)?(?:<(?:[a-zA-Z0-9_]+:)?is>(.*?)</(?:[a-zA-Z0-9_]+:)?is>\s*)?.*?</(?:[a-zA-Z0-9_]+:)?c>|/>)}m
       ATTR_R = /\br="([A-Za-z0-9]+)"/
       ATTR_T = /\bt="([a-zA-Z]+)"/
@@ -999,12 +1019,14 @@ module Xlsxrb
         col_idx = 0
         matched_any = false
 
-        chunk.scan(CELL_FAST_RE) do |attrs_str, f, v, is, self_attrs|
+        chunk.scan(CELL_FAST_RE) do |r, s, t, attrs_str, f, v, is, self_attrs|
           matched_any = true
-          raw_attrs = attrs_str || self_attrs || ""
-          r = raw_attrs[ATTR_R, 1]
-          s = raw_attrs.include?('s="') ? raw_attrs[ATTR_S, 1] : nil
-          t = raw_attrs.include?('t="') ? raw_attrs[ATTR_T, 1] : nil
+          unless r
+            raw_attrs = attrs_str || self_attrs || ""
+            r = raw_attrs[ATTR_R, 1]
+            s = raw_attrs.include?('s="') ? raw_attrs[ATTR_S, 1] : nil
+            t = raw_attrs.include?('t="') ? raw_attrs[ATTR_T, 1] : nil
+          end
           style_idx = s&.to_i
           ref = r
           c_idx = if ref
@@ -1021,8 +1043,8 @@ module Xlsxrb
                     col_idx
                   end
           col_idx = c_idx + 1
-          v = v.strip if v
-          f = f.strip if f
+          v = utf8!(strip_ws(v)) if v
+          f = utf8!(strip_ws(f)) if f
 
           val = resolve_cell_value(t, v, is, shared_strings)
 
@@ -1061,8 +1083,8 @@ module Xlsxrb
                     col_idx
                   end
           col_idx = c_idx + 1
-          v = v.strip if v
-          f = f.strip if f
+          v = utf8!(strip_ws(v)) if v
+          f = utf8!(strip_ws(f)) if f
 
           val = resolve_cell_value(t, v, is, shared_strings)
 
@@ -1092,12 +1114,14 @@ module Xlsxrb
         matched_any = false
         row_values = []
 
-        chunk.scan(CELL_FAST_RE) do |attrs_str, _f, v, is, self_attrs|
+        chunk.scan(CELL_FAST_RE) do |r, s_val, t, attrs_str, _f, v, is, self_attrs|
           matched_any = true
-          raw_attrs = attrs_str || self_attrs || ""
-          r = raw_attrs[ATTR_R, 1]
-          s_val = raw_attrs.include?('s="') ? raw_attrs[ATTR_S, 1] : nil
-          t = raw_attrs.include?('t="') ? raw_attrs[ATTR_T, 1] : nil
+          unless r
+            raw_attrs = attrs_str || self_attrs || ""
+            r = raw_attrs[ATTR_R, 1]
+            s_val = raw_attrs.include?('s="') ? raw_attrs[ATTR_S, 1] : nil
+            t = raw_attrs.include?('t="') ? raw_attrs[ATTR_T, 1] : nil
+          end
           ref = r
           c_idx = if ref
                     expected_letter = COL_LETTERS[col_idx]
