@@ -269,7 +269,7 @@ module Xlsxrb
       # @param location [String, nil] Optional internal sheet/cell reference.
       #: (?url: String?, ?display: String?, ?tooltip: String?, ?location: String?, **untyped) -> void
       def initialize(url: nil, display: nil, tooltip: nil, location: nil, **_extra)
-        super(url: url, display: display, tooltip: tooltip, location: location)
+        super(**{ url: url, display: display, tooltip: tooltip, location: location })
       end
 
       # Returns whether all attributes are nil or empty.

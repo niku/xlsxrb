@@ -87,10 +87,12 @@ module Xlsxrb
 
         norm_styles = styles.is_a?(Elements::Styles) ? styles : Elements::Styles.new(styles || {})
 
-        super(sheets: sheets.freeze, shared_strings: shared_strings.freeze, styles: norm_styles,
-              unmapped_data: unmapped, errors: computed_errors.freeze, defined_names: dns.freeze,
-              workbook_properties: norm_wb_props, core_properties: norm_core, app_properties: norm_app,
-              workbook_protection: norm_prot, custom_properties: norm_custom)
+        super(**{
+          sheets: sheets.freeze, shared_strings: shared_strings.freeze, styles: norm_styles,
+          unmapped_data: unmapped, errors: computed_errors.freeze, defined_names: dns.freeze,
+          workbook_properties: norm_wb_props, core_properties: norm_core, app_properties: norm_app,
+          workbook_protection: norm_prot, custom_properties: norm_custom
+        })
       end
 
       # Iterate over worksheets.

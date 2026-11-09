@@ -49,7 +49,7 @@ module Xlsxrb
         from_column ||= 0
         ext = File.extname(filename).delete_prefix(".").downcase
         mime = content_type || MIME_TYPES[ext] || "application/octet-stream"
-        super(
+        super(**{
           name: name,
           filename: filename,
           content_type: mime,
@@ -61,7 +61,7 @@ module Xlsxrb
           cx: cx,
           cy: cy,
           unmapped_data: unmapped_data
-        )
+        })
       end
 
       # Returns the top-left cell coordinate reference string (e.g. "A1").

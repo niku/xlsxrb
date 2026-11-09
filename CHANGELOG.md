@@ -101,6 +101,9 @@
 - Remove deprecated transitional aliases `to_workbook` on `Workbook`, `to_worksheet` on `Worksheet` and `StreamSheet`, `each_sheet` on `Workbook`, and `col_breaks` on `Worksheet` and `StreamSheet`.
 - Remove non-predicate boolean queries on element readers (`trim_empty_rows`, `pad_empty_rows`, `pad_empty_cells`, `fit_to_page`, `show_sheet_tabs`, `full_calc_on_load`) in favor of `?`-suffixed methods (`trim_empty_rows?`, `pad_empty_rows?`, `pad_empty_cells?`, `fit_to_page?`, `show_sheet_tabs?`, `full_calc_on_load?`).
 
+### Fixed
+- Wrap keyword arguments with double splat in Data.define constructors across Elements to prevent heap corruption and segfaults in CRuby 4.0 Ractors.
+
 ## [0.1.18] - 2026-11-07
 
 ### Added

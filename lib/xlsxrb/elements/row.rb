@@ -39,9 +39,9 @@ module Xlsxrb
         @hidden = hidden ? true : false
         @custom_height = custom_height ? true : false
         @collapsed = collapsed ? true : false
-        super(index: index, cells: cells, height: height, hidden: @hidden,
-              custom_height: @custom_height, collapsed: @collapsed, outline_level: outline_level,
-              style_index: style_index, unmapped_data: unmapped_data, errors: computed_errors)
+        super(**{ index: index, cells: cells, height: height, hidden: @hidden,
+                  custom_height: @custom_height, collapsed: @collapsed, outline_level: outline_level,
+                  style_index: style_index, unmapped_data: unmapped_data, errors: computed_errors })
       end
 
       # Access a cell by 0-based column index, column letter/Symbol, or column range.

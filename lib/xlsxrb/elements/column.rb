@@ -34,9 +34,9 @@ module Xlsxrb
         @best_fit = best_fit ? true : false
         @collapsed = collapsed ? true : false
         computed_errors = errors || self.class.validate(index)
-        super(index: index, width: width, hidden: @hidden, custom_width: @custom_width,
-              outline_level: outline_level, style_index: style_index, unmapped_data: unmapped_data,
-              errors: computed_errors.freeze, best_fit: @best_fit, collapsed: @collapsed)
+        super(**{ index: index, width: width, hidden: @hidden, custom_width: @custom_width,
+                  outline_level: outline_level, style_index: style_index, unmapped_data: unmapped_data,
+                  errors: computed_errors.freeze, best_fit: @best_fit, collapsed: @collapsed })
       end
 
       # Returns whether the column definition is valid according to OOXML specifications.

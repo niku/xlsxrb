@@ -43,6 +43,26 @@ class ConcurrentTest < Test::Unit::TestCase
     end
   end
 
+  def test_element_constructor_ractor_safety
+    omit "Ractors are not supported in this Ruby version" unless defined?(Ractor)
+    omit "RBS::Test runtime hooks are incompatible with Ractor isolation" if defined?(RBS::Test)
+
+    ractors = 4.times.map do |idx|
+      Ractor.new(idx) do |i|
+        col = Xlsxrb::Elements::Column.new(index: 1, width: 12.5)
+        row = Xlsxrb::Elements::Row.new(index: i + 1, height: 20.0)
+        img = Xlsxrb::Elements::Image.new(filename: "test.png")
+        meta = Xlsxrb::Elements::CoreProperties.new(creator: "Test #{i}")
+        [col.width, row.index, img.filename, meta.creator]
+      end
+    end
+
+    results = ractors.map(&:value)
+    results.each_with_index do |res, idx|
+      assert_equal [12.5, idx + 1, "test.png", "Test #{idx}"], res
+    end
+  end
+
   def test_all_xlsxrb_constants_are_ractor_shareable
     omit "Ractors are not supported in this Ruby version" unless defined?(Ractor)
 

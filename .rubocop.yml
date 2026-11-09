@@ -297,6 +297,8 @@ Style/RedundantCurrentDirectoryInPath: # new in 1.53
   Enabled: true
 Style/RedundantDoubleSplatHashBraces: # new in 1.41
   Enabled: true
+  Exclude:
+    - "lib/xlsxrb/elements/**/*"
 Style/RedundantEach: # new in 1.38
   Enabled: true
 Style/RedundantFilterChain: # new in 1.52

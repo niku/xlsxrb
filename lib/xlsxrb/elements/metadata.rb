@@ -52,11 +52,11 @@ module Xlsxrb
 
       #: (?title: String?, ?subject: String?, ?creator: String?, ?keywords: String?, ?description: String?, ?last_modified_by: String?, ?revision: String?, ?created: untyped, ?modified: untyped, ?category: String?, ?content_status: String?, **untyped) -> void
       def initialize(title: nil, subject: nil, creator: nil, keywords: nil, description: nil, last_modified_by: nil, revision: nil, created: nil, modified: nil, category: nil, content_status: nil, **_extra)
-        super(
+        super(**{
           title: title, subject: subject, creator: creator, keywords: keywords, description: description,
           last_modified_by: last_modified_by, revision: revision, created: created, modified: modified,
           category: category, content_status: content_status
-        )
+        })
       end
     end
 
@@ -73,12 +73,12 @@ module Xlsxrb
 
       #: (?app_name: String?, ?app_version: String?, ?doc_security: Integer?, ?scale_crop: bool?, ?heading_pairs: Array[untyped]?, ?titles_of_parts: Array[untyped]?, ?manager: String?, ?company: String?, ?links_up_to_date: bool?, ?shared_doc: bool?, ?hyperlink_base: String?, ?hyperlinks_changed: bool?, **untyped) -> void
       def initialize(app_name: nil, app_version: nil, doc_security: nil, scale_crop: nil, heading_pairs: nil, titles_of_parts: nil, manager: nil, company: nil, links_up_to_date: nil, shared_doc: nil, hyperlink_base: nil, hyperlinks_changed: nil, **_extra)
-        super(
+        super(**{
           app_name: app_name, app_version: app_version, doc_security: doc_security, scale_crop: scale_crop,
           heading_pairs: heading_pairs, titles_of_parts: titles_of_parts, manager: manager, company: company,
           links_up_to_date: links_up_to_date, shared_doc: shared_doc, hyperlink_base: hyperlink_base,
           hyperlinks_changed: hyperlinks_changed
-        )
+        })
       end
 
       # Returns whether scale and crop are enabled.
@@ -127,11 +127,11 @@ module Xlsxrb
 
       #: (?date1904: bool?, ?code_name: String?, ?active_sheet: Integer?, ?first_sheet: Integer?, ?show_sheet_tabs: bool?, ?tab_ratio: Integer?, ?full_calc_on_load: bool?, ?filter_privacy: bool?, ?default_theme_version: String?, ?refresh_all: bool?, **untyped) -> void
       def initialize(date1904: nil, code_name: nil, active_sheet: nil, first_sheet: nil, show_sheet_tabs: nil, tab_ratio: nil, full_calc_on_load: nil, filter_privacy: nil, default_theme_version: nil, refresh_all: nil, **_extra)
-        super(
+        super(**{
           date1904: date1904, code_name: code_name, active_sheet: active_sheet, first_sheet: first_sheet,
           show_sheet_tabs: show_sheet_tabs, tab_ratio: tab_ratio, full_calc_on_load: full_calc_on_load,
           filter_privacy: filter_privacy, default_theme_version: default_theme_version, refresh_all: refresh_all
-        )
+        })
       end
 
       # Returns whether the 1904 date system is used.
@@ -187,11 +187,11 @@ module Xlsxrb
 
       #: (?workbook_password: String?, ?lock_structure: bool?, ?lock_windows: bool?, ?revisions_password: String?, ?lock_revision: bool?, ?algorithm_name: String?, ?hash_value: String?, ?salt_value: String?, ?spin_count: Integer?, **untyped) -> void
       def initialize(workbook_password: nil, lock_structure: nil, lock_windows: nil, revisions_password: nil, lock_revision: nil, algorithm_name: nil, hash_value: nil, salt_value: nil, spin_count: nil, **_extra)
-        super(
+        super(**{
           workbook_password: workbook_password, lock_structure: lock_structure, lock_windows: lock_windows,
           revisions_password: revisions_password, lock_revision: lock_revision, algorithm_name: algorithm_name,
           hash_value: hash_value, salt_value: salt_value, spin_count: spin_count
-        )
+        })
       end
 
       # Returns whether the workbook structure is locked.
@@ -233,13 +233,13 @@ module Xlsxrb
 
       #: (?paper_size: (Integer | String)?, ?orientation: (Symbol | String)?, ?scale: Integer?, ?fit_to_width: Integer?, ?fit_to_height: Integer?, ?first_page_number: Integer?, ?use_first_page_number: bool?, ?black_and_white: bool?, ?draft: bool?, ?cell_comments: String?, ?use_printer_defaults: bool?, ?copies: Integer?, ?horizontal_centered: bool?, ?vertical_centered: bool?, ?id: String?, **untyped) -> void
       def initialize(paper_size: nil, orientation: nil, scale: nil, fit_to_width: nil, fit_to_height: nil, first_page_number: nil, use_first_page_number: nil, black_and_white: nil, draft: nil, cell_comments: nil, use_printer_defaults: nil, copies: nil, horizontal_centered: nil, vertical_centered: nil, id: nil, **_extra)
-        super(
+        super(**{
           paper_size: paper_size, orientation: orientation, scale: scale, fit_to_width: fit_to_width,
           fit_to_height: fit_to_height, first_page_number: first_page_number, use_first_page_number: use_first_page_number,
           black_and_white: black_and_white, draft: draft, cell_comments: cell_comments,
           use_printer_defaults: use_printer_defaults, copies: copies, horizontal_centered: horizontal_centered,
           vertical_centered: vertical_centered, id: id
-        )
+        })
       end
 
       # Returns whether black and white print mode is enabled.
@@ -298,7 +298,7 @@ module Xlsxrb
 
       #: (?left: Float?, ?right: Float?, ?top: Float?, ?bottom: Float?, ?header: Float?, ?footer: Float?, **untyped) -> void
       def initialize(left: nil, right: nil, top: nil, bottom: nil, header: nil, footer: nil, **_extra)
-        super(left: left, right: right, top: top, bottom: bottom, header: header, footer: footer)
+        super(**{ left: left, right: right, top: top, bottom: bottom, header: header, footer: footer })
       end
     end
 
@@ -315,12 +315,12 @@ module Xlsxrb
 
       #: (?odd_header: String?, ?odd_footer: String?, ?even_header: String?, ?even_footer: String?, ?first_header: String?, ?first_footer: String?, ?different_odd_even: bool?, ?different_first: bool?, ?scale_with_doc: bool?, ?align_with_margins: bool?, **untyped) -> void
       def initialize(odd_header: nil, odd_footer: nil, even_header: nil, even_footer: nil, first_header: nil, first_footer: nil, different_odd_even: nil, different_first: nil, scale_with_doc: nil, align_with_margins: nil, **_extra)
-        super(
+        super(**{
           odd_header: odd_header, odd_footer: odd_footer, even_header: even_header,
           even_footer: even_footer, first_header: first_header, first_footer: first_footer,
           different_odd_even: different_odd_even, different_first: different_first,
           scale_with_doc: scale_with_doc, align_with_margins: align_with_margins
-        )
+        })
       end
 
       # Returns whether different first page header/footer is enabled.
@@ -365,10 +365,10 @@ module Xlsxrb
 
       #: (?grid_lines: bool?, ?grid_lines_set: bool?, ?headings: bool?, ?horizontal_centered: bool?, ?vertical_centered: bool?, **untyped) -> void
       def initialize(grid_lines: nil, grid_lines_set: nil, headings: nil, horizontal_centered: nil, vertical_centered: nil, **_extra)
-        super(
+        super(**{
           grid_lines: grid_lines, grid_lines_set: grid_lines_set, headings: headings,
           horizontal_centered: horizontal_centered, vertical_centered: vertical_centered
-        )
+        })
       end
 
       # Returns whether grid lines are printed.
@@ -419,7 +419,7 @@ module Xlsxrb
 
       #: (?rows: String?, ?columns: String?, **untyped) -> void
       def initialize(rows: nil, columns: nil, **_extra)
-        super(rows: rows, columns: columns)
+        super(**{ rows: rows, columns: columns })
       end
     end
 
@@ -430,7 +430,7 @@ module Xlsxrb
 
       #: (?row: Integer?, ?column: (Integer | String | Symbol)?, ?top_row: Integer?, ?left_column: (Integer | String | Symbol)?, ?active_pane: String?, ?state: Symbol?, **untyped) -> void
       def initialize(row: nil, column: nil, top_row: nil, left_column: nil, active_pane: nil, state: :frozen, **_extra)
-        super(row: row, column: column, top_row: top_row, left_column: left_column, active_pane: active_pane, state: state || :frozen)
+        super(**{ row: row, column: column, top_row: top_row, left_column: left_column, active_pane: active_pane, state: state || :frozen })
       end
     end
 
@@ -441,7 +441,7 @@ module Xlsxrb
 
       #: (?x_split: (Integer | Float)?, ?y_split: (Integer | Float)?, ?top_row: Integer?, ?left_column: Integer?, ?active_pane: String?, ?state: String?, **untyped) -> void
       def initialize(x_split: nil, y_split: nil, top_row: nil, left_column: nil, active_pane: nil, state: nil, **_extra)
-        super(x_split: x_split, y_split: y_split, top_row: top_row, left_column: left_column, active_pane: active_pane, state: state)
+        super(**{ x_split: x_split, y_split: y_split, top_row: top_row, left_column: left_column, active_pane: active_pane, state: state })
       end
     end
 
@@ -452,7 +452,7 @@ module Xlsxrb
 
       #: (?pane: String?, ?active_cell: String?, ?active_cell_id: Integer?, ?sqref: String?, **untyped) -> void
       def initialize(pane: nil, active_cell: nil, active_cell_id: nil, sqref: nil, **_extra)
-        super(pane: pane, active_cell: active_cell, active_cell_id: active_cell_id, sqref: sqref)
+        super(**{ pane: pane, active_cell: active_cell, active_cell_id: active_cell_id, sqref: sqref })
       end
     end
 
@@ -470,7 +470,7 @@ module Xlsxrb
 
       #: (?password: String?, ?sheet: bool?, ?objects: bool?, ?scenarios: bool?, ?format_cells: bool?, ?format_columns: bool?, ?format_rows: bool?, ?insert_columns: bool?, ?insert_rows: bool?, ?insert_hyperlinks: bool?, ?delete_columns: bool?, ?delete_rows: bool?, ?select_locked_cells: bool?, ?select_unlocked_cells: bool?, ?sort: bool?, ?auto_filter: bool?, ?pivot_tables: bool?, ?algorithm_name: String?, ?hash_value: String?, ?salt_value: String?, ?spin_count: Integer?, **untyped) -> void
       def initialize(password: nil, sheet: nil, objects: nil, scenarios: nil, format_cells: nil, format_columns: nil, format_rows: nil, insert_columns: nil, insert_rows: nil, insert_hyperlinks: nil, delete_columns: nil, delete_rows: nil, select_locked_cells: nil, select_unlocked_cells: nil, sort: nil, auto_filter: nil, pivot_tables: nil, algorithm_name: nil, hash_value: nil, salt_value: nil, spin_count: nil, **_extra)
-        super(
+        super(**{
           password: password, sheet: sheet, objects: objects, scenarios: scenarios,
           format_cells: format_cells, format_columns: format_columns, format_rows: format_rows,
           insert_columns: insert_columns, insert_rows: insert_rows, insert_hyperlinks: insert_hyperlinks,
@@ -478,7 +478,7 @@ module Xlsxrb
           select_unlocked_cells: select_unlocked_cells, sort: sort, auto_filter: auto_filter,
           pivot_tables: pivot_tables, algorithm_name: algorithm_name, hash_value: hash_value,
           salt_value: salt_value, spin_count: spin_count
-        )
+        })
       end
 
       # Returns whether worksheet protection is enabled.
@@ -641,7 +641,7 @@ module Xlsxrb
         sum_b = summary_below.nil? ? out_pr[:summary_below] : summary_below
         sum_r = summary_right.nil? ? out_pr[:summary_right] : summary_right
         show_sym = show_outline_symbols.nil? ? out_pr[:show_outline_symbols] : show_outline_symbols
-        super(
+        super(**{
           tab_color: tab_color, filter_mode: filter_mode,
           enable_format_conditions_calculation: enable_format_conditions_calculation,
           page_setup_properties: psp,
@@ -651,7 +651,7 @@ module Xlsxrb
           sync_horizontal: sync_horizontal, sync_vertical: sync_vertical, sync_ref: sync_ref,
           transition_evaluation: transition_evaluation, transition_entry: transition_entry, published: published,
           apply_styles: app_st, summary_below: sum_b, summary_right: sum_r, show_outline_symbols: show_sym
-        )
+        })
       end
 
       # Returns whether filter mode is enabled.
@@ -787,12 +787,12 @@ module Xlsxrb
 
       #: (?default_row_height: (Float | Integer)?, ?default_column_width: (Float | Integer)?, ?custom_height: bool?, ?zero_height: bool?, ?thick_top: bool?, ?thick_bottom: bool?, ?outline_level_row: Integer?, ?outline_level_column: Integer?, ?base_column_width: (Float | Integer)?, **untyped) -> void
       def initialize(default_row_height: nil, default_column_width: nil, custom_height: nil, zero_height: nil, thick_top: nil, thick_bottom: nil, outline_level_row: nil, outline_level_column: nil, base_column_width: nil, **_extra)
-        super(
+        super(**{
           default_row_height: default_row_height, default_column_width: default_column_width,
           custom_height: custom_height, zero_height: zero_height, thick_top: thick_top,
           thick_bottom: thick_bottom, outline_level_row: outline_level_row,
           outline_level_column: outline_level_column, base_column_width: base_column_width
-        )
+        })
       end
 
       # Returns whether custom row height is set.
@@ -849,7 +849,7 @@ module Xlsxrb
         window_protection: nil, show_formulas: nil, show_outline_symbols: nil, default_grid_color: nil, show_white_space: nil,
         top_left_cell: nil, color_id: nil, **_extra
       )
-        super(
+        super(**{
           workbook_view_id: workbook_view_id, show_grid_lines: show_grid_lines,
           show_row_col_headers: show_row_col_headers, show_ruler: show_ruler,
           show_zeros: show_zeros, right_to_left: right_to_left, tab_selected: tab_selected,
@@ -859,7 +859,7 @@ module Xlsxrb
           window_protection: window_protection, show_formulas: show_formulas,
           show_outline_symbols: show_outline_symbols, default_grid_color: default_grid_color,
           show_white_space: show_white_space, top_left_cell: top_left_cell, color_id: color_id
-        )
+        })
       end
 
       # Returns whether window protection is enabled.
@@ -958,7 +958,7 @@ module Xlsxrb
 
       #: (?font_id: Integer?, ?type: String?, ?alignment: String?, **untyped) -> void
       def initialize(font_id: nil, type: nil, alignment: nil, **_extra)
-        super(font_id: font_id, type: type, alignment: alignment)
+        super(**{ font_id: font_id, type: type, alignment: alignment })
       end
     end
 
@@ -971,7 +971,7 @@ module Xlsxrb
 
       #: (?full_calc_on_load: bool?, **untyped) -> void
       def initialize(full_calc_on_load: nil, **_extra)
-        super(full_calc_on_load: full_calc_on_load)
+        super(**{ full_calc_on_load: full_calc_on_load })
       end
 
       # Returns whether full calculation is performed on load.
@@ -993,7 +993,7 @@ module Xlsxrb
       #: (?ref: String?, ?case_sensitive: bool?, ?sort_method: String?, ?conditions: Array[Hash[Symbol, untyped]]?, **untyped) -> void
       def initialize(ref: nil, case_sensitive: nil, sort_method: nil, conditions: nil, **extra)
         conds = conditions || extra[:sort_conditions]
-        super(ref: ref, case_sensitive: case_sensitive, sort_method: sort_method, conditions: conds)
+        super(**{ ref: ref, case_sensitive: case_sensitive, sort_method: sort_method, conditions: conds })
       end
 
       # Returns whether sorting is case sensitive.
@@ -1012,7 +1012,7 @@ module Xlsxrb
 
       #: (?r_id: String?, ?path: String?, ?extension: String?, ?data: String?, ?content_type: String?, **untyped) -> void
       def initialize(r_id: nil, path: nil, extension: nil, data: nil, content_type: nil, **_extra)
-        super(r_id: r_id, path: path, extension: extension, data: data, content_type: content_type)
+        super(**{ r_id: r_id, path: path, extension: extension, data: data, content_type: content_type })
       end
     end
 
@@ -1023,7 +1023,7 @@ module Xlsxrb
 
       #: (?default_table_style: String?, ?default_pivot_style: String?, ?styles: Array[Hash[Symbol, untyped]]?, **untyped) -> void
       def initialize(default_table_style: nil, default_pivot_style: nil, styles: nil, **_extra)
-        super(default_table_style: default_table_style, default_pivot_style: default_pivot_style, styles: styles)
+        super(**{ default_table_style: default_table_style, default_pivot_style: default_pivot_style, styles: styles })
       end
     end
 
@@ -1034,7 +1034,7 @@ module Xlsxrb
 
       #: (?indexed: Array[String]?, ?mru: Array[Hash[Symbol, untyped]]?, **untyped) -> void
       def initialize(indexed: nil, mru: nil, **_extra)
-        super(indexed: indexed, mru: mru)
+        super(**{ indexed: indexed, mru: mru })
       end
     end
 
@@ -1045,7 +1045,7 @@ module Xlsxrb
 
       #: (?name: String?, ?value: untyped, ?type: Symbol?, **untyped) -> void
       def initialize(name: nil, value: nil, type: nil, **_extra)
-        super(name: name, value: value, type: type)
+        super(**{ name: name, value: value, type: type })
       end
 
       # @return [String]
@@ -1075,7 +1075,7 @@ module Xlsxrb
 
       #: (?column_id: Integer?, ?filters: Array[untyped]?, ?custom_filters: Array[untyped]?, ?dynamic_filter: Hash[Symbol, untyped]?, ?top10: Hash[Symbol, untyped]?, ?color_filter: Hash[Symbol, untyped]?, ?icon_filter: Hash[Symbol, untyped]?, ?hidden: bool?, ?show_button: bool?, **untyped) -> void
       def initialize(column_id: nil, filters: nil, custom_filters: nil, dynamic_filter: nil, top10: nil, color_filter: nil, icon_filter: nil, hidden: false, show_button: true, **_extra)
-        super(column_id: column_id, filters: filters, custom_filters: custom_filters, dynamic_filter: dynamic_filter, top10: top10, color_filter: color_filter, icon_filter: icon_filter, hidden: hidden || false, show_button: show_button != false)
+        super(**{ column_id: column_id, filters: filters, custom_filters: custom_filters, dynamic_filter: dynamic_filter, top10: top10, color_filter: color_filter, icon_filter: icon_filter, hidden: hidden || false, show_button: show_button != false })
       end
 
       # Returns whether the filter column is hidden.
@@ -1104,7 +1104,7 @@ module Xlsxrb
 
       #: (?name: String?, ?value: String?, ?local_sheet_id: Integer?, ?local_sheet_name: String?, ?hidden: bool?, ?comment: String?, **untyped) -> void
       def initialize(name: nil, value: nil, local_sheet_id: nil, local_sheet_name: nil, hidden: nil, comment: nil, **_extra)
-        super(name: name, value: value || "", local_sheet_id: local_sheet_id, local_sheet_name: local_sheet_name, hidden: hidden, comment: comment)
+        super(**{ name: name, value: value || "", local_sheet_id: local_sheet_id, local_sheet_name: local_sheet_name, hidden: hidden, comment: comment })
       end
 
       # Returns whether the defined name is hidden.
@@ -1131,7 +1131,7 @@ module Xlsxrb
       #: (?id: Integer?, ?max: Integer?, ?min: Integer?, ?man: (Integer | bool)?, ?pt: bool?, **untyped) -> void
       # rubocop:disable Naming/MethodParameterName
       def initialize(id: nil, max: nil, min: nil, man: nil, pt: nil, **_extra)
-        super(id: id, max: max, min: min, man: man, pt: pt)
+        super(**{ id: id, max: max, min: min, man: man, pt: pt })
       end
       # rubocop:enable Naming/MethodParameterName
 
@@ -1153,7 +1153,7 @@ module Xlsxrb
 
       #: (?ref: String?, ?text: String?, ?author: String?, ?r_id: String?, ?shape_id: Integer?, ?author_id: Integer?, ?visible: bool?, **untyped) -> void
       def initialize(ref: nil, text: nil, author: nil, r_id: nil, shape_id: nil, author_id: nil, visible: false, **_extra)
-        super(ref: ref, text: text, author: author, r_id: r_id, shape_id: shape_id, author_id: author_id, visible: visible)
+        super(**{ ref: ref, text: text, author: author, r_id: r_id, shape_id: shape_id, author_id: author_id, visible: visible })
       end
 
       # Returns whether the comment is visible by default.
@@ -1194,7 +1194,7 @@ module Xlsxrb
         author_id: nil, created_at: nil,
         parent_id: nil, resolved: nil, **_extra
       )
-        super(id: id, ref: ref, text: text, author: author, author_id: author_id, created_at: created_at, parent_id: parent_id, resolved: resolved)
+        super(**{ id: id, ref: ref, text: text, author: author, author_id: author_id, created_at: created_at, parent_id: parent_id, resolved: resolved })
       end
 
       # Returns whether the threaded comment is resolved.
@@ -1226,13 +1226,13 @@ module Xlsxrb
 
       #: (?sqref: String?, ?type: String?, ?error_style: String?, ?operator: String?, ?allow_blank: bool?, ?show_input_message: bool?, ?show_error_message: bool?, ?prompt_title: String?, ?prompt: String?, ?error_title: String?, ?error: String?, ?formula1: String?, ?formula2: String?, ?ime_mode: String?, ?show_drop_down: bool?, **untyped) -> void
       def initialize(sqref: nil, type: nil, error_style: nil, operator: nil, allow_blank: nil, show_input_message: nil, show_error_message: nil, prompt_title: nil, prompt: nil, error_title: nil, error: nil, formula1: nil, formula2: nil, ime_mode: nil, show_drop_down: nil, **_extra)
-        super(
+        super(**{
           sqref: sqref, type: type, error_style: error_style, operator: operator,
           allow_blank: allow_blank, show_input_message: show_input_message,
           show_error_message: show_error_message, prompt_title: prompt_title, prompt: prompt,
           error_title: error_title, error: error, formula1: formula1, formula2: formula2,
           ime_mode: ime_mode, show_drop_down: show_drop_down
-        )
+        })
       end
 
       # Returns whether blank cells are allowed in validation.
@@ -1282,13 +1282,13 @@ module Xlsxrb
       #: (?type: (Symbol | String)?, ?dxf_id: Integer?, ?priority: Integer?, ?operator: (Symbol | String)?, ?formula: untyped, ?text: String?, ?time_period: (Symbol | String)?, ?rank: Integer?, ?std_dev: Integer?, ?above_average: bool?, ?equal_average: bool?, ?bottom: bool?, ?percent: bool?, ?stop_if_true: bool?, ?color_scale: Hash[Symbol, untyped]?, ?data_bar: Hash[Symbol, untyped]?, ?icon_set: Hash[Symbol, untyped]?, ?options: Hash[Symbol, untyped]?, **untyped) -> void
       def initialize(type: nil, dxf_id: nil, priority: nil, operator: nil, formula: nil, text: nil, time_period: nil, rank: nil, std_dev: nil, above_average: nil, equal_average: nil, bottom: nil, percent: nil, stop_if_true: nil, color_scale: nil, data_bar: nil, icon_set: nil, options: nil, **extra)
         opts = (options || {}).merge(extra)
-        super(
+        super(**{
           type: type, dxf_id: dxf_id, priority: priority, operator: operator, formula: formula,
           text: text, time_period: time_period, rank: rank, std_dev: std_dev,
           above_average: above_average, equal_average: equal_average, bottom: bottom,
           percent: percent, stop_if_true: stop_if_true, color_scale: color_scale,
           data_bar: data_bar, icon_set: icon_set, options: opts.empty? ? nil : opts
-        )
+        })
       end
 
       # Returns whether rule matches above average values.
@@ -1350,14 +1350,14 @@ module Xlsxrb
                           rules.map { |r| r.is_a?(ConditionalFormatRule) ? r : ConditionalFormatRule.new(**r) }
                         end
         opts = (options || {}).merge(extra)
-        super(
+        super(**{
           sqref: sqref, type: type, dxf_id: dxf_id, priority: priority, operator: operator, formula: formula,
           text: text, time_period: time_period, rank: rank, std_dev: std_dev,
           above_average: above_average, equal_average: equal_average, bottom: bottom,
           percent: percent, stop_if_true: stop_if_true, color_scale: color_scale,
           data_bar: data_bar, icon_set: icon_set, pivot: pivot, rules: wrapped_rules,
           options: opts.empty? ? nil : opts
-        )
+        })
       end
 
       # Returns whether rule matches above average values.
@@ -1416,12 +1416,12 @@ module Xlsxrb
 
       #: (?id: Integer?, ?name: String?, ?totals_row_function: String?, ?totals_row_label: String?, ?totals_row_formula: String?, ?data_dxf_id: Integer?, ?calculated_column_formula: String?, **untyped) -> void
       def initialize(id: nil, name: nil, totals_row_function: nil, totals_row_label: nil, totals_row_formula: nil, data_dxf_id: nil, calculated_column_formula: nil, **_extra)
-        super(
+        super(**{
           id: id, name: name, totals_row_function: totals_row_function,
           totals_row_label: totals_row_label, totals_row_formula: totals_row_formula,
           data_dxf_id: data_dxf_id,
           calculated_column_formula: calculated_column_formula
-        )
+        })
       end
     end
 
@@ -1434,10 +1434,10 @@ module Xlsxrb
 
       #: (?name: String?, ?show_first_column: bool?, ?show_last_column: bool?, ?show_row_stripes: bool?, ?show_column_stripes: bool?, **untyped) -> void
       def initialize(name: nil, show_first_column: nil, show_last_column: nil, show_row_stripes: nil, show_column_stripes: nil, **_extra)
-        super(
+        super(**{
           name: name, show_first_column: show_first_column, show_last_column: show_last_column,
           show_row_stripes: show_row_stripes, show_column_stripes: show_column_stripes
-        )
+        })
       end
 
       # Returns whether first column is formatted distinctly.
@@ -1492,11 +1492,11 @@ module Xlsxrb
         end
         wrapped_cols = (columns || []).map { |c| c.is_a?(TableColumn) ? c : TableColumn.new(**c) }
         wrapped_si = style_info.is_a?(Hash) ? TableStyleInfo.new(**style_info) : style_info
-        super(
+        super(**{
           id: id, name: name, display_name: display_name, ref: ref,
           totals_row_count: trc, header_row_count: hrc,
           columns: wrapped_cols, style_info: wrapped_si, auto_filter: auto_filter
-        )
+        })
       end
 
       # Returns whether the table totals row is shown.
@@ -1563,7 +1563,7 @@ module Xlsxrb
 
       #: (?sqref: String?, ?formula: String?, **untyped) -> void
       def initialize(sqref: nil, formula: nil, **_extra)
-        super(sqref: sqref, formula: formula)
+        super(**{ sqref: sqref, formula: formula })
       end
     end
 
@@ -1583,14 +1583,14 @@ module Xlsxrb
       def initialize(type: nil, color_series: nil, color_negative: nil, color_axis: nil, color_markers: nil, color_first: nil, color_last: nil, color_high: nil, color_low: nil, sparklines: nil, display_empty_cells_as: nil, markers: nil, high: nil, low: nil, first: nil, last: nil, negative: nil, manual_max: nil, manual_min: nil, line_weight: nil, **extra)
         wrapped_sps = (sparklines || []).map { |s| s.is_a?(Sparkline) ? s : Sparkline.new(**s) }
         lw = line_weight || extra[:line_weight]
-        super(
+        super(**{
           type: type, color_series: color_series, color_negative: color_negative,
           color_axis: color_axis, color_markers: color_markers, color_first: color_first,
           color_last: color_last, color_high: color_high, color_low: color_low,
           sparklines: wrapped_sps, display_empty_cells_as: display_empty_cells_as,
           markers: markers, high: high, low: low, first: first, last: last, negative: negative,
           manual_max: manual_max, manual_min: manual_min, line_weight: lw
-        )
+        })
       end
 
       # Returns whether data markers are displayed.
@@ -1649,10 +1649,10 @@ module Xlsxrb
 
       #: (?name: String?, ?sqref: String?, ?security_descriptor: String?, ?password: String?, ?algorithm_name: String?, ?hash_value: String?, ?salt_value: String?, ?spin_count: Integer?, **untyped) -> void
       def initialize(name: nil, sqref: nil, security_descriptor: nil, password: nil, algorithm_name: nil, hash_value: nil, salt_value: nil, spin_count: nil, **_extra)
-        super(
+        super(**{
           name: name, sqref: sqref, security_descriptor: security_descriptor, password: password,
           algorithm_name: algorithm_name, hash_value: hash_value, salt_value: salt_value, spin_count: spin_count
-        )
+        })
       end
     end
 
@@ -1669,12 +1669,12 @@ module Xlsxrb
 
       #: (?sqref: String?, ?eval_error: bool?, ?two_digit_text_year: bool?, ?number_stored_as_text: bool?, ?formula: bool?, ?formula_range: bool?, ?unlocked_formula: bool?, ?empty_cell_reference: bool?, ?list_data_validation: bool?, ?calculated_column: bool?, **untyped) -> void
       def initialize(sqref: nil, eval_error: nil, two_digit_text_year: nil, number_stored_as_text: nil, formula: nil, formula_range: nil, unlocked_formula: nil, empty_cell_reference: nil, list_data_validation: nil, calculated_column: nil, **_extra)
-        super(
+        super(**{
           sqref: sqref, eval_error: eval_error, two_digit_text_year: two_digit_text_year,
           number_stored_as_text: number_stored_as_text, formula: formula, formula_range: formula_range,
           unlocked_formula: unlocked_formula, empty_cell_reference: empty_cell_reference,
           list_data_validation: list_data_validation, calculated_column: calculated_column
-        )
+        })
       end
 
       # Returns whether evaluation error check is ignored.
@@ -1763,14 +1763,14 @@ module Xlsxrb
       #: (?r_id: String?, ?name: String?, ?title: String?, ?type: String?, ?anchor: String?, ?from: untyped, ?to: untyped, ?series: Array[untyped]?, ?legend: untyped, ?category_axis: untyped, ?value_axis: untyped, ?secondary_value_axis: untyped, ?grouping: untyped, ?gap_width: untyped, ?overlap: untyped, ?target: untyped, ?from_column: untyped, ?from_row: untyped, ?to_column: untyped, ?to_row: untyped, ?data_labels: untyped?, ?options: Hash[Symbol, untyped]?, **untyped) -> void
       def initialize(r_id: nil, name: nil, title: nil, type: nil, anchor: nil, from: nil, to: nil, series: nil, legend: nil, category_axis: nil, value_axis: nil, secondary_value_axis: nil, grouping: nil, gap_width: nil, overlap: nil, target: nil, from_column: nil, from_row: nil, to_column: nil, to_row: nil, data_labels: nil, options: nil, **extra)
         opts = (options || {}).merge(extra)
-        super(
+        super(**{
           r_id: r_id, name: name, title: title, type: type, anchor: anchor, from: from, to: to,
           series: series, legend: legend, category_axis: category_axis, value_axis: value_axis,
           secondary_value_axis: secondary_value_axis, grouping: grouping, gap_width: gap_width,
           overlap: overlap, target: target, from_column: from_column, from_row: from_row,
           to_column: to_column, to_row: to_row, data_labels: data_labels,
           options: opts.empty? ? nil : opts
-        )
+        })
       end
     end
 
@@ -1782,11 +1782,11 @@ module Xlsxrb
       #: (?id: Integer?, ?name: String?, ?type: String?, ?anchor: String?, ?from: untyped, ?to: untyped, ?text: String?, ?preset: String?, ?width: (Float | Integer)?, ?height: (Float | Integer)?, ?left: (Float | Integer)?, ?top: (Float | Integer)?, ?options: Hash[Symbol, untyped]?, **untyped) -> void
       def initialize(id: nil, name: nil, type: nil, anchor: nil, from: nil, to: nil, text: nil, preset: nil, width: nil, height: nil, left: nil, top: nil, options: nil, **extra)
         opts = (options || {}).merge(extra)
-        super(
+        super(**{
           id: id, name: name, type: type, anchor: anchor, from: from, to: to,
           text: text, preset: preset, width: width, height: height, left: left, top: top,
           options: opts.empty? ? nil : opts
-        )
+        })
       end
     end
 
@@ -1813,7 +1813,7 @@ module Xlsxrb
       )
         cols = column_fields || []
         merged_opts = (options || {}).merge(extra).freeze
-        super(
+        super(**{
           name: name, ref: ref, source_ref: source_ref,
           row_fields: row_fields, column_fields: cols, data_fields: data_fields, page_fields: page_fields,
           data_caption: data_caption, page_wrap: page_wrap,
@@ -1821,7 +1821,7 @@ module Xlsxrb
           show_row_headers: show_row_headers, show_column_headers: show_column_headers,
           show_row_stripes: show_row_stripes, show_column_stripes: show_column_stripes,
           cache: cache, options: merged_opts.empty? ? nil : merged_opts
-        )
+        })
       end
 
       # Returns whether column grand totals are displayed.
@@ -1880,7 +1880,7 @@ module Xlsxrb
 
       #: (?position: String?, ?r_id: String?, ?path: String?, ?extension: String?, ?data: String?, ?content_type: String?, **untyped) -> void
       def initialize(position: nil, r_id: nil, path: nil, extension: nil, data: nil, content_type: nil, **_extra)
-        super(position: position, r_id: r_id, path: path, extension: extension, data: data, content_type: content_type)
+        super(**{ position: position, r_id: r_id, path: path, extension: extension, data: data, content_type: content_type })
       end
     end
 
@@ -1895,7 +1895,7 @@ module Xlsxrb
 
       #: (?name: String?, ?size: (Integer | Float)?, ?bold: bool?, ?italic: bool?, ?underline: (String | bool)?, ?strike: bool?, ?color: Hash[Symbol, untyped]?, ?family: Integer?, ?scheme: String?, ?outline: bool?, ?shadow: bool?, ?condense: bool?, ?extend: bool?, **untyped) -> void
       def initialize(name: nil, size: nil, bold: nil, italic: nil, underline: nil, strike: nil, color: nil, family: nil, scheme: nil, outline: nil, shadow: nil, condense: nil, extend: nil, **_extra)
-        super(name: name, size: size, bold: bold, italic: italic, underline: underline, strike: strike, color: color, family: family, scheme: scheme, outline: outline, shadow: shadow, condense: condense, extend: extend)
+        super(**{ name: name, size: size, bold: bold, italic: italic, underline: underline, strike: strike, color: color, family: family, scheme: scheme, outline: outline, shadow: shadow, condense: condense, extend: extend })
       end
 
       # Returns whether the font is bold.
@@ -1962,7 +1962,7 @@ module Xlsxrb
 
       #: (?pattern_type: String?, ?fg_color: Hash[Symbol, untyped]?, ?bg_color: Hash[Symbol, untyped]?, **untyped) -> void
       def initialize(pattern_type: nil, fg_color: nil, bg_color: nil, **_extra)
-        super(pattern_type: pattern_type, fg_color: fg_color, bg_color: bg_color)
+        super(**{ pattern_type: pattern_type, fg_color: fg_color, bg_color: bg_color })
       end
     end
 
@@ -1975,7 +1975,7 @@ module Xlsxrb
 
       #: (?left: Hash[Symbol, untyped]?, ?right: Hash[Symbol, untyped]?, ?top: Hash[Symbol, untyped]?, ?bottom: Hash[Symbol, untyped]?, ?diagonal: Hash[Symbol, untyped]?, ?diagonal_up: bool?, ?diagonal_down: bool?, **untyped) -> void
       def initialize(left: nil, right: nil, top: nil, bottom: nil, diagonal: nil, diagonal_up: nil, diagonal_down: nil, **_extra)
-        super(left: left, right: right, top: top, bottom: bottom, diagonal: diagonal, diagonal_up: diagonal_up, diagonal_down: diagonal_down)
+        super(**{ left: left, right: right, top: top, bottom: bottom, diagonal: diagonal, diagonal_up: diagonal_up, diagonal_down: diagonal_down })
       end
 
       # Returns whether diagonal up border is enabled.
@@ -2007,7 +2007,7 @@ module Xlsxrb
 
       #: (?horizontal: (String | Symbol)?, ?vertical: (String | Symbol)?, ?wrap_text: bool?, ?text_rotation: Numeric?, ?indent: Integer?, ?relative_indent: Integer?, ?shrink_to_fit: bool?, ?reading_order: Integer?, ?justify_last_line: bool?, **untyped) -> void
       def initialize(horizontal: nil, vertical: nil, wrap_text: nil, text_rotation: nil, indent: nil, relative_indent: nil, shrink_to_fit: nil, reading_order: nil, justify_last_line: nil, **_extra)
-        super(horizontal: horizontal, vertical: vertical, wrap_text: wrap_text, text_rotation: text_rotation, indent: indent, relative_indent: relative_indent, shrink_to_fit: shrink_to_fit, reading_order: reading_order, justify_last_line: justify_last_line)
+        super(**{ horizontal: horizontal, vertical: vertical, wrap_text: wrap_text, text_rotation: text_rotation, indent: indent, relative_indent: relative_indent, shrink_to_fit: shrink_to_fit, reading_order: reading_order, justify_last_line: justify_last_line })
       end
 
       # Returns whether text wrapping is enabled.
@@ -2044,7 +2044,7 @@ module Xlsxrb
 
       #: (?locked: bool?, ?hidden: bool?, **untyped) -> void
       def initialize(locked: nil, hidden: nil, **_extra)
-        super(locked: locked, hidden: hidden)
+        super(**{ locked: locked, hidden: hidden })
       end
 
       # Returns whether the cell is locked.
@@ -2085,13 +2085,13 @@ module Xlsxrb
       )
         align_obj = alignment.is_a?(Hash) ? Alignment.new(**alignment) : alignment
         prot_obj = protection.is_a?(Hash) ? Protection.new(**protection) : protection
-        super(
+        super(**{
           num_fmt_id: num_fmt_id, font_id: font_id, fill_id: fill_id, border_id: border_id,
           xf_id: xf_id, apply_number_format: apply_number_format, apply_font: apply_font,
           apply_fill: apply_fill, apply_border: apply_border, apply_alignment: apply_alignment,
           apply_protection: apply_protection, alignment: align_obj, protection: prot_obj,
           quote_prefix: quote_prefix, pivot_button: pivot_button
-        )
+        })
       end
 
       # Returns whether quote prefix is enabled.
@@ -2171,7 +2171,7 @@ module Xlsxrb
         b = border.is_a?(Hash) ? Border.new(**border) : border
         align = alignment.is_a?(Hash) ? Alignment.new(**alignment) : alignment
         prot = protection.is_a?(Hash) ? Protection.new(**protection) : protection
-        super(font: f, fill: fi, border: b, number_format: number_format, alignment: align, protection: prot)
+        super(**{ font: f, fill: fi, border: b, number_format: number_format, alignment: align, protection: prot })
       end
     end
 
@@ -2182,7 +2182,7 @@ module Xlsxrb
 
       #: (?name: String?, ?xf_id: Integer?, ?builtin_id: Integer?, **untyped) -> void
       def initialize(name: nil, xf_id: nil, builtin_id: nil, **_extra)
-        super(name: name, xf_id: xf_id, builtin_id: builtin_id)
+        super(**{ name: name, xf_id: xf_id, builtin_id: builtin_id })
       end
     end
 
@@ -2193,7 +2193,7 @@ module Xlsxrb
 
       #: (?rgb: String?, ?indexed: Integer?, ?theme: Integer?, ?tint: Float?, **untyped) -> void
       def initialize(rgb: nil, indexed: nil, theme: nil, tint: nil, **_extra)
-        super(rgb: rgb, indexed: indexed, theme: theme, tint: tint)
+        super(**{ rgb: rgb, indexed: indexed, theme: theme, tint: tint })
       end
     end
   end
