@@ -107,6 +107,7 @@
 
 ### Fixed
 - Wrap keyword arguments with double splat in Data.define constructors across Elements to prevent heap corruption and segfaults in CRuby 4.0 Ractors.
+- Write worksheets whose `selection` is an Array, one selection per pane, as `Elements::Worksheet` accepts. `Xlsxrb.write` called `to_h` on the Array and raised `TypeError`.
 - Write workbooks loaded from files whose `docProps/app.xml` lists `HeadingPairs`, as files saved by Excel do. `MetadataRecord#to_h` called `to_h` on the `[name, count]` pairs of `AppProperties#heading_pairs`, so `Xlsxrb.write` raised `TypeError`.
 - Keep the date or time number format on `Date` and `Time` cell values that are given a cell style without a `number_format` (for example `cell_styles: [:bold]`). The style replaced the automatic `yyyy-mm-dd` format, so Excel showed the serial number. Such cells now get a variant of their style that adds the default format, in both `Xlsxrb.write` blocks and `Xlsxrb.build`.
 - Inherit `sheet_format` `default_column_width` as the width of columns that define `style:` without `width:`. The column writer still looked up the removed `default_col_width` key and dropped the width.

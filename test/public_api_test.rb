@@ -106,6 +106,25 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal([["x", 1]], rewritten.sheets.first.rows.map { |r| r.cells.map(&:value) })
   end
 
+  test "write a worksheet with one selection per pane" do
+    built = Xlsxrb.build do |b|
+      b.sheet("S") do |s|
+        s.freeze_pane(row: 1, column: 2)
+        s.row(%w[a b c])
+      end
+    end
+    sheet = built.sheets.first.with(selection: [
+                                      { pane: "topRight", active_cell: "C1", sqref: "C1" },
+                                      { pane: "bottomLeft", active_cell: "A2", sqref: "A2" },
+                                      { pane: "bottomRight", active_cell: "C2", sqref: "C2" }
+                                    ])
+    data = Xlsxrb.write(built.with(sheets: [sheet]))
+
+    xml = Xlsxrb::Ooxml::ZipReader.new(StringIO.new(data)).read_entry("xl/worksheets/sheet1.xml")
+    assert_equal(%w[topRight bottomLeft bottomRight], xml.scan(/<selection pane="(\w+)"/).flatten)
+    assert_equal("C2", Xlsxrb.load(data).sheets.first.selection.active_cell)
+  end
+
   test "round-trip preserves numeric types" do
     tmp = Tempfile.new(["numeric_rt", ".xlsx"])
     begin

@@ -1090,7 +1090,13 @@ module Xlsxrb
       sd[:freeze_pane] = ws.freeze_pane.respond_to?(:to_h) ? ws.freeze_pane.to_h : ws.freeze_pane if ws.respond_to?(:freeze_pane) && ws.freeze_pane
       sd[:split_pane] = ws.unmapped_data.dig(:facade, :split_pane) || (ws.split_pane.respond_to?(:to_h) ? ws.split_pane.to_h : ws.split_pane) if ws.respond_to?(:split_pane) && ws.split_pane
       sd[:sheet_view] = ws.sheet_view.respond_to?(:to_h) ? ws.sheet_view.to_h : ws.sheet_view if ws.respond_to?(:sheet_view) && ws.sheet_view && !ws.sheet_view.empty?
-      sd[:selection] = ws.selection.respond_to?(:to_h) ? ws.selection.to_h : ws.selection if ws.respond_to?(:selection) && ws.selection
+      if ws.respond_to?(:selection) && ws.selection
+        sd[:selection] = if ws.selection.is_a?(Array)
+                           ws.selection.map { |sel| sel.respond_to?(:to_h) ? sel.to_h : sel }
+                         else
+                           ws.selection.respond_to?(:to_h) ? ws.selection.to_h : ws.selection
+                         end
+      end
       sd[:selection] ||= ws.sheet_view[:selection] if ws.respond_to?(:sheet_view) && ws.sheet_view.is_a?(Hash) && ws.sheet_view[:selection]
       sd[:page_setup] = ws.page_setup.respond_to?(:to_h) ? ws.page_setup.to_h : ws.page_setup if ws.respond_to?(:page_setup) && ws.page_setup && !ws.page_setup.empty?
       sd[:page_margins] = ws.page_margins.respond_to?(:to_h) ? ws.page_margins.to_h : ws.page_margins if ws.respond_to?(:page_margins) && ws.page_margins && !ws.page_margins.empty?
