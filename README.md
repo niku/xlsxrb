@@ -153,12 +153,16 @@ Xlsxrb.write("output.xlsx") do |out_wb|
   out_wb.sheet("Processed") do |out_sheet|
     Xlsxrb.read("input.xlsx") do |in_sheet|
       in_sheet.each_row do |row|
-        out_sheet.row(row.cells.map { |c| c.value.is_a?(Numeric) ? c.value * 1.1 : c.value })
+        # type_cast: true turns date-formatted cells into Date/Time (so they are not
+        # scaled as numbers) and keeps empty cells as nil in their column.
+        out_sheet.row(row.values(type_cast: true).map { |v| v.is_a?(Numeric) ? v * 1.1 : v })
       end
     end
   end
 end
 ```
+
+This copies cell values only. Styles, number formats other than dates, formulas, merged cells, and column widths are not carried over; set them on the writer if the output needs them.
 
 ---
 
@@ -204,18 +208,35 @@ end
 
 ### Date and Time Handling
 
-Excel stores dates and times as floating-point serial numbers without timezone information. When reading spreadsheet files, `xlsxrb` returns date-formatted cells as UTC `Time` objects (`Time.utc`).
-
-To interpret an Excel timestamp in a specific application timezone (such as JST or America/New_York), construct a local time using the year, month, day, hour, min, and sec components:
+Excel stores dates and times as serial numbers (days since 1900, with the time of day as the fraction) and marks them as dates only through the cell's number format. `cell.value` returns that serial number as an Integer or Float. To get dates back:
 
 ```ruby
+Xlsxrb.read("input.xlsx") do |sheet|
+  sheet.each_row do |row|
+    row.values(type_cast: true) # => ["Due", #<Date: 2026-01-02>, 2026-01-02 03:04:05 UTC]
+
+    row.cells.each do |cell|
+      next unless cell.date_format?
+
+      cell.to_date # => Date
+      cell.to_time # => Time in UTC
+    end
+  end
+end
+```
+
+When writing, `Date`, `Time`, and `DateTime` values get a date or date-time number format automatically, also when the cell has a style without its own `number_format`.
+
+Serial numbers carry no timezone, so `to_time` returns the wall-clock time as UTC. To interpret it in an application timezone (such as JST or America/New_York), build a local time from its components:
+
+```ruby
+t = cell.to_time
+
 # With ActiveSupport / Rails:
-local_time = Time.zone.local(cell.value.year, cell.value.month, cell.value.day,
-                             cell.value.hour, cell.value.min, cell.value.sec)
+local_time = Time.zone.local(t.year, t.month, t.day, t.hour, t.min, t.sec)
 
 # With Ruby standard library:
-local_time = Time.local(cell.value.year, cell.value.month, cell.value.day,
-                        cell.value.hour, cell.value.min, cell.value.sec)
+local_time = Time.local(t.year, t.month, t.day, t.hour, t.min, t.sec)
 ```
 
 ### IDE Autocompletion & Ruby LSP Support

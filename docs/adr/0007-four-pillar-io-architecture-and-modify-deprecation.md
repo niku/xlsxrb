@@ -57,7 +57,7 @@ Establish four canonical entry points forming a 2x2 matrix:
     wb.sheet("Processed") do |out_sheet|
       Xlsxrb.read(input_path) do |in_sheet|
         in_sheet.each_row do |row|
-          out_sheet.row(row.cells.map { |c| c.value.is_a?(Numeric) ? c.value * 1.1 : c.value })
+          out_sheet.row(row.values(type_cast: true).map { |v| v.is_a?(Numeric) ? v * 1.1 : v })
         end
       end
     end
