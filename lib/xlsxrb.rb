@@ -1289,7 +1289,8 @@ module Xlsxrb
       return "xl/workbook.xml" if zip_reader.entry?("xl/workbook.xml")
       return "workbook.xml" if zip_reader.entry?("workbook.xml")
 
-      "xl/workbook.xml"
+      # A ZIP archive without a workbook part, such as an OpenDocument spreadsheet (.ods) renamed to .xlsx.
+      raise ParseError, "not an XLSX workbook: the ZIP archive has no workbook part (xl/workbook.xml)"
     end
 
     def parse_workbook_relationships(rels_xml)

@@ -64,6 +64,7 @@ Date cells: `cell.value` returns the Excel serial number. Use `row.values(type_c
 - `style(:name, ...)` raises `ArgumentError` for options it does not know (for example `size:` instead of `font_size:`), and cells, rows, and columns that name an undefined style raise `ArgumentError`. Both were silently ignored before, so code that "worked" may have been writing unstyled cells.
 - `escape_formulas:` is gone from `Xlsxrb.write` and `Xlsxrb.build`. It had no effect: strings are always written as text cells, which Excel does not evaluate.
 - `Xlsxrb.read` and `Xlsxrb.load` raise `Errno::ENOENT` for a path that does not exist, instead of `Xlsxrb::ZipError`.
+- `Xlsxrb.read` and `Xlsxrb.load` raise `Xlsxrb::ParseError` for a ZIP archive that has no workbook part (for example an `.ods` file renamed to `.xlsx`) instead of returning a workbook without sheets.
 - `Elements` value objects raise `ArgumentError` for keywords they do not know, including 0.1.x names such as `col:`, `sz:`, `pattern:`, `data_ref:`, `dt:`, and `done:`. The message names the member to use. Before, such keys were dropped without an error.
 - `workbook_protection(password: "...")` now protects the workbook with a SHA-512 hash of the password, as `sheet_protection` does. Before, the password was dropped.
 - `Elements::FreezePane` and `Elements::SplitPane` have `top_left_cell` instead of `top_row` and `left_column`.

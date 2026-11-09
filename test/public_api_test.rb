@@ -389,6 +389,16 @@ class PublicApiTest < Test::Unit::TestCase
     assert_match(%r{<c:plotArea><c:layout/><c:lineChart>}, chart_xml)
   end
 
+  test "a ZIP archive without a workbook part is not read as an empty workbook" do
+    io = StringIO.new
+    Xlsxrb::Ooxml::ZipWriter.open(io) do |zip|
+      zip.add_entry("mimetype", "application/vnd.oasis.opendocument.spreadsheet")
+      zip.add_entry("content.xml", "<office:document-content/>")
+    end
+    assert_raise_message(/not an XLSX workbook/) { Xlsxrb.load(io.string) }
+    assert_raise_message(/not an XLSX workbook/) { Xlsxrb.read(StringIO.new(io.string)) { |_sheet| nil } }
+  end
+
   test "page setup omits a DPI of zero" do
     built = Xlsxrb.build do |b|
       b.sheet("S") do |s|
