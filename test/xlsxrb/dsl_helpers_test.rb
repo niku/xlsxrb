@@ -331,6 +331,26 @@ class DslHelpersTest < Test::Unit::TestCase
     assert_equal(["A2:A3 A5:A6", "C2:C3 C5:C6"], Xlsxrb::DslHelpers.chunked_sqrefs(col_runs, row_runs, 2))
   end
 
+  test "chunked_sqrefs accepts the first and last Excel row and column" do
+    last_row = Xlsxrb::MAX_ROW - 1
+    last_col = Xlsxrb::MAX_COLUMN - 1
+    assert_equal(["A1:XFD1048576"], Xlsxrb::DslHelpers.chunked_sqrefs([[0, last_col]], [[0, last_row]]))
+  end
+
+  test "chunked_sqrefs rejects rows and columns outside the Excel grid" do
+    error = assert_raise(ArgumentError) { Xlsxrb::DslHelpers.chunked_sqrefs([[0, 0]], [[2, Xlsxrb::MAX_ROW]]) }
+    assert_equal("Row index 1048576 is out of range: rows are 0-based and must be between 0 and 1048575", error.message)
+
+    error = assert_raise(ArgumentError) { Xlsxrb::DslHelpers.chunked_sqrefs([[0, 0]], [[-1, 3]]) }
+    assert_equal("Row index -1 is out of range: rows are 0-based and must be between 0 and 1048575", error.message)
+
+    error = assert_raise(ArgumentError) { Xlsxrb::DslHelpers.chunked_sqrefs([[0, Xlsxrb::MAX_COLUMN]], [[0, 0]]) }
+    assert_equal("Column index 16384 is out of range: columns are 0-based and must be between 0 and 16383", error.message)
+
+    error = assert_raise(ArgumentError) { Xlsxrb::DslHelpers.chunked_sqrefs([[0, 0], [5, 5]], [[0, 0], [3, Xlsxrb::MAX_ROW]]) }
+    assert_match(/\ARow index 1048576 /, error.message)
+  end
+
   # --- quote_sheet_name, format_absolute_reference & normalize_defined_name_value ---
 
   test "quote_sheet_name wraps and escapes single quotes" do
@@ -408,6 +428,17 @@ class DslHelpersTest < Test::Unit::TestCase
     assert_equal("A2 A4:A5", res.first[:sqref])
     assert_nil(res.first[:columns])
     assert_nil(res.first[:rows])
+  end
+
+  test "normalize_data_validation and normalize_conditional_format reject rows past the last Excel row" do
+    assert_raise_message(/\ARow index 1048576 is out of range/) do
+      Xlsxrb::DslHelpers.normalize_data_validation(columns: 0, rows: 1..Xlsxrb::MAX_ROW, list: %w[Yes No])
+    end
+    assert_raise_message(/\ARow index 1048576 is out of range/) do
+      Xlsxrb::DslHelpers.normalize_conditional_format(columns: 0, rows: 1..Xlsxrb::MAX_ROW, type: :cell_is, operator: :greater_than, formula: "0")
+    end
+    res = Xlsxrb::DslHelpers.normalize_data_validation(columns: 0, rows: 1...Xlsxrb::MAX_ROW, list: %w[Yes No])
+    assert_equal("A2:A1048576", res.first[:sqref])
   end
 
   # --- sheet_name ---

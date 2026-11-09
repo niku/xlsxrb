@@ -271,10 +271,30 @@ module Xlsxrb
     # @param row_runs [Array<Array(Integer, Integer)>]
     # @param max_per_validation [Integer]
     # @return [Array<String>]
+    # @raise [ArgumentError] if a run falls outside the Excel grid.
     #: (Array[Array[Integer]] col_runs, Array[Array[Integer]] row_runs, ?Integer max_per_validation) -> Array[String]
     def self.chunked_sqrefs(col_runs, row_runs, max_per_validation = MAX_REFS_PER_VALIDATION)
+      validate_runs!(row_runs, MAX_ROW, "Row", "rows")
+      validate_runs!(col_runs, MAX_COLUMN, "Column", "columns")
       refs = col_runs.flat_map { |col_run| row_runs.map { |row_run| area_ref(col_run, row_run) } }
       refs.each_slice(max_per_validation).map { |chunk| chunk.join(" ") }
+    end
+
+    # Raises if any [start, finish] run lies outside 0...limit.
+    #
+    # @param runs [Array<Array(Integer, Integer)>]
+    # @param limit [Integer] Number of valid indices (e.g. MAX_ROW).
+    # @param label [String] Capitalized axis name for the error message.
+    # @param plural [String] Plural axis name for the error message.
+    # @return [void]
+    #: (Array[Array[Integer]] runs, Integer limit, String label, String plural) -> void
+    def self.validate_runs!(runs, limit, label, plural)
+      runs.each do |first, last|
+        bad = first.negative? ? first : last
+        next if bad.between?(0, limit - 1)
+
+        raise ArgumentError, "#{label} index #{bad} is out of range: #{plural} are 0-based and must be between 0 and #{limit - 1}"
+      end
     end
 
     # Quotes a sheet name for use in formula and defined name references, escaping single quotes with double single quotes.

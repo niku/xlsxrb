@@ -119,8 +119,19 @@ module Xlsxrb
     # @param row_runs [Array<Array(Integer, Integer)>]
     # @param max_per_validation [Integer]
     # @return [Array<String>]
+    # @raise [ArgumentError] if a run falls outside the Excel grid.
     # : (Array[Array[Integer]] col_runs, Array[Array[Integer]] row_runs, ?Integer max_per_validation) -> Array[String]
     def self.chunked_sqrefs: (Array[Array[Integer]] col_runs, Array[Array[Integer]] row_runs, ?Integer max_per_validation) -> Array[String]
+
+    # Raises if any [start, finish] run lies outside 0...limit.
+    #
+    # @param runs [Array<Array(Integer, Integer)>]
+    # @param limit [Integer] Number of valid indices (e.g. MAX_ROW).
+    # @param label [String] Capitalized axis name for the error message.
+    # @param plural [String] Plural axis name for the error message.
+    # @return [void]
+    # : (Array[Array[Integer]] runs, Integer limit, String label, String plural) -> void
+    def self.validate_runs!: (Array[Array[Integer]] runs, Integer limit, String label, String plural) -> void
 
     # Quotes a sheet name for use in formula and defined name references, escaping single quotes with double single quotes.
     #
