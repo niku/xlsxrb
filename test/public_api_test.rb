@@ -399,6 +399,10 @@ class PublicApiTest < Test::Unit::TestCase
     assert_raise_message(/not an XLSX workbook/) { Xlsxrb.read(StringIO.new(io.string)) { |_sheet| nil } }
   end
 
+  test "writing a workbook without sheets raises" do
+    assert_raise_message(/at least one sheet/) { Xlsxrb.write(Xlsxrb::Elements::Workbook.new(sheets: [])) }
+  end
+
   test "page setup omits a DPI of zero" do
     built = Xlsxrb.build do |b|
       b.sheet("S") do |s|

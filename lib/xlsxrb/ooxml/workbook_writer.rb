@@ -68,6 +68,8 @@ module Xlsxrb
       end
 
       def write_to(target)
+        raise ArgumentError, "Workbook must contain at least one sheet (Excel limitation)" if @sheets.empty?
+
         preprocess_conditional_formats!
 
         active_tab_idx = resolve_active_tab_index
