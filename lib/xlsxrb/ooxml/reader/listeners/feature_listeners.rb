@@ -1583,6 +1583,9 @@ module Xlsxrb
             @pivot_table[:page_wrap] = pw.to_i if pw
           when "location"
             @pivot_table[:ref] = attributes["ref"] if @pivot_table
+            { "firstHeaderRow" => :first_header_row, "firstDataRow" => :first_data_row, "firstDataCol" => :first_data_col }.each do |attr, key|
+              @pivot_table[key] = attributes[attr].to_i if @pivot_table && attributes[attr]
+            end
             @pivot_table[:row_page_count] = attributes["rowPageCount"]&.to_i if attributes["rowPageCount"]
             if attributes["colPageCount"]
               cpc = attributes["colPageCount"].to_i

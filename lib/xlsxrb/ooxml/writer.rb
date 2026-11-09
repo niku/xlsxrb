@@ -1806,6 +1806,7 @@ module Xlsxrb
           cache_created_version: opts[:cache_created_version], cache_record_count: opts[:cache_record_count],
           cache_optimize_memory: opts[:cache_optimize_memory],
           row_page_count: opts[:row_page_count], col_page_count: opts[:col_page_count],
+          first_header_row: opts[:first_header_row], first_data_row: opts[:first_data_row], first_data_col: opts[:first_data_col],
           field_attrs: opts[:field_attrs],
           apply_number_formats: opts[:apply_number_formats],
           apply_border_formats: opts[:apply_border_formats],

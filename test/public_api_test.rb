@@ -456,6 +456,16 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal(style_tag.call(data), style_tag.call(Xlsxrb.write(loaded)))
   end
 
+  test "pivot fields without a default subtotal do not list the default item" do
+    writer = Xlsxrb::Ooxml::Writer.new
+    writer.add_pivot_table("Sheet1!A1:C4", row_fields: [0], data_fields: [{ fld: 2, name: "Sum of C" }], field_names: %w[A B C],
+                                           items: { 0 => %w[x y] }, field_attrs: [{ default_subtotal: false }],
+                                           first_header_row: 0, first_data_row: 2, first_data_col: 1)
+    xml = writer.send(:generate_pivot_table_xml, writer.pivot_tables.first, 1)
+    assert_include(xml, '<location ref="E1" firstHeaderRow="0" firstDataRow="2" firstDataCol="1"/>')
+    assert_include(xml, '<pivotField axis="axisRow" showAll="0" defaultSubtotal="0"><items count="2"><item x="0"/><item x="1"/></items></pivotField>')
+  end
+
   test "page setup omits a DPI of zero" do
     built = Xlsxrb.build do |b|
       b.sheet("S") do |s|

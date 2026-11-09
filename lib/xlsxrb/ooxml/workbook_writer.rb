@@ -455,6 +455,8 @@ module Xlsxrb
         end
         options = pivot_table.except(:source_ref, :row_fields, :data_fields, :column_fields, :col_fields, :destination, :dest_ref, :ref,
                                      :field_names, :items, :field_attrs, :fields, :cache, :cache_id, :sheet)
+        # Page fields of a loaded pivot table are not written, so neither are their counts.
+        options = options.except(:row_page_count, :col_page_count, :column_page_count) if pivot_table[:fields]
         PIVOT_CACHE_OPTIONS.each { |key, option| options[option] = cache[key] if !cache[key].nil? && !options.key?(option) }
         options[:source_name] ||= cache[:source_name] if cache[:source_name]
         args = options.merge(

@@ -70,7 +70,8 @@ module Xlsxrb
                         else
                           (pivot_table[:row_fields].size + pivot_table[:col_fields].size + pivot_table[:data_fields].size).clamp(1, 100)
                         end
-          loc_attrs = %(<location ref="#{pivot_table[:dest_ref]}" firstHeaderRow="1" firstDataRow="1" firstDataCol="1")
+          loc_attrs = %(<location ref="#{pivot_table[:dest_ref]}" firstHeaderRow="#{pivot_table[:first_header_row] || 1}" ) +
+                      %(firstDataRow="#{pivot_table[:first_data_row] || 1}" firstDataCol="#{pivot_table[:first_data_col] || 1}")
           loc_attrs << %( rowPageCount="#{pivot_table[:row_page_count]}") if pivot_table[:row_page_count]
           loc_attrs << %( colPageCount="#{pivot_table[:col_page_count]}") if pivot_table[:col_page_count]
           loc_attrs << "/>"
@@ -98,14 +99,17 @@ module Xlsxrb
 
             field_items = pivot_table[:items] && pivot_table[:items][fi]
             axis_field = pivot_table[:row_fields].include?(fi) || pivot_table[:col_fields].include?(fi)
-            if field_items || axis_field
+            # The default subtotal item goes with the default subtotal; a field with
+            # defaultSubtotal="0" must not list it.
+            default_subtotal = !(fa && fa[:default_subtotal] == false)
+            if field_items || (axis_field && default_subtotal)
               # A row or column field needs an <items> list; without known items it holds only the
               # default subtotal, which Excel fills in when it refreshes the cache on open.
               field_items ||= []
               parts << "<pivotField#{attrs}>"
-              parts << %(<items count="#{field_items.size + 1}">)
+              parts << %(<items count="#{field_items.size + (default_subtotal ? 1 : 0)}">)
               field_items.size.times { |ix| parts << %(<item x="#{ix}"/>) }
-              parts << '<item t="default"/>'
+              parts << '<item t="default"/>' if default_subtotal
               parts << "</items>"
               parts << "</pivotField>"
             else
