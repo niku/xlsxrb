@@ -63,6 +63,9 @@ module Xlsxrb
 
         private
 
+        # Drops the consumed prefix of @buffer.
+        def compact_buffer: () -> untyped
+
         def fetch_chunk: (untyped chunk_size) -> untyped
 
         def check_bom_encoding!: () -> untyped

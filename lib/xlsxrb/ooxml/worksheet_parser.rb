@@ -792,7 +792,7 @@ module Xlsxrb
           return if in_sheet_data == :closed
           return if chunk.nil? || chunk.empty?
 
-          buffer << chunk.b
+          buffer << (chunk.encoding == Encoding::BINARY ? chunk : chunk.b)
 
           unless in_sheet_data
             sd_term = buffer.index("sheetData")

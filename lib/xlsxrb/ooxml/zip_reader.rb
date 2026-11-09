@@ -46,6 +46,9 @@ module Xlsxrb
           @max_uncompressed_size = max_uncompressed_size || ZipReader::MAX_UNCOMPRESSED_SIZE
           @encoding = encoding
           @buffer = +"".b
+          # Read offset into @buffer. Consuming by offset instead of slice! avoids moving the
+          # rest of the inflated chunk (often ten times the requested length) on every read.
+          @buffer_pos = 0
           @bytes_read_compressed = 0
           @total_uncompressed = 0
           @eof = false
@@ -61,8 +64,9 @@ module Xlsxrb
           check_bom_encoding!
 
           if length.nil?
-            result = @buffer.b
+            result = @buffer.byteslice(@buffer_pos, @buffer.bytesize - @buffer_pos).b
             @buffer = +"".b
+            @buffer_pos = 0
             while (chunk = fetch_chunk(DEFAULT_CHUNK_SIZE))
               result << chunk
             end
@@ -72,17 +76,21 @@ module Xlsxrb
 
           return "".force_encoding(@encoding || Encoding::BINARY) if length.zero?
 
-          while @buffer.bytesize < length && !@eof
-            chunk = fetch_chunk([length - @buffer.bytesize, DEFAULT_CHUNK_SIZE].max)
+          while @buffer.bytesize - @buffer_pos < length && !@eof
+            chunk = fetch_chunk([length - (@buffer.bytesize - @buffer_pos), DEFAULT_CHUNK_SIZE].max)
             break unless chunk
 
+            compact_buffer
             @buffer << chunk
           end
 
-          return nil if @buffer.empty? && @eof
+          available = @buffer.bytesize - @buffer_pos
+          return nil if available.zero? && @eof
 
-          sliced = @buffer.slice!(0, length)
-          sliced.force_encoding(@encoding) if @encoding && sliced
+          sliced = @buffer.byteslice(@buffer_pos, [length, available].min)
+          @buffer_pos += sliced.bytesize
+          compact_buffer if @buffer_pos == @buffer.bytesize
+          sliced.force_encoding(@encoding) if @encoding
           sliced
         end
 
@@ -112,6 +120,7 @@ module Xlsxrb
           @inflater&.close
           @inflater = nil
           @buffer.clear
+          @buffer_pos = 0
           nil
         end
 
@@ -122,10 +131,22 @@ module Xlsxrb
 
         #: () -> bool
         def eof?
-          @eof && @buffer.empty?
+          @eof && @buffer.bytesize == @buffer_pos
         end
 
         private
+
+        # Drops the consumed prefix of @buffer.
+        def compact_buffer
+          return if @buffer_pos.zero?
+
+          if @buffer_pos == @buffer.bytesize
+            @buffer.clear
+          else
+            @buffer = @buffer.byteslice(@buffer_pos, @buffer.bytesize - @buffer_pos)
+          end
+          @buffer_pos = 0
+        end
 
         def fetch_chunk(chunk_size)
           return nil if @eof || @closed
