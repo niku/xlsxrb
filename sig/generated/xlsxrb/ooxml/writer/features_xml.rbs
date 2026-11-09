@@ -11,6 +11,13 @@ module Xlsxrb
         # : (untyped pivot_table, untyped _cache_id) -> untyped
         def generate_pivot_cache_definition_xml: (untyped pivot_table, untyped _cache_id) -> untyped
 
+        # Attributes that describe the value types of a cache field's shared items.
+        # : (Array[untyped] values) -> String
+        def shared_items_attrs: (untyped values) -> untyped
+
+        # : (untyped value) -> String
+        def shared_item_xml: (untyped value) -> untyped
+
         # : (untyped pivot_table) -> untyped
         def generate_pivot_cache_records_xml: (untyped pivot_table) -> untyped
 

@@ -363,23 +363,15 @@ module Xlsxrb
 
           sheet_pivot_tables = sheet[:pivot_tables] || []
           unless sheet_pivot_tables.empty?
+            # The writer only collects the definitions here, so its default sheet holds them
+            # whatever the worksheet is called; source ranges name their own sheet.
             pivot_writer = Xlsxrb::Ooxml::Writer.new
-            pivot_writer.add_sheet(sheet[:name])
             sheet_pivot_tables.each do |pt|
-              pivot_writer.add_pivot_table(
-                pt[:source_ref],
-                row_fields: pt[:row_fields],
-                data_fields: pt[:data_fields],
-                column_fields: pt[:column_fields] || pt[:col_fields] || [],
-                destination: pt[:destination] || pt[:dest_ref] || pt[:ref] || "E1",
-                name: pt[:name],
-                field_names: pt[:field_names],
-                items: pt[:items],
-                sheet: sheet[:name]
-              )
+              source_ref, args = pivot_table_arguments(pt)
+              pivot_writer.add_pivot_table(source_ref, **args)
             end
 
-            pivot_data = pivot_writer.pivot_tables(sheet: sheet[:name])
+            pivot_data = pivot_writer.pivot_tables
             pivot_data.each do |pt_data|
               pivot_cache_idx += 1
               pivot_table_idx += 1
@@ -428,6 +420,49 @@ module Xlsxrb
       end
 
       private
+
+      PIVOT_CACHE_OPTIONS = {
+        save_data: :cache_save_data, enable_refresh: :cache_enable_refresh, refreshed_by: :cache_refreshed_by,
+        refreshed_version: :cache_refreshed_version, created_version: :cache_created_version,
+        optimize_memory: :cache_optimize_memory
+      }.freeze
+      private_constant :PIVOT_CACHE_OPTIONS
+
+      # Returns the source and keyword arguments of Writer#add_pivot_table for a pivot table hash,
+      # as the builders create it or as Xlsxrb.load reads it (with the source, field names, and
+      # shared items in :cache, and pivot field attributes in :fields).
+      #: (Hash[Symbol, untyped] pivot_table) -> [String?, Hash[Symbol, untyped]]
+      def pivot_table_arguments(pivot_table)
+        cache = pivot_table[:cache] || {}
+        cache_fields = cache[:fields] || []
+        source_ref = pivot_table[:source_ref]
+        if source_ref.nil? && cache[:source_ref]
+          source_ref = cache[:source_sheet] ? "#{DslHelpers.quote_sheet_name(cache[:source_sheet])}!#{cache[:source_ref]}" : cache[:source_ref]
+        end
+        field_names = pivot_table[:field_names] || (cache_fields.map { |f| f[:name] } unless cache_fields.empty?)
+        items = pivot_table[:items]
+        if items.nil? && cache_fields.any? { |f| f[:shared_items] }
+          items = cache_fields.each_with_index.filter_map { |f, i| [i, f[:shared_items]] if f[:shared_items] }.to_h
+        end
+        field_attrs = pivot_table[:field_attrs]
+        if field_attrs.nil? && pivot_table[:fields]
+          field_attrs = pivot_table[:fields].each_with_index.map do |f, i|
+            cf = cache_fields[i] || {}
+            f.except(:items).merge(cache_num_fmt_id: cf[:num_fmt_id], cache_caption: cf[:caption], cache_formula: cf[:formula]).compact
+          end
+        end
+        options = pivot_table.except(:source_ref, :row_fields, :data_fields, :column_fields, :col_fields, :destination, :dest_ref, :ref,
+                                     :field_names, :items, :field_attrs, :fields, :cache, :cache_id, :sheet)
+        PIVOT_CACHE_OPTIONS.each { |key, option| options[option] = cache[key] if !cache[key].nil? && !options.key?(option) }
+        options[:source_name] ||= cache[:source_name] if cache[:source_name]
+        args = options.merge(
+          row_fields: pivot_table[:row_fields] || [], data_fields: pivot_table[:data_fields] || [],
+          column_fields: pivot_table[:column_fields] || pivot_table[:col_fields] || [],
+          destination: pivot_table[:destination] || pivot_table[:dest_ref] || pivot_table[:ref] || "E1",
+          field_names: field_names, items: items, field_attrs: field_attrs
+        )
+        [source_ref, args]
+      end
 
       def build_sheet_rels_from_list(rels)
         io = StringIO.new

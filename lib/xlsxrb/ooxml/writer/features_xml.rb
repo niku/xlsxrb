@@ -169,7 +169,9 @@ module Xlsxrb
           # Parse source ref: "Sheet1!A1:C4" => sheet name + range.
           source = pivot_table[:source_ref]
           ws_name_attr = pivot_table[:source_name] ? %( name="#{xml_escape(pivot_table[:source_name])}") : ""
-          if source.include?("!")
+          if source.nil?
+            parts << %(<cacheSource type="worksheet"><worksheetSource#{ws_name_attr}/></cacheSource>)
+          elsif source.include?("!")
             sname, srange = source.split("!", 2)
             sname = sname.delete("'")
             parts << %(<cacheSource type="worksheet"><worksheetSource ref="#{srange}" sheet="#{xml_escape(sname)}"#{ws_name_attr}/></cacheSource>)
@@ -194,8 +196,8 @@ module Xlsxrb
             field_items = pivot_table[:items] && pivot_table[:items][fi]
             if field_items
               parts << "<cacheField#{cf_attrs}>"
-              parts << %(<sharedItems count="#{field_items.size}">)
-              field_items.each { |v| parts << %(<s v="#{xml_escape(v.to_s)}"/>) }
+              parts << %(<sharedItems#{shared_items_attrs(field_items)} count="#{field_items.size}">)
+              field_items.each { |v| parts << shared_item_xml(v) }
               parts << "</sharedItems>"
               parts << "</cacheField>"
             else
@@ -205,6 +207,33 @@ module Xlsxrb
           parts << "</cacheFields>"
           parts << "</pivotCacheDefinition>"
           parts.join
+        end
+
+        # Attributes that describe the value types of a cache field's shared items.
+        # : (Array[untyped] values) -> String
+        def shared_items_attrs(values)
+          numbers = values.grep(Numeric)
+          strings = values.any? { |v| !v.nil? && !v.is_a?(Numeric) && v != true && v != false }
+          attrs = +""
+          attrs << ' containsSemiMixedTypes="0"' unless strings || values.include?(nil)
+          attrs << ' containsString="0"' unless strings
+          attrs << ' containsBlank="1"' if values.include?(nil)
+          unless numbers.empty?
+            attrs << ' containsNumber="1"'
+            attrs << ' containsInteger="1"' if numbers.all? { |n| n.is_a?(Integer) || n == n.to_i }
+            attrs << %( minValue="#{numbers.min}" maxValue="#{numbers.max}")
+          end
+          attrs
+        end
+
+        # : (untyped value) -> String
+        def shared_item_xml(value)
+          case value
+          when nil then "<m/>"
+          when true, false then %(<b v="#{value ? 1 : 0}"/>)
+          when Numeric then %(<n v="#{value}"/>)
+          else %(<s v="#{xml_escape(value.to_s)}"/>)
+          end
         end
 
         # : (untyped pivot_table) -> untyped

@@ -268,6 +268,34 @@ class PublicApiTest < Test::Unit::TestCase
     assert_raise_message(/needs fld: or field:/) { pivot_xml.call(field_names: %w[Region Quarter Sales], row_fields: [0], data_fields: [{ name: "Sales" }]) }
   end
 
+  test "workbooks loaded with pivot tables are written back" do
+    entries = ->(data) { Xlsxrb::Ooxml::ZipReader.new(StringIO.new(data)).read_all }
+    %w[reader_pivot_table_generated_by_sdk reader_pivot_deep_generated_by_sdk].each do |fixture|
+      loaded = Xlsxrb.load(File.join(__dir__, "fixtures/reader_generated/#{fixture}.xlsx"))
+      index = loaded.sheets.index { |s| !s.pivot_tables.empty? }
+      original = loaded.sheets[index].pivot_tables.first
+      written = entries.call(Xlsxrb.write(loaded))
+      cache = written["xl/pivotCache/pivotCacheDefinition1.xml"]
+      assert_match(%r{<worksheetSource ref="#{original.cache[:source_ref]}" sheet="#{original.cache[:source_sheet]}"/>}, cache, fixture)
+      original.cache[:fields].each { |f| assert_include(cache, %(<cacheField name="#{f[:name]}"), fixture) }
+
+      again = Xlsxrb.load(Xlsxrb.write(loaded)).sheets[index].pivot_tables.first
+      assert_equal(original.to_h.slice(:name, :ref, :row_fields, :column_fields, :data_fields), again.to_h.slice(:name, :ref, :row_fields, :column_fields, :data_fields), fixture)
+      assert_equal(original.cache[:fields].map { |f| f[:name] }, again.cache[:fields].map { |f| f[:name] }, fixture)
+    end
+  end
+
+  test "pivot tables over a table and with typed shared items are written" do
+    writer = Xlsxrb::Ooxml::Writer.new
+    writer.add_pivot_table(nil, source_name: "Sales", row_fields: [0], data_fields: [{ fld: 1, name: "Sum of Amount" }],
+                                field_names: %w[Year Amount], items: { 0 => [2024, 2025, nil], 1 => ["a", true] })
+    pt = writer.pivot_tables.first
+    cache = writer.send(:generate_pivot_cache_definition_xml, pt, 1)
+    assert_include(cache, '<cacheSource type="worksheet"><worksheetSource name="Sales"/></cacheSource>')
+    assert_include(cache, '<sharedItems containsString="0" containsBlank="1" containsNumber="1" containsInteger="1" minValue="2024" maxValue="2025" count="3"><n v="2024"/><n v="2025"/><m/></sharedItems>')
+    assert_include(cache, '<sharedItems count="2"><s v="a"/><b v="1"/></sharedItems>')
+  end
+
   test "each image on a sheet gets its own media file" do
     png = File.binread(File.join(__dir__, "../docs/assets/lsp_autocompletion.png"))
     check = lambda do |data|

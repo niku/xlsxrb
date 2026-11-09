@@ -38,6 +38,14 @@ module Xlsxrb
 
       private
 
+      PIVOT_CACHE_OPTIONS: untyped
+
+      # Returns the source and keyword arguments of Writer#add_pivot_table for a pivot table hash,
+      # as the builders create it or as Xlsxrb.load reads it (with the source, field names, and
+      # shared items in :cache, and pivot field attributes in :fields).
+      # : (Hash[Symbol, untyped] pivot_table) -> [String?, Hash[Symbol, untyped]]
+      def pivot_table_arguments: (Hash[Symbol, untyped] pivot_table) -> [ String?, Hash[Symbol, untyped] ]
+
       def build_sheet_rels_from_list: (untyped rels) -> untyped
 
       def build_content_types: () -> untyped
