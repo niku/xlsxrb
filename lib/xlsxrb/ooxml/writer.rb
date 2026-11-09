@@ -1769,10 +1769,11 @@ module Xlsxrb
       alias person_list persons
 
       # Adds a pivot table to the given sheet.
-      # source_ref: data source range (e.g. "Sheet1!A1:C4").
-      # row_fields: array of 0-based field indices for row axis.
-      # data_fields: array of { fld:, name:, subtotal: } hashes.
-      # col_fields: array of 0-based field indices for column axis.
+      # source_ref: data source range (e.g. "Sheet1!A1:C4"), or nil with source_name: for a table source.
+      # row_fields: array of 0-based field indices, or field names listed in field_names, for row axis.
+      # data_fields: array of { fld:, name:, subtotal: } hashes ({ field: } takes a field name or index
+      #   in place of fld:), or field names.
+      # col_fields: array of 0-based field indices, or field names, for column axis.
       # field_names: array of field name strings (for cache definition).
       # items: hash mapping field index to array of item values.
       # : (untyped source_ref, row_fields: untyped, data_fields: untyped, ?col_fields: untyped, ?column_fields: untyped, ?dest_ref: untyped, ?destination: untyped, ?name: untyped?, ?field_names: untyped?, ?items: untyped?, ?sheet: untyped?, **untyped opts) -> untyped
@@ -1781,7 +1782,9 @@ module Xlsxrb
         raise ArgumentError, "unknown sheet: #{sheet_name}" unless @pivot_tables_data.key?(sheet_name)
 
         pt_name = name || "PivotTable#{@pivot_tables_data.values.flatten.size + 1}"
-        c_fields = column_fields || col_fields || []
+        row_fields = row_fields.map { |f| resolve_pivot_field(f, field_names) }
+        c_fields = (column_fields || col_fields || []).map { |f| resolve_pivot_field(f, field_names) }
+        data_fields = data_fields.map { |df| resolve_pivot_data_field(df, field_names) }
         target_dest = destination || dest_ref || "E1"
         @pivot_tables_data[sheet_name] << {
           name: pt_name, source_ref: source_ref,
@@ -1830,6 +1833,35 @@ module Xlsxrb
           print_drill: opts[:print_drill]
         }
       end
+
+      # Resolves a pivot table field given as a 0-based index or as a name in field_names.
+      # : (untyped field, untyped field_names) -> Integer
+      def resolve_pivot_field(field, field_names)
+        return field if field.is_a?(Integer)
+        raise ArgumentError, "pivot table field #{field.inspect} is a name; pass field_names: to resolve it" unless field_names
+
+        index = field_names.index(field.to_s)
+        raise ArgumentError, "pivot table field #{field.inspect} is not in field_names #{field_names.inspect}" unless index
+
+        index
+      end
+      private :resolve_pivot_field
+
+      # Normalizes a pivot table data field to a Hash with an Integer fld.
+      # : (untyped data_field, untyped field_names) -> Hash[Symbol, untyped]
+      def resolve_pivot_data_field(data_field, field_names)
+        data_field = { field: data_field } unless data_field.is_a?(Hash)
+        return data_field if data_field[:fld].is_a?(Integer) && !data_field.key?(:field)
+
+        field = data_field.key?(:field) ? data_field[:field] : data_field[:fld]
+        raise ArgumentError, "pivot table data field #{data_field.inspect} needs fld: or field:" if field.nil?
+
+        fld = resolve_pivot_field(field, field_names)
+        subtotal = (data_field[:subtotal] || "sum").to_s
+        caption = data_field[:name] || "#{subtotal[0].upcase}#{subtotal[1..]} of #{field_names ? field_names[fld] : "Field#{fld + 1}"}"
+        data_field.except(:field).merge(fld: fld, name: caption, subtotal: subtotal)
+      end
+      private :resolve_pivot_data_field
 
       # Returns pivot table definitions for the first (or given) sheet.
       # : (?sheet: untyped?) -> untyped

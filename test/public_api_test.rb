@@ -243,6 +243,31 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal(comment.text.to_a, Xlsxrb.load(Xlsxrb.write(loaded)).sheets.first.comments.first.text.to_a)
   end
 
+  test "pivot tables resolve field names given in field_names" do
+    pivot_xml = lambda do |**opts|
+      data = Xlsxrb.write(Xlsxrb.build do |b|
+        b.sheet("Data") do |s|
+          s.row(%w[Region Quarter Sales])
+          s.row(["East", "Q1", 10])
+          s.pivot_table("Data!A1:C2", ref: "E1", **opts)
+        end
+      end)
+      Xlsxrb::Ooxml::ZipReader.new(StringIO.new(data)).read_entry("xl/pivotTables/pivotTable1.xml")
+    end
+
+    xml = pivot_xml.call(field_names: %w[Region Quarter Sales], row_fields: ["Region"], column_fields: ["Quarter"],
+                         data_fields: [{ field: "Sales", subtotal: "average" }, "Sales"])
+    assert_match(%r{<rowFields count="1"><field x="0"/></rowFields><colFields count="1"><field x="1"/></colFields>}, xml)
+    assert_match(%r{<dataField name="Average of Sales" fld="2" subtotal="average"/><dataField name="Sum of Sales" fld="2" subtotal="sum"/>}, xml)
+    assert_match(%r{<dataField name="Total" fld="2" subtotal="sum"/>}, pivot_xml.call(row_fields: [0], data_fields: [{ fld: 2, name: "Total" }]))
+
+    assert_raise_message(/pivot table field "Region" is a name; pass field_names:/) { pivot_xml.call(row_fields: ["Region"], data_fields: [{ fld: 2 }]) }
+    assert_raise_message(/pivot table field "Regoin" is not in field_names/) do
+      pivot_xml.call(field_names: %w[Region Quarter Sales], row_fields: ["Regoin"], data_fields: [{ fld: 2 }])
+    end
+    assert_raise_message(/needs fld: or field:/) { pivot_xml.call(field_names: %w[Region Quarter Sales], row_fields: [0], data_fields: [{ name: "Sales" }]) }
+  end
+
   test "each image on a sheet gets its own media file" do
     png = File.binread(File.join(__dir__, "../docs/assets/lsp_autocompletion.png"))
     check = lambda do |data|

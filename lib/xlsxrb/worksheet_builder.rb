@@ -689,10 +689,10 @@ module Xlsxrb
     # @param ref [String, nil] Target cell for pivot table top-left corner (e.g. "E1").
     # @param name [String, nil] Pivot table name.
     # @param field_names [Array<String>, nil] Custom field display names.
-    # @param items [Array, nil] Item configuration.
+    # @param items [Hash{Integer => Array}, nil] Items of each field, by 0-based field index.
     # @return [void]
     # @api public
-    #: (String source_ref, row_fields: Array[String | Integer], data_fields: Array[String | Hash[Symbol, untyped]], ?column_fields: Array[String | Integer]?, ?ref: String?, ?name: String?, ?field_names: Array[String]?, ?items: Array[untyped]?, **untyped opts) -> void
+    #: (String source_ref, row_fields: Array[String | Integer], data_fields: Array[String | Hash[Symbol, untyped]], ?column_fields: Array[String | Integer]?, ?ref: String?, ?name: String?, ?field_names: Array[String]?, ?items: Hash[Integer, Array[untyped]]?, **untyped opts) -> void
     def pivot_table(source_ref, row_fields:, data_fields:, column_fields: nil, ref: nil, name: nil, field_names: nil, items: nil, **opts)
       c_fields = column_fields || []
       target_ref = ref || "E1"

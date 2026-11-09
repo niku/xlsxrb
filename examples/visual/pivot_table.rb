@@ -27,8 +27,9 @@ Xlsxrb.write(output_path) do |wb|
 
     sheet.pivot_table(
       "SalesData!A1:D7",
+      field_names: %w[Region Quarter Sales Rep],
       row_fields: ["Region"],
-      data_fields: [{ name: "Sales", subtotal: "sum" }],
+      data_fields: [{ field: "Sales", name: "Sum of Sales", subtotal: "sum" }],
       column_fields: ["Quarter"],
       ref: "A10",
       name: "RegionalSalesSummary"

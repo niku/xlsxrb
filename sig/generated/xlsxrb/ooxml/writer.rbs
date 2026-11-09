@@ -632,14 +632,23 @@ module Xlsxrb
       alias person_list persons
 
       # Adds a pivot table to the given sheet.
-      # source_ref: data source range (e.g. "Sheet1!A1:C4").
-      # row_fields: array of 0-based field indices for row axis.
-      # data_fields: array of { fld:, name:, subtotal: } hashes.
-      # col_fields: array of 0-based field indices for column axis.
+      # source_ref: data source range (e.g. "Sheet1!A1:C4"), or nil with source_name: for a table source.
+      # row_fields: array of 0-based field indices, or field names listed in field_names, for row axis.
+      # data_fields: array of { fld:, name:, subtotal: } hashes ({ field: } takes a field name or index
+      #   in place of fld:), or field names.
+      # col_fields: array of 0-based field indices, or field names, for column axis.
       # field_names: array of field name strings (for cache definition).
       # items: hash mapping field index to array of item values.
       # : (untyped source_ref, row_fields: untyped, data_fields: untyped, ?col_fields: untyped, ?column_fields: untyped, ?dest_ref: untyped, ?destination: untyped, ?name: untyped?, ?field_names: untyped?, ?items: untyped?, ?sheet: untyped?, **untyped opts) -> untyped
       def add_pivot_table: (untyped source_ref, row_fields: untyped, data_fields: untyped, ?col_fields: untyped, ?column_fields: untyped, ?dest_ref: untyped, ?destination: untyped, ?name: untyped, ?field_names: untyped, ?items: untyped, ?sheet: untyped, **untyped opts) -> untyped
+
+      # Resolves a pivot table field given as a 0-based index or as a name in field_names.
+      # : (untyped field, untyped field_names) -> Integer
+      def resolve_pivot_field: (untyped field, untyped field_names) -> untyped
+
+      # Normalizes a pivot table data field to a Hash with an Integer fld.
+      # : (untyped data_field, untyped field_names) -> Hash[Symbol, untyped]
+      def resolve_pivot_data_field: (untyped data_field, untyped field_names) -> untyped
 
       # Returns pivot table definitions for the first (or given) sheet.
       # : (?sheet: untyped?) -> untyped

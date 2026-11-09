@@ -754,7 +754,7 @@ module Xlsxrb
       # @param ref [String, nil] Target top-left cell reference (default: "E1").
       # @param name [String, nil] Pivot table name.
       # @param field_names [Array<String>, nil] Override field names.
-      # @param items [Array, nil] Items configuration.
+      # @param items [Hash{Integer => Array}, nil] Items of each field, by 0-based field index.
       # @param opts [Hash] Additional options.
       # @return [void]
       # @api public
@@ -2142,7 +2142,7 @@ module Xlsxrb
     # @param ref [String, nil] Top-left destination cell (default: "E1").
     # @param name [String, nil] Pivot table name.
     # @param field_names [Array<String>, nil] Override field names.
-    # @param items [Array, nil] Items configuration.
+    # @param items [Hash{Integer => Array}, nil] Items of each field, by 0-based field index.
     # @param opts [Hash] Additional options.
     # @return [void]
     # @api public
