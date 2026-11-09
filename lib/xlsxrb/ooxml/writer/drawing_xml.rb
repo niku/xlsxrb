@@ -1665,7 +1665,7 @@ module Xlsxrb
           sheet_comments.each_with_index do |c, idx|
             col, row = cell_to_col_row(c[:ref])
             shape_id = 1025 + idx
-            parts << %(<v:shape id="_x0000_s#{shape_id}" type="#_x0000_t202" style="position:absolute;margin-left:59.25pt;margin-top:1.5pt;width:108pt;height:59.25pt;z-index:#{idx + 1};visibility:hidden" fillcolor="#ffffe1" o:insetmode="auto">)
+            parts << %(<v:shape id="_x0000_s#{shape_id}" type="#_x0000_t202" style="position:absolute;margin-left:59.25pt;margin-top:1.5pt;width:108pt;height:59.25pt;z-index:#{idx + 1};visibility:#{c[:visible] ? "visible" : "hidden"}" fillcolor="#ffffe1" o:insetmode="auto">)
             parts << '<v:fill color2="#ffffe1"/>'
             parts << '<v:shadow on="t" color="black" obscured="t"/>'
             parts << '<v:path o:connecttype="none"/>'
@@ -1676,6 +1676,7 @@ module Xlsxrb
             parts << "<x:AutoFill>False</x:AutoFill>"
             parts << "<x:Row>#{row}</x:Row>"
             parts << "<x:Column>#{col}</x:Column>"
+            parts << "<x:Visible/>" if c[:visible]
             parts << "</x:ClientData></v:shape>"
           end
           parts << "</xml>"

@@ -711,12 +711,13 @@ module Xlsxrb
     # @param cell [String, Integer] Cell reference (e.g. "B2").
     # @param text [String] The comment text.
     # @param author [String] Author name.
+    # @param visible [Boolean] Whether the comment is always shown instead of on hover.
     # @return [void]
     # @api public
-    #: (String | Integer cell, String text, ?author: ::String) -> void
-    def comment(cell, text, author: "Author")
+    #: (String | Integer cell, String text, ?author: ::String, ?visible: bool) -> void
+    def comment(cell, text, author: "Author", visible: false)
       ref_str = cell.to_s
-      @comments << { ref: ref_str, text: text, author: author }
+      @comments << { ref: ref_str, text: text, author: author, visible: visible }
       nil
     end
 

@@ -194,7 +194,7 @@ module RubyLsp
         },
         {
           label: "comment",
-          detail: "(cell, text, author: nil) -> void",
+          detail: "(cell, text, author: nil, visible: false) -> void",
           documentation: "Adds an author comment / note to a cell."
         },
         {

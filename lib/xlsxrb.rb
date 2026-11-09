@@ -1671,7 +1671,27 @@ module Xlsxrb
       c_listener = Ooxml::Reader::CommentsListener.new
       c_parser.listen(c_listener)
       c_parser.parse
-      c_listener.comments
+      comments = c_listener.comments
+      visible = visible_comment_refs(zip_reader, listener.relationships, base_dir)
+      comments.each { |c| c[:visible] = true if visible.include?(c[:ref].to_s.upcase) } unless visible.empty?
+      comments
+    end
+
+    # Returns the cell references of the comments that the sheet's legacy VML drawing shows
+    # permanently (<x:Visible/> in the note's client data).
+    #: (Ooxml::ZipReader zip_reader, Array[Hash[Symbol, untyped]] relationships, String base_dir) -> Set[String]
+    def visible_comment_refs(zip_reader, relationships, base_dir)
+      rel = relationships.find { |r| r[:type]&.end_with?("/vmlDrawing") }
+      vml = rel && zip_reader.read_entry(resolve_relative_path(base_dir, rel[:target]))
+      return Set.new if vml.nil? || !vml.include?("Visible")
+
+      vml.split("</v:shape>").each_with_object(Set.new) do |shape, refs|
+        next unless shape.include?('ObjectType="Note"') && shape.include?("<x:Visible")
+
+        row = shape[%r{<x:Row>\s*(\d+)\s*</x:Row>}, 1]
+        col = shape[%r{<x:Column>\s*(\d+)\s*</x:Column>}, 1]
+        refs << "#{Elements::Cell._column_letter(col.to_i)}#{row.to_i + 1}" if row && col
+      end
     end
 
     #: (?zip_reader: Ooxml::ZipReader?, ?entry_name: String?) -> Array[Hash[Symbol, untyped]]

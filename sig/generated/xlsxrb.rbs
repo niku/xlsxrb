@@ -560,6 +560,11 @@ module Xlsxrb
   # : (?zip_reader: Ooxml::ZipReader?, ?entry_name: String?) -> Array[Hash[Symbol, untyped]]
   private def self.resolve_comments: (?zip_reader: Ooxml::ZipReader?, ?entry_name: String?) -> Array[Hash[Symbol, untyped]]
 
+  # Returns the cell references of the comments that the sheet's legacy VML drawing shows
+  # permanently (<x:Visible/> in the note's client data).
+  # : (Ooxml::ZipReader zip_reader, Array[Hash[Symbol, untyped]] relationships, String base_dir) -> Set[String]
+  private def self.visible_comment_refs: (Ooxml::ZipReader zip_reader, Array[Hash[Symbol, untyped]] relationships, String base_dir) -> Set[String]
+
   # : (?zip_reader: Ooxml::ZipReader?, ?entry_name: String?) -> Array[Hash[Symbol, untyped]]
   private def self.resolve_threaded_comments: (?zip_reader: Ooxml::ZipReader?, ?entry_name: String?) -> Array[Hash[Symbol, untyped]]
 

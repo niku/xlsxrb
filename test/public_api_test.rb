@@ -498,6 +498,34 @@ class PublicApiTest < Test::Unit::TestCase
     assert_match(%r{<font><sz val="11(\.0)?"/><name val="Calibri"/><family val="2"/><scheme val="minor"/></font>}, written)
   end
 
+  test "comments shown permanently keep their visibility" do
+    vml = ->(d) { Xlsxrb::Ooxml::ZipReader.new(StringIO.new(d)).read_entry("xl/drawings/vmlDrawing1.vml") }
+    built = Xlsxrb.build do |b|
+      b.sheet("S") do |s|
+        s.row(%w[a b])
+        s.comment("A1", "shown", visible: true)
+        s.comment("B1", "on hover")
+      end
+    end
+    data = Xlsxrb.write(built)
+    assert_equal(1, vml.call(data).scan("<x:Visible/>").size)
+    assert_equal(%w[visible hidden], vml.call(data).scan(/visibility:(\w+)/).flatten)
+
+    loaded = Xlsxrb.load(data)
+    assert_equal({ "A1" => true, "B1" => false }, loaded.sheets.first.comments.to_h { |c| [c.ref, c.visible?] })
+    Xlsxrb.read(StringIO.new(data)) { |sheet| assert_equal([true, false], sheet.comments.map(&:visible?)) }
+    assert_equal(1, vml.call(Xlsxrb.write(loaded)).scan("<x:Visible/>").size)
+
+    io = StringIO.new
+    Xlsxrb.write(io) do |w|
+      w.sheet("S") do |s|
+        s.row(%w[a])
+        s.comment("A1", "shown", visible: true)
+      end
+    end
+    assert_include(vml.call(io.string), "<x:Visible/>")
+  end
+
   test "page setup omits a DPI of zero" do
     built = Xlsxrb.build do |b|
       b.sheet("S") do |s|

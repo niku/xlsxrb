@@ -721,9 +721,10 @@ module Xlsxrb
       # @param cell [String, Integer] The cell reference (e.g. "A1").
       # @param text [String] The comment text.
       # @param author [String] The author name.
+      # @param visible [Boolean] Whether the comment is always shown instead of on hover.
       # @return [void]
       # @api public
-      #: (String | Integer cell, String text, ?author: String) -> void
+      #: (String | Integer cell, String text, ?author: String, ?visible: bool) -> void
       def comment(...)
         raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
 
@@ -735,7 +736,7 @@ module Xlsxrb
       # @param cell [String, Integer] The cell reference (e.g. "A1").
       # @param text [String] The comment text.
       # @param author [String] The author name.
-      # @param opts [Hash] Options: timestamp, id, parent_id, done, user_id, provider_id.
+      # @param visible [Boolean] Whether the comment is always shown instead of on hover.      # @param opts [Hash] Options: timestamp, id, parent_id, done, user_id, provider_id.
       # @return [void]
       # @api public
       #: (String | Integer cell, String text, ?author: untyped, ?timestamp: untyped, ?id: String?, ?parent_id: String?, ?done: bool?, ?user_id: String?, ?provider_id: String?) -> void
@@ -2166,13 +2167,14 @@ module Xlsxrb
     # @param cell [String, Integer] Cell coordinate (e.g. "A1").
     # @param text [String] Comment text.
     # @param author [String] Author name.
+    # @param visible [Boolean] Whether the comment is always shown instead of on hover.
     # @return [void]
     # @api public
-    #: (String | Integer cell, String text, ?author: ::String) -> void
-    def comment(cell, text, author: "Author")
+    #: (String | Integer cell, String text, ?author: ::String, ?visible: bool) -> void
+    def comment(cell, text, author: "Author", visible: false)
       sheet if @current_sheet.nil?
       ref_str = cell.to_s
-      @current_comments << { ref: ref_str, text: text, author: author }
+      @current_comments << { ref: ref_str, text: text, author: author, visible: visible }
       nil
     end
 
@@ -2181,7 +2183,7 @@ module Xlsxrb
     # @param cell [String, Integer] Cell coordinate (e.g. "A1").
     # @param text [String] Comment text.
     # @param author [String] Author name.
-    # @param timestamp [String, Time, nil] Optional ISO 8601 timestamp.
+    # @param visible [Boolean] Whether the comment is always shown instead of on hover.    # @param timestamp [String, Time, nil] Optional ISO 8601 timestamp.
     # @param id [String, nil] Optional GUID for this comment.
     # @param parent_id [String, nil] Optional parent comment GUID for replies.
     # @param done [Boolean, nil] Optional resolved flag.

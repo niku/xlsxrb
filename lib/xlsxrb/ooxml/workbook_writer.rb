@@ -328,7 +328,7 @@ module Xlsxrb
             comment_writer = Xlsxrb::Ooxml::Writer.new
             sheet_comments.each do |c|
               c = c.to_h if c.is_a?(Elements::MetadataRecord)
-              comment_writer.add_comment(c[:cell] || c[:ref], c[:text], author: c[:author] || "Author")
+              comment_writer.add_comment(c[:cell] || c[:ref], c[:text], author: c[:author] || "Author", visible: c[:visible] == true)
             end
             zip.add_entry("xl/comments#{comment_idx}.xml", comment_writer.send(:generate_comments_xml, comment_writer.comments))
             zip.add_entry("xl/drawings/vmlDrawing#{comment_idx}.vml", comment_writer.send(:generate_vml_drawing_xml, comment_writer.comments))
