@@ -49,6 +49,8 @@ bundle add xlsxrb
 # Or without Bundler: gem install xlsxrb
 ```
 
+Upgrading from 0.1.x: see [docs/UPGRADING-0.2.md](docs/UPGRADING-0.2.md) for removed APIs, their replacements, and changed defaults.
+
 ## Interactive Playground (WebAssembly)
 
 Try `xlsxrb` directly in your browser without installing anything!

@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+Upgrading from 0.1.x: see [docs/UPGRADING-0.2.md](docs/UPGRADING-0.2.md).
+
 ### Added
 - Add `show_sheet_tabs?`, `full_calc_on_load?`, and `refresh_all?` boolean predicates on `Elements::WorkbookProperties`.
 - Add `core_properties=` and `app_properties=` assignment setters on `WorkbookBuilder`, `StreamWriter`, and `StreamWriter::WorksheetProxy`.
