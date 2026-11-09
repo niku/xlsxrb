@@ -1037,7 +1037,7 @@ module Xlsxrb
           # Set paragraph text from concatenation of all run texts
           para[:text] = para[:runs].filter_map { |r| r[:text] }.join unless para[:text]
           # Set paragraph font from last run's font for backward compat
-          last_font = para[:runs].rfind { |r| r[:font] }&.dig(:font)
+          last_font = para[:runs].reverse_each.find { |r| r[:font] }&.dig(:font)
           para[:font] = last_font if last_font && !para[:font]
           # Remove :runs key when only one run (simplify output)
           para.delete(:runs) if para[:runs].size <= 1

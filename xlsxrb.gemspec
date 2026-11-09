@@ -12,7 +12,7 @@ Gem::Specification.new do |spec|
   spec.description = "A streaming-capable, low-memory XLSX reading and writing library for Ruby, relying solely on standard libraries and bundled gems."
   spec.homepage = "https://github.com/niku/xlsxrb"
   spec.license = "MIT"
-  spec.required_ruby_version = ">= 4.0.0"
+  spec.required_ruby_version = ">= 3.4.0"
 
   spec.metadata["allowed_push_host"] = "https://rubygems.org"
   spec.metadata["source_code_uri"] = "https://github.com/niku/xlsxrb"

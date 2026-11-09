@@ -9301,6 +9301,7 @@ class ReaderTest < Test::Unit::TestCase
 
     # Backward compat: text is concatenation of runs
     assert_equal("Bold Italic", shape[:text])
+    assert_equal(true, shape[:text_font][:italic])
 
     # Single paragraph, so no text_paragraphs at shape level
     assert_nil(shape[:text_paragraphs])

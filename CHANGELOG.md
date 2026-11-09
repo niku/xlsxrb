@@ -33,6 +33,7 @@
 - Rename `Elements::FilterColumn` member `:col_id` to `:column_id` (with backward-compatible keyword fallback).
 - Rename `Elements::WorkbookProperties` member `:active_tab` to `:active_sheet`, and rename `Elements::Workbook#active_tab` to `#active_sheet_index`.
 - Unify `Elements::Worksheet` constructor parameter `sheet_calc_pr:` to `sheet_calc_properties:` and simplify `#with` to canonical keyword arguments.
+- Lower the minimum required Ruby version from 4.0 to 3.4, and replace the Ruby 4.0-only `Array#rfind` in the drawing reader with `reverse_each.find`.
 
 ### Removed
 - Remove dead private helper `Xlsxrb.write_workbook`.

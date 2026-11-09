@@ -17,7 +17,7 @@ jobs:
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '4.0.5'
+          ruby-version: '4.0'
           bundler-cache: true
       - name: Run Performance Tests
         run: bundle exec rake test:perf

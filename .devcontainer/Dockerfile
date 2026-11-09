@@ -1,4 +1,4 @@
-FROM ruby:4.0.5
+FROM ruby:4.0
 
 ARG USERNAME=vscode
 ARG USER_UID=1000

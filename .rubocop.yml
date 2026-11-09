@@ -1,5 +1,5 @@
 AllCops:
-  TargetRubyVersion: 4.0
+  TargetRubyVersion: 3.4
   Exclude:
     - "docs/wasm/bundle_assets/**/*"
     - "tmp/**/*"

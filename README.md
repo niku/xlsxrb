@@ -36,7 +36,7 @@ Maintaining a gem that supports both reading and writing across streaming and in
 - Streaming Support: Low-memory row streaming for reading and writing spreadsheets ($O(1)$ memory on reads; writes buffer unique shared strings).
 - OpenXML Interoperability: Compliant with ISO/IEC 29500 (ECMA-376) and validated against the Microsoft [Open XML SDK](https://github.com/dotnet/Open-XML-SDK).
 - AI-Assisted Maintenance: Uses AI coding agents for automated quality assurance and verification workflows. Operational guidelines are defined in [AGENTS.md](AGENTS.md).
-- Ruby 4.0+: Requires Ruby 4.0 or higher.
+- Ruby 3.4+: Requires Ruby 3.4 or higher.
 
 ### Autonomous Quality Assurance
 
