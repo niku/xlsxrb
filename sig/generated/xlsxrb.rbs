@@ -511,8 +511,8 @@ module Xlsxrb
   # @param compression_level [Integer, nil] ZIP deflate compression level (0..9, or Zlib::DEFAULT_COMPRESSION
   #   for zlib's level 6). Defaults to {DEFAULT_COMPRESSION_LEVEL}. Higher levels write smaller files more slowly;
   #   level 0 stores entries without compression. See docs/adr/0009-default-zip-compression-level.md.
-  # : (?untyped target_or_workbook, ?Elements::Workbook | untyped workbook_or_nil, ?password: String?, ?encryption_mode: Symbol, ?strict_excel_mode: bool, ?escape_formulas: bool, ?default_font: untyped?, ?shared_strings: bool, ?compression_level: Integer | nil) ?{ (StreamWriter) -> void } -> untyped
-  def self.write: (?untyped target_or_workbook, ?Elements::Workbook | untyped workbook_or_nil, ?password: String?, ?encryption_mode: Symbol, ?strict_excel_mode: bool, ?escape_formulas: bool, ?default_font: untyped?, ?shared_strings: bool, ?compression_level: Integer | nil) ?{ (StreamWriter) -> void } -> untyped
+  # : (?untyped target_or_workbook, ?Elements::Workbook | untyped workbook_or_nil, ?password: String?, ?encryption_mode: Symbol, ?strict_excel_mode: bool, ?default_font: untyped?, ?shared_strings: bool, ?compression_level: Integer | nil) ?{ (StreamWriter) -> void } -> untyped
+  def self.write: (?untyped target_or_workbook, ?Elements::Workbook | untyped workbook_or_nil, ?password: String?, ?encryption_mode: Symbol, ?strict_excel_mode: bool, ?default_font: untyped?, ?shared_strings: bool, ?compression_level: Integer | nil) ?{ (StreamWriter) -> void } -> untyped
 
   # Builds an in-memory {Elements::Workbook} using a declarative DSL.
   #
@@ -525,14 +525,13 @@ module Xlsxrb
   #   end
   #
   # @param strict_excel_mode [Boolean] Whether to enforce Microsoft Excel specification limits.
-  # @param escape_formulas [Boolean] Whether to treat strings starting with formula prefixes as plain text.
   # @param default_font [Hash, nil] Optional default font options.
   # @yield [builder]
   # @yieldparam builder [Xlsxrb::WorkbookBuilder]
   # @return [Elements::Workbook] The compiled in-memory workbook.
   # @api public
-  # : (?strict_excel_mode: bool, ?escape_formulas: bool, ?default_font: untyped?) ?{ (WorkbookBuilder) -> void } -> Elements::Workbook
-  def self.build: (?strict_excel_mode: bool, ?escape_formulas: bool, ?default_font: untyped?) ?{ (WorkbookBuilder) -> void } -> Elements::Workbook
+  # : (?strict_excel_mode: bool, ?default_font: untyped?) ?{ (WorkbookBuilder) -> void } -> Elements::Workbook
+  def self.build: (?strict_excel_mode: bool, ?default_font: untyped?) ?{ (WorkbookBuilder) -> void } -> Elements::Workbook
 
   private def self.resolve_workbook_entry: (untyped zip_reader) -> untyped
 

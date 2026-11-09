@@ -22,12 +22,10 @@ module Xlsxrb
     private_constant :OMITTED
 
     # @param strict_excel_mode [Boolean] Whether to enforce Microsoft Excel specifications.
-    # @param escape_formulas [Boolean] Whether to treat strings starting with formula prefixes as plain text.
     # @param default_font [Hash, nil] Optional default font options (e.g. `{ name: "Arial", size: 12 }`).
-    #: (?strict_excel_mode: bool, ?escape_formulas: bool, ?default_font: untyped?) -> void
-    def initialize(strict_excel_mode: true, escape_formulas: false, default_font: nil)
+    #: (?strict_excel_mode: bool, ?default_font: untyped?) -> void
+    def initialize(strict_excel_mode: true, default_font: nil)
       @strict_excel_mode = strict_excel_mode
-      @escape_formulas = escape_formulas ? true : false
       @default_font = default_font
       @sheets = []
       @sheet_builders = [] # Keep track of sheet builders for style processing
@@ -42,22 +40,6 @@ module Xlsxrb
       @first_sheet = nil
       @show_sheet_tabs = nil
       @tab_ratio = nil
-    end
-
-    # Sets whether to treat strings starting with formula prefixes as plain text.
-    #
-    # @param val [Boolean]
-    # @return [Boolean]
-    #: (bool) -> bool
-    attr_writer :escape_formulas
-
-    # Returns whether formula escaping is enabled.
-    #
-    # @return [Boolean]
-    # @api public
-    #: () -> bool
-    def escape_formulas?
-      @escape_formulas ? true : false
     end
 
     # Sets or configures the workbook-wide default font.
@@ -297,7 +279,7 @@ module Xlsxrb
 
       @active_sheet = name if active
 
-      sheet_builder = WorksheetBuilder.new(name, strict_excel_mode: @strict_excel_mode, state: state, escape_formulas: @escape_formulas)
+      sheet_builder = WorksheetBuilder.new(name, strict_excel_mode: @strict_excel_mode, state: state)
       sheet_builder.code_name = code_name if code_name
       sheet_builder.tab_color = tab_color if tab_color
       sheet_builder.sheet_properties(**opts) unless opts.empty?

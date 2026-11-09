@@ -32,22 +32,6 @@ module Xlsxrb
     #: String?
     attr_reader :current_sheet
 
-    # Sets whether to treat strings starting with formula prefixes as plain text.
-    #
-    # @param val [Boolean]
-    # @return [Boolean]
-    #: (bool) -> bool
-    attr_writer :escape_formulas
-
-    # Returns whether formula escaping is enabled.
-    #
-    # @return [Boolean]
-    # @api public
-    #: () -> bool
-    def escape_formulas?
-      @escape_formulas ? true : false
-    end
-
     # Returns whether the shared strings table is enabled.
     #
     # @return [Boolean]
@@ -69,7 +53,6 @@ module Xlsxrb
     #
     # @param target [String, IO, StringIO] Destination file path or writable IO stream.
     # @param strict_excel_mode [Boolean] Whether to enforce Microsoft Excel specification limits.
-    # @param escape_formulas [Boolean] Whether to treat strings starting with formula prefixes as plain text.
     # @param default_font [Hash, nil] Optional default font options (e.g. `{ name: "Arial", size: 12 }`).
     # @param shared_strings [Boolean] Whether to intern strings into a shared strings table (`xl/sharedStrings.xml`).
     #   When set to `false`, strings are written directly as inline strings (`<c t="inlineStr">`), maintaining flat
@@ -78,11 +61,10 @@ module Xlsxrb
     # @param compression_level [Integer, nil] ZIP deflate compression level (0..9, or Zlib::DEFAULT_COMPRESSION
     #   for zlib's level 6). Defaults to {Xlsxrb::DEFAULT_COMPRESSION_LEVEL}. Higher levels write smaller files more slowly;
     #   level 0 stores entries without compression. See docs/adr/0009-default-zip-compression-level.md.
-    #: (untyped target, ?strict_excel_mode: bool, ?escape_formulas: bool, ?default_font: untyped?, ?shared_strings: bool, ?compression_level: Integer | nil) -> void
-    def initialize(target, strict_excel_mode: true, escape_formulas: false, default_font: nil, shared_strings: true, compression_level: DEFAULT_COMPRESSION_LEVEL)
+    #: (untyped target, ?strict_excel_mode: bool, ?default_font: untyped?, ?shared_strings: bool, ?compression_level: Integer | nil) -> void
+    def initialize(target, strict_excel_mode: true, default_font: nil, shared_strings: true, compression_level: DEFAULT_COMPRESSION_LEVEL)
       @target = target
       @strict_excel_mode = strict_excel_mode
-      @escape_formulas = escape_formulas ? true : false
       @shared_strings = shared_strings ? true : false
       @compression_level = compression_level || DEFAULT_COMPRESSION_LEVEL
       @io = target.is_a?(String) ? File.open(target, "wb") : target
@@ -344,25 +326,6 @@ module Xlsxrb
       #: (String | Symbol | Elements::CellError code) -> Elements::CellError
       def cell_error(...)
         Xlsxrb.cell_error(...)
-      end
-
-      # Returns whether formula escaping is enabled.
-      #
-      # @return [Boolean]
-      # @api public
-      #: () -> bool
-      def escape_formulas?
-        @writer.escape_formulas?
-      end
-
-      # Sets whether to treat strings starting with formula prefixes as plain text.
-      #
-      # @param val [Boolean]
-      # @return [Boolean]
-      # @api public
-      #: (bool val) -> bool
-      def escape_formulas=(val, ...)
-        @writer.escape_formulas = val
       end
 
       # Defines or configures a named cell style on the active sheet.
@@ -1596,7 +1559,7 @@ module Xlsxrb
       @current_row_buffer = String.new(capacity: 65_536)
       @current_sheet_io = StringIO.new(@current_row_buffer)
       date1904 = @workbook_properties&.[](:date1904) ? true : false
-      @current_row_writer = Ooxml::WorksheetWriter.new(@current_sheet_io, date1904: date1904, escape_formulas: @escape_formulas)
+      @current_row_writer = Ooxml::WorksheetWriter.new(@current_sheet_io, date1904: date1904)
       @current_row_writer.instance_variable_set(:@started, true)
 
       @current_columns = []
@@ -1676,7 +1639,7 @@ module Xlsxrb
       end
 
       date1904 = @workbook_properties&.[](:date1904) ? true : false
-      @current_row_writer = Ooxml::WorksheetWriter.new(zip_io, date1904: date1904, escape_formulas: @escape_formulas)
+      @current_row_writer = Ooxml::WorksheetWriter.new(zip_io, date1904: date1904)
       @current_row_writer.start(
         columns: @current_columns,
         sheet_properties: @current_sheet_properties.empty? ? nil : @current_sheet_properties,

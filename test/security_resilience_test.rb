@@ -113,7 +113,7 @@ class SecurityResilienceTest < Test::Unit::TestCase
     ]
 
     Tempfile.create(["formula_injection", ".xlsx"]) do |f|
-      Xlsxrb.write(f.path, escape_formulas: true) do |w|
+      Xlsxrb.write(f.path) do |w|
         w.sheet("Sheet1") do |s|
           formula_values.each do |val|
             s.row([val])
@@ -121,8 +121,12 @@ class SecurityResilienceTest < Test::Unit::TestCase
         end
       end
 
-      # In-memory and streaming read must correctly preserve the exact verbatim string
-      # without interpreting or executing command prefixes
+      # Strings are always written as text cells, never as formulas, so Excel shows them
+      # verbatim and does not evaluate command prefixes.
+      sheet_xml = Xlsxrb::Ooxml::ZipReader.open(f.path).read_entry("xl/worksheets/sheet1.xml")
+      assert_not_match(/<f[ >]/, sheet_xml)
+      assert_equal(formula_values.size, sheet_xml.scan(' t="s"').size)
+
       wb = Xlsxrb.load(f.path)
       rows = wb.sheets[0].rows
       formula_values.each_with_index do |expected, idx|

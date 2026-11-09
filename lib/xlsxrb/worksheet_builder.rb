@@ -12,13 +12,11 @@ module Xlsxrb
     # @param name [String] The worksheet name.
     # @param strict_excel_mode [Boolean] Whether to enforce Microsoft Excel limits.
     # @param state [Symbol] Sheet visibility state (:visible, :hidden, or :very_hidden).
-    # @param escape_formulas [Boolean] Whether to treat strings starting with formula prefixes as plain text.
-    #: (String name, ?strict_excel_mode: bool, ?state: Symbol, ?escape_formulas: bool) -> void
-    def initialize(name, strict_excel_mode: true, state: :visible, escape_formulas: false)
+    #: (String name, ?strict_excel_mode: bool, ?state: Symbol) -> void
+    def initialize(name, strict_excel_mode: true, state: :visible)
       @name = name
       @strict_excel_mode = strict_excel_mode
       @state = state ? state.to_sym : :visible
-      @escape_formulas = escape_formulas ? true : false
       @next_row_index = 0
       @rows = []
       @columns = []
@@ -71,22 +69,6 @@ module Xlsxrb
 
     #: Array[Hash[Symbol, untyped]]
     attr_reader :defined_names
-
-    # Sets whether to treat strings starting with formula prefixes as plain text.
-    #
-    # @param val [Boolean]
-    # @return [Boolean]
-    #: (bool) -> bool
-    attr_writer :escape_formulas
-
-    # Returns whether formula escaping is enabled.
-    #
-    # @return [Boolean]
-    # @api public
-    #: () -> bool
-    def escape_formulas?
-      @escape_formulas ? true : false
-    end
 
     # Defines or configures a named cell style.
     #

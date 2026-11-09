@@ -77,6 +77,7 @@
 - Remove constant `Xlsxrb::MAX_COL` in favor of `Xlsxrb::MAX_COLUMN`.
 - Remove `Xlsxrb::Error::DIV0`..`VALUE` cell error constants on the exception class in favor of `Elements::CellError::*`.
 - Remove `Elements::RichTextRun#sz` in favor of `font_size`.
+- Remove the `escape_formulas:` option of `Xlsxrb.write`, `Xlsxrb.build`, `StreamWriter`, `WorkbookBuilder`, and `WorksheetBuilder`, with its `escape_formulas?` and `escape_formulas=` accessors. It was passed down to the worksheet writer but never used: output was identical with and without it. Strings are always written as text cells, which Excel does not evaluate as formulas, with or without the option.
 - Remove deprecated `Xlsxrb.modify`, `Elements::Workbook#update_sheet`, and `Elements::Worksheet#update_cell` in favor of streaming transformations (`Xlsxrb.read` + `Xlsxrb.write`) or template generation via `Xlsxrb.write`.
 - Remove Hash-like access (`#[]`, `#key?`, `#dig`, `#fetch`, `#merge`, and `== Hash`) on `Elements::MetadataRecord` value objects and `Elements::Hyperlink#[]` in favor of direct reader method calls and `#to_h`.
 - Remove deprecated methods on `Elements::Row`: `pad_empty_cells` (use `padded`), `cells_hash` (use `cells`), `formulas` (use `formula_expressions`), and bare boolean queries (`hidden`, `custom_height`, `collapsed` in favor of `?`-suffixed predicates).

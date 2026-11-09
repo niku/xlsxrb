@@ -3585,10 +3585,8 @@ class PublicApiTest < Test::Unit::TestCase
   end
 
   test "Phase 6: WorkbookBuilder and StreamWriter symmetry and top-level utility facade" do
-    # 1. WorkbookBuilder getters and escape_formulas
-    wb = Xlsxrb.build(escape_formulas: true) do |b|
-      assert_equal(true, b.escape_formulas?)
-
+    # 1. WorkbookBuilder getters
+    wb = Xlsxrb.build do |b|
       b.core_properties(creator: "Tester")
       assert_equal("Tester", b.core_properties.creator)
       assert_instance_of(Xlsxrb::Elements::CoreProperties, b.core_properties)
@@ -3620,7 +3618,6 @@ class PublicApiTest < Test::Unit::TestCase
       assert_include(b.styles.keys, "bold_num")
 
       b.sheet("SheetOne") do |s|
-        assert_equal(true, s.escape_formulas?)
         s.row(["=1+1", 100])
       end
       assert_equal(["SheetOne"], b.sheet_names)
@@ -3628,9 +3625,7 @@ class PublicApiTest < Test::Unit::TestCase
 
     # 2. StreamWriter getters and symmetry
     Tempfile.create(["sw_symmetry", ".xlsx"]) do |f|
-      Xlsxrb.write(f.path, escape_formulas: true) do |w|
-        assert_equal(true, w.escape_formulas?)
-
+      Xlsxrb.write(f.path) do |w|
         w.core_properties(creator: "StreamTester")
         assert_equal("StreamTester", w.core_properties.creator)
         assert_instance_of(Xlsxrb::Elements::CoreProperties, w.core_properties)
@@ -3665,7 +3660,6 @@ class PublicApiTest < Test::Unit::TestCase
         w.repeat_columns("A", "B")
 
         w.sheet("StreamSheet") do |s|
-          assert_equal(true, s.escape_formulas?)
           s.row(["Data", 50])
         end
         assert_equal(["StreamSheet"], w.sheet_names)

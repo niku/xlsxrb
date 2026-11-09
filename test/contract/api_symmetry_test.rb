@@ -108,9 +108,6 @@ class ApiSymmetryTest < Test::Unit::TestCase
       build
       name
       styles
-      escape_formulas
-      escape_formulas=
-      escape_formulas?
     ]
     sw_exempt = sw_lifecycle_methods + ws_delegated_methods
 

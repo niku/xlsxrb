@@ -26,12 +26,9 @@ module Xlsxrb
 
       INTEGER_STRINGS = (0..65_535).map { |n| -n.to_s }.freeze
 
-      attr_accessor :escape_formulas
-
-      def initialize(io, date1904: false, escape_formulas: false)
+      def initialize(io, date1904: false)
         @io = io
         @date1904 = date1904 ? true : false
-        @escape_formulas = escape_formulas ? true : false
         @builder = XmlBuilder.new(@io)
         @row_buffer = String.new(capacity: 65_536)
         @started = false

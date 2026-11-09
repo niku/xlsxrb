@@ -958,13 +958,13 @@ module Xlsxrb
   # @param compression_level [Integer, nil] ZIP deflate compression level (0..9, or Zlib::DEFAULT_COMPRESSION
   #   for zlib's level 6). Defaults to {DEFAULT_COMPRESSION_LEVEL}. Higher levels write smaller files more slowly;
   #   level 0 stores entries without compression. See docs/adr/0009-default-zip-compression-level.md.
-  #: (?untyped target_or_workbook, ?Elements::Workbook | untyped workbook_or_nil, ?password: String?, ?encryption_mode: Symbol, ?strict_excel_mode: bool, ?escape_formulas: bool, ?default_font: untyped?, ?shared_strings: bool, ?compression_level: Integer | nil) ?{ (StreamWriter) -> void } -> untyped
-  def self.write(target_or_workbook = OMITTED_TARGET, workbook_or_nil = nil, password: nil, encryption_mode: :standard, strict_excel_mode: true, escape_formulas: false, default_font: nil, shared_strings: true, compression_level: DEFAULT_COMPRESSION_LEVEL, &)
+  #: (?untyped target_or_workbook, ?Elements::Workbook | untyped workbook_or_nil, ?password: String?, ?encryption_mode: Symbol, ?strict_excel_mode: bool, ?default_font: untyped?, ?shared_strings: bool, ?compression_level: Integer | nil) ?{ (StreamWriter) -> void } -> untyped
+  def self.write(target_or_workbook = OMITTED_TARGET, workbook_or_nil = nil, password: nil, encryption_mode: :standard, strict_excel_mode: true, default_font: nil, shared_strings: true, compression_level: DEFAULT_COMPRESSION_LEVEL, &)
     if block_given?
       if target_or_workbook.equal?(OMITTED_TARGET)
         io = StringIO.new
         io.binmode
-        write(io, password: password, encryption_mode: encryption_mode, strict_excel_mode: strict_excel_mode, escape_formulas: escape_formulas, default_font: default_font, shared_strings: shared_strings, compression_level: compression_level, &)
+        write(io, password: password, encryption_mode: encryption_mode, strict_excel_mode: strict_excel_mode, default_font: default_font, shared_strings: shared_strings, compression_level: compression_level, &)
         return io.string.b
       end
 
@@ -974,7 +974,7 @@ module Xlsxrb
       if password && !password.empty?
         buf = StringIO.new
         buf.binmode
-        stream_writer = StreamWriter.new(buf, strict_excel_mode: strict_excel_mode, escape_formulas: escape_formulas, default_font: default_font, shared_strings: shared_strings, compression_level: compression_level)
+        stream_writer = StreamWriter.new(buf, strict_excel_mode: strict_excel_mode, default_font: default_font, shared_strings: shared_strings, compression_level: compression_level)
         begin
           yield stream_writer
           stream_writer.close
@@ -989,7 +989,7 @@ module Xlsxrb
           stream_writer.cleanup!
         end
       else
-        stream_writer = StreamWriter.new(target, strict_excel_mode: strict_excel_mode, escape_formulas: escape_formulas, default_font: default_font, shared_strings: shared_strings, compression_level: compression_level)
+        stream_writer = StreamWriter.new(target, strict_excel_mode: strict_excel_mode, default_font: default_font, shared_strings: shared_strings, compression_level: compression_level)
         begin
           yield stream_writer
           stream_writer.close
@@ -1233,17 +1233,16 @@ module Xlsxrb
   #   end
   #
   # @param strict_excel_mode [Boolean] Whether to enforce Microsoft Excel specification limits.
-  # @param escape_formulas [Boolean] Whether to treat strings starting with formula prefixes as plain text.
   # @param default_font [Hash, nil] Optional default font options.
   # @yield [builder]
   # @yieldparam builder [Xlsxrb::WorkbookBuilder]
   # @return [Elements::Workbook] The compiled in-memory workbook.
   # @api public
-  #: (?strict_excel_mode: bool, ?escape_formulas: bool, ?default_font: untyped?) ?{ (WorkbookBuilder) -> void } -> Elements::Workbook
-  def self.build(strict_excel_mode: true, escape_formulas: false, default_font: nil)
+  #: (?strict_excel_mode: bool, ?default_font: untyped?) ?{ (WorkbookBuilder) -> void } -> Elements::Workbook
+  def self.build(strict_excel_mode: true, default_font: nil)
     raise Error, "block is required" unless block_given?
 
-    builder = WorkbookBuilder.new(strict_excel_mode: strict_excel_mode, escape_formulas: escape_formulas, default_font: default_font)
+    builder = WorkbookBuilder.new(strict_excel_mode: strict_excel_mode, default_font: default_font)
     yield builder
     builder.build
   end
