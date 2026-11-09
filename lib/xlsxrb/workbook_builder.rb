@@ -757,7 +757,7 @@ module Xlsxrb
             next unless variant
 
             variant_name, number_format = variant
-            date_variants[[style_name.to_s, cell.value.is_a?(Time)]] = variant
+            date_variants[[style_name.to_s, cell.value.is_a?(Time) || cell.value.is_a?(DateTime)]] = variant
             all_style_builders[variant_name] ||= all_style_builders[style_name.to_s].with_number_format(variant_name, number_format)
           end
         end
@@ -847,7 +847,7 @@ module Xlsxrb
           new_cells = row.cells.map do |cell|
             raw_cell_style = cell.style || cell.style_index
             dated = (cell.value.is_a?(Date) || cell.value.is_a?(Time)) && (raw_cell_style.is_a?(String) || raw_cell_style.is_a?(Symbol))
-            date_variant = dated ? date_variants[[raw_cell_style.to_s, cell.value.is_a?(Time)]] : nil
+            date_variant = dated ? date_variants[[raw_cell_style.to_s, cell.value.is_a?(Time) || cell.value.is_a?(DateTime)]] : nil
             raw_cell_style = date_variant.first if date_variant
             resolved_cell_style = if (raw_cell_style.is_a?(String) || raw_cell_style.is_a?(Symbol)) && style_name_to_id.key?(raw_cell_style.to_s)
                                     style_name_to_id[raw_cell_style.to_s]

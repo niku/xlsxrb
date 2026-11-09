@@ -337,7 +337,7 @@ class DslHelpersTest < Test::Unit::TestCase
     formatted.number_format = "#,##0"
 
     assert_equal(%w[hl__xlsxrb_date yyyy-mm-dd], Xlsxrb::DslHelpers.date_style_variant(Date.new(2026, 1, 2), "hl", plain))
-    assert_equal(%w[hl__xlsxrb_date yyyy-mm-dd], Xlsxrb::DslHelpers.date_style_variant(DateTime.new(2026, 1, 2), "hl", plain))
+    assert_equal(["hl__xlsxrb_time", "yyyy-mm-dd hh:mm:ss"], Xlsxrb::DslHelpers.date_style_variant(DateTime.new(2026, 1, 2), "hl", plain))
     assert_equal(["hl__xlsxrb_time", "yyyy-mm-dd hh:mm:ss"], Xlsxrb::DslHelpers.date_style_variant(Time.utc(2026, 1, 2), "hl", plain))
     assert_nil(Xlsxrb::DslHelpers.date_style_variant(Date.new(2026, 1, 2), "money", formatted))
     assert_nil(Xlsxrb::DslHelpers.date_style_variant(Date.new(2026, 1, 2), "missing", nil))

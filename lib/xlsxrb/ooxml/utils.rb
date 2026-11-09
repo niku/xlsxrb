@@ -113,8 +113,8 @@ module Xlsxrb
           end
         end
 
-        # Converts a Time to a fractional Excel serial number (1900 or 1904 system).
-        #: (Time time, ?date1904: bool) -> Float
+        # Converts a Time or DateTime to a fractional Excel serial number (1900 or 1904 system).
+        #: (Time | DateTime time, ?date1904: bool) -> Float
         def datetime_to_serial(time, date1904: false)
           date = time.to_date
           day_serial = date_to_serial(date, date1904: date1904)

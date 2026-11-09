@@ -347,7 +347,7 @@ module Xlsxrb
   # @api public
   #: (Date | Time date_or_time, ?date1904: bool) -> (Integer | Float)
   def self.date_to_serial(date_or_time, date1904: false)
-    if date_or_time.is_a?(Time)
+    if date_or_time.is_a?(Time) || date_or_time.is_a?(DateTime)
       Ooxml::Utils.datetime_to_serial(date_or_time, date1904: date1904)
     else
       Ooxml::Utils.date_to_serial(date_or_time, date1904: date1904)
@@ -394,7 +394,7 @@ module Xlsxrb
   # @api public
   #: (Time | Date time, ?date1904: bool) -> Float
   def self.time_to_serial(time, date1904: false)
-    if time.is_a?(Time)
+    if time.is_a?(Time) || time.is_a?(DateTime)
       Ooxml::Utils.datetime_to_serial(time, date1904: date1904)
     else
       Ooxml::Utils.date_to_serial(time, date1904: date1904).to_f

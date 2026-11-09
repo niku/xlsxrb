@@ -236,8 +236,8 @@ module Xlsxrb
       return nil if style_builder.nil? || style_builder.number_format
 
       case value
+      when Time, DateTime then ["#{style_name}__xlsxrb_time", TIME_NUMBER_FORMAT]
       when Date then ["#{style_name}__xlsxrb_date", DATE_NUMBER_FORMAT]
-      when Time then ["#{style_name}__xlsxrb_time", TIME_NUMBER_FORMAT]
       end
     end
 

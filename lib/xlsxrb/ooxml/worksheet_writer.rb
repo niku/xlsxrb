@@ -164,6 +164,10 @@ module Xlsxrb
             when nil
               buf << '<c r="' << col_ref << '"/>'
               next
+            when DateTime
+              serial = Xlsxrb::Ooxml::Utils.datetime_to_serial(value, date1904: @date1904)
+              buf << '<c r="' << col_ref << '"><v>' << serial.to_s << "</v></c>"
+              next
             when Date
               serial = Xlsxrb::Ooxml::Utils.date_to_serial(value, date1904: @date1904)
               buf << '<c r="' << col_ref << '"><v>' << serial.to_s << "</v></c>"
@@ -251,10 +255,10 @@ module Xlsxrb
             when false
               xml_val = "0"
               type = "b"
+            when Time, DateTime
+              xml_val = Xlsxrb::Ooxml::Utils.datetime_to_serial(value, date1904: @date1904)
             when Date
               xml_val = Xlsxrb::Ooxml::Utils.date_to_serial(value, date1904: @date1904)
-            when Time
-              xml_val = Xlsxrb::Ooxml::Utils.datetime_to_serial(value, date1904: @date1904)
             when BigDecimal
               xml_val = value.to_s("F")
             when Xlsxrb::Elements::CellError
@@ -360,19 +364,19 @@ module Xlsxrb
               buf << '<c r="' << col_ref << row_num_str << '" t="b"><v>1</v></c>'
             when false
               buf << '<c r="' << col_ref << row_num_str << '" t="b"><v>0</v></c>'
+            when Time, DateTime
+              time_style_id = style_map ? style_map["__xlsxrb_time"] : nil
+              buf << if time_style_id
+                       "<c r=\"#{col_ref}#{row_num_str}\" s=\"#{time_style_id}\"><v>#{Xlsxrb::Ooxml::Utils.datetime_to_serial(value, date1904: @date1904)}</v></c>"
+                     else
+                       "<c r=\"#{col_ref}#{row_num_str}\"><v>#{Xlsxrb::Ooxml::Utils.datetime_to_serial(value, date1904: @date1904)}</v></c>"
+                     end
             when Date
               date_style_id = style_map ? style_map["__xlsxrb_date"] : nil
               buf << if date_style_id
                        "<c r=\"#{col_ref}#{row_num_str}\" s=\"#{date_style_id}\"><v>#{Xlsxrb::Ooxml::Utils.date_to_serial(value, date1904: @date1904)}</v></c>"
                      else
                        "<c r=\"#{col_ref}#{row_num_str}\"><v>#{Xlsxrb::Ooxml::Utils.date_to_serial(value, date1904: @date1904)}</v></c>"
-                     end
-            when Time
-              time_style_id = style_map ? style_map["__xlsxrb_time"] : nil
-              buf << if time_style_id
-                       "<c r=\"#{col_ref}#{row_num_str}\" s=\"#{time_style_id}\"><v>#{Xlsxrb::Ooxml::Utils.datetime_to_serial(value, date1904: @date1904)}</v></c>"
-                     else
-                       "<c r=\"#{col_ref}#{row_num_str}\"><v>#{Xlsxrb::Ooxml::Utils.datetime_to_serial(value, date1904: @date1904)}</v></c>"
                      end
             when Xlsxrb::Elements::Formula
               raise ArgumentError, "Non-finite Float #{value.cached_value} is not supported in XLSX" if value.cached_value.is_a?(Float) && !value.cached_value.finite?
@@ -583,12 +587,12 @@ module Xlsxrb
               buf << '<c r="' << col_ref << row_num_str << '" t="b"><v>0</v></c>'
               col_index += 1
               next
-            when Date
-              buf << '<c r="' << col_ref << row_num_str << '"><v>' << Xlsxrb::Ooxml::Utils.date_to_serial(value, date1904: @date1904).to_s << "</v></c>"
+            when Time, DateTime
+              buf << '<c r="' << col_ref << row_num_str << '"><v>' << Xlsxrb::Ooxml::Utils.datetime_to_serial(value, date1904: @date1904).to_s << "</v></c>"
               col_index += 1
               next
-            when Time
-              buf << '<c r="' << col_ref << row_num_str << '"><v>' << Xlsxrb::Ooxml::Utils.datetime_to_serial(value, date1904: @date1904).to_s << "</v></c>"
+            when Date
+              buf << '<c r="' << col_ref << row_num_str << '"><v>' << Xlsxrb::Ooxml::Utils.date_to_serial(value, date1904: @date1904).to_s << "</v></c>"
               col_index += 1
               next
             end
@@ -670,10 +674,10 @@ module Xlsxrb
           when false
             xml_val = "0"
             type = "b"
+          when Time, DateTime
+            xml_val = Xlsxrb::Ooxml::Utils.datetime_to_serial(value, date1904: @date1904)
           when Date
             xml_val = Xlsxrb::Ooxml::Utils.date_to_serial(value, date1904: @date1904)
-          when Time
-            xml_val = Xlsxrb::Ooxml::Utils.datetime_to_serial(value, date1904: @date1904)
           when BigDecimal
             xml_val = value.to_s("F")
           when Xlsxrb::Elements::CellError

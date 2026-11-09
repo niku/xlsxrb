@@ -8938,6 +8938,33 @@ class WriterTest < Test::Unit::TestCase
     assert_equal(expected, read_back.call(Xlsxrb.write(built)))
   end
 
+  test "DateTime cell values and serials keep their time of day" do
+    dt = DateTime.new(2026, 1, 2, 12, 0, 0)
+    assert_equal([46_024.5, 46_024.5], [Xlsxrb.time_to_serial(dt), Xlsxrb.date_to_serial(dt)])
+
+    expected = [[[46_024.5, "yyyy-mm-dd hh:mm:ss"], [46_024, "yyyy-mm-dd"]], [[46_024.5, "yyyy-mm-dd hh:mm:ss"]]]
+    read_back = ->(data) { Xlsxrb.load(data).sheets.first.rows.map { |r| r.cells.map { |c| [c.value, c.format_code] } } }
+
+    io = StringIO.new
+    Xlsxrb.write(io) do |w|
+      w.style(:b, bold: true)
+      w.sheet("S") do |s|
+        s.row([dt, Date.new(2026, 1, 2)])
+        s.row([dt], cell_styles: [:b])
+      end
+    end
+    assert_equal(expected, read_back.call(io.string))
+
+    built = Xlsxrb.build do |b|
+      b.style(:b, bold: true)
+      b.sheet("S") do |s|
+        s.row([dt, Date.new(2026, 1, 2)])
+        s.row([dt], cell_styles: [:b])
+      end
+    end
+    assert_equal(expected, read_back.call(Xlsxrb.write(built)))
+  end
+
   test "StyleBuilder#with_number_format copies the style without changing it" do
     original = Xlsxrb::StyleBuilder.new("hl")
     original.apply_options!(bold: true, fill_color: "FFFF00")

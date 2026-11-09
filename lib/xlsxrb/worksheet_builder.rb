@@ -164,12 +164,12 @@ module Xlsxrb
       values.each_with_index do |val, idx|
         cell_style = cell_styles.is_a?(Array) ? cell_styles[idx] : cell_styles
 
-        if val.is_a?(Date) && cell_style.nil?
+        if val.is_a?(Date) && !val.is_a?(DateTime) && cell_style.nil?
           style("__xlsxrb_date", number_format: "yyyy-mm-dd") unless @styles.key?("__xlsxrb_date")
           cell_styles = [] if cell_styles.nil?
           cell_styles = Array.new(values.size, cell_styles) unless cell_styles.is_a?(Array)
           cell_styles[idx] = "__xlsxrb_date"
-        elsif val.is_a?(Time) && cell_style.nil?
+        elsif (val.is_a?(Time) || val.is_a?(DateTime)) && cell_style.nil?
           style("__xlsxrb_time", number_format: "yyyy-mm-dd hh:mm:ss") unless @styles.key?("__xlsxrb_time")
           cell_styles = [] if cell_styles.nil?
           cell_styles = Array.new(values.size, cell_styles) unless cell_styles.is_a?(Array)
