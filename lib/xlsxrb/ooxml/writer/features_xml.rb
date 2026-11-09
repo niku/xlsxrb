@@ -97,7 +97,11 @@ module Xlsxrb
             attrs << ' includeNewItemsInFilter="1"' if fa && fa[:include_new_items_in_filter]
 
             field_items = pivot_table[:items] && pivot_table[:items][fi]
-            if field_items
+            axis_field = pivot_table[:row_fields].include?(fi) || pivot_table[:col_fields].include?(fi)
+            if field_items || axis_field
+              # A row or column field needs an <items> list; without known items it holds only the
+              # default subtotal, which Excel fills in when it refreshes the cache on open.
+              field_items ||= []
               parts << "<pivotField#{attrs}>"
               parts << %(<items count="#{field_items.size + 1}">)
               field_items.size.times { |ix| parts << %(<item x="#{ix}"/>) }

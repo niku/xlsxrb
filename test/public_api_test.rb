@@ -428,6 +428,16 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal(%w[idx order spPr marker dPt], ser.scan(/<c:(idx|order|spPr|marker|dPt)\b/).flatten.uniq)
   end
 
+  test "pivot table row and column fields without items get a default item" do
+    writer = Xlsxrb::Ooxml::Writer.new
+    writer.add_pivot_table("Sheet1!A1:C4", row_fields: [0], column_fields: [1], data_fields: [{ fld: 2, name: "Sum of C" }],
+                                           field_names: %w[A B C])
+    xml = writer.send(:generate_pivot_table_xml, writer.pivot_tables.first, 1)
+    default_items = '<items count="1"><item t="default"/></items>'
+    assert_include(xml, %(<pivotField axis="axisRow" showAll="0">#{default_items}</pivotField><pivotField axis="axisCol" showAll="0">#{default_items}</pivotField>))
+    assert_include(xml, '<pivotField dataField="1" showAll="0"/>')
+  end
+
   test "page setup omits a DPI of zero" do
     built = Xlsxrb.build do |b|
       b.sheet("S") do |s|
