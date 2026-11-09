@@ -1625,6 +1625,20 @@ module Xlsxrb
         })
       end
 
+      # Builds the style_info of a table hash whose style is given as :style: a style name with
+      # the show_* flags at the root of the hash, or a Hash or TableStyleInfo as the reader returns.
+      #
+      # @param table [Hash{Symbol => Object}]
+      # @return [Hash, Elements::TableStyleInfo, nil]
+      # @api private
+      #: (Hash[Symbol, untyped] table) -> (Hash[Symbol, untyped] | Elements::TableStyleInfo)?
+      def self.style_info_from(table)
+        style = table[:style]
+        return style if style.nil? || style.is_a?(Hash) || style.is_a?(TableStyleInfo)
+
+        { name: style.to_s }.merge(table.slice(:show_first_column, :show_last_column, :show_row_stripes, :show_column_stripes))
+      end
+
       # Returns whether the table totals row is shown.
       # @return [Boolean]
       # @api public

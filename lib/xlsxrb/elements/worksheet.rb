@@ -257,7 +257,7 @@ module Xlsxrb
                 Elements::TableColumn.new(name: col.to_s, id: idx + 1)
               end
             end
-            si = tb[:style_info] || (tb[:style] ? { name: tb[:style], show_row_stripes: tb[:show_row_stripes], show_first_column: tb[:show_first_column], show_last_column: tb[:show_last_column], show_column_stripes: tb[:show_column_stripes] } : nil)
+            si = tb[:style_info] || Elements::Table.style_info_from(tb)
             si = Elements::TableStyleInfo.new(**si) if si.is_a?(Hash)
             Elements::Table.new(**tb, columns: cols, style_info: si)
           else

@@ -649,7 +649,7 @@ module Xlsxrb
             tb
           else
             cols = (tb[:columns] || []).map { |col| col.is_a?(Elements::TableColumn) ? col : Elements::TableColumn.new(**col) }
-            si = tb[:style_info]
+            si = tb[:style_info] || Elements::Table.style_info_from(tb)
             si = Elements::TableStyleInfo.new(**si) if si.is_a?(Hash)
             Elements::Table.new(**tb, columns: cols, style_info: si)
           end

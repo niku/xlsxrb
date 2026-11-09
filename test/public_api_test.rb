@@ -438,6 +438,24 @@ class PublicApiTest < Test::Unit::TestCase
     assert_include(xml, '<pivotField dataField="1" showAll="0"/>')
   end
 
+  test "loaded tables keep their table style" do
+    built = Xlsxrb.build do |b|
+      b.sheet("S") do |s|
+        s.row(%w[A B])
+        s.row([1, 2])
+        s.table("A1:B2", name: "T1", columns: %w[A B], style: "TableStyleLight9", show_first_column: true)
+      end
+    end
+    data = Xlsxrb.write(built)
+    style_tag = ->(d) { Xlsxrb::Ooxml::ZipReader.new(StringIO.new(d)).read_entry("xl/tables/table1.xml")[/<tableStyleInfo[^>]*>/] }
+    assert_equal('<tableStyleInfo name="TableStyleLight9" showFirstColumn="1" showRowStripes="1"/>', style_tag.call(data))
+
+    loaded = Xlsxrb.load(data)
+    assert_equal(%w[TableStyleLight9], loaded.sheets.first.tables.map { |t| t.style_info.name })
+    Xlsxrb.read(StringIO.new(data)) { |sheet| assert_equal(%w[TableStyleLight9], sheet.tables.map { |t| t.style_info.name }) }
+    assert_equal(style_tag.call(data), style_tag.call(Xlsxrb.write(loaded)))
+  end
+
   test "page setup omits a DPI of zero" do
     built = Xlsxrb.build do |b|
       b.sheet("S") do |s|
