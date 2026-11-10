@@ -3738,7 +3738,7 @@ class PublicApiTest < Test::Unit::TestCase
     $VERBOSE = old_verbose
   end
 
-  test "Commit 2: top-level Xlsxrb coordinate and date facade" do
+  test "top-level Xlsxrb coordinate and date facade" do
     assert_equal(16_384, Xlsxrb::MAX_COLUMN)
     assert_equal([0, 0], Xlsxrb.parse_ref("A1"))
     assert_equal([9, 2], Xlsxrb.parse_ref("C10"))
@@ -3775,7 +3775,7 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal("#VALUE!", af2.cached_value.to_s)
   end
 
-  test "Commit 2: Elements::CellError constants" do
+  test "Elements::CellError constants" do
     assert_equal("#NULL!", Xlsxrb::Elements::CellError::NULL.code)
     assert_equal("#DIV/0!", Xlsxrb::Elements::CellError::DIV0.code)
     assert_equal("#VALUE!", Xlsxrb::Elements::CellError::VALUE.code)
@@ -3786,7 +3786,7 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal("#GETTING_DATA", Xlsxrb::Elements::CellError::GETTING_DATA.code)
   end
 
-  test "Commit 3: cell_styles and row_style in WorksheetBuilder#row with deprecation warnings" do
+  test "cell_styles and row_style in WorksheetBuilder#row with deprecation warnings" do
     builder = Xlsxrb::WorksheetBuilder.new("Sheet1")
     builder.style(:b, bold: true)
     builder.style(:r, font_color: "FF0000")
@@ -3849,7 +3849,7 @@ class PublicApiTest < Test::Unit::TestCase
     assert_false ws.sheet_view.show_grid_lines?
   end
 
-  test "Commit 4: page breaks, column spelling, and image accessors" do
+  test "page breaks, column spelling, and image accessors" do
     wb = Xlsxrb.build do |b|
       b.sheet("S1") do |s|
         s.row_break(5)
@@ -3866,7 +3866,7 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal 3, img.to_column
   end
 
-  test "Commit 4: filter_column coercion, defined_name scope, and DataValidationBuilder#list" do
+  test "filter_column coercion, defined_name scope, and DataValidationBuilder#list" do
     wb = Xlsxrb.build do |b|
       b.defined_name("GlobalRate", "0.15", scope: :workbook)
       b.sheet("S1") do |s|
@@ -3892,7 +3892,7 @@ class PublicApiTest < Test::Unit::TestCase
     assert_nil res[:in]
   end
 
-  test "Commit 5: ChartBuilder and SeriesBuilder zero-arg readers and attr= writers" do
+  test "ChartBuilder and SeriesBuilder zero-arg readers and attr= writers" do
     cb = Xlsxrb::ChartBuilder.new
     cb.title = "Sales Report"
     assert_equal "Sales Report", cb.title
@@ -3919,7 +3919,7 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal "Sheet1!A2:A10", sb.categories
   end
 
-  test "Commit 5: StyleBuilder font_size, alignment, protection, and attr= writers" do
+  test "StyleBuilder font_size, alignment, protection, and attr= writers" do
     sb = Xlsxrb::StyleBuilder.new("CustomStyle")
     sb.bold = true
     sb.italic = true
@@ -3953,7 +3953,7 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal "#,##0.00", sb.number_format
   end
 
-  test "Commit 5: ConditionalFormatBuilder dxf_id, font_size, and deprecations" do
+  test "ConditionalFormatBuilder dxf_id, font_size, and deprecations" do
     cf = Xlsxrb::ConditionalFormatBuilder.new("A1:A10")
     assert_false(cf.respond_to?(:[]))
     assert_false(cf.respond_to?(:[]=))
@@ -3971,7 +3971,7 @@ class PublicApiTest < Test::Unit::TestCase
     assert_nil cf.to_h[:size]
   end
 
-  test "Commit 5: WorkbookBuilder#style, StreamWriter#[], and DSL return types" do
+  test "WorkbookBuilder#style, StreamWriter#[], and DSL return types" do
     builder_styles = nil
     wb = Xlsxrb.build do |b|
       b.style(:headline, bold: true, font_size: 16)
@@ -4124,7 +4124,7 @@ class PublicApiTest < Test::Unit::TestCase
     end
   end
 
-  test "Phase 6: WorkbookBuilder and StreamWriter symmetry and top-level utility facade" do
+  test "WorkbookBuilder and StreamWriter symmetry and top-level utility facade" do
     # 1. WorkbookBuilder getters
     wb = Xlsxrb.build do |b|
       b.core_properties(creator: "Tester")
