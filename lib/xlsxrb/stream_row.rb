@@ -11,9 +11,9 @@ module Xlsxrb
   #     puts "#{cell.ref}: #{cell.value}"
   #   end
   #
-  # @example Random access or array conversion (cached on-demand)
+  # @example Random access or the row's values (cached on-demand)
   #   cell = row[0]
-  #   values = row.to_a
+  #   values = row.values
   #
   # @api public
   class StreamRow
