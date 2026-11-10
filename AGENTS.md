@@ -38,8 +38,8 @@ When modifying specific parts of the codebase, the following verification standa
 
 3. XML serialization and OpenXML writers (`lib/xlsxrb/ooxml/writer*`):
    - Quality Attribute: Specification Conformance / Interoperability
-   - Verification: `bundle exec ruby -Ilib -Itest test/xsd_validation_test.rb`
-   - Requirement: Compliance with ECMA-376 Part 4 XML Schema sequence constraints (`xs:sequence`).
+   - Verification: `bundle exec ruby -Ilib -Itest test/xsd_validation_test.rb` and `bundle exec ruby -Ilib -Itest test/contract/excel_rules_test.rb`
+   - Requirement: Compliance with ECMA-376 Part 4 XML Schema sequence constraints (`xs:sequence`), and no violations of the rules in `test/support/excel_rules.rb`, which Excel enforces beyond the schemas (a file that breaks them can pass schema validation and still make Excel repair it or crash).
 
 4. Streaming pipelines and row iteration (`lib/xlsxrb/stream_*`):
    - Quality Attribute: Resource Efficiency / Memory Stability ($O(1)$)

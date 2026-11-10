@@ -67,6 +67,10 @@ xlsxrb is a pure Ruby library for reading and writing Excel spreadsheets with st
   # Run ECMA-376 XSD schema validation suite
   bundle exec ruby -Ilib -Itest test/xsd_validation_test.rb
 
+  # Check gallery workbooks (streamed, built, and loaded and written again) against rules
+  # that Excel enforces beyond the schemas, such as pivot field items and index ranges
+  bundle exec ruby -Ilib -Itest test/contract/excel_rules_test.rb
+
   # Run Microsoft .NET Open XML SDK E2E interoperability suite (opt-in)
   bundle exec rake test:e2e
   ```
@@ -190,6 +194,7 @@ When any LLM-powered coding assistant or autonomous agent works on this reposito
 3. Modifying XML generation, serialization, or writer logic:
    - Adopt the Specification Compliance role (`spec-compliance`).
    - Run `bundle exec ruby -Ilib -Itest test/xsd_validation_test.rb` to verify ECMA-376 Part 4 XSD compliance.
+   - Run `bundle exec ruby -Ilib -Itest test/contract/excel_rules_test.rb` to check the rules in `test/support/excel_rules.rb` that Excel enforces beyond the schemas. When Excel repairs or rejects a file that passes the schema checks, add the rule it broke there.
    - Respect schema sequencing (`xs:sequence`) and required OOXML attributes.
 
 4. Modifying row streaming, parsing loops, or memory buffers:
