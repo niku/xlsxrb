@@ -895,7 +895,8 @@ module Xlsxrb
                 end
                 b.close_tag("gradientFill")
               else
-                b.tag("patternFill", { patternType: fill_props[:pattern] || "none" }) do |_|
+                # Elements::Fill names the pattern :pattern_type; StyleBuilder fills use :pattern.
+                b.tag("patternFill", { patternType: fill_props[:pattern_type] || fill_props[:pattern] || "none" }) do |_|
                   fg_attrs = color_tag_attrs(fill_props[:fg_color] || (fill_props[:fg_color_theme] ? { theme: fill_props[:fg_color_theme], tint: fill_props[:fg_color_tint] } : nil) || (fill_props[:fg_color_indexed] ? { indexed: fill_props[:fg_color_indexed] } : nil))
                   b.empty_tag("fgColor", fg_attrs) if fg_attrs
 

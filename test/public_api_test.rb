@@ -547,6 +547,17 @@ class PublicApiTest < Test::Unit::TestCase
     assert_raise_message(/comment anchor must be an Array of 8 Integers/) { Xlsxrb::Elements::Comment.new(ref: "A1", anchor: [1, 2]) }
   end
 
+  test "built and loaded fills keep their pattern type" do
+    built = Xlsxrb.build do |b|
+      b.style(:green, fill_color: "FFC6EFCE")
+      b.sheet("S") { |s| s.row(["x"], cell_styles: [:green]) }
+    end
+    fills = ->(d) { Xlsxrb::Ooxml::ZipReader.new(StringIO.new(d)).read_entry("xl/styles.xml")[%r{<fills.*?</fills>}] }
+    data = Xlsxrb.write(built)
+    assert_equal(%w[none gray125 solid], fills.call(data).scan(/patternType="(\w+)"/).flatten)
+    assert_equal(fills.call(data), fills.call(Xlsxrb.write(Xlsxrb.load(data))))
+  end
+
   test "page setup omits a DPI of zero" do
     built = Xlsxrb.build do |b|
       b.sheet("S") do |s|
