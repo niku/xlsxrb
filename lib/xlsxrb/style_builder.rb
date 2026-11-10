@@ -312,6 +312,23 @@ module Xlsxrb
       BORDER_STYLES[sym] || BORDER_STYLES[str.downcase.to_sym]
     end
 
+    # Normalizes a border style like normalize_border_style, raising ArgumentError for a style
+    # that is not one of the ST_BorderStyle values or their snake_case spellings.
+    #
+    # @param style [Symbol, String, Integer]
+    # @return [String]
+    # @api private
+    #: (Symbol | String | Integer style) -> String
+    def self.border_style!(style)
+      normalized = normalize_border_style(style)
+      return normalized.to_s if normalized
+
+      suggestion = DidYouMean::SpellChecker.new(dictionary: BORDER_STYLES.keys.map(&:to_s)).correct(style.to_s).first
+      message = "unknown border style: #{style.inspect}"
+      message += "; did you mean #{BORDER_STYLES[suggestion.to_sym].inspect}?" if suggestion
+      raise ArgumentError, message
+    end
+
     # Resolves a color symbol, string, or prefix to an aRGB hex string.
     #
     # @param color [Symbol, String, Object, nil]
@@ -889,7 +906,7 @@ module Xlsxrb
     # @api public
     #: (?style: String | Symbol | Integer, ?color: String | Symbol | nil) -> void
     def border_all(style: "thin", color: nil)
-      norm_style = self.class.normalize_border_style(style)&.to_s || style.to_s
+      norm_style = self.class.border_style!(style)
       color_opt = color ? { color: resolve_color(color) } : {}
       @border_props[:left] = { style: norm_style, **color_opt }
       @border_props[:right] = { style: norm_style, **color_opt }
@@ -905,7 +922,7 @@ module Xlsxrb
     # @api public
     #: (?style: String | Symbol | Integer, ?color: String | Symbol | nil) -> void
     def border_left(style: "thin", color: nil)
-      norm_style = self.class.normalize_border_style(style)&.to_s || style.to_s
+      norm_style = self.class.border_style!(style)
       @border_props[:left] = { style: norm_style, color: resolve_color(color) }.compact
       nil
     end
@@ -917,7 +934,7 @@ module Xlsxrb
     # @api public
     #: (?style: String | Symbol | Integer, ?color: String | Symbol | nil) -> void
     def border_right(style: "thin", color: nil)
-      norm_style = self.class.normalize_border_style(style)&.to_s || style.to_s
+      norm_style = self.class.border_style!(style)
       @border_props[:right] = { style: norm_style, color: resolve_color(color) }.compact
       nil
     end
@@ -929,7 +946,7 @@ module Xlsxrb
     # @api public
     #: (?style: String | Symbol | Integer, ?color: String | Symbol | nil) -> void
     def border_top(style: "thin", color: nil)
-      norm_style = self.class.normalize_border_style(style)&.to_s || style.to_s
+      norm_style = self.class.border_style!(style)
       @border_props[:top] = { style: norm_style, color: resolve_color(color) }.compact
       nil
     end
@@ -941,7 +958,7 @@ module Xlsxrb
     # @api public
     #: (?style: String | Symbol | Integer, ?color: String | Symbol | nil) -> void
     def border_bottom(style: "thin", color: nil)
-      norm_style = self.class.normalize_border_style(style)&.to_s || style.to_s
+      norm_style = self.class.border_style!(style)
       @border_props[:bottom] = { style: norm_style, color: resolve_color(color) }.compact
       nil
     end
@@ -956,7 +973,7 @@ module Xlsxrb
     # @api public
     #: (?style: String | Symbol | Integer, ?color: String | Symbol | nil, ?up: bool, ?down: bool) -> void
     def border_diagonal(style: "thin", color: nil, up: false, down: false)
-      norm_style = self.class.normalize_border_style(style)&.to_s || style.to_s
+      norm_style = self.class.border_style!(style)
       @border_props[:diagonal] = { style: norm_style, color: resolve_color(color) }.compact
       @border_props[:diagonal_up] = true if up
       @border_props[:diagonal_down] = true if down

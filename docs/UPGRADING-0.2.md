@@ -61,7 +61,7 @@ Date cells: `cell.value` returns the Excel serial number. Use `row.values(type_c
 ## Changed behavior
 
 - ZIP compression level 1 is the default (`Xlsxrb::DEFAULT_COMPRESSION_LEVEL`). Writing is faster and files are 5 to 41% larger; pass `compression_level: 6` to `Xlsxrb.write` for the previous size. See [ADR 0009](adr/0009-default-zip-compression-level.md).
-- `style(:name, ...)` raises `ArgumentError` for options it does not know (for example `size:` instead of `font_size:`), and cells, rows, and columns that name an undefined style raise `ArgumentError`. Both were silently ignored before, so code that "worked" may have been writing unstyled cells.
+- `style(:name, ...)` raises `ArgumentError` for options it does not know (for example `size:` instead of `font_size:`) and for border styles that are not border style names (for example `"slantedDashDot"` instead of `slantDashDot`), and cells, rows, and columns that name an undefined style raise `ArgumentError`. Both were silently ignored before, so code that "worked" may have been writing unstyled cells.
 - `escape_formulas:` is gone from `Xlsxrb.write` and `Xlsxrb.build`. It had no effect: strings are always written as text cells, which Excel does not evaluate.
 - `Xlsxrb.read` and `Xlsxrb.load` raise `Errno::ENOENT` for a path that does not exist, instead of `Xlsxrb::ZipError`.
 - `Xlsxrb.read` and `Xlsxrb.load` raise `Xlsxrb::ParseError` for a ZIP archive that has no workbook part (for example an `.ods` file renamed to `.xlsx`) instead of returning a workbook without sheets.

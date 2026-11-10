@@ -48,6 +48,15 @@ module Xlsxrb
     # : (Symbol | String | Integer | nil style) -> Symbol?
     def self.normalize_border_style: (Symbol | String | Integer | nil style) -> Symbol?
 
+    # Normalizes a border style like normalize_border_style, raising ArgumentError for a style
+    # that is not one of the ST_BorderStyle values or their snake_case spellings.
+    #
+    # @param style [Symbol, String, Integer]
+    # @return [String]
+    # @api private
+    # : (Symbol | String | Integer style) -> String
+    def self.border_style!: (Symbol | String | Integer style) -> String
+
     # Resolves a color symbol, string, or prefix to an aRGB hex string.
     #
     # @param color [Symbol, String, Object, nil]

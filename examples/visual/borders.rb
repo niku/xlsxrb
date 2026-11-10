@@ -16,7 +16,7 @@ Xlsxrb.write(output_path) do |wb|
   wb.style("dash_dot") { |s| s.border_all(style: "dashDot", color: "FF000000") }
   wb.style("medium_dash_dot") { |s| s.border_all(style: "mediumDashDot", color: "FF000000") }
   wb.style("dash_dot_dot") { |s| s.border_all(style: "dashDotDot", color: "FF000000") }
-  wb.style("slanted") { |s| s.border_all(style: "slantedDashDot", color: "FF000000") }
+  wb.style("slanted") { |s| s.border_all(style: "slantDashDot", color: "FF000000") }
   wb.style("diagonal") { |s| s.border_diagonal(style: "thin", color: "FF000000", up: true, down: true) }
 
   wb.sheet("Borders") do |s|

@@ -598,6 +598,17 @@ class PublicApiTest < Test::Unit::TestCase
     assert_match(%r{<gradientFill type="linear" degree="45(\.0)?"><stop position="0(\.0)?"><color rgb="FFFFFFFF"/></stop>}, gradient_xml.call(Xlsxrb.write(loaded)))
   end
 
+  test "unknown border styles raise" do
+    error = assert_raise(ArgumentError) { Xlsxrb.build { |b| b.style(:s) { |st| st.border_all(style: "slantedDashDot") } } }
+    assert_equal('unknown border style: "slantedDashDot"; did you mean :slantDashDot?', error.message)
+    assert_raise(ArgumentError) { Xlsxrb.build { |b| b.style(:s) { |st| st.border_left(style: :wavy) } } }
+    built = Xlsxrb.build do |b|
+      b.style(:s) { |st| st.border_all(style: :slant_dash_dot) }
+      b.sheet("S") { |s| s.row([1], cell_styles: [:s]) }
+    end
+    assert_include(Xlsxrb::Ooxml::ZipReader.new(StringIO.new(Xlsxrb.write(built))).read_entry("xl/styles.xml"), '<left style="slantDashDot">')
+  end
+
   test "page setup omits a DPI of zero" do
     built = Xlsxrb.build do |b|
       b.sheet("S") do |s|
