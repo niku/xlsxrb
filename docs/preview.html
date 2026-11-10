@@ -1437,7 +1437,7 @@ puts "Sheet properties workbook generated!"`
                   {
                     label: 's.table',
                     kind: monaco.languages.CompletionItemKind.Snippet,
-                    insertText: 's.table("${1:A1:D10}", name: "${2:Table1}", style: "${3:TableStyleMedium9}")',
+                    insertText: 's.table("${1:A1:D10}", name: "${2:Table1}", columns: [${3:"Item", "Qty", "Price", "Total"}], style: "${4:TableStyleMedium9}")',
                     insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
                     documentation: 'Create an Excel formatted table with filtering and styling',
                     detail: 'xlsxrb table builder',
@@ -1480,18 +1480,18 @@ puts "Sheet properties workbook generated!"`
                     range: range
                   },
                   {
-                    label: 's.freeze_panes',
+                    label: 's.freeze_pane',
                     kind: monaco.languages.CompletionItemKind.Snippet,
-                    insertText: 's.freeze_panes(col: ${1:1}, row: ${2:1})',
+                    insertText: 's.freeze_pane(row: ${1:1}, column: ${2:1})',
                     insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-                    documentation: 'Freeze panes at given column and row index',
+                    documentation: 'Freeze the rows above and the columns left of the given 0-based row and column',
                     detail: 'xlsxrb freeze panes',
                     range: range
                   },
                   {
-                    label: 's.autofilter',
+                    label: 's.auto_filter',
                     kind: monaco.languages.CompletionItemKind.Snippet,
-                    insertText: 's.autofilter("${1:A1:D10}")',
+                    insertText: 's.auto_filter = "${1:A1:D10}"',
                     insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
                     documentation: 'Enable AutoFilter for cell range',
                     detail: 'xlsxrb autofilter',
