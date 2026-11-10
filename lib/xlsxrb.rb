@@ -1653,7 +1653,7 @@ module Xlsxrb
       rels_xml = zip_reader.read_entry(rels_path)
       return [] if rels_xml.nil? || rels_xml.empty?
 
-      parser = REXML::Parsers::SAX2Parser.new(rels_xml)
+      parser = Ooxml::XmlParser.sax2_parser(rels_xml)
       listener = Ooxml::Reader::RelsListener.new
       parser.listen(listener)
       parser.parse
@@ -1667,7 +1667,7 @@ module Xlsxrb
       xml = zip_reader.read_entry(comments_path)
       return [] if xml.nil? || xml.empty?
 
-      c_parser = REXML::Parsers::SAX2Parser.new(xml)
+      c_parser = Ooxml::XmlParser.sax2_parser(xml)
       c_listener = Ooxml::Reader::CommentsListener.new
       c_parser.listen(c_listener)
       c_parser.parse
@@ -1718,7 +1718,7 @@ module Xlsxrb
       rels_xml = zip_reader.read_entry(rels_path)
       return [] if rels_xml.nil? || rels_xml.empty?
 
-      parser = REXML::Parsers::SAX2Parser.new(rels_xml)
+      parser = Ooxml::XmlParser.sax2_parser(rels_xml)
       listener = Ooxml::Reader::RelsListener.new
       parser.listen(listener)
       parser.parse
@@ -1732,7 +1732,7 @@ module Xlsxrb
       xml = zip_reader.read_entry(tc_path)
       return [] if xml.nil? || xml.empty?
 
-      tc_parser = REXML::Parsers::SAX2Parser.new(xml)
+      tc_parser = Ooxml::XmlParser.sax2_parser(xml)
       tc_listener = Ooxml::Reader::ThreadedCommentsListener.new
       tc_parser.listen(tc_listener)
       tc_parser.parse
@@ -1753,7 +1753,7 @@ module Xlsxrb
       if xml.nil? || xml.empty?
         wb_rels_xml = zip_reader.read_entry("xl/_rels/workbook.xml.rels")
         if wb_rels_xml && !wb_rels_xml.empty?
-          parser = REXML::Parsers::SAX2Parser.new(wb_rels_xml)
+          parser = Ooxml::XmlParser.sax2_parser(wb_rels_xml)
           listener = Ooxml::Reader::RelsListener.new
           parser.listen(listener)
           parser.parse
@@ -1766,7 +1766,7 @@ module Xlsxrb
       end
       return {} if xml.nil? || xml.empty?
 
-      p_parser = REXML::Parsers::SAX2Parser.new(xml)
+      p_parser = Ooxml::XmlParser.sax2_parser(xml)
       p_listener = Ooxml::Reader::PersonListListener.new
       p_parser.listen(p_listener)
       p_parser.parse
@@ -1781,7 +1781,7 @@ module Xlsxrb
       rels_xml = zip_reader.read_entry(rels_path)
       return [] if rels_xml.nil? || rels_xml.empty?
 
-      parser = REXML::Parsers::SAX2Parser.new(rels_xml)
+      parser = Ooxml::XmlParser.sax2_parser(rels_xml)
       listener = Ooxml::Reader::RelsListener.new
       parser.listen(listener)
       parser.parse
@@ -1799,7 +1799,7 @@ module Xlsxrb
       drawing_rels_xml = zip_reader.read_entry(drawing_rels_path)
       drawing_rels = {}
       if drawing_rels_xml && !drawing_rels_xml.empty?
-        d_parser = REXML::Parsers::SAX2Parser.new(drawing_rels_xml)
+        d_parser = Ooxml::XmlParser.sax2_parser(drawing_rels_xml)
         d_listener = Ooxml::Reader::RelsListener.new
         d_parser.listen(d_listener)
         d_parser.parse
@@ -1808,7 +1808,7 @@ module Xlsxrb
         end
       end
 
-      p_parser = REXML::Parsers::SAX2Parser.new(drawing_xml)
+      p_parser = Ooxml::XmlParser.sax2_parser(drawing_xml)
       img_listener = Ooxml::Reader::DrawingImagesListener.new
       p_parser.listen(img_listener)
       p_parser.parse
@@ -1861,7 +1861,7 @@ module Xlsxrb
       rels_xml = zip_reader.read_entry(rels_path)
       return nil if rels_xml.nil? || rels_xml.empty?
 
-      parser = REXML::Parsers::SAX2Parser.new(rels_xml)
+      parser = Ooxml::XmlParser.sax2_parser(rels_xml)
       listener = Ooxml::Reader::RelsListener.new
       parser.listen(listener)
       parser.parse
@@ -1902,7 +1902,7 @@ module Xlsxrb
       rels_xml = zip_reader.read_entry(rels_path)
       return [] if rels_xml.nil? || rels_xml.empty?
 
-      parser = REXML::Parsers::SAX2Parser.new(rels_xml)
+      parser = Ooxml::XmlParser.sax2_parser(rels_xml)
       listener = Ooxml::Reader::RelsListener.new
       parser.listen(listener)
       parser.parse
@@ -1916,7 +1916,7 @@ module Xlsxrb
         tbl_xml = zip_reader.read_entry(tbl_path)
         next if tbl_xml.nil? || tbl_xml.empty?
 
-        t_parser = REXML::Parsers::SAX2Parser.new(tbl_xml)
+        t_parser = Ooxml::XmlParser.sax2_parser(tbl_xml)
         t_listener = Ooxml::Reader::TableListener.new
         t_parser.listen(t_listener)
         t_parser.parse
@@ -1932,7 +1932,7 @@ module Xlsxrb
       rels_xml = zip_reader.read_entry(rels_path)
       return [] if rels_xml.nil? || rels_xml.empty?
 
-      parser = REXML::Parsers::SAX2Parser.new(rels_xml)
+      parser = Ooxml::XmlParser.sax2_parser(rels_xml)
       listener = Ooxml::Reader::RelsListener.new
       parser.listen(listener)
       parser.parse
@@ -1945,7 +1945,7 @@ module Xlsxrb
       drawing_xml = zip_reader.read_entry(drawing_path)
       return [] if drawing_xml.nil? || drawing_xml.empty?
 
-      d_parser = REXML::Parsers::SAX2Parser.new(drawing_xml)
+      d_parser = Ooxml::XmlParser.sax2_parser(drawing_xml)
       d_listener = Ooxml::Reader::DrawingShapesListener.new
       d_parser.listen(d_listener)
       d_parser.parse
@@ -1960,7 +1960,7 @@ module Xlsxrb
       rels_xml = zip_reader.read_entry(rels_path)
       return [] if rels_xml.nil? || rels_xml.empty?
 
-      parser = REXML::Parsers::SAX2Parser.new(rels_xml)
+      parser = Ooxml::XmlParser.sax2_parser(rels_xml)
       listener = Ooxml::Reader::RelsListener.new
       parser.listen(listener)
       parser.parse
@@ -1974,7 +1974,7 @@ module Xlsxrb
         pt_xml = zip_reader.read_entry(pt_path)
         next if pt_xml.nil? || pt_xml.empty?
 
-        p_parser = REXML::Parsers::SAX2Parser.new(pt_xml)
+        p_parser = Ooxml::XmlParser.sax2_parser(pt_xml)
         p_listener = Ooxml::Reader::PivotTableListener.new
         p_parser.listen(p_listener)
         p_parser.parse
@@ -1984,7 +1984,7 @@ module Xlsxrb
         pt_rels_path = pt_path.sub(%r{([^/]+)$}, '_rels/\1.rels')
         pt_rels_xml = zip_reader.read_entry(pt_rels_path)
         if pt_rels_xml && !pt_rels_xml.empty?
-          c_parser = REXML::Parsers::SAX2Parser.new(pt_rels_xml)
+          c_parser = Ooxml::XmlParser.sax2_parser(pt_rels_xml)
           c_listener = Ooxml::Reader::RelsListener.new
           c_parser.listen(c_listener)
           c_parser.parse
@@ -1993,7 +1993,7 @@ module Xlsxrb
             c_path = resolve_relative_path(File.dirname(pt_path), cache_rel[:target])
             c_xml = zip_reader.read_entry(c_path)
             if c_xml && !c_xml.empty?
-              cd_parser = REXML::Parsers::SAX2Parser.new(c_xml)
+              cd_parser = Ooxml::XmlParser.sax2_parser(c_xml)
               cd_listener = Ooxml::Reader::PivotCacheDefinitionListener.new
               cd_parser.listen(cd_listener)
               cd_parser.parse
@@ -2002,7 +2002,7 @@ module Xlsxrb
                 cd_rels_path = c_path.sub(%r{([^/]+)$}, '_rels/\1.rels')
                 cd_rels_xml = zip_reader.read_entry(cd_rels_path)
                 if cd_rels_xml && !cd_rels_xml.empty?
-                  rec_parser = REXML::Parsers::SAX2Parser.new(cd_rels_xml)
+                  rec_parser = Ooxml::XmlParser.sax2_parser(cd_rels_xml)
                   rec_rels_listener = Ooxml::Reader::RelsListener.new
                   rec_parser.listen(rec_rels_listener)
                   rec_parser.parse
@@ -2011,7 +2011,7 @@ module Xlsxrb
                     rec_path = resolve_relative_path(File.dirname(c_path), rec_rel[:target])
                     rec_xml = zip_reader.read_entry(rec_path)
                     if rec_xml && !rec_xml.empty?
-                      r_parser = REXML::Parsers::SAX2Parser.new(rec_xml)
+                      r_parser = Ooxml::XmlParser.sax2_parser(rec_xml)
                       r_listener = Ooxml::Reader::PivotCacheRecordsListener.new
                       r_parser.listen(r_listener)
                       r_parser.parse
@@ -2036,7 +2036,7 @@ module Xlsxrb
       rels_xml = zip_reader.read_entry(rels_path)
       return [] if rels_xml.nil? || rels_xml.empty?
 
-      parser = REXML::Parsers::SAX2Parser.new(rels_xml)
+      parser = Ooxml::XmlParser.sax2_parser(rels_xml)
       listener = Ooxml::Reader::RelsListener.new
       parser.listen(listener)
       parser.parse
@@ -2053,7 +2053,7 @@ module Xlsxrb
       drawing_rels_xml = zip_reader.read_entry(drawing_rels_path)
       drawing_rels = {}
       if drawing_rels_xml && !drawing_rels_xml.empty?
-        d_parser = REXML::Parsers::SAX2Parser.new(drawing_rels_xml)
+        d_parser = Ooxml::XmlParser.sax2_parser(drawing_rels_xml)
         d_listener = Ooxml::Reader::RelsListener.new
         d_parser.listen(d_listener)
         d_parser.parse
@@ -2062,7 +2062,7 @@ module Xlsxrb
         end
       end
 
-      d_parser = REXML::Parsers::SAX2Parser.new(drawing_xml)
+      d_parser = Ooxml::XmlParser.sax2_parser(drawing_xml)
       dc_listener = Ooxml::Reader::DrawingChartsListener.new
       d_parser.listen(dc_listener)
       d_parser.parse
@@ -2076,7 +2076,7 @@ module Xlsxrb
           chart_path = resolve_relative_path(drawing_dir, target)
           chart_xml = zip_reader.read_entry(chart_path)
           if chart_xml && !chart_xml.empty?
-            cp = REXML::Parsers::SAX2Parser.new(chart_xml)
+            cp = Ooxml::XmlParser.sax2_parser(chart_xml)
             cl = Ooxml::Reader::ChartTypeListener.new
             cp.listen(cl)
             cp.parse
@@ -2299,7 +2299,7 @@ module Xlsxrb
       return [] if sheet_xml.nil? || !sheet_xml.include?("sparklineGroup")
 
       listener = Ooxml::Reader::SparklineGroupsListener.new
-      parser = REXML::Parsers::SAX2Parser.new(sheet_xml)
+      parser = Ooxml::XmlParser.sax2_parser(sheet_xml)
       parser.listen(listener)
       parser.parse
       listener.groups.map do |grp|
@@ -2320,7 +2320,7 @@ module Xlsxrb
       rels_xml = zip_reader.read_entry(rels_path)
       return [] if rels_xml.nil? || rels_xml.empty?
 
-      parser = REXML::Parsers::SAX2Parser.new(rels_xml)
+      parser = Ooxml::XmlParser.sax2_parser(rels_xml)
       listener = Ooxml::Reader::RelsListener.new
       parser.listen(listener)
       parser.parse
@@ -2337,7 +2337,7 @@ module Xlsxrb
       vml_rels_xml = zip_reader.read_entry(vml_rels_path)
       vml_rels = {}
       if vml_rels_xml && !vml_rels_xml.empty?
-        vr_parser = REXML::Parsers::SAX2Parser.new(vml_rels_xml)
+        vr_parser = Ooxml::XmlParser.sax2_parser(vml_rels_xml)
         vr_listener = Ooxml::Reader::RelsListener.new
         vr_parser.listen(vr_listener)
         vr_parser.parse
@@ -2346,7 +2346,7 @@ module Xlsxrb
         end
       end
 
-      vml_parser = REXML::Parsers::SAX2Parser.new(vml_xml)
+      vml_parser = Ooxml::XmlParser.sax2_parser(vml_xml)
       hf_listener = Ooxml::Reader::VmlHeaderFooterListener.new
       vml_parser.listen(hf_listener)
       vml_parser.parse

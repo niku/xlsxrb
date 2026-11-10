@@ -148,9 +148,9 @@ module Xlsxrb
           hl_tag = xml.byteslice(hl_start, hl_tag_end - hl_start)
           ref = tag_attr(hl_tag, ' ref="')
           rid = tag_attr(hl_tag, ' r:id="') || tag_attr(hl_tag, ' id="') || hl_tag[/(?:[a-zA-Z0-9_]+:)?id="([^"]+)"/, 1]
-          display = tag_attr(hl_tag, ' display="')
-          tooltip = tag_attr(hl_tag, ' tooltip="')
-          location = tag_attr(hl_tag, ' location="')
+          display = decoded_attr(hl_tag, ' display="')
+          tooltip = decoded_attr(hl_tag, ' tooltip="')
+          location = decoded_attr(hl_tag, ' location="')
 
           if ref
             entry = { ref: ref }
@@ -314,6 +314,14 @@ module Xlsxrb
       end
 
       private_class_method :tag_attr
+
+      # Like tag_attr, with entity references such as &amp; and &quot; decoded.
+      def self.decoded_attr(tag, prefix)
+        value = tag_attr(tag, prefix)
+        value&.include?("&") ? REXML::Text.unnormalize(value) : value
+      end
+
+      private_class_method :decoded_attr
 
       def self.fast_scan_cells_events(xml, from, to, shared_strings, row_source, prefix = "", shared_masters = {}, &block)
         pos = from

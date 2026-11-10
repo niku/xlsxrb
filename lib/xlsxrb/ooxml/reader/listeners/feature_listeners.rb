@@ -979,10 +979,10 @@ module Xlsxrb
             @current_dv[:allow_blank] = true if attributes["allowBlank"] == "1"
             @current_dv[:show_input_message] = true if attributes["showInputMessage"] == "1"
             @current_dv[:show_error_message] = true if attributes["showErrorMessage"] == "1"
-            @current_dv[:error_title] = xml_unescape(attributes["errorTitle"]) if attributes["errorTitle"]
-            @current_dv[:error] = xml_unescape(attributes["error"]) if attributes["error"]
-            @current_dv[:prompt_title] = xml_unescape(attributes["promptTitle"]) if attributes["promptTitle"]
-            @current_dv[:prompt] = xml_unescape(attributes["prompt"]) if attributes["prompt"]
+            @current_dv[:error_title] = attributes["errorTitle"] if attributes["errorTitle"]
+            @current_dv[:error] = attributes["error"] if attributes["error"]
+            @current_dv[:prompt_title] = attributes["promptTitle"] if attributes["promptTitle"]
+            @current_dv[:prompt] = attributes["prompt"] if attributes["prompt"]
             @current_dv[:show_drop_down] = true if attributes["showDropDown"] == "1"
             @current_dv[:ime_mode] = attributes["imeMode"] if attributes["imeMode"]
           when "formula1"
@@ -1027,10 +1027,6 @@ module Xlsxrb
           else
             local_name
           end
-        end
-
-        def xml_unescape(str)
-          str.gsub("&amp;", "&").gsub("&lt;", "<").gsub("&gt;", ">").gsub("&quot;", '"').gsub("&apos;", "'")
         end
       end
 
@@ -1746,7 +1742,7 @@ module Xlsxrb
             @current_field[:name] = attributes["name"] if attributes["name"]
             @current_field[:num_fmt_id] = attributes["numFmtId"]&.to_i if attributes["numFmtId"]
             @current_field[:caption] = attributes["caption"] if attributes["caption"]
-            @current_field[:formula] = xml_unescape(attributes["formula"]) if attributes["formula"]
+            @current_field[:formula] = attributes["formula"] if attributes["formula"]
           when "sharedItems"
             @current_shared_items = [] if @current_field
           when "s", "d", "e"
@@ -1788,10 +1784,6 @@ module Xlsxrb
           else
             local_name
           end
-        end
-
-        def xml_unescape(str)
-          str.gsub("&amp;", "&").gsub("&lt;", "<").gsub("&gt;", ">").gsub("&quot;", '"').gsub("&apos;", "'")
         end
       end
 

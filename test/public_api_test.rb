@@ -558,6 +558,32 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal(fills.call(data), fills.call(Xlsxrb.write(Xlsxrb.load(data))))
   end
 
+  test "attribute values with entity references read back decoded" do
+    built = Xlsxrb.build do |b|
+      b.style(:quoted, number_format: '"Q"0 & "x"')
+      b.sheet("R&D") do |s|
+        s.row(["a & b"], cell_styles: [:quoted])
+        s.row([1])
+        s.hyperlink("A1", "https://example.com/?a=1&b=2", tooltip: "x & y")
+        s.hyperlink("A2", location: "'R&D'!B1", display: "<go>")
+        s.table("A1:A2", name: "T1", columns: ["a & b"])
+        s.data_validation("A2", type: :list, list: %w[x z], error_title: '<bad> & "x"')
+      end
+    end
+    data = Xlsxrb.write(built)
+    loaded = Xlsxrb.load(data)
+    sheet = loaded.sheets.first
+    assert_equal('"Q"0 & "x"', loaded.styles.number_formats.to_h.values.last)
+    assert_equal({ "A1" => { url: "https://example.com/?a=1&b=2", tooltip: "x & y" }, "A2" => { display: "<go>", location: "'R&D'!B1" } },
+                 sheet.hyperlinks.transform_values(&:to_h))
+    assert_equal(["a & b"], sheet.tables.first.columns.map(&:name))
+    assert_equal(['<bad> & "x"'], sheet.data_validations.map { |dv| dv.to_h[:error_title] })
+    Xlsxrb.read(StringIO.new(data)) { |s| assert_equal("x & y", s.hyperlinks["A1"].tooltip) }
+
+    styles = Xlsxrb::Ooxml::ZipReader.new(StringIO.new(Xlsxrb.write(loaded))).read_entry("xl/styles.xml")
+    assert_include(styles, 'formatCode="&quot;Q&quot;0 &amp; &quot;x&quot;"')
+  end
+
   test "page setup omits a DPI of zero" do
     built = Xlsxrb.build do |b|
       b.sheet("S") do |s|

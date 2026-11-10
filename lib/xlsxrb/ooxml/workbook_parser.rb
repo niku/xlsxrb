@@ -56,7 +56,6 @@ module Xlsxrb
           case localname
           when "sheet"
             name_attr = attrs["name"]
-            name_attr = REXML::Text.unnormalize(name_attr) if name_attr
             raw_state = attrs["state"]
             state_sym = case raw_state
                         when "hidden" then :hidden

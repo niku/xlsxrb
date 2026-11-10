@@ -62,9 +62,77 @@ module Xlsxrb
     module XmlParser
       # Parses XML string using SAX2, calling the given listener.
       def self.parse(xml_string, listener)
-        parser = REXML::Parsers::SAX2Parser.new(xml_string)
+        parser = sax2_parser(xml_string)
         parser.listen(listener)
         parser.parse
+      end
+
+      # Returns a SAX2 parser whose listeners receive attribute values with XML entities
+      # decoded. REXML's SAX2 parser decodes text but passes attribute values as written, so
+      # formatCode="&quot;$&quot;0" would otherwise arrive with the &quot; references.
+      #: (String xml_string) -> REXML::Parsers::SAX2Parser
+      def self.sax2_parser(xml_string)
+        DecodingSAX2Parser.new(xml_string)
+      end
+
+      # SAX2 parser that wraps each listener in an AttributeDecoder.
+      class DecodingSAX2Parser < REXML::Parsers::SAX2Parser
+        #: (*untyped args) ?{ (*untyped) -> untyped } -> untyped
+        def listen(*args, &)
+          return super if args.size != 1 || args.first.is_a?(Symbol) || args.first.is_a?(Array) || block_given?
+
+          super(AttributeDecoder.new(args.first))
+        end
+      end
+
+      # Forwards SAX2 events to a listener, decoding entity references in attribute values.
+      class AttributeDecoder
+        #: (untyped listener) -> void
+        def initialize(listener)
+          @listener = listener
+        end
+
+        # Plain methods rather than define_method blocks, which Ractors cannot share.
+        #: (*untyped args) -> untyped
+        def start_document(*args) = @listener.start_document(*args)
+        #: (*untyped args) -> untyped
+        def end_document(*args) = @listener.end_document(*args)
+        #: (*untyped args) -> untyped
+        def start_prefix_mapping(*args) = @listener.start_prefix_mapping(*args)
+        #: (*untyped args) -> untyped
+        def end_prefix_mapping(*args) = @listener.end_prefix_mapping(*args)
+        #: (*untyped args) -> untyped
+        def end_element(*args) = @listener.end_element(*args)
+        #: (*untyped args) -> untyped
+        def characters(*args) = @listener.characters(*args)
+        #: (*untyped args) -> untyped
+        def processing_instruction(*args) = @listener.processing_instruction(*args)
+        #: (*untyped args) -> untyped
+        def doctype(*args) = @listener.doctype(*args)
+        #: (*untyped args) -> untyped
+        def attlistdecl(*args) = @listener.attlistdecl(*args)
+        #: (*untyped args) -> untyped
+        def elementdecl(*args) = @listener.elementdecl(*args)
+        #: (*untyped args) -> untyped
+        def entitydecl(*args) = @listener.entitydecl(*args)
+        #: (*untyped args) -> untyped
+        def notationdecl(*args) = @listener.notationdecl(*args)
+        #: (*untyped args) -> untyped
+        def cdata(*args) = @listener.cdata(*args)
+        #: (*untyped args) -> untyped
+        def xmldecl(*args) = @listener.xmldecl(*args)
+        #: (*untyped args) -> untyped
+        def comment(*args) = @listener.comment(*args)
+        #: (*untyped args) -> untyped
+        def progress(*args) = @listener.progress(*args)
+
+        #: (String? uri, String local_name, String qname, Hash[String, String] attributes) -> untyped
+        def start_element(uri, local_name, qname, attributes)
+          if attributes.each_value.any? { |value| value.include?("&") }
+            attributes = attributes.transform_values { |value| value.include?("&") ? REXML::Text.unnormalize(value) : value }
+          end
+          @listener.start_element(uri, local_name, qname, attributes)
+        end
       end
 
       # Base listener with unmapped-data collection support.

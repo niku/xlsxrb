@@ -82,8 +82,7 @@ class Ecma376BoundaryTest < Test::Unit::TestCase
       xf = read_wb.styles.cell_xf(style_index)
       num_fmt = read_wb.styles.number_format_code(xf.num_fmt_id)
 
-      # Xlsxrb's parser doesn't unescape XML entities in num_fmt
-      assert_equal "[Red][&lt;=100];[Blue][&gt;100]", num_fmt
+      assert_equal "[Red][<=100];[Blue][>100]", num_fmt
     ensure
       tmp.close
       tmp.unlink

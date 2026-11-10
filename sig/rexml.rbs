@@ -1,4 +1,12 @@
 module REXML
   module SAX2Listener
   end
+
+  module Parsers
+    class SAX2Parser
+      def initialize: (untyped source) -> void
+      def listen: (*untyped args) ?{ (*untyped) -> untyped } -> untyped
+      def parse: () -> untyped
+    end
+  end
 end

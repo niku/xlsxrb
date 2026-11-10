@@ -114,7 +114,7 @@ module Xlsxrb
         worksheet_xml = load_worksheet_xml(sheet)
         return {} if worksheet_xml.nil? || worksheet_xml.empty?
 
-        parser = REXML::Parsers::SAX2Parser.new(worksheet_xml)
+        parser = XmlParser.sax2_parser(worksheet_xml)
         listener = CellStyleListener.new
         parser.listen(listener)
         parser.parse
@@ -495,7 +495,7 @@ module Xlsxrb
         xml = extract_zip_entry(entry_path)
         return {} if xml.nil? || xml.empty?
 
-        parser = REXML::Parsers::SAX2Parser.new(xml)
+        parser = XmlParser.sax2_parser(xml)
         listener = CorePropertiesListener.new
         parser.listen(listener)
         parser.parse
@@ -520,7 +520,7 @@ module Xlsxrb
         end
         return {} if xml.nil? || xml.empty?
 
-        parser = REXML::Parsers::SAX2Parser.new(xml)
+        parser = XmlParser.sax2_parser(xml)
         listener = AppPropertiesListener.new
         parser.listen(listener)
         parser.parse
@@ -544,7 +544,7 @@ module Xlsxrb
         end
         return [] if xml.nil? || xml.empty?
 
-        parser = REXML::Parsers::SAX2Parser.new(xml)
+        parser = XmlParser.sax2_parser(xml)
         listener = CustomPropertiesListener.new
         parser.listen(listener)
         parser.parse
@@ -604,7 +604,7 @@ module Xlsxrb
         xml = extract_zip_entry("xl/calcChain.xml")
         return [] if xml.nil? || xml.empty?
 
-        parser = REXML::Parsers::SAX2Parser.new(xml)
+        parser = XmlParser.sax2_parser(xml)
         listener = CalcChainListener.new
         parser.listen(listener)
         parser.parse
@@ -682,7 +682,7 @@ module Xlsxrb
         sheet_index = resolve_sheet_index(sheet)
         drawing_rels = load_drawing_rels(sheet_index)
 
-        parser = REXML::Parsers::SAX2Parser.new(drawing_xml)
+        parser = XmlParser.sax2_parser(drawing_xml)
         listener = DrawingImagesListener.new
         parser.listen(listener)
         parser.parse
@@ -703,7 +703,7 @@ module Xlsxrb
         sheet_index = resolve_sheet_index(sheet)
         drawing_rels = load_drawing_rels(sheet_index)
 
-        parser = REXML::Parsers::SAX2Parser.new(drawing_xml)
+        parser = XmlParser.sax2_parser(drawing_xml)
         listener = DrawingChartsListener.new
         parser.listen(listener)
         parser.parse
@@ -717,7 +717,7 @@ module Xlsxrb
           chart_xml = extract_zip_entry(chart_path)
           next if chart_xml.nil? || chart_xml.empty?
 
-          cp = REXML::Parsers::SAX2Parser.new(chart_xml)
+          cp = XmlParser.sax2_parser(chart_xml)
           cl = ChartTypeListener.new
           cp.listen(cl)
           cp.parse
@@ -903,7 +903,7 @@ module Xlsxrb
         drawing_xml = load_drawing_xml(sheet)
         return [] if drawing_xml.nil? || drawing_xml.empty?
 
-        parser = REXML::Parsers::SAX2Parser.new(drawing_xml)
+        parser = XmlParser.sax2_parser(drawing_xml)
         listener = DrawingShapesListener.new
         parser.listen(listener)
         parser.parse
@@ -920,7 +920,7 @@ module Xlsxrb
         xml = extract_zip_entry(comments_path)
         return [] if xml.nil? || xml.empty?
 
-        parser = REXML::Parsers::SAX2Parser.new(xml)
+        parser = XmlParser.sax2_parser(xml)
         listener = CommentsListener.new
         parser.listen(listener)
         parser.parse
@@ -942,7 +942,7 @@ module Xlsxrb
             end
           end
           if xml && !xml.empty?
-            parser = REXML::Parsers::SAX2Parser.new(xml)
+            parser = XmlParser.sax2_parser(xml)
             listener = PersonListListener.new
             parser.listen(listener)
             parser.parse
@@ -965,7 +965,7 @@ module Xlsxrb
         xml = extract_zip_entry(tc_path)
         return [] if xml.nil? || xml.empty?
 
-        parser = REXML::Parsers::SAX2Parser.new(xml)
+        parser = XmlParser.sax2_parser(xml)
         listener = ThreadedCommentsListener.new
         parser.listen(listener)
         parser.parse
@@ -989,7 +989,7 @@ module Xlsxrb
           xml = extract_zip_entry(path)
           next if xml.nil? || xml.empty?
 
-          parser = REXML::Parsers::SAX2Parser.new(xml)
+          parser = XmlParser.sax2_parser(xml)
           listener = PivotTableListener.new
           parser.listen(listener)
           parser.parse
@@ -1024,7 +1024,7 @@ module Xlsxrb
           xml = extract_zip_entry(path)
           next if xml.nil? || xml.empty?
 
-          parser = REXML::Parsers::SAX2Parser.new(xml)
+          parser = XmlParser.sax2_parser(xml)
           listener = ExternalLinkListener.new
           parser.listen(listener)
           parser.parse
@@ -1098,7 +1098,7 @@ module Xlsxrb
                    workbook_protection: nil }
         end
 
-        parser = REXML::Parsers::SAX2Parser.new(workbook_xml)
+        parser = XmlParser.sax2_parser(workbook_xml)
         listener = WorkbookListener.new
         parser.listen(listener)
         parser.parse
@@ -1174,7 +1174,7 @@ module Xlsxrb
         end
 
         sheets = []
-        parser = REXML::Parsers::SAX2Parser.new(workbook_xml)
+        parser = XmlParser.sax2_parser(workbook_xml)
         listener = WorkbookListener.new
         parser.listen(listener)
         parser.parse
@@ -1207,7 +1207,7 @@ module Xlsxrb
         return {} if rels_xml.nil? || rels_xml.empty?
 
         mapping = {}
-        parser = REXML::Parsers::SAX2Parser.new(rels_xml)
+        parser = XmlParser.sax2_parser(rels_xml)
         listener = RelsListener.new
         parser.listen(listener)
         parser.parse
@@ -1218,7 +1218,7 @@ module Xlsxrb
       def parse_rels_with_types(rels_xml)
         return [] if rels_xml.nil? || rels_xml.empty?
 
-        parser = REXML::Parsers::SAX2Parser.new(rels_xml)
+        parser = XmlParser.sax2_parser(rels_xml)
         listener = RelsListener.new
         parser.listen(listener)
         parser.parse
@@ -1249,7 +1249,7 @@ module Xlsxrb
           sst_xml = extract_zip_entry(c)
           next if sst_xml.nil? || sst_xml.empty?
 
-          parser = REXML::Parsers::SAX2Parser.new(sst_xml)
+          parser = XmlParser.sax2_parser(sst_xml)
           listener = SharedStringsListener.new
           parser.listen(listener)
           parser.parse
@@ -1276,7 +1276,7 @@ module Xlsxrb
         return [] if rels_xml.nil? || rels_xml.empty?
 
         table_paths = []
-        parser = REXML::Parsers::SAX2Parser.new(rels_xml)
+        parser = XmlParser.sax2_parser(rels_xml)
         listener = RelsListener.new
         parser.listen(listener)
         parser.parse
@@ -1300,7 +1300,7 @@ module Xlsxrb
       end
 
       def parse_table_xml(xml)
-        parser = REXML::Parsers::SAX2Parser.new(xml)
+        parser = XmlParser.sax2_parser(xml)
         listener = TableListener.new
         parser.listen(listener)
         parser.parse
@@ -1320,7 +1320,7 @@ module Xlsxrb
         cache_xml = extract_zip_entry(cache_path)
         return nil if cache_xml.nil? || cache_xml.empty?
 
-        parser = REXML::Parsers::SAX2Parser.new(cache_xml)
+        parser = XmlParser.sax2_parser(cache_xml)
         listener = PivotCacheDefinitionListener.new
         parser.listen(listener)
         parser.parse
@@ -1336,7 +1336,7 @@ module Xlsxrb
             rec_path = normalize_xl_path(rec_rel[:target], File.dirname(cache_path))
             rec_xml = extract_zip_entry(rec_path)
             if rec_xml && !rec_xml.empty?
-              rec_parser = REXML::Parsers::SAX2Parser.new(rec_xml)
+              rec_parser = XmlParser.sax2_parser(rec_xml)
               rec_listener = PivotCacheRecordsListener.new
               rec_parser.listen(rec_listener)
               rec_parser.parse
@@ -1359,7 +1359,7 @@ module Xlsxrb
           styles_xml = extract_zip_entry(c)
           next if styles_xml.nil? || styles_xml.empty?
 
-          parser = REXML::Parsers::SAX2Parser.new(styles_xml)
+          parser = XmlParser.sax2_parser(styles_xml)
           listener = StylesListener.new
           parser.listen(listener)
           parser.parse
@@ -1376,7 +1376,7 @@ module Xlsxrb
       end
 
       def parse_cell_style_indices(xml)
-        parser = REXML::Parsers::SAX2Parser.new(xml)
+        parser = XmlParser.sax2_parser(xml)
         listener = CellStyleListener.new
         parser.listen(listener)
         parser.parse
@@ -1452,7 +1452,7 @@ module Xlsxrb
       end
 
       def parse_worksheet_cells(xml, shared_strings)
-        parser = REXML::Parsers::SAX2Parser.new(xml)
+        parser = XmlParser.sax2_parser(xml)
         listener = WorksheetListener.new(shared_strings)
         parser.listen(listener)
         parser.parse
@@ -1460,7 +1460,7 @@ module Xlsxrb
       end
 
       def parse_worksheet_columns(xml)
-        parser = REXML::Parsers::SAX2Parser.new(xml)
+        parser = XmlParser.sax2_parser(xml)
         listener = ColumnsListener.new
         parser.listen(listener)
         parser.parse
@@ -1468,7 +1468,7 @@ module Xlsxrb
       end
 
       def parse_worksheet_column_attributes(xml)
-        parser = REXML::Parsers::SAX2Parser.new(xml)
+        parser = XmlParser.sax2_parser(xml)
         listener = ColumnsListener.new
         parser.listen(listener)
         parser.parse
@@ -1476,7 +1476,7 @@ module Xlsxrb
       end
 
       def parse_worksheet_row_attributes(xml)
-        parser = REXML::Parsers::SAX2Parser.new(xml)
+        parser = XmlParser.sax2_parser(xml)
         listener = WorksheetListener.new([])
         parser.listen(listener)
         parser.parse
@@ -1484,7 +1484,7 @@ module Xlsxrb
       end
 
       def parse_worksheet_cell_phonetic(xml)
-        parser = REXML::Parsers::SAX2Parser.new(xml)
+        parser = XmlParser.sax2_parser(xml)
         listener = WorksheetListener.new([])
         parser.listen(listener)
         parser.parse
@@ -1492,7 +1492,7 @@ module Xlsxrb
       end
 
       def parse_worksheet_merge_cells(xml)
-        parser = REXML::Parsers::SAX2Parser.new(xml)
+        parser = XmlParser.sax2_parser(xml)
         listener = MergeCellsListener.new
         parser.listen(listener)
         parser.parse
@@ -1500,7 +1500,7 @@ module Xlsxrb
       end
 
       def parse_worksheet_auto_filter(xml)
-        parser = REXML::Parsers::SAX2Parser.new(xml)
+        parser = XmlParser.sax2_parser(xml)
         listener = AutoFilterListener.new
         parser.listen(listener)
         parser.parse
@@ -1508,7 +1508,7 @@ module Xlsxrb
       end
 
       def parse_worksheet_filter_columns(xml)
-        parser = REXML::Parsers::SAX2Parser.new(xml)
+        parser = XmlParser.sax2_parser(xml)
         listener = AutoFilterListener.new
         parser.listen(listener)
         parser.parse
@@ -1516,7 +1516,7 @@ module Xlsxrb
       end
 
       def parse_worksheet_sort_state(xml)
-        parser = REXML::Parsers::SAX2Parser.new(xml)
+        parser = XmlParser.sax2_parser(xml)
         listener = SortStateListener.new
         parser.listen(listener)
         parser.parse
@@ -1524,7 +1524,7 @@ module Xlsxrb
       end
 
       def parse_worksheet_data_validations(xml)
-        parser = REXML::Parsers::SAX2Parser.new(xml)
+        parser = XmlParser.sax2_parser(xml)
         listener = DataValidationsListener.new
         parser.listen(listener)
         parser.parse
@@ -1532,7 +1532,7 @@ module Xlsxrb
       end
 
       def parse_worksheet_data_validations_options(xml)
-        parser = REXML::Parsers::SAX2Parser.new(xml)
+        parser = XmlParser.sax2_parser(xml)
         listener = DataValidationsListener.new
         parser.listen(listener)
         parser.parse
@@ -1540,7 +1540,7 @@ module Xlsxrb
       end
 
       def parse_worksheet_conditional_formats(xml)
-        parser = REXML::Parsers::SAX2Parser.new(xml)
+        parser = XmlParser.sax2_parser(xml)
         listener = ConditionalFormattingListener.new
         parser.listen(listener)
         parser.parse
@@ -1548,7 +1548,7 @@ module Xlsxrb
       end
 
       def parse_worksheet_properties(xml)
-        parser = REXML::Parsers::SAX2Parser.new(xml)
+        parser = XmlParser.sax2_parser(xml)
         listener = SheetPropertiesListener.new
         parser.listen(listener)
         parser.parse
@@ -1556,7 +1556,7 @@ module Xlsxrb
       end
 
       def parse_worksheet_phonetic_pr(xml)
-        parser = REXML::Parsers::SAX2Parser.new(xml)
+        parser = XmlParser.sax2_parser(xml)
         listener = PhoneticPrListener.new
         parser.listen(listener)
         parser.parse
@@ -1564,7 +1564,7 @@ module Xlsxrb
       end
 
       def parse_worksheet_sheet_protection(xml)
-        parser = REXML::Parsers::SAX2Parser.new(xml)
+        parser = XmlParser.sax2_parser(xml)
         listener = SheetProtectionListener.new
         parser.listen(listener)
         parser.parse
@@ -1572,7 +1572,7 @@ module Xlsxrb
       end
 
       def parse_worksheet_protected_ranges(xml)
-        parser = REXML::Parsers::SAX2Parser.new(xml)
+        parser = XmlParser.sax2_parser(xml)
         listener = ProtectedRangesListener.new
         parser.listen(listener)
         parser.parse
@@ -1580,7 +1580,7 @@ module Xlsxrb
       end
 
       def parse_worksheet_cell_watches(xml)
-        parser = REXML::Parsers::SAX2Parser.new(xml)
+        parser = XmlParser.sax2_parser(xml)
         listener = CellWatchesListener.new
         parser.listen(listener)
         parser.parse
@@ -1588,7 +1588,7 @@ module Xlsxrb
       end
 
       def parse_worksheet_ignored_errors(xml)
-        parser = REXML::Parsers::SAX2Parser.new(xml)
+        parser = XmlParser.sax2_parser(xml)
         listener = IgnoredErrorsListener.new
         parser.listen(listener)
         parser.parse
@@ -1596,7 +1596,7 @@ module Xlsxrb
       end
 
       def parse_worksheet_data_consolidate(xml)
-        parser = REXML::Parsers::SAX2Parser.new(xml)
+        parser = XmlParser.sax2_parser(xml)
         listener = DataConsolidateListener.new
         parser.listen(listener)
         parser.parse
@@ -1604,7 +1604,7 @@ module Xlsxrb
       end
 
       def parse_worksheet_scenarios(xml)
-        parser = REXML::Parsers::SAX2Parser.new(xml)
+        parser = XmlParser.sax2_parser(xml)
         listener = ScenariosListener.new
         parser.listen(listener)
         parser.parse
@@ -1612,7 +1612,7 @@ module Xlsxrb
       end
 
       def parse_worksheet_dimension(xml)
-        parser = REXML::Parsers::SAX2Parser.new(xml)
+        parser = XmlParser.sax2_parser(xml)
         listener = DimensionListener.new
         parser.listen(listener)
         parser.parse
@@ -1620,7 +1620,7 @@ module Xlsxrb
       end
 
       def parse_worksheet_sheet_format(xml)
-        parser = REXML::Parsers::SAX2Parser.new(xml)
+        parser = XmlParser.sax2_parser(xml)
         listener = SheetFormatListener.new
         parser.listen(listener)
         parser.parse
@@ -1628,7 +1628,7 @@ module Xlsxrb
       end
 
       def parse_worksheet_sheet_view(xml)
-        parser = REXML::Parsers::SAX2Parser.new(xml)
+        parser = XmlParser.sax2_parser(xml)
         listener = SheetViewListener.new
         parser.listen(listener)
         parser.parse
@@ -1636,7 +1636,7 @@ module Xlsxrb
       end
 
       def parse_worksheet_print_page(xml)
-        parser = REXML::Parsers::SAX2Parser.new(xml)
+        parser = XmlParser.sax2_parser(xml)
         listener = PrintPageListener.new
         parser.listen(listener)
         parser.parse

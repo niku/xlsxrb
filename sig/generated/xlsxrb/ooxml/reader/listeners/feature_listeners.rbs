@@ -274,8 +274,6 @@ module Xlsxrb
         private
 
         def element_name: (untyped local_name, untyped qname) -> untyped
-
-        def xml_unescape: (untyped str) -> untyped
       end
 
       # SAX2 listener for parsing conditionalFormatting elements.
@@ -402,8 +400,6 @@ module Xlsxrb
         private
 
         def element_name: (untyped local_name, untyped qname) -> untyped
-
-        def xml_unescape: (untyped str) -> untyped
       end
 
       # SAX2 listener for parsing pivotCacheRecords XML.

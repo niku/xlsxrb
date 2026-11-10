@@ -8,6 +8,76 @@ module Xlsxrb
       # Parses XML string using SAX2, calling the given listener.
       def self.parse: (untyped xml_string, untyped listener) -> untyped
 
+      # Returns a SAX2 parser whose listeners receive attribute values with XML entities
+      # decoded. REXML's SAX2 parser decodes text but passes attribute values as written, so
+      # formatCode="&quot;$&quot;0" would otherwise arrive with the &quot; references.
+      # : (String xml_string) -> REXML::Parsers::SAX2Parser
+      def self.sax2_parser: (String xml_string) -> REXML::Parsers::SAX2Parser
+
+      # SAX2 parser that wraps each listener in an AttributeDecoder.
+      class DecodingSAX2Parser < REXML::Parsers::SAX2Parser
+        # : (*untyped args) ?{ (*untyped) -> untyped } -> untyped
+        def listen: (*untyped args) ?{ (*untyped) -> untyped } -> untyped
+      end
+
+      # Forwards SAX2 events to a listener, decoding entity references in attribute values.
+      class AttributeDecoder
+        # : (untyped listener) -> void
+        def initialize: (untyped listener) -> void
+
+        # Plain methods rather than define_method blocks, which Ractors cannot share.
+        # : (*untyped args) -> untyped
+        def start_document: (*untyped args) -> untyped
+
+        # : (*untyped args) -> untyped
+        def end_document: (*untyped args) -> untyped
+
+        # : (*untyped args) -> untyped
+        def start_prefix_mapping: (*untyped args) -> untyped
+
+        # : (*untyped args) -> untyped
+        def end_prefix_mapping: (*untyped args) -> untyped
+
+        # : (*untyped args) -> untyped
+        def end_element: (*untyped args) -> untyped
+
+        # : (*untyped args) -> untyped
+        def characters: (*untyped args) -> untyped
+
+        # : (*untyped args) -> untyped
+        def processing_instruction: (*untyped args) -> untyped
+
+        # : (*untyped args) -> untyped
+        def doctype: (*untyped args) -> untyped
+
+        # : (*untyped args) -> untyped
+        def attlistdecl: (*untyped args) -> untyped
+
+        # : (*untyped args) -> untyped
+        def elementdecl: (*untyped args) -> untyped
+
+        # : (*untyped args) -> untyped
+        def entitydecl: (*untyped args) -> untyped
+
+        # : (*untyped args) -> untyped
+        def notationdecl: (*untyped args) -> untyped
+
+        # : (*untyped args) -> untyped
+        def cdata: (*untyped args) -> untyped
+
+        # : (*untyped args) -> untyped
+        def xmldecl: (*untyped args) -> untyped
+
+        # : (*untyped args) -> untyped
+        def comment: (*untyped args) -> untyped
+
+        # : (*untyped args) -> untyped
+        def progress: (*untyped args) -> untyped
+
+        # : (String? uri, String local_name, String qname, Hash[String, String] attributes) -> untyped
+        def start_element: (String? uri, String local_name, String qname, Hash[String, String] attributes) -> untyped
+      end
+
       # Base listener with unmapped-data collection support.
       class BaseListener
         include REXML::SAX2Listener
