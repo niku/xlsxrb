@@ -1083,7 +1083,7 @@ puts "Excel Table generated!"`,
         styles_borders: `require "xlsxrb"
 
 Xlsxrb.write("styles_borders.xlsx") do |wb|
-  wb.style(:header, bold: true, size: 12, fill_color: "4F81BD", font_color: "FFFFFF", align_horizontal: :center)
+  wb.style(:header, bold: true, font_size: 12, fill_color: "4F81BD", font_color: "FFFFFF", align_horizontal: :center)
   wb.style(:box, border_all: { style: :thin, color: "000000" }, align_horizontal: :center)
   wb.style(:double_box, border_all: { style: :double, color: "1F497D" }, align_horizontal: :center)
   wb.style(:colored, font: { bold: true, color: "C00000" }, fill_color: "FFFF00", align_horizontal: :center)
