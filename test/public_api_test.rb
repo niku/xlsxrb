@@ -609,6 +609,21 @@ class PublicApiTest < Test::Unit::TestCase
     assert_include(Xlsxrb::Ooxml::ZipReader.new(StringIO.new(Xlsxrb.write(built))).read_entry("xl/styles.xml"), '<left style="slantDashDot">')
   end
 
+  test "doughnut charts write the first slice angle and hole size" do
+    chart_xml = lambda do |**opts|
+      built = Xlsxrb.build do |b|
+        b.sheet("S") do |s|
+          s.row(%w[a b])
+          s.row([1, 2])
+          s.chart(type: :doughnut, series: [{ cat_ref: "S!$A$1:$B$1", val_ref: "S!$A$2:$B$2" }], **opts)
+        end
+      end
+      Xlsxrb::Ooxml::ZipReader.new(StringIO.new(Xlsxrb.write(built))).read_entry("xl/charts/chart1.xml")
+    end
+    assert_match(%r{<c:firstSliceAng val="0"/><c:holeSize val="50"/>}, chart_xml.call)
+    assert_match(%r{<c:firstSliceAng val="90"/><c:holeSize val="30"/>}, chart_xml.call(first_slice_ang: 90, hole_size: 30))
+  end
+
   test "page setup omits a DPI of zero" do
     built = Xlsxrb.build do |b|
       b.sheet("S") do |s|

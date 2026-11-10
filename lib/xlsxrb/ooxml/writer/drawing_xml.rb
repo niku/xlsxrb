@@ -1345,8 +1345,11 @@ module Xlsxrb
             snb = chart[:show_neg_bubbles]
             parts << %(<c:showNegBubbles val="#{snb ? 1 : 0}"/>) unless snb.nil?
             parts << %(<c:sizeRepresents val="#{chart[:size_represents]}"/>) if chart[:size_represents]
-            parts << %(<c:firstSliceAng val="#{chart[:first_slice_ang]}"/>) if chart[:first_slice_ang]
-            parts << %(<c:holeSize val="#{chart[:hole_size]}"/>) if chart[:hole_size]
+            # Doughnut charts carry both; Excel's defaults are 0 and 50.
+            first_slice_ang = chart[:first_slice_ang] || (0 if g_type == "doughnutChart")
+            hole_size = chart[:hole_size] || (50 if g_type == "doughnutChart")
+            parts << %(<c:firstSliceAng val="#{first_slice_ang}"/>) if first_slice_ang
+            parts << %(<c:holeSize val="#{hole_size}"/>) if hole_size
             if chart[:ser_lines]
               sl_spec = chart[:ser_lines]
               if sl_spec.is_a?(Hash)
