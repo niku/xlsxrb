@@ -861,7 +861,7 @@ module Xlsxrb
           attrs[:tint] = tc[:tint].to_s if tc[:tint]
           attrs.empty? ? nil : attrs
         elsif tc.is_a?(String) || tc.is_a?(Symbol)
-          { rgb: tc.to_s.delete_prefix("#") }
+          { rgb: tab_color_rgb(tc) }
         elsif props[:tab_color_theme]
           attrs = { theme: props[:tab_color_theme].to_s }
           attrs[:tint] = props[:tab_color_tint].to_s if props[:tab_color_tint]
@@ -871,6 +871,18 @@ module Xlsxrb
         elsif props[:tab_color_auto]
           { auto: "1" }
         end
+      end
+
+      # Writes a hex tab color as given (without "#") and resolves a color name such as :red to
+      # aRGB hex, as for cell styles.
+      def tab_color_rgb(color)
+        hex = color.to_s.delete_prefix("#")
+        return hex if hex.match?(/\A(\h{6}|\h{8})\z/)
+
+        rgb = StyleBuilder.resolve_color(color.is_a?(Symbol) ? color : color.to_s.to_sym).to_s
+        raise ArgumentError, "unknown tab color: #{color.inspect}" unless rgb.match?(/\A\h{8}\z/)
+
+        rgb
       end
 
       def write_sheet_views(freeze_pane: nil, split_pane: nil, selection: nil, sheet_view: nil)

@@ -624,6 +624,23 @@ class PublicApiTest < Test::Unit::TestCase
     assert_match(%r{<c:firstSliceAng val="90"/><c:holeSize val="30"/>}, chart_xml.call(first_slice_ang: 90, hole_size: 30))
   end
 
+  test "sheet tab colors accept color names and hex" do
+    tab = lambda do |color|
+      built = Xlsxrb.build do |b|
+        b.sheet("S") do |s|
+          s.row([1])
+          s.sheet_properties(tab_color: color)
+        end
+      end
+      Xlsxrb::Ooxml::ZipReader.new(StringIO.new(Xlsxrb.write(built))).read_entry("xl/worksheets/sheet1.xml")[/<tabColor[^>]*>/]
+    end
+    assert_equal('<tabColor rgb="FFFF0000"/>', tab.call(:red))
+    assert_equal('<tabColor rgb="FF00FF00"/>', tab.call("green"))
+    assert_equal('<tabColor rgb="00ff00"/>', tab.call("#00ff00"))
+    assert_equal('<tabColor rgb="FF123456"/>', tab.call("FF123456"))
+    assert_raise_message(/unknown tab color: :redd/) { tab.call(:redd) }
+  end
+
   test "page setup omits a DPI of zero" do
     built = Xlsxrb.build do |b|
       b.sheet("S") do |s|

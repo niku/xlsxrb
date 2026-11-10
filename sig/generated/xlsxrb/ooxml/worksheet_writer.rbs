@@ -44,6 +44,10 @@ module Xlsxrb
 
       def build_tab_color_attrs: (untyped props) -> untyped
 
+      # Writes a hex tab color as given (without "#") and resolves a color name such as :red to
+      # aRGB hex, as for cell styles.
+      def tab_color_rgb: (untyped color) -> untyped
+
       def write_sheet_views: (?freeze_pane: untyped, ?split_pane: untyped, ?selection: untyped, ?sheet_view: untyped) -> untyped
 
       def write_sheet_format_pr: (untyped fmt) -> untyped
