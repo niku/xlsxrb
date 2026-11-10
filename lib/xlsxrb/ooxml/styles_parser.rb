@@ -42,6 +42,7 @@ module Xlsxrb
           @current_font = nil
           @current_fill = nil
           @current_fill_pattern = nil
+          @current_gradient_stop = nil
           @current_border = nil
           @current_border_side = nil
           @current_xf = nil
@@ -101,6 +102,14 @@ module Xlsxrb
             @current_fill = {} if parent_context?("fills") || (@current_dxf && parent_context?("dxf"))
           when "patternFill"
             @current_fill_pattern = attrs["patternType"] if @current_fill
+          when "gradientFill"
+            if @current_fill
+              gradient = { type: attrs["type"], degree: attrs["degree"]&.to_f }
+              %w[left right top bottom].each { |side| gradient[side.to_sym] = attrs[side].to_f if attrs[side] }
+              @current_fill[:gradient] = gradient.compact.merge(stops: [])
+            end
+          when "stop"
+            @current_gradient_stop = { position: attrs["position"].to_f } if @current_fill&.dig(:gradient)
           when "fgColor", "bgColor"
             handle_fill_color(localname, attrs) if @current_fill
           when "border"
@@ -136,6 +145,11 @@ module Xlsxrb
                 @result[:fonts] << @current_font
               end
               @current_font = nil
+            end
+          when "stop"
+            if @current_gradient_stop
+              @current_fill[:gradient][:stops] << @current_gradient_stop if @current_fill&.dig(:gradient)
+              @current_gradient_stop = nil
             end
           when "fill"
             if @current_fill
@@ -188,7 +202,10 @@ module Xlsxrb
         end
 
         def handle_color(attrs)
-          if @current_font
+          if @current_gradient_stop
+            color = extract_color(attrs)
+            @current_gradient_stop[:color] = color unless color.empty?
+          elsif @current_font
             color = extract_color(attrs)
             @current_font[:color] = color unless color.empty?
           elsif @current_border && @current_border_side

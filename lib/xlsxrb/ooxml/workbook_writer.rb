@@ -886,7 +886,9 @@ module Xlsxrb
             fill_props = fill_props.to_h if fill_props.is_a?(Elements::MetadataRecord)
             b.tag("fill") do |_|
               if fill_props[:gradient]
-                b.open_tag("gradientFill", { type: fill_props[:gradient][:type], degree: fill_props[:gradient][:degree]&.to_s }.compact)
+                gradient = fill_props[:gradient]
+                b.open_tag("gradientFill", { type: gradient[:type], degree: gradient[:degree]&.to_s, left: gradient[:left]&.to_s,
+                                             right: gradient[:right]&.to_s, top: gradient[:top]&.to_s, bottom: gradient[:bottom]&.to_s }.compact)
                 fill_props[:gradient][:stops].each do |stop|
                   b.tag("stop", { position: stop[:position].to_s }) do |_|
                     c_attrs = color_tag_attrs(stop[:color] || stop)

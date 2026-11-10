@@ -2115,13 +2115,16 @@ module Xlsxrb
     end
 
     # Fill style definition in stylesheet (<fill>).
+    #
+    # +gradient+ describes a <gradientFill> in place of a pattern: { type:, degree:, left:, right:,
+    # top:, bottom:, stops: [{ position:, color: { rgb: | theme:, tint: } }] }.
     # @api public
-    Fill = Data.define(:pattern_type, :fg_color, :bg_color) do
+    Fill = Data.define(:pattern_type, :fg_color, :bg_color, :gradient) do
       include MetadataRecord
 
-      #: (?pattern_type: String?, ?fg_color: Hash[Symbol, untyped]?, ?bg_color: Hash[Symbol, untyped]?) -> void
-      def initialize(pattern_type: nil, fg_color: nil, bg_color: nil)
-        super(**{ pattern_type: pattern_type, fg_color: fg_color, bg_color: bg_color })
+      #: (?pattern_type: String?, ?fg_color: Hash[Symbol, untyped]?, ?bg_color: Hash[Symbol, untyped]?, ?gradient: Hash[Symbol, untyped]?) -> void
+      def initialize(pattern_type: nil, fg_color: nil, bg_color: nil, gradient: nil)
+        super(**{ pattern_type: pattern_type, fg_color: fg_color, bg_color: bg_color, gradient: gradient })
       end
     end
 

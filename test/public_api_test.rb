@@ -584,6 +584,20 @@ class PublicApiTest < Test::Unit::TestCase
     assert_include(styles, 'formatCode="&quot;Q&quot;0 &amp; &quot;x&quot;"')
   end
 
+  test "loaded gradient fills are written back" do
+    built = Xlsxrb.build do |b|
+      b.style(:fade) { |st| st.fill_gradient(type: "linear", degree: 45, stops: [{ position: 0, color: "FFFFFFFF" }, { position: 1, color: "FF4F81BD" }]) }
+      b.sheet("S") { |s| s.row(["x"], cell_styles: [:fade]) }
+    end
+    gradient_xml = ->(d) { Xlsxrb::Ooxml::ZipReader.new(StringIO.new(d)).read_entry("xl/styles.xml")[%r{<gradientFill.*?</gradientFill>}] }
+    data = Xlsxrb.write(built)
+    loaded = Xlsxrb.load(data)
+    gradient = loaded.styles.fills.map(&:gradient).compact.first
+    assert_equal(["linear", 45.0, [[0.0, "FFFFFFFF"], [1.0, "FF4F81BD"]]],
+                 [gradient[:type], gradient[:degree], gradient[:stops].map { |stop| [stop[:position], stop[:color][:rgb]] }])
+    assert_match(%r{<gradientFill type="linear" degree="45(\.0)?"><stop position="0(\.0)?"><color rgb="FFFFFFFF"/></stop>}, gradient_xml.call(Xlsxrb.write(loaded)))
+  end
+
   test "page setup omits a DPI of zero" do
     built = Xlsxrb.build do |b|
       b.sheet("S") do |s|

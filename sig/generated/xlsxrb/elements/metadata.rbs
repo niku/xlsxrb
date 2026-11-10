@@ -1381,6 +1381,9 @@ module Xlsxrb
     end
 
     # Fill style definition in stylesheet (<fill>).
+    #
+    # +gradient+ describes a <gradientFill> in place of a pattern: { type:, degree:, left:, right:,
+    # top:, bottom:, stops: [{ position:, color: { rgb: | theme:, tint: } }] }.
     # @api public
     class Fill < Data
       attr_reader pattern_type(): untyped
@@ -1389,12 +1392,14 @@ module Xlsxrb
 
       attr_reader bg_color(): untyped
 
-      def self.new: (untyped pattern_type, untyped fg_color, untyped bg_color) -> instance
-                  | (pattern_type: untyped, fg_color: untyped, bg_color: untyped) -> instance
+      attr_reader gradient(): untyped
 
-      def self.members: () -> [ :pattern_type, :fg_color, :bg_color ]
+      def self.new: (untyped pattern_type, untyped fg_color, untyped bg_color, untyped gradient) -> instance
+                  | (pattern_type: untyped, fg_color: untyped, bg_color: untyped, gradient: untyped) -> instance
 
-      def members: () -> [ :pattern_type, :fg_color, :bg_color ]
+      def self.members: () -> [ :pattern_type, :fg_color, :bg_color, :gradient ]
+
+      def members: () -> [ :pattern_type, :fg_color, :bg_color, :gradient ]
     end
 
     # Border style definition in stylesheet (<border>).
