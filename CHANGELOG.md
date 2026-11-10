@@ -1,4 +1,4 @@
-## [Unreleased]
+## [0.2.0] - 2026-11-10
 
 Upgrading from 0.1.x: see [docs/UPGRADING-0.2.md](docs/UPGRADING-0.2.md).
 
