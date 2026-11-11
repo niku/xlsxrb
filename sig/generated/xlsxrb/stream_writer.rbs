@@ -1998,6 +1998,12 @@ module Xlsxrb
     # : (untyped cell_styles) -> void
     def check_style_names!: (untyped cell_styles) -> void
 
+    # Raises ArgumentError if +name+ is a style name that has not been defined. Defined
+    # names return before DslHelpers.check_style_name!, whose Symbol#to_s allocates a
+    # String for every styled cell.
+    # : (untyped name) -> void
+    def check_style_name!: (untyped name) -> void
+
     # Gives Date and Time values whose named style has no number format a variant of that
     # style with the default date or time format, registered on first use. A value without
     # a cell style gets a variant of the style it inherits: the row style, or the column

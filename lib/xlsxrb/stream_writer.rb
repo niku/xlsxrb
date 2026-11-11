@@ -1679,7 +1679,7 @@ module Xlsxrb
       values = DslHelpers.normalize_row_values(values)
       cell_styles = DslHelpers.normalize_row_styles(cell_styles)
       check_style_names!(cell_styles) if cell_styles
-      DslHelpers.check_style_name!(row_style, @style_name_to_id)
+      check_style_name!(row_style)
 
       if @current_charts && !@current_charts.empty?
         @current_cells ||= {}
@@ -3399,10 +3399,20 @@ module Xlsxrb
     #: (untyped cell_styles) -> void
     def check_style_names!(cell_styles)
       if cell_styles.is_a?(Array)
-        cell_styles.each { |name| DslHelpers.check_style_name!(name, @style_name_to_id) }
+        cell_styles.each { |name| check_style_name!(name) }
       else
-        DslHelpers.check_style_name!(cell_styles, @style_name_to_id)
+        check_style_name!(cell_styles)
       end
+    end
+
+    # Raises ArgumentError if +name+ is a style name that has not been defined. Defined
+    # names return before DslHelpers.check_style_name!, whose Symbol#to_s allocates a
+    # String for every styled cell.
+    #: (untyped name) -> void
+    def check_style_name!(name)
+      return if name.is_a?(Symbol) ? @style_name_to_id.key?(name.name) : name.is_a?(String) && @style_name_to_id.key?(name)
+
+      DslHelpers.check_style_name!(name, @style_name_to_id)
     end
 
     # Gives Date and Time values whose named style has no number format a variant of that
@@ -3416,7 +3426,11 @@ module Xlsxrb
       return cell_styles unless values.any?(Date) || values.any?(Time)
 
       styles_for_cells = cell_styles.is_a?(Array) ? cell_styles : nil
-      values.each_with_index do |value, idx|
+      idx = -1
+      last = values.size - 1
+      while idx < last
+        idx += 1
+        value = values[idx]
         next unless value.is_a?(Date) || value.is_a?(Time)
 
         style_name = styles_for_cells ? styles_for_cells[idx] : cell_styles

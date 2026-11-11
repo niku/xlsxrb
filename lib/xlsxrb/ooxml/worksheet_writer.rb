@@ -31,6 +31,7 @@ module Xlsxrb
         @date1904 = date1904 ? true : false
         @builder = XmlBuilder.new(@io)
         @row_buffer = String.new(capacity: 65_536)
+        @style_attrs = {} # style id => '" s="<id>' fragment, built once per id
         @started = false
         @finished = false
       end
@@ -521,221 +522,7 @@ module Xlsxrb
           max_len = [max_len, styles_len].max
         end
 
-        col_index = 0
-        while col_index < max_len
-          value = col_index < values.length ? values[col_index] : nil
-          cell_style_id = single_style_id
-          if is_styles_collection
-            style_name = if styles.is_a?(Array)
-                           col_index < styles.length ? styles[col_index] : nil
-                         else
-                           styles[col_index]
-                         end
-            cell_style_id = resolve_style_id(style_name, style_map)
-          end
-
-          if cell_style_id.nil?
-            col_style = @column_styles ? @column_styles[col_index] : nil
-            col_style_id = resolve_style_id(col_style, style_map)
-            style_id = row_style_id || col_style_id
-          else
-            style_id = cell_style_id
-          end
-
-          col_ref = COLUMN_LETTERS[col_index] || column_letter(col_index)
-
-          if value.nil?
-            buf << '<c r="' << col_ref << row_num_str << '" s="' << cell_style_id.to_s << '"/>' if cell_style_id
-            col_index += 1
-            next
-          end
-
-          raise ArgumentError, "Non-finite Float #{value} is not supported in XLSX" if value.is_a?(Float) && !value.finite?
-
-          # Fast path: unstyled numbers, booleans, and simple strings (majority of cells)
-          if style_id.nil? && !value.is_a?(Xlsxrb::Elements::Formula) && !value.is_a?(Hash)
-            case value
-            when Integer
-              val_str = value >= 0 && value < 65_536 ? INTEGER_STRINGS[value] : value.to_s
-              buf << '<c r="' << col_ref << row_num_str << '"><v>' << val_str << "</v></c>"
-              col_index += 1
-              next
-            when Float
-              buf << '<c r="' << col_ref << row_num_str << '"><v>' << value.to_s << "</v></c>"
-              col_index += 1
-              next
-            when String
-              if sst_index
-                idx = sst_index[value]
-                unless idx
-                  sst << value
-                  idx = sst.size - 1
-                  sst_index[value] = idx
-                end
-                idx_str = INTEGER_STRINGS[idx] || idx.to_s
-                buf << '<c r="' << col_ref << row_num_str << '" t="s"><v>' << idx_str << "</v></c>"
-              else
-                buf << '<c r="' << col_ref << row_num_str << '" t="inlineStr"><is><t>' << escape_xml(value) << "</t></is></c>"
-              end
-              col_index += 1
-              next
-            when true
-              buf << '<c r="' << col_ref << row_num_str << '" t="b"><v>1</v></c>'
-              col_index += 1
-              next
-            when false
-              buf << '<c r="' << col_ref << row_num_str << '" t="b"><v>0</v></c>'
-              col_index += 1
-              next
-            when Time, DateTime
-              time_style_id = style_map ? style_map["__xlsxrb_time"] : nil
-              buf << '<c r="' << col_ref << row_num_str
-              buf << '" s="' << time_style_id.to_s if time_style_id
-              buf << '"><v>' << Xlsxrb::Ooxml::Utils.datetime_to_serial(value, date1904: @date1904).to_s << "</v></c>"
-              col_index += 1
-              next
-            when Date
-              date_style_id = style_map ? style_map["__xlsxrb_date"] : nil
-              buf << '<c r="' << col_ref << row_num_str
-              buf << '" s="' << date_style_id.to_s if date_style_id
-              buf << '"><v>' << Xlsxrb::Ooxml::Utils.date_to_serial(value, date1904: @date1904).to_s << "</v></c>"
-              col_index += 1
-              next
-            end
-          end
-
-          # General path: styled, formula, rich text, or complex cell
-          formula_expr = nil
-          formula_ca = false
-          formula_type = nil
-          formula_ref = nil
-          formula_si = nil
-          xml_val = value
-          type = nil
-
-          case value
-          when Xlsxrb::Elements::Formula
-            formula_expr = value.expression
-            formula_ca = value.calculate_always?
-            formula_type = value.type
-            formula_ref = value.ref
-            formula_si = value.shared_index
-            xml_val = value.cached_value
-            case value.cached_value
-            when String
-              type = "str"
-            when true
-              type = "b"
-              xml_val = "1"
-            when false
-              type = "b"
-              xml_val = "0"
-            when Xlsxrb::Elements::CellError
-              type = "e"
-              xml_val = value.cached_value.code
-            end
-          when Hash
-            if value.key?(:formula)
-              formula_expr = value[:formula] || value[:expression]
-              formula_ca = value[:calculate_always] || false
-              formula_type = value[:type]
-              formula_ref = value[:ref]
-              formula_si = value[:si] || value[:shared_index]
-              xml_val = if value.key?(:value)
-                          value[:value]
-                        elsif value.key?(:cached_value)
-                          value[:cached_value]
-                        end
-              case xml_val
-              when String
-                type = "str"
-              when true
-                type = "b"
-                xml_val = "1"
-              when false
-                type = "b"
-                xml_val = "0"
-              when Xlsxrb::Elements::CellError
-                type = "e"
-                xml_val = xml_val.code
-              end
-            end
-          when String, Xlsxrb::Elements::RichText
-            if sst_index
-              idx = sst_index[value]
-              unless idx
-                sst << value
-                idx = sst.size - 1
-                sst_index[value] = idx
-              end
-              xml_val = idx
-              type = "s"
-            else
-              xml_val = value
-              type = "inlineStr"
-            end
-          when true
-            xml_val = "1"
-            type = "b"
-          when false
-            xml_val = "0"
-            type = "b"
-          when Time, DateTime
-            xml_val = Xlsxrb::Ooxml::Utils.datetime_to_serial(value, date1904: @date1904)
-          when Date
-            xml_val = Xlsxrb::Ooxml::Utils.date_to_serial(value, date1904: @date1904)
-          when BigDecimal
-            xml_val = value.to_s("F")
-          when Xlsxrb::Elements::CellError
-            xml_val = value.code
-            type = "e"
-          end
-
-          raise ArgumentError, "Non-finite Float #{xml_val} is not supported in XLSX" if xml_val.is_a?(Float) && !xml_val.finite?
-
-          formula_expr = formula_expr[1..] if formula_expr&.start_with?("=")
-
-          buf << '<c r="' << col_ref << row_num_str << '"'
-          buf << ' s="' << style_id.to_s << '"' if style_id
-          buf << ' t="' << type << '"' if type
-          if formula_expr || (formula_type && formula_type.to_sym == :shared && !formula_si.nil?)
-            f_attrs = +""
-            if formula_type
-              case formula_type.to_sym
-              when :array
-                f_attrs << ' t="array"'
-                f_attrs << %( ref="#{formula_ref}") if formula_ref
-              when :shared
-                f_attrs << ' t="shared"'
-                f_attrs << %( si="#{formula_si}") if formula_si
-                f_attrs << %( ref="#{formula_ref}") if formula_ref
-              end
-            end
-            f_attrs << ' ca="1"' if formula_ca
-            if formula_expr && !formula_expr.empty?
-              buf << "><f#{f_attrs}>" << escape_xml(formula_expr) << "</f>"
-            else
-              buf << "><f#{f_attrs}/>"
-            end
-            if xml_val.nil?
-              buf << "<v>0</v></c>"
-            else
-              v_str = xml_val.to_s
-              v_str = escape_xml(v_str) if type == "str" || xml_val.is_a?(String)
-              buf << "<v>" << v_str << "</v></c>"
-            end
-          elsif type == "inlineStr"
-            if xml_val.is_a?(Xlsxrb::Elements::RichText)
-              write_inline_rich_text(buf, xml_val)
-            else
-              buf << "><is><t>" << escape_xml(xml_val.to_s) << "</t></is></c>"
-            end
-          else
-            buf << "><v>" << xml_val.to_s << "</v></c>"
-          end
-
-          col_index += 1
-        end
+        write_styled_cells(buf, values, max_len, row_num_str, styles, is_styles_collection, single_style_id, row_style_id, style_map, sst, sst_index)
 
         buf << "</row>"
         return unless buf.bytesize >= 32_768
@@ -800,6 +587,190 @@ module Xlsxrb
       end
 
       private
+
+      # Writes the cells of a row that has cell styles, row attributes, or column styles.
+      # It is not inlined in write_row_values because YJIT ran the same loop there about
+      # 1.6 times slower, after the row attribute handling.
+      def write_styled_cells(buf, values, max_len, row_num_str, styles, is_styles_collection, single_style_id, row_style_id, style_map, sst, sst_index)
+        style_attrs = @style_attrs
+        column_styles = @column_styles
+        col_index = 0
+        while col_index < max_len
+          # Indexing past the end of values or styles (Array or Hash) yields nil.
+          value = values[col_index]
+          cell_style_id = is_styles_collection ? resolve_style_id(styles[col_index], style_map) : single_style_id
+          style_id = cell_style_id || row_style_id || (column_styles && resolve_style_id(column_styles[col_index], style_map))
+          col_ref = COLUMN_LETTERS[col_index] || column_letter(col_index)
+          col_index += 1
+
+          if value.nil?
+            buf << '<c r="' << col_ref << row_num_str << '" s="' << cell_style_id.to_s << '"/>' if cell_style_id
+            next
+          end
+
+          # '" s="<id>' to append after the cell reference, or "" for an unstyled cell
+          s_attr = style_id ? (style_attrs[style_id] ||= -%(" s="#{style_id})) : ""
+          case value
+          when Integer
+            buf << '<c r="' << col_ref << row_num_str << s_attr << '"><v>' << (value >= 0 && value < 65_536 ? INTEGER_STRINGS[value] : value.to_s) << "</v></c>"
+          when Float
+            raise ArgumentError, "Non-finite Float #{value} is not supported in XLSX" unless value.finite?
+
+            buf << '<c r="' << col_ref << row_num_str << s_attr << '"><v>' << value.to_s << "</v></c>"
+          when String
+            if sst_index
+              idx = sst_index[value]
+              unless idx
+                sst << value
+                idx = sst.size - 1
+                sst_index[value] = idx
+              end
+              buf << '<c r="' << col_ref << row_num_str << s_attr << '" t="s"><v>' << (INTEGER_STRINGS[idx] || idx.to_s) << "</v></c>"
+            else
+              buf << '<c r="' << col_ref << row_num_str << s_attr << '" t="inlineStr"><is><t>' << escape_xml(value) << "</t></is></c>"
+            end
+          when true
+            buf << '<c r="' << col_ref << row_num_str << s_attr << '" t="b"><v>1</v></c>'
+          when false
+            buf << '<c r="' << col_ref << row_num_str << s_attr << '" t="b"><v>0</v></c>'
+          when Time, DateTime
+            if style_id.nil? && style_map && (time_style_id = style_map["__xlsxrb_time"])
+              s_attr = style_attrs[time_style_id] ||= -%(" s="#{time_style_id})
+            end
+            buf << '<c r="' << col_ref << row_num_str << s_attr << '"><v>' << Xlsxrb::Ooxml::Utils.datetime_to_serial(value, date1904: @date1904).to_s << "</v></c>"
+          when Date
+            if style_id.nil? && style_map && (date_style_id = style_map["__xlsxrb_date"])
+              s_attr = style_attrs[date_style_id] ||= -%(" s="#{date_style_id})
+            end
+            buf << '<c r="' << col_ref << row_num_str << s_attr << '"><v>' << Xlsxrb::Ooxml::Utils.date_to_serial(value, date1904: @date1904).to_s << "</v></c>"
+          else
+            write_complex_cell(buf, col_ref, row_num_str, value, style_id, sst, sst_index)
+          end
+        end
+      end
+
+      # Writes a cell for write_styled_cells whose value is a formula, rich text, BigDecimal,
+      # cell error, or another value that write_styled_cells does not write itself.
+      def write_complex_cell(buf, col_ref, row_num_str, value, style_id, sst, sst_index)
+        formula_expr = nil
+        formula_ca = false
+        formula_type = nil
+        formula_ref = nil
+        formula_si = nil
+        xml_val = value
+        type = nil
+
+        case value
+        when Xlsxrb::Elements::Formula
+          formula_expr = value.expression
+          formula_ca = value.calculate_always?
+          formula_type = value.type
+          formula_ref = value.ref
+          formula_si = value.shared_index
+          xml_val = value.cached_value
+          case value.cached_value
+          when String
+            type = "str"
+          when true
+            type = "b"
+            xml_val = "1"
+          when false
+            type = "b"
+            xml_val = "0"
+          when Xlsxrb::Elements::CellError
+            type = "e"
+            xml_val = value.cached_value.code
+          end
+        when Hash
+          if value.key?(:formula)
+            formula_expr = value[:formula] || value[:expression]
+            formula_ca = value[:calculate_always] || false
+            formula_type = value[:type]
+            formula_ref = value[:ref]
+            formula_si = value[:si] || value[:shared_index]
+            xml_val = if value.key?(:value)
+                        value[:value]
+                      elsif value.key?(:cached_value)
+                        value[:cached_value]
+                      end
+            case xml_val
+            when String
+              type = "str"
+            when true
+              type = "b"
+              xml_val = "1"
+            when false
+              type = "b"
+              xml_val = "0"
+            when Xlsxrb::Elements::CellError
+              type = "e"
+              xml_val = xml_val.code
+            end
+          end
+        when Xlsxrb::Elements::RichText
+          if sst_index
+            idx = sst_index[value]
+            unless idx
+              sst << value
+              idx = sst.size - 1
+              sst_index[value] = idx
+            end
+            xml_val = idx
+            type = "s"
+          else
+            xml_val = value
+            type = "inlineStr"
+          end
+        when BigDecimal
+          xml_val = value.to_s("F")
+        when Xlsxrb::Elements::CellError
+          xml_val = value.code
+          type = "e"
+        end
+
+        raise ArgumentError, "Non-finite Float #{xml_val} is not supported in XLSX" if xml_val.is_a?(Float) && !xml_val.finite?
+
+        formula_expr = formula_expr[1..] if formula_expr&.start_with?("=")
+
+        buf << '<c r="' << col_ref << row_num_str << '"'
+        buf << ' s="' << style_id.to_s << '"' if style_id
+        buf << ' t="' << type << '"' if type
+        if formula_expr || (formula_type && formula_type.to_sym == :shared && !formula_si.nil?)
+          f_attrs = +""
+          if formula_type
+            case formula_type.to_sym
+            when :array
+              f_attrs << ' t="array"'
+              f_attrs << %( ref="#{formula_ref}") if formula_ref
+            when :shared
+              f_attrs << ' t="shared"'
+              f_attrs << %( si="#{formula_si}") if formula_si
+              f_attrs << %( ref="#{formula_ref}") if formula_ref
+            end
+          end
+          f_attrs << ' ca="1"' if formula_ca
+          if formula_expr && !formula_expr.empty?
+            buf << "><f#{f_attrs}>" << escape_xml(formula_expr) << "</f>"
+          else
+            buf << "><f#{f_attrs}/>"
+          end
+          if xml_val.nil?
+            buf << "<v>0</v></c>"
+          else
+            v_str = xml_val.to_s
+            v_str = escape_xml(v_str) if type == "str" || xml_val.is_a?(String)
+            buf << "<v>" << v_str << "</v></c>"
+          end
+        elsif type == "inlineStr"
+          if xml_val.is_a?(Xlsxrb::Elements::RichText)
+            write_inline_rich_text(buf, xml_val)
+          else
+            buf << "><is><t>" << escape_xml(xml_val.to_s) << "</t></is></c>"
+          end
+        else
+          buf << "><v>" << xml_val.to_s << "</v></c>"
+        end
+      end
 
       def resolve_style_id(style, style_map)
         return nil if style.nil?

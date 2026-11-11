@@ -1,5 +1,8 @@
 ## [Unreleased]
 
+### Changed
+- Write styled cells faster in `Xlsxrb.write` with a block (`StreamWriter`). Writing 50,000 rows of 10 cells takes 36% longer with a `row_style` on every row (was 95%), 32% longer with one `cell_styles` name (was 103%), and 67% longer with a per-column `cell_styles` array (was 163%) than writing the rows unstyled, on Ruby 4.0 without YJIT. With YJIT the differences are 45%, 42%, and 79% (were 183%, 185%, and 253%). The written files are unchanged.
+
 ### Fixed
 - Write negative integers with their value in `StreamWriter` rows that have a row style, height, or other row attribute, or in sheets with column styles. Unstyled cells in such rows took the value from a lookup table indexed from its end, so `-1` was written as `65535`.
 - Give `Date` and `Time` cells without a cell style the default date and date-time number formats in `StreamWriter` rows that have a row style, height, or other row attribute, and in sheets with column styles ([#9](https://github.com/niku/xlsxrb/issues/9)). A cell that inherits a row or column style without a number format gets a variant of that style with the date format, as a cell style already did, so it keeps the style's font, fill, and border. These cells were written without a number format, so Excel showed the serial number.

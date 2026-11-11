@@ -38,6 +38,15 @@ module Xlsxrb
 
       private
 
+      # Writes the cells of a row that has cell styles, row attributes, or column styles.
+      # It is not inlined in write_row_values because YJIT ran the same loop there about
+      # 1.6 times slower, after the row attribute handling.
+      def write_styled_cells: (untyped buf, untyped values, untyped max_len, untyped row_num_str, untyped styles, untyped is_styles_collection, untyped single_style_id, untyped row_style_id, untyped style_map, untyped sst, untyped sst_index) -> untyped
+
+      # Writes a cell for write_styled_cells whose value is a formula, rich text, BigDecimal,
+      # cell error, or another value that write_styled_cells does not write itself.
+      def write_complex_cell: (untyped buf, untyped col_ref, untyped row_num_str, untyped value, untyped style_id, untyped sst, untyped sst_index) -> untyped
+
       def resolve_style_id: (untyped style, untyped style_map) -> untyped
 
       def write_sheet_properties: (untyped props) -> untyped
