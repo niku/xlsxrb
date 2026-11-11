@@ -166,6 +166,21 @@ class RowColumnStylesTest < Test::Unit::TestCase
     assert_equal 1, parsed_dom.sheets.first["B1"].style_index
   end
 
+  def test_negative_integers_keep_their_value_in_rows_with_attributes
+    io = StringIO.new
+    writer = Xlsxrb::Ooxml::WorksheetWriter.new(io)
+    writer.start(columns: [{ index: 3, style_index: 4 }])
+    writer.write_row_values(0, [-1, -7, -65_536], attrs: { height: 20 })
+    writer.write_row_values(1, [-1, -7, -65_536])
+    writer.finish
+
+    xml = io.string
+    assert_match(%r{<c r="A1"><v>-1</v></c>}, xml)
+    assert_match(%r{<c r="B1"><v>-7</v></c>}, xml)
+    assert_match(%r{<c r="C1"><v>-65536</v></c>}, xml)
+    assert_match(%r{<c r="A2"><v>-1</v></c>}, xml)
+  end
+
   def test_unresolved_style_name_does_not_emit_invalid_string_attribute
     io = StringIO.new
     writer = Xlsxrb::Ooxml::WorksheetWriter.new(io)

@@ -556,7 +556,7 @@ module Xlsxrb
           if style_id.nil? && !value.is_a?(Xlsxrb::Elements::Formula) && !value.is_a?(Hash)
             case value
             when Integer
-              val_str = INTEGER_STRINGS[value] || value.to_s
+              val_str = value >= 0 && value < 65_536 ? INTEGER_STRINGS[value] : value.to_s
               buf << '<c r="' << col_ref << row_num_str << '"><v>' << val_str << "</v></c>"
               col_index += 1
               next
