@@ -109,6 +109,8 @@ module Xlsxrb
         buf << ' outlineLevel="' << attrs[:outline_level].to_s << '"' if attrs[:outline_level]
         buf << ">"
 
+        row_style = resolve_style_id(attrs[:style_index], nil)
+        style_attrs = @style_attrs
         cells.each do |cell|
           if cell.is_a?(Elements::Cell)
             value = cell.value
@@ -137,41 +139,45 @@ module Xlsxrb
           end
 
           cell_style_id = resolve_style_id(cell_style_id, nil)
-          col_style = @column_styles && col_idx ? @column_styles[col_idx] : nil
-          col_style = resolve_style_id(col_style, nil)
-          row_style = resolve_style_id(attrs[:style_index], nil)
-          style_id = cell_style_id.nil? ? (row_style || col_style) : cell_style_id
+          style_id = cell_style_id.nil? ? (row_style || (@column_styles && col_idx && resolve_style_id(@column_styles[col_idx], nil))) : cell_style_id
           style_id = nil unless style_id.is_a?(Integer)
 
           raise ArgumentError, "Non-finite Float #{value} is not supported in XLSX" if value.is_a?(Float) && !value.finite?
 
-          # Fast path for common unstyled cells
-          if !formula && !style_id && !cell_type_val
+          # Fast path for common cells, styled or not
+          if !formula && !cell_type_val
+            # '" s="<id>' to append after the cell reference, or "" for an unstyled cell
+            s_attr = style_id ? (style_attrs[style_id] ||= -%(" s="#{style_id})) : ""
             case value
             when Integer, Float
-              buf << '<c r="' << col_ref << '"><v>' << value.to_s << "</v></c>"
+              buf << '<c r="' << col_ref << s_attr << '"><v>' << value.to_s << "</v></c>"
               next
             when String
               if sst_index && (idx = sst_index[value])
-                buf << '<c r="' << col_ref << '" t="s"><v>' << idx.to_s << "</v></c>"
+                buf << '<c r="' << col_ref << s_attr << '" t="s"><v>' << idx.to_s << "</v></c>"
                 next
               end
             when true
-              buf << '<c r="' << col_ref << '" t="b"><v>1</v></c>'
+              buf << '<c r="' << col_ref << s_attr << '" t="b"><v>1</v></c>'
               next
             when false
-              buf << '<c r="' << col_ref << '" t="b"><v>0</v></c>'
+              buf << '<c r="' << col_ref << s_attr << '" t="b"><v>0</v></c>'
               next
             when nil
-              buf << '<c r="' << col_ref << '"/>'
+              # An empty cell keeps only its own style, not the row or column style.
+              if cell_style_id.is_a?(Integer)
+                buf << '<c r="' << col_ref << '" s="' << cell_style_id.to_s << '"/>'
+              else
+                buf << '<c r="' << col_ref << '"/>'
+              end
               next
             when DateTime
               serial = Xlsxrb::Ooxml::Utils.datetime_to_serial(value, date1904: @date1904)
-              buf << '<c r="' << col_ref << '"><v>' << serial.to_s << "</v></c>"
+              buf << '<c r="' << col_ref << s_attr << '"><v>' << serial.to_s << "</v></c>"
               next
             when Date
               serial = Xlsxrb::Ooxml::Utils.date_to_serial(value, date1904: @date1904)
-              buf << '<c r="' << col_ref << '"><v>' << serial.to_s << "</v></c>"
+              buf << '<c r="' << col_ref << s_attr << '"><v>' << serial.to_s << "</v></c>"
               next
             end
           end

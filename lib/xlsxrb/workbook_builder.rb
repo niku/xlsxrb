@@ -740,7 +740,13 @@ module Xlsxrb
         sheet.columns.each { |col| DslHelpers.check_style_name!(col.style_index, all_style_builders) }
         sheet.rows.each do |row|
           DslHelpers.check_style_name!(row.style_index || row.unmapped_data&.[](:style_index), all_style_builders)
-          row.cells.each { |cell| DslHelpers.check_style_name!(cell.style, all_style_builders) }
+          row.cells.each do |cell|
+            style = cell.style
+            # Skip the check for defined names: it allocates a String for a Symbol.
+            next if style.nil? || all_style_builders.key?(style.is_a?(Symbol) ? style.name : style)
+
+            DslHelpers.check_style_name!(style, all_style_builders)
+          end
         end
       end
 
@@ -753,7 +759,10 @@ module Xlsxrb
             style_name = cell.style
             next unless style_name.is_a?(String) || style_name.is_a?(Symbol)
 
-            variant = DslHelpers.date_style_variant(cell.value, style_name.to_s, all_style_builders[style_name.to_s])
+            value = cell.value
+            next unless value.is_a?(Date) || value.is_a?(Time)
+
+            variant = DslHelpers.date_style_variant(value, style_name.to_s, all_style_builders[style_name.to_s])
             next unless variant
 
             variant_name, number_format = variant
@@ -844,13 +853,20 @@ module Xlsxrb
             row_unmapped.delete(:style_index)
           end
 
+          cells_changed = false
           new_cells = row.cells.map do |cell|
             raw_cell_style = cell.style || cell.style_index
             dated = (cell.value.is_a?(Date) || cell.value.is_a?(Time)) && (raw_cell_style.is_a?(String) || raw_cell_style.is_a?(Symbol))
             date_variant = dated ? date_variants[[raw_cell_style.to_s, cell.value.is_a?(Time) || cell.value.is_a?(DateTime)]] : nil
             raw_cell_style = date_variant.first if date_variant
-            resolved_cell_style = if (raw_cell_style.is_a?(String) || raw_cell_style.is_a?(Symbol)) && style_name_to_id.key?(raw_cell_style.to_s)
-                                    style_name_to_id[raw_cell_style.to_s]
+            # Symbol#name looks a Symbol up without allocating a String for every cell.
+            style_key = if raw_cell_style.is_a?(Symbol)
+                          raw_cell_style.name
+                        elsif raw_cell_style.is_a?(String)
+                          raw_cell_style
+                        end
+            resolved_cell_style = if style_key && style_name_to_id.key?(style_key)
+                                    style_name_to_id[style_key]
                                   elsif raw_cell_style.nil?
                                     resolved_row_style || col_style_map[cell.column_index]
                                   else
@@ -861,7 +877,12 @@ module Xlsxrb
 
             if resolved_cell_style == (cell.style || cell.style_index) && target_fmt == cell.format_code
               cell
+            elsif cell.hyperlink.nil? && cell.comment.nil? && cell.unmapped_data.empty? && cell.errors.empty?
+              # The same cell as Cell.new below would build, without its keyword arguments and checks.
+              cells_changed = true
+              Elements::Cell.fast_create(cell.row_index, cell.column_index, cell.value, resolved_cell_style, cell.formula, cell.raw_value, target_fmt)
             else
+              cells_changed = true
               Elements::Cell.new(
                 row_index: cell.row_index,
                 column_index: cell.column_index,
@@ -878,6 +899,8 @@ module Xlsxrb
               )
             end
           end
+
+          next row if !cells_changed && resolved_row_style == row.style_index && row_unmapped.equal?(row.unmapped_data)
 
           Elements::Row.new(
             index: row.index,

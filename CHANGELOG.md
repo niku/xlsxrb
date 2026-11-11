@@ -2,6 +2,7 @@
 
 ### Changed
 - Write styled cells faster in `Xlsxrb.write` with a block (`StreamWriter`). Writing 50,000 rows of 10 cells takes 36% longer with a `row_style` on every row (was 95%), 32% longer with one `cell_styles` name (was 103%), and 67% longer with a per-column `cell_styles` array (was 163%) than writing the rows unstyled, on Ruby 4.0 without YJIT. With YJIT the differences are 45%, 42%, and 79% (were 183%, 185%, and 253%). The written files are unchanged.
+- Resolve and write styled cells faster in `Xlsxrb.build` and `Xlsxrb.write(target, workbook)`. Building and writing 50,000 rows of 10 cells with a style on every cell takes 1.8 to 1.9 seconds instead of 2.2 to 2.4 seconds on Ruby 4.0 without YJIT, and 1.1 to 1.2 seconds instead of 1.2 to 1.3 seconds with YJIT. Unstyled rows in a workbook that defines a style also build faster, because rows without style changes are no longer copied. The built workbooks and written files are unchanged.
 
 ### Fixed
 - Write negative integers with their value in `StreamWriter` rows that have a row style, height, or other row attribute, or in sheets with column styles. Unstyled cells in such rows took the value from a lookup table indexed from its end, so `-1` was written as `65535`.
