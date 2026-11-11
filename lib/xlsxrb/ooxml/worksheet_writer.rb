@@ -588,11 +588,17 @@ module Xlsxrb
               col_index += 1
               next
             when Time, DateTime
-              buf << '<c r="' << col_ref << row_num_str << '"><v>' << Xlsxrb::Ooxml::Utils.datetime_to_serial(value, date1904: @date1904).to_s << "</v></c>"
+              time_style_id = style_map ? style_map["__xlsxrb_time"] : nil
+              buf << '<c r="' << col_ref << row_num_str
+              buf << '" s="' << time_style_id.to_s if time_style_id
+              buf << '"><v>' << Xlsxrb::Ooxml::Utils.datetime_to_serial(value, date1904: @date1904).to_s << "</v></c>"
               col_index += 1
               next
             when Date
-              buf << '<c r="' << col_ref << row_num_str << '"><v>' << Xlsxrb::Ooxml::Utils.date_to_serial(value, date1904: @date1904).to_s << "</v></c>"
+              date_style_id = style_map ? style_map["__xlsxrb_date"] : nil
+              buf << '<c r="' << col_ref << row_num_str
+              buf << '" s="' << date_style_id.to_s if date_style_id
+              buf << '"><v>' << Xlsxrb::Ooxml::Utils.date_to_serial(value, date1904: @date1904).to_s << "</v></c>"
               col_index += 1
               next
             end

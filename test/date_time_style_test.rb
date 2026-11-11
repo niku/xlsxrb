@@ -27,6 +27,56 @@ class DateTimeStyleTest < Test::Unit::TestCase
     assert time_xf.num_fmt_id.positive?
   end
 
+  test "stream writer gives unstyled dates the default formats in rows with attributes" do
+    io = StringIO.new
+    Xlsxrb.write(io) do |w|
+      w.sheet("S") do |s|
+        s.row([Date.new(2026, 1, 1), Time.new(2026, 1, 1, 12, 0, 0)], height: 20)
+        s.row([Date.new(2026, 1, 1), Time.new(2026, 1, 1, 12, 0, 0)])
+      end
+    end
+    wb = Xlsxrb.load(StringIO.new(io.string))
+    attr_row, plain_row = wb.sheets.first.rows
+
+    assert_equal plain_row.cells.map(&:style_index), attr_row.cells.map(&:style_index)
+    assert_equal "yyyy-mm-dd", wb.styles.number_format_code(wb.styles.cell_xf(attr_row.cells[0].style_index).num_fmt_id)
+    assert_equal "yyyy-mm-dd hh:mm:ss", wb.styles.number_format_code(wb.styles.cell_xf(attr_row.cells[1].style_index).num_fmt_id)
+  end
+
+  test "stream writer gives dates a date variant of the row or column style they inherit" do
+    d = Date.new(2026, 4, 1)
+    t = Time.utc(2026, 4, 1, 9, 0, 0)
+    io = StringIO.new
+    Xlsxrb.write(io) do |w|
+      w.style("b", bold: true)
+      w.style("rb", border_right: { style: :thin })
+      w.style("n", number_format: "0.00")
+      w.sheet("s") do |s|
+        s.column(1, style: "rb")
+        s.row([d, d, d])
+        s.row([d, d, d], cell_styles: ["b", nil, nil])
+        s.row([d, d, t], row_style: "b")
+        s.row([d, 5], row_style: { italic: true })
+        s.row([d], row_style: "n")
+      end
+    end
+    wb = Xlsxrb.load(StringIO.new(io.string))
+    styles = wb.styles
+    describe = lambda do |cell|
+      xf = styles.cell_xf(cell.style_index.to_i)
+      font = styles.fonts[xf.font_id.to_i]
+      [styles.number_format_code(xf.num_fmt_id.to_i) || "General", font&.bold? ? :bold : nil, font&.italic? ? :italic : nil, xf.border_id.to_i.positive? ? :border : nil].compact
+    end
+
+    rows = wb.sheets.first.rows.map { |row| row.cells.map(&describe) }
+    assert_equal [["yyyy-mm-dd"], ["yyyy-mm-dd", :border], ["yyyy-mm-dd"]], rows[0]
+    assert_equal [["yyyy-mm-dd", :bold], ["yyyy-mm-dd", :border], ["yyyy-mm-dd"]], rows[1]
+    assert_equal [["yyyy-mm-dd", :bold], ["yyyy-mm-dd", :bold], ["yyyy-mm-dd hh:mm:ss", :bold]], rows[2]
+    assert_equal [["yyyy-mm-dd", :italic], ["General", :italic]], rows[3]
+    # A style with its own number format keeps it.
+    assert_equal [["0.00"]], rows[4]
+  end
+
   test "stream writer with date1904 property serializes dates with 1904 epoch and reads back correctly" do
     target_date = Date.new(2026, 9, 27)
     target_time = Time.utc(2026, 9, 27, 12, 0, 0)

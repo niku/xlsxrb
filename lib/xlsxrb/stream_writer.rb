@@ -84,6 +84,7 @@ module Xlsxrb
       @sheet_entry_started = false
       @current_row_writer = nil
       @current_columns = []
+      @current_column_style_names = {} # column index => style name, for date style variants
       @current_charts = []
       @current_hyperlinks = []
       @current_auto_filter = nil
@@ -1564,6 +1565,7 @@ module Xlsxrb
       @current_row_writer.instance_variable_set(:@started, true)
 
       @current_columns = []
+      @current_column_style_names = {} # column index => style name, for date style variants
       @current_charts = []
       @current_hyperlinks = []
       @current_auto_filter = nil
@@ -1676,10 +1678,7 @@ module Xlsxrb
 
       values = DslHelpers.normalize_row_values(values)
       cell_styles = DslHelpers.normalize_row_styles(cell_styles)
-      if cell_styles
-        check_style_names!(cell_styles)
-        cell_styles = with_date_style_variants(values, cell_styles)
-      end
+      check_style_names!(cell_styles) if cell_styles
       DslHelpers.check_style_name!(row_style, @style_name_to_id)
 
       if @current_charts && !@current_charts.empty?
@@ -1702,6 +1701,9 @@ module Xlsxrb
                      else
                        row_style
                      end
+      if cell_styles || row_style || !@current_column_style_names.empty?
+        cell_styles = with_date_style_variants(values, cell_styles, row_style.is_a?(Hash) ? inline_name : row_style)
+      end
 
       effective_outline = outline_level || @current_row_outline_level
       effective_collapsed = collapsed || @current_row_collapsed
@@ -1780,7 +1782,18 @@ module Xlsxrb
                  else
                    style
                  end
+      # The style's name, so that dates in the column can get a variant of it with a date format
+      style_name = if style.is_a?(Hash)
+                     inline_name
+                   elsif style.is_a?(String) || style.is_a?(Symbol)
+                     style.to_s
+                   end
       DslHelpers.normalize_column_indices(index).each do |idx|
+        if style_name
+          @current_column_style_names[idx] = style_name
+        elsif style
+          @current_column_style_names.delete(idx)
+        end
         existing = @current_columns.find { |c| c[:index] == idx }
         if existing
           existing[:width] = width unless width.nil?
@@ -3392,15 +3405,22 @@ module Xlsxrb
       end
     end
 
-    # Gives Date and Time values whose named cell style has no number format a variant of
-    # that style with the default date or time format, registered on first use.
-    #: (Array[untyped] values, untyped cell_styles) -> untyped
-    def with_date_style_variants(values, cell_styles)
+    # Gives Date and Time values whose named style has no number format a variant of that
+    # style with the default date or time format, registered on first use. A value without
+    # a cell style gets a variant of the style it inherits: the row style, or the column
+    # style in a row without one.
+    #: (Array[untyped] values, untyped cell_styles, untyped row_style) -> untyped
+    def with_date_style_variants(values, cell_styles, row_style)
+      # This runs for every styled row. any? with a class checks the values in C, which
+      # costs less than the loop below for the rows without dates.
+      return cell_styles unless values.any?(Date) || values.any?(Time)
+
       styles_for_cells = cell_styles.is_a?(Array) ? cell_styles : nil
       values.each_with_index do |value, idx|
         next unless value.is_a?(Date) || value.is_a?(Time)
 
         style_name = styles_for_cells ? styles_for_cells[idx] : cell_styles
+        style_name = row_style.nil? ? @current_column_style_names[idx] : row_style if style_name.nil?
         next unless style_name.is_a?(String) || style_name.is_a?(Symbol)
 
         variant = DslHelpers.date_style_variant(value, style_name.to_s, @styles[style_name.to_s])

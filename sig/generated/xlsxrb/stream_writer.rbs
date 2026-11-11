@@ -1998,10 +1998,12 @@ module Xlsxrb
     # : (untyped cell_styles) -> void
     def check_style_names!: (untyped cell_styles) -> void
 
-    # Gives Date and Time values whose named cell style has no number format a variant of
-    # that style with the default date or time format, registered on first use.
-    # : (Array[untyped] values, untyped cell_styles) -> untyped
-    def with_date_style_variants: (Array[untyped] values, untyped cell_styles) -> untyped
+    # Gives Date and Time values whose named style has no number format a variant of that
+    # style with the default date or time format, registered on first use. A value without
+    # a cell style gets a variant of the style it inherits: the row style, or the column
+    # style in a row without one.
+    # : (Array[untyped] values, untyped cell_styles, untyped row_style) -> untyped
+    def with_date_style_variants: (Array[untyped] values, untyped cell_styles, untyped row_style) -> untyped
 
     def ensure_sheet_started!: () -> untyped
 
