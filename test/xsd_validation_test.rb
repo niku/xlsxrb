@@ -526,7 +526,7 @@ class XsdValidationTest < Test::Unit::TestCase
     begin
       Xlsxrb.write(tmp.path) do |w|
         w.sheet("IgnoredErrorsSheet") do |s|
-          s.row(["0123", "=1/0"])
+          s.row(["0123", s.formula("1/0")])
           s.ignored_error("A1:A10", number_stored_as_text: true)
           s.ignored_error("B1", eval_error: true, unlocked_formula: true)
         end

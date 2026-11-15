@@ -4158,7 +4158,7 @@ class PublicApiTest < Test::Unit::TestCase
       assert_include(b.styles.keys, "bold_num")
 
       b.sheet("SheetOne") do |s|
-        s.row(["=1+1", 100])
+        s.row([s.formula("1+1"), 100])
       end
       assert_equal(["SheetOne"], b.sheet_names)
     end

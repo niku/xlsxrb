@@ -92,8 +92,8 @@ module Xlsxrb
               s.row(["Item", "Value"])
               s.row(["A", 10])
               s.row(["B", 20])
-              s.row(["SUM", "=SUM(B2:B3)"])
-              s.row(["AVERAGE", "=AVERAGE(B2:B3)"])
+              s.row(["SUM", s.formula("SUM(B2:B3)")])
+              s.row(["AVERAGE", s.formula("AVERAGE(B2:B3)")])
             end
           end
         RUBY
