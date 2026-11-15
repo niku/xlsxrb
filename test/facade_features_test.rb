@@ -1809,4 +1809,19 @@ class FacadeFeaturesTest < Test::Unit::TestCase
   ensure
     tmp&.close!
   end
+
+  test "build keeps the threaded comments of styled cells" do
+    wb = Xlsxrb.build do |w|
+      w.style(:b, bold: true)
+      w.sheet("S") do |s|
+        s.row(%w[styled plain], cell_styles: [:b, nil])
+        s.threaded_comment("A1", "on a styled cell", author: "x")
+        s.threaded_comment("B1", "on a plain cell", author: "x")
+      end
+    end
+
+    cells = wb.sheets.first.rows.first.cells
+    assert_equal(["on a styled cell"], cells[0].threaded_comments.map(&:text))
+    assert_equal(["on a plain cell"], cells[1].threaded_comments.map(&:text))
+  end
 end

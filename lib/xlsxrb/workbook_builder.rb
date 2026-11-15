@@ -877,7 +877,7 @@ module Xlsxrb
 
             if resolved_cell_style == (cell.style || cell.style_index) && target_fmt == cell.format_code
               cell
-            elsif cell.hyperlink.nil? && cell.comment.nil? && cell.unmapped_data.empty? && cell.errors.empty?
+            elsif cell.hyperlink.nil? && cell.comment.nil? && cell.threaded_comments.empty? && cell.unmapped_data.empty? && cell.errors.empty?
               # The same cell as Cell.new below would build, without its keyword arguments and checks.
               cells_changed = true
               Elements::Cell.fast_create(cell.row_index, cell.column_index, cell.value, resolved_cell_style, cell.formula, cell.raw_value, target_fmt)
@@ -895,7 +895,8 @@ module Xlsxrb
                 raw_value: cell.raw_value,
                 format_code: target_fmt,
                 unmapped_data: cell.unmapped_data,
-                errors: cell.errors
+                errors: cell.errors,
+                threaded_comments: cell.threaded_comments
               )
             end
           end
