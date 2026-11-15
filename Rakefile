@@ -426,6 +426,15 @@ task :fetch_assets do
     download_file(base_zeta_url + file, "docs/zetaoffice/#{file}")
   end
 
+  # Fetch a Japanese font for the Playground preview; soffice.data ships no CJK font.
+  # Noto Sans CJK is licensed under the SIL Open Font License 1.1; its license is
+  # published next to the font files.
+  noto_cjk_url = "https://cdn.jsdelivr.net/gh/notofonts/noto-cjk@Sans2.004/"
+  %w[Regular Bold].each do |weight|
+    download_file("#{noto_cjk_url}Sans/SubsetOTF/JP/NotoSansJP-#{weight}.otf", "docs/fonts/NotoSansJP-#{weight}.otf")
+  end
+  download_file("#{noto_cjk_url}LICENSE", "docs/fonts/NotoSansJP-LICENSE.txt")
+
   # Fetch and localize Google Fonts
   fetch_google_fonts
 end
@@ -833,7 +842,10 @@ namespace :doc do
         { path: "/wasm/ruby.wasm", expected_status: 200, content_type: %r{\Aapplication/wasm}, magic: "\x00asm" },
         { path: "/zetaoffice/soffice.wasm", expected_status: 200, content_type: %r{\Aapplication/wasm}, magic: "\x00asm" },
         { path: "/zetaoffice/soffice.data", expected_status: 200, content_type: %r{\Aapplication/octet-stream}, magic: "PK\x03\x04" },
-        { path: "/coi-serviceworker.js", expected_status: 200, content_type: %r{\A(?:application|text)/javascript} }
+        { path: "/coi-serviceworker.js", expected_status: 200, content_type: %r{\A(?:application|text)/javascript} },
+        { path: "/fonts/NotoSansJP-Regular.otf", expected_status: 200, magic: "OTTO" },
+        { path: "/fonts/NotoSansJP-Bold.otf", expected_status: 200, magic: "OTTO" },
+        { path: "/fonts/NotoSansJP-LICENSE.txt", expected_status: 200, content_type: %r{\Atext/plain} }
       ]
 
       checks.each do |c|

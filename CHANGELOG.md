@@ -3,6 +3,7 @@
 ### Fixed
 - Write the Playground `quick_start`, `sales_report`, and `sheet_properties` preset formulas with `s.formula(...)`. Since 0.2.0 plain strings starting with `=` are written as text, so these presets showed `=D12` and similar strings instead of computed values.
 - Write the formulas in the Visual Gallery `sheet_properties` example with `s.formula(...)`, so its second sheet shows computed totals instead of `=SUM(...)` text.
+- Render Japanese text in the Playground's LibreOffice preview. The ZetaOffice build ships no CJK font, so Japanese characters showed as boxes, including in the `japanese_text` preset. `rake fetch_assets` now downloads Noto Sans JP Regular and Bold (SIL Open Font License 1.1, license published next to the fonts), and the Playground installs them before LibreOffice starts.
 
 ## [0.2.0] - 2026-11-10
 

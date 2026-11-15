@@ -1691,9 +1691,44 @@ puts "Sheet properties workbook generated!"`
       // Install in main window
       new Function(PERMISSIONS_POLYFILL)();
 
+      // ZetaOffice's soffice.data bundles no CJK font, so Japanese text renders as
+      // tofu. LibreOffice scans fonts only at startup, so these files are written
+      // into its font directory from preRun, before main() runs. The download
+      // starts together with soffice.js so it overlaps the larger Wasm download.
+      const CJK_FONT_FILES = ['NotoSansJP-Regular.otf', 'NotoSansJP-Bold.otf'];
+      const CJK_FONT_DIR = '/instdir/share/fonts/truetype';
+      let cjkFontsPromise = null;
+
+      function fetchCjkFonts() {
+        return Promise.allSettled(CJK_FONT_FILES.map(name =>
+          fetch(base_dir + 'fonts/' + name).then(res => {
+            if (!res.ok) throw new Error(`HTTP ${res.status} for ${name}`);
+            return res.arrayBuffer();
+          }).then(buf => ({ name, data: new Uint8Array(buf) }))
+        ));
+      }
+
       // 1. Setup Module settings for Emscripten / ZetaJS
       var Module = {
         canvas,
+        preRun: [function() {
+          const fs = (typeof FS !== 'undefined') ? FS : Module.FS;
+          const addDep = (typeof addRunDependency === 'function') ? addRunDependency : Module.addRunDependency;
+          const removeDep = (typeof removeRunDependency === 'function') ? removeRunDependency : Module.removeRunDependency;
+          addDep('cjk-fonts');
+          (cjkFontsPromise || fetchCjkFonts()).then(results => {
+            try { fs.mkdirTree(CJK_FONT_DIR); } catch (_) {}
+            results.forEach(result => {
+              if (result.status === 'fulfilled') {
+                fs.writeFile(`${CJK_FONT_DIR}/${result.value.name}`, result.value.data);
+              } else {
+                console.warn('CJK font not installed; Japanese text may not render:', result.reason);
+              }
+            });
+          }).catch(err => {
+            console.warn('CJK font installation failed:', err);
+          }).finally(() => removeDep('cjk-fonts'));
+        }],
         uno_scripts: ['./zeta.js', './office_thread.js'],
         locateFile: function(path, prefix) { return (prefix || soffice_base_url) + path; },
         mainScriptUrlOrBlob: new Blob([
@@ -1866,6 +1901,7 @@ puts "Sheet properties workbook generated!"`
       // 3. Initialize LibreOffice (ZetaOffice) Wasm
       function initZetaOffice() {
         logToConsole("Fetching ZetaOffice WebAssembly binaries...");
+        cjkFontsPromise = fetchCjkFonts();
         const soffice_js = document.createElement("script");
         soffice_js.src = soffice_base_url + "soffice.js";
         soffice_js.crossOrigin = "anonymous";
