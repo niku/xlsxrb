@@ -6,6 +6,7 @@ class ApiSymmetryTest < Test::Unit::TestCase
   # Non-authoring or builder-lifecycle methods that are intentionally specific to WorksheetBuilder
   BUILDER_ONLY_METHODS = %i[
     build
+    close
     defined_names
     styles
   ].freeze

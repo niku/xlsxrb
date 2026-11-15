@@ -190,20 +190,21 @@ module Xlsxrb
     # @param opts [Hash] Additional sheet properties.
     # @yield [sheet_builder]
     # @yieldparam sheet_builder [Xlsxrb::WorksheetBuilder]
-    # @return [Elements::Worksheet]
+    # @return [DeferredWorksheet] The sheet as {WorksheetBuilder#build} returns it, with
+    #   style names in its cells. It is built when first used.
     # @raise [ArgumentError] If sheet name violates Excel limits in strict mode.
     # @api public
-    # : (?String? name, ?state: Symbol | String | nil, ?tab_color: String | Hash[Symbol, untyped] | Symbol | nil, ?code_name: String | Symbol | nil, **untyped opts) ?{ (WorksheetBuilder) -> void } -> Elements::Worksheet
-    def sheet: (?String? name, ?state: Symbol | String | nil, ?tab_color: String | Hash[Symbol, untyped] | Symbol | nil, ?code_name: String | Symbol | nil, **untyped opts) ?{ (WorksheetBuilder) -> void } -> Elements::Worksheet
+    # : (?String? name, ?state: Symbol | String | nil, ?tab_color: String | Hash[Symbol, untyped] | Symbol | nil, ?code_name: String | Symbol | nil, **untyped opts) ?{ (WorksheetBuilder) -> void } -> DeferredWorksheet
+    def sheet: (?String? name, ?state: Symbol | String | nil, ?tab_color: String | Hash[Symbol, untyped] | Symbol | nil, ?code_name: String | Symbol | nil, **untyped opts) ?{ (WorksheetBuilder) -> void } -> DeferredWorksheet
 
     # Accesses or defines a worksheet by name.
     #
     # @param name_or_index [String, Symbol, Integer, nil]
     # @yield [sheet_builder]
-    # @return [Elements::Worksheet]
+    # @return [DeferredWorksheet]
     # @api public
-    # : (?String | Symbol | Integer | nil name_or_index) ?{ (WorksheetBuilder) -> void } -> Elements::Worksheet
-    def []: (?String | Symbol | Integer | nil name_or_index) ?{ (WorksheetBuilder) -> void } -> Elements::Worksheet
+    # : (?String | Symbol | Integer | nil name_or_index) ?{ (WorksheetBuilder) -> void } -> DeferredWorksheet
+    def []: (?String | Symbol | Integer | nil name_or_index) ?{ (WorksheetBuilder) -> void } -> DeferredWorksheet
 
     # Adds a defined name (named range or formula) to the workbook.
     # Bare cell references and coordinate keywords are automatically formatted with sheet quotes and absolute $ references.
@@ -397,8 +398,19 @@ module Xlsxrb
     # : (untyped names, untyped sheets) -> untyped
     def resolve_defined_names: (untyped names, untyped sheets) -> untyped
 
-    # : (untyped sheets) -> (::Array[untyped | ::Hash[untyped, untyped]] | ::Array[untyped])
-    def process_styles: (untyped sheets) -> (::Array[untyped | ::Hash[untyped, untyped]] | ::Array[untyped])
+    # Registers the styles of every sheet and builds the sheets' rows with their style
+    # names resolved to style indexes. Each cell is created once, here.
+    # : (Array[WorksheetBuilder::Snapshot] sheets) -> [Array[Elements::Worksheet], Hash[Symbol, untyped]]
+    def process_styles: (Array[WorksheetBuilder::Snapshot] sheets) -> [ Array[Elements::Worksheet], Hash[Symbol, untyped] ]
+
+    # Records the date or time variant of the style named +style_key+ that a Date or
+    # Time +value+ needs, if any.
+    # : (untyped value, String style_key, Hash[String, untyped] all_style_builders, Hash[untyped, untyped] date_variants, Hash[String, untyped] variant_builders) -> void
+    def add_date_variant: (untyped value, String style_key, Hash[String, untyped] all_style_builders, Hash[untyped, untyped] date_variants, Hash[String, untyped] variant_builders) -> void
+
+    # Creates a cell whose style was resolved to +style+ (an index, or a name with no index).
+    # : (Integer row_index, Integer column_index, untyped value, untyped style, String? format_code, bool valid_coordinates) -> Elements::Cell
+    def resolved_cell: (Integer row_index, Integer column_index, untyped value, untyped style, String? format_code, bool valid_coordinates) -> Elements::Cell
 
     # : (untyped writer) -> Hash[Symbol, untyped]
     def extract_styles_from_writer: (untyped writer) -> Hash[Symbol, untyped]

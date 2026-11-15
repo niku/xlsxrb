@@ -3793,10 +3793,58 @@ class PublicApiTest < Test::Unit::TestCase
 
     # Canonical cell_styles and row_style
     builder.row([1, 2], cell_styles: [:b, nil], row_style: :r)
-    rows = builder.instance_variable_get(:@rows)
-    row = rows.last
+    row = builder.build.rows.last
     assert_equal(:r, row.style_index)
     assert_equal(:b, row.cells[0].style)
+  end
+
+  test "WorkbookBuilder#sheet returns a stand-in that answers as the sheet's worksheet" do
+    sheet = nil
+    sheet_builder = nil
+    Xlsxrb.build do |w|
+      w.style(:b, bold: true)
+      sheet = w.sheet("S") do |s|
+        sheet_builder = s
+        s.row([1, "x"], cell_styles: :b, height: 20)
+      end
+    end
+
+    assert_kind_of(Xlsxrb::DeferredWorksheet, sheet)
+    assert_respond_to(sheet, :rows)
+    assert_equal("S", sheet.name)
+    assert_equal([[1, "x"]], sheet.rows.map { |row| row.cells.map(&:value) })
+    assert_equal(:b, sheet.rows[0].cells[0].style)
+    assert_equal(20, sheet.rows[0].height)
+    assert_equal(sheet_builder.build.rows, sheet.rows)
+    assert_equal(sheet.worksheet.inspect, sheet.inspect)
+  end
+
+  test "a sheet stand-in builds its worksheet when made shareable" do
+    sheet = nil
+    Xlsxrb.build do |w|
+      w.style(:b, bold: true)
+      sheet = w.sheet("S") { |s| s.row([1, "x"], cell_styles: :b) }
+    end
+
+    Ractor.make_shareable(sheet)
+    assert(Ractor.shareable?(sheet))
+    assert_equal(["x"], sheet.rows[0].cells.drop(1).map(&:value))
+  end
+
+  test "a sheet builder rejects rows after its sheet block ends" do
+    leaked = nil
+    workbook = Xlsxrb.build do |w|
+      w.sheet("S") do |s|
+        leaked = s
+        s.row([1])
+      end
+    end
+
+    assert_raise(Xlsxrb::Error) { leaked.row([2]) }
+    assert_raise(Xlsxrb::Error) { leaked << [2] }
+    assert_raise(Xlsxrb::Error) { leaked.skip_rows }
+    assert_raise(Xlsxrb::Error) { leaked.group_rows(0..0) }
+    assert_equal(1, workbook.sheets[0].rows.size)
   end
 
   test "cell_styles and row_style in StreamWriter#row and WorksheetProxy#row" do

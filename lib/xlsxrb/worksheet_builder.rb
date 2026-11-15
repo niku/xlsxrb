@@ -147,6 +147,7 @@ module Xlsxrb
     # @api public
     #: (Array[untyped] | Hash[untyped, untyped] values, ?cell_styles: untyped, ?row_style: (Integer | Symbol | String | Hash[Symbol, untyped])?, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil) -> void
     def row(values, cell_styles: nil, row_style: nil, height: nil, hidden: false, custom_height: false, collapsed: false, outline_level: nil)
+      check_open!
       row_index = @next_row_index
       DslHelpers.validate_row_bounds!(row_index, height, strict_excel_mode: @strict_excel_mode)
       @next_row_index += 1
@@ -159,10 +160,12 @@ module Xlsxrb
 
       values = DslHelpers.normalize_row_values(values)
       cell_styles = DslHelpers.normalize_row_styles(cell_styles)
-
-      # Auto-detect Date / Time for built-in styles. The styles are copied before the
-      # first change, so that an Array the caller passes stays as it is.
+      # The row is kept as given until the workbook resolves its styles, so it must not
+      # change with the caller's arrays. Each array is copied once, when first needed.
+      values_copied = false
       styles_copied = false
+
+      # Auto-detect Date / Time for built-in styles
       values.each_with_index do |val, idx|
         cell_style = cell_styles.is_a?(Array) ? cell_styles[idx] : cell_styles
 
@@ -193,8 +196,9 @@ module Xlsxrb
       # See: https://support.microsoft.com/en-us/office/excel-specifications-and-limits-1672b34d-7043-467e-8e27-269d656771c3
       raise ArgumentError, "Row contains #{max_len} columns, exceeding Excel limit of 16_384 columns" if @strict_excel_mode && max_len > 16_384
 
-      cells = Array.new(max_len)
       style_lookup = cell_styles.is_a?(Array)
+      # Number format codes of the cells' sheet styles, as of this call.
+      format_codes = style_lookup ? nil : format_code_of(cell_styles)
 
       col_index = 0
       while col_index < max_len
@@ -203,93 +207,53 @@ module Xlsxrb
         # See: https://support.microsoft.com/en-us/office/excel-specifications-and-limits-1672b34d-7043-467e-8e27-269d656771c3
         raise ArgumentError, "Cell text length #{val.length} exceeds Excel limit of 32,767 characters" if @strict_excel_mode && val.is_a?(String) && val.length > 32_767
 
-        if val.is_a?(Array) && val.first.is_a?(Hash) && (val.first.key?(:text) || val.first.key?("text"))
-          # Coerce array of hashes to RichText
-          runs = val.map do |run|
-            text = run[:text] || run["text"]
-            font = run.reject { |k| k.to_s == "text" }
-            { text: text, font: font.empty? ? nil : font }.compact
+        if val.is_a?(Array) || val.is_a?(Hash)
+          unless values_copied
+            values = values.dup
+            values_copied = true
           end
-          val = Elements::RichText.new(runs: runs)
+          values[col_index] = if val.is_a?(Array)
+                                # Coerce array of hashes to RichText
+                                runs = val.map do |run|
+                                  text = run[:text] || run["text"]
+                                  font = run.reject { |k| k.to_s == "text" }
+                                  { text: text, font: font.empty? ? nil : font }.compact
+                                end
+                                Elements::RichText.new(runs: runs)
+                              else
+                                # A Hash with :formula becomes the cell's formula.
+                                Elements::Formula.new(
+                                  expression: val[:formula] || val[:expression] || "",
+                                  cached_value: val.key?(:value) ? val[:value] : val[:cached_value],
+                                  type: val[:type] || (:shared if val.key?(:shared_index)),
+                                  ref: val[:ref],
+                                  shared_index: val[:shared_index],
+                                  calculate_always: val[:calculate_always]
+                                )
+                              end
         end
 
-        style_name = if style_lookup
-                       col_index < cell_styles.size ? cell_styles[col_index] : nil
-                     else
-                       cell_styles
-                     end
-
-        if style_name.is_a?(Hash)
-          inline_name = "__inline_#{style_name.hash}"
-          style(inline_name, **style_name) unless @styles.key?(inline_name)
-          style_name = inline_name
+        if style_lookup
+          style_name = col_index < cell_styles.size ? cell_styles[col_index] : nil
+          if style_name.is_a?(Hash)
+            inline_name = "__inline_#{style_name.hash}"
+            style(inline_name, **style_name) unless @styles.key?(inline_name)
+            unless styles_copied
+              cell_styles = cell_styles.dup
+              styles_copied = true
+            end
+            cell_styles[col_index] = style_name = inline_name
+          end
+          format_code = style_name.nil? ? nil : format_code_of(style_name)
+          (format_codes ||= [])[col_index] = format_code if format_code
         end
-        if val.nil? && style_name.nil?
-          col_index += 1
-          next
-        end
-        sb = @styles[style_name]
-        fmt_code = if sb&.number_format
-                     sb.number_format.is_a?(String) ? sb.number_format : Ooxml::Utils::BUILTIN_NUM_FMT_CODES[sb.number_format]
-                   end
-        # If value is a Formula object or Hash with :formula, store it as the cell's formula
-        cells[col_index] = if val.is_a?(Elements::Formula)
-                             Elements::Cell.new(
-                               row_index: row_index,
-                               column_index: col_index,
-                               value: val.cached_value,
-                               formula: val,
-                               style: style_name,
-                               raw_value: val.cached_value&.to_s,
-                               format_code: fmt_code
-                             )
-                           elsif val.is_a?(Hash) && (val.key?(:formula) || val.key?(:expression) || (val[:type]&.to_sym == :shared && val.key?(:shared_index)))
-                             cached_val = val.key?(:value) ? val[:value] : val[:cached_value]
-                             f_expr = val[:formula] || val[:expression] || ""
-                             f_type = val[:type] || (:shared if val.key?(:shared_index))
-                             f_obj = Elements::Formula.new(
-                               expression: f_expr,
-                               cached_value: cached_val,
-                               type: f_type,
-                               ref: val[:ref],
-                               shared_index: val[:shared_index],
-                               calculate_always: val[:calculate_always]
-                             )
-                             Elements::Cell.new(
-                               row_index: row_index,
-                               column_index: col_index,
-                               value: cached_val,
-                               formula: f_obj,
-                               style: style_name,
-                               raw_value: cached_val&.to_s,
-                               format_code: fmt_code
-                             )
-                           else
-                             Elements::Cell.new(
-                               row_index: row_index,
-                               column_index: col_index,
-                               value: val,
-                               style: style_name,
-                               raw_value: val&.to_s,
-                               format_code: fmt_code
-                             )
-                           end
         col_index += 1
       end
 
-      cells.compact!
-      unmapped = Elements::EMPTY_HASH
-      @rows << Elements::Row.new(
-        index: row_index,
-        cells: cells,
-        height: height,
-        hidden: hidden,
-        custom_height: custom_height || !height.nil?,
-        collapsed: collapsed,
-        outline_level: outline_level,
-        style_index: row_style,
-        unmapped_data: unmapped
-      )
+      values = values.dup unless values_copied || values.frozen?
+      cell_styles = cell_styles.dup if style_lookup && !styles_copied && !cell_styles.frozen?
+      @rows << PendingRow.new(row_index, values, cell_styles, format_codes, max_len, height, hidden,
+                              custom_height || !height.nil?, collapsed, outline_level, row_style)
     end
 
     # Appends a row to the worksheet and returns self for chaining.
@@ -316,6 +280,7 @@ module Xlsxrb
     # @api public
     #: (?Integer count) -> void
     def skip_rows(count = 1)
+      check_open!
       raise ArgumentError, "count must be positive: #{count.inspect}" if !count.is_a?(Integer) || count < 1
 
       @next_row_index += count
@@ -451,20 +416,15 @@ module Xlsxrb
                       when Array then rows
                       else [rows.to_i]
                       end
+        check_open!
         row_indices.each do |idx|
           existing_row = @rows.find { |r| r.index == idx }
           if existing_row
             existing_idx = @rows.index(existing_row)
-            @rows[existing_idx] = Elements::Row.new(
-              index: existing_row.index,
-              cells: existing_row.cells,
-              height: existing_row.height,
-              hidden: hidden || existing_row.hidden?,
-              custom_height: existing_row.custom_height?,
-              collapsed: collapsed || existing_row.collapsed?,
-              outline_level: level,
-              style_index: existing_row.style_index,
-              unmapped_data: existing_row.unmapped_data
+            @rows[existing_idx] = existing_row.with_outline(
+              hidden: hidden || existing_row.hidden,
+              collapsed: collapsed || existing_row.collapsed,
+              outline_level: level
             )
           else
             @pending_row_attributes[idx] = { outline_level: level, collapsed: collapsed, hidden: hidden }
@@ -1691,12 +1651,50 @@ module Xlsxrb
       spec
     end
 
-    # Builds and returns the in-memory {Elements::Worksheet}.
+    # Builds and returns the in-memory {Elements::Worksheet}. Cells carry their style
+    # names; {WorkbookBuilder#build} resolves them to style indexes.
     #
     # @return [Elements::Worksheet]
     # @api public
     #: () -> Elements::Worksheet
     def build
+      snapshot(@rows.dup.freeze).worksheet
+    end
+
+    # Ends the sheet block: rows can no longer be added, and the sheet's state is taken
+    # as it is now.
+    #
+    # @return [Snapshot]
+    # @api private
+    #: () -> Snapshot
+    def close
+      @closed = true
+      snapshot(@rows.freeze)
+    end
+
+    # Internal: returns styles for later processing by WorkbookBuilder
+    # @return [Hash{String => StyleBuilder}]
+    #: Hash[String, StyleBuilder]
+    attr_reader :styles
+
+    private
+
+    #: () -> void
+    def check_open!
+      raise Error, "Sheet '#{@name}' is closed: add its rows inside its sheet block" if @closed
+    end
+
+    # Returns the number format code of the sheet style named +style_name+, if it has one.
+    #: (untyped style_name) -> String?
+    def format_code_of(style_name)
+      number_format = @styles[style_name]&.number_format
+      return nil unless number_format
+
+      number_format.is_a?(String) ? number_format : Ooxml::Utils::BUILTIN_NUM_FMT_CODES[number_format]
+    end
+
+    #: (Array[PendingRow] rows) -> Snapshot
+    def snapshot(rows)
       facade_meta = {}
       facade_meta[:hyperlinks] = @hyperlinks unless @hyperlinks.empty?
       facade_meta[:auto_filter] = @auto_filter if @auto_filter
@@ -1766,30 +1764,8 @@ module Xlsxrb
         (tc_hash[ref] ||= []) << obj
       end
 
-      rows = if hl_hash.empty? && cm_hash.empty? && tc_hash.empty?
-               @rows
-             else
-               @rows.map do |row|
-                 new_cells = row.cells.map do |cell|
-                   hl = hl_hash[cell.ref]
-                   cm = cm_hash[cell.ref]
-                   tcs = tc_hash[cell.ref]
-                   if hl || cm || tcs
-                     cell.with(
-                       hyperlink: hl || cell.hyperlink,
-                       comment: cm || cell.comment,
-                       threaded_comments: (tcs ? (cell.threaded_comments + tcs) : cell.threaded_comments)
-                     )
-                   else
-                     cell
-                   end
-                 end
-                 row.with(cells: new_cells)
-               end
-             end
-
-      Elements::Worksheet.new(
-        name: @name, rows: rows, columns: @columns, charts: @charts,
+      frame = Elements::Worksheet.new(
+        name: @name, rows: [], columns: @columns, charts: @charts,
         conditional_formats: @conditional_formats,
         data_validations: @data_validations,
         unmapped_data: facade_meta.empty? ? {} : { facade: facade_meta },
@@ -1826,12 +1802,244 @@ module Xlsxrb
         sheet_calc_properties: @sheet_calc_pr,
         background_image: @background_image
       )
+      Snapshot.new(frame, rows, hl_hash, cm_hash, tc_hash)
+    end
+  end
+
+  class WorksheetBuilder
+    # A row as given to {WorksheetBuilder#row}, kept until the workbook resolves its
+    # style names, so that its cells are created once.
+    #
+    # @api private
+    class PendingRow
+      #: Integer
+      attr_reader :index
+      # Cell values; Hashes with :formula and rich text runs are already converted.
+      #: Array[untyped]
+      attr_reader :values
+      # Style of each cell: a name, an index, or nil; or one of these for every cell.
+      #: untyped
+      attr_reader :styles
+      # Number format codes of the cells' sheet styles: an Array, one code, or nil.
+      #: untyped
+      attr_reader :format_codes
+      # Number of columns the row spans, including styled cells past the last value.
+      #: Integer
+      attr_reader :width
+      #: (Float | Integer)?
+      attr_reader :height
+      #: untyped
+      attr_reader :hidden
+      #: bool
+      attr_reader :custom_height
+      #: untyped
+      attr_reader :collapsed
+      #: Integer?
+      attr_reader :outline_level
+      # The row style as given: a name, an index, an inline Hash, or nil.
+      #: untyped
+      attr_reader :style
+
+      #: (Integer index, Array[untyped] values, untyped styles, untyped format_codes, Integer width, (Float | Integer)? height, untyped hidden, bool custom_height, untyped collapsed, Integer? outline_level, untyped style) -> void
+      def initialize(index, values, styles, format_codes, width, height, hidden, custom_height, collapsed, outline_level, style)
+        @index = index
+        @values = values
+        @styles = styles
+        @format_codes = format_codes
+        @width = width
+        @height = height
+        @hidden = hidden
+        @custom_height = custom_height
+        @collapsed = collapsed
+        @outline_level = outline_level
+        @style = style
+      end
+
+      #: (hidden: untyped, collapsed: untyped, outline_level: Integer?) -> PendingRow
+      def with_outline(hidden:, collapsed:, outline_level:)
+        PendingRow.new(@index, @values, @styles, @format_codes, @width, @height, hidden, @custom_height, collapsed, outline_level, @style)
+      end
+
+      # Returns whether every cell of the row is within Excel's row and column limits.
+      #: () -> bool
+      def within_limits?
+        Elements::Cell.valid_coordinates?(@index, 0) && @width <= 16_384
+      end
+
+      # Returns the row's cells with their style names, as {WorksheetBuilder#build} gives them.
+      #: () -> Array[Elements::Cell]
+      def named_cells
+        values = @values
+        styles = @styles
+        codes = @format_codes
+        style_lookup = styles.is_a?(Array)
+        code_lookup = codes.is_a?(Array)
+        all_valid = within_limits?
+        cells = [] #: Array[Elements::Cell]
+        col_index = 0
+        while col_index < @width
+          value = col_index < values.size ? values[col_index] : nil
+          style = style_lookup ? styles[col_index] : styles
+          unless value.nil? && style.nil?
+            code = code_lookup ? codes[col_index] : codes
+            cells << PendingRow.cell(@index, col_index, value, style, code, all_valid || Elements::Cell.valid_coordinates?(@index, col_index))
+          end
+          col_index += 1
+        end
+        cells
+      end
+
+      #: (Array[Elements::Cell] cells, untyped style_index) -> Elements::Row
+      def to_row(cells, style_index)
+        Elements::Row.new(
+          index: @index,
+          cells: cells,
+          height: @height,
+          hidden: @hidden,
+          custom_height: @custom_height,
+          collapsed: @collapsed,
+          outline_level: @outline_level,
+          style_index: style_index,
+          unmapped_data: Elements::EMPTY_HASH
+        )
+      end
+
+      # Creates a cell for +value+ with +style+ (a name, an index, or nil).
+      # +valid_coordinates+ tells whether the cell is within Excel's limits; a valid cell
+      # has no errors, so it skips the checks of Cell.new.
+      #: (Integer row_index, Integer column_index, untyped value, untyped style, String? format_code, bool valid_coordinates) -> Elements::Cell
+      def self.cell(row_index, column_index, value, style, format_code, valid_coordinates)
+        formula = nil
+        if value.is_a?(Elements::Formula)
+          formula = value
+          value = formula.cached_value
+          valid_coordinates &&= Elements::Cell.valid_value?(value)
+        end
+        raw_value = value&.to_s
+        if valid_coordinates && !style.is_a?(Integer)
+          Elements::Cell.fast_create(row_index, column_index, value, style, formula, raw_value, format_code)
+        else
+          Elements::Cell.new(row_index: row_index, column_index: column_index, value: value, formula: formula,
+                             style: style, raw_value: raw_value, format_code: format_code)
+        end
+      end
     end
 
-    # Internal: returns styles for later processing by WorkbookBuilder
-    # @return [Hash{String => StyleBuilder}]
-    #: Hash[String, StyleBuilder]
-    attr_reader :styles
+    # The state of a sheet when its block ended: the worksheet without its rows, the
+    # pending rows, and the hyperlinks and comments to attach to their cells.
+    #
+    # @api private
+    class Snapshot
+      # The worksheet with every part except its rows.
+      #: Elements::Worksheet
+      attr_reader :frame
+      #: Array[PendingRow]
+      attr_reader :rows
+
+      #: (Elements::Worksheet frame, Array[PendingRow] rows, Hash[String, untyped] hyperlinks, Hash[String, untyped] comments, Hash[String, Array[untyped]] threaded_comments) -> void
+      def initialize(frame, rows, hyperlinks, comments, threaded_comments)
+        @frame = frame
+        @rows = rows
+        @hyperlinks = hyperlinks
+        @comments = comments
+        @threaded_comments = threaded_comments
+        @links = !(hyperlinks.empty? && comments.empty? && threaded_comments.empty?)
+      end
+
+      # Returns the worksheet with +rows+, or with the rows' named cells by default.
+      #: (?Array[Elements::Row]? rows, ?Array[Elements::Column]? columns) -> Elements::Worksheet
+      def worksheet(rows = nil, columns = nil)
+        rows ||= @rows.map { |row| row.to_row(attach_links(row.named_cells), row.style) }
+        @frame.with(rows: rows, columns: columns || @frame.columns, errors: nil)
+      end
+
+      # Attaches the sheet's hyperlinks and comments to the cells they refer to.
+      #: (Array[Elements::Cell] cells) -> Array[Elements::Cell]
+      def attach_links(cells)
+        return cells unless @links
+
+        cells.map do |cell|
+          hl = @hyperlinks[cell.ref]
+          cm = @comments[cell.ref]
+          tcs = @threaded_comments[cell.ref]
+          if hl || cm || tcs
+            cell.with(
+              hyperlink: hl || cell.hyperlink,
+              comment: cm || cell.comment,
+              threaded_comments: (tcs ? (cell.threaded_comments + tcs) : cell.threaded_comments)
+            )
+          else
+            cell
+          end
+        end
+      end
+    end
+  end
+
+  # Stands in for the {Elements::Worksheet} of a sheet defined in {Xlsxrb.build}, as
+  # returned by {WorkbookBuilder#sheet}. It answers the same methods with the same
+  # results. The worksheet is built the first time one of them is called, or when the
+  # object is frozen (as Ractor.make_shareable does), so a sheet whose return value is
+  # never used costs nothing.
+  #
+  # @api public
+  class DeferredWorksheet
+    #: (WorksheetBuilder::Snapshot snapshot) -> void
+    def initialize(snapshot)
+      @snapshot = snapshot
+      @worksheet = nil
+    end
+
+    # Returns the worksheet, building it on first use.
+    #
+    # @return [Elements::Worksheet]
+    # @api public
+    #: () -> Elements::Worksheet
+    def worksheet
+      @worksheet ||= @snapshot&.worksheet || raise(Error, "worksheet is not available")
+    end
+
+    #: (untyped other) -> bool
+    def ==(other)
+      worksheet == (other.is_a?(DeferredWorksheet) ? other.worksheet : other)
+    end
+
+    #: (untyped other) -> bool
+    def eql?(other)
+      worksheet.eql?(other.is_a?(DeferredWorksheet) ? other.worksheet : other)
+    end
+
+    #: () -> Integer
+    def hash = worksheet.hash
+
+    #: () -> String
+    def inspect = worksheet.inspect
+
+    #: () -> String
+    def to_s = worksheet.to_s
+
+    #: (untyped printer) -> untyped
+    def pretty_print(printer) = printer.pp(worksheet)
+
+    # Builds the worksheet before freezing, so that a frozen stand-in still answers.
+    #: () -> self
+    def freeze
+      worksheet
+      @snapshot = nil
+      super
+    end
+
+    #: (Symbol name, *untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def method_missing(name, ...)
+      return super unless Elements::Worksheet.public_method_defined?(name)
+
+      worksheet.public_send(name, ...)
+    end
+
+    #: (Symbol name, ?bool include_private) -> bool
+    def respond_to_missing?(name, include_private = false)
+      Elements::Worksheet.public_method_defined?(name) || super
+    end
   end
 
   # Builder context for configuring an Excel Table (ListObject) in block form.

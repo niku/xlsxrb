@@ -900,17 +900,178 @@ module Xlsxrb
     # : (Hash[Symbol, untyped]? spec) -> Hash[Symbol, untyped]?
     def sheet_calc_properties=: (Hash[Symbol, untyped]? spec) -> Hash[Symbol, untyped]?
 
-    # Builds and returns the in-memory {Elements::Worksheet}.
+    # Builds and returns the in-memory {Elements::Worksheet}. Cells carry their style
+    # names; {WorkbookBuilder#build} resolves them to style indexes.
     #
     # @return [Elements::Worksheet]
     # @api public
     # : () -> Elements::Worksheet
     def build: () -> Elements::Worksheet
 
+    # Ends the sheet block: rows can no longer be added, and the sheet's state is taken
+    # as it is now.
+    #
+    # @return [Snapshot]
+    # @api private
+    # : () -> Snapshot
+    def close: () -> Snapshot
+
     # Internal: returns styles for later processing by WorkbookBuilder
     # @return [Hash{String => StyleBuilder}]
     # : Hash[String, StyleBuilder]
     attr_reader styles: untyped
+
+    private
+
+    # : () -> void
+    def check_open!: () -> void
+
+    # Returns the number format code of the sheet style named +style_name+, if it has one.
+    # : (untyped style_name) -> String?
+    def format_code_of: (untyped style_name) -> String?
+
+    # : (Array[PendingRow] rows) -> Snapshot
+    def snapshot: (Array[PendingRow] rows) -> Snapshot
+  end
+
+  class WorksheetBuilder
+    # A row as given to {WorksheetBuilder#row}, kept until the workbook resolves its
+    # style names, so that its cells are created once.
+    #
+    # @api private
+    class PendingRow
+      # : Integer
+      attr_reader index: untyped
+
+      # Cell values; Hashes with :formula and rich text runs are already converted.
+      # : Array[untyped]
+      attr_reader values: untyped
+
+      # Style of each cell: a name, an index, or nil; or one of these for every cell.
+      # : untyped
+      attr_reader styles: untyped
+
+      # Number format codes of the cells' sheet styles: an Array, one code, or nil.
+      # : untyped
+      attr_reader format_codes: untyped
+
+      # Number of columns the row spans, including styled cells past the last value.
+      # : Integer
+      attr_reader width: untyped
+
+      # : (Float | Integer)?
+      attr_reader height: untyped
+
+      # : untyped
+      attr_reader hidden: untyped
+
+      # : bool
+      attr_reader custom_height: untyped
+
+      # : untyped
+      attr_reader collapsed: untyped
+
+      # : Integer?
+      attr_reader outline_level: untyped
+
+      # The row style as given: a name, an index, an inline Hash, or nil.
+      # : untyped
+      attr_reader style: untyped
+
+      # : (Integer index, Array[untyped] values, untyped styles, untyped format_codes, Integer width, (Float | Integer)? height, untyped hidden, bool custom_height, untyped collapsed, Integer? outline_level, untyped style) -> void
+      def initialize: (Integer index, Array[untyped] values, untyped styles, untyped format_codes, Integer width, (Float | Integer)? height, untyped hidden, bool custom_height, untyped collapsed, Integer? outline_level, untyped style) -> void
+
+      # : (hidden: untyped, collapsed: untyped, outline_level: Integer?) -> PendingRow
+      def with_outline: (hidden: untyped, collapsed: untyped, outline_level: Integer?) -> PendingRow
+
+      # Returns whether every cell of the row is within Excel's row and column limits.
+      # : () -> bool
+      def within_limits?: () -> bool
+
+      # Returns the row's cells with their style names, as {WorksheetBuilder#build} gives them.
+      # : () -> Array[Elements::Cell]
+      def named_cells: () -> Array[Elements::Cell]
+
+      # : (Array[Elements::Cell] cells, untyped style_index) -> Elements::Row
+      def to_row: (Array[Elements::Cell] cells, untyped style_index) -> Elements::Row
+
+      # Creates a cell for +value+ with +style+ (a name, an index, or nil).
+      # +valid_coordinates+ tells whether the cell is within Excel's limits; a valid cell
+      # has no errors, so it skips the checks of Cell.new.
+      # : (Integer row_index, Integer column_index, untyped value, untyped style, String? format_code, bool valid_coordinates) -> Elements::Cell
+      def self.cell: (Integer row_index, Integer column_index, untyped value, untyped style, String? format_code, bool valid_coordinates) -> Elements::Cell
+    end
+
+    # The state of a sheet when its block ended: the worksheet without its rows, the
+    # pending rows, and the hyperlinks and comments to attach to their cells.
+    #
+    # @api private
+    class Snapshot
+      # The worksheet with every part except its rows.
+      # : Elements::Worksheet
+      attr_reader frame: untyped
+
+      # : Array[PendingRow]
+      attr_reader rows: untyped
+
+      # : (Elements::Worksheet frame, Array[PendingRow] rows, Hash[String, untyped] hyperlinks, Hash[String, untyped] comments, Hash[String, Array[untyped]] threaded_comments) -> void
+      def initialize: (Elements::Worksheet frame, Array[PendingRow] rows, Hash[String, untyped] hyperlinks, Hash[String, untyped] comments, Hash[String, Array[untyped]] threaded_comments) -> void
+
+      # Returns the worksheet with +rows+, or with the rows' named cells by default.
+      # : (?Array[Elements::Row]? rows, ?Array[Elements::Column]? columns) -> Elements::Worksheet
+      def worksheet: (?Array[Elements::Row]? rows, ?Array[Elements::Column]? columns) -> Elements::Worksheet
+
+      # Attaches the sheet's hyperlinks and comments to the cells they refer to.
+      # : (Array[Elements::Cell] cells) -> Array[Elements::Cell]
+      def attach_links: (Array[Elements::Cell] cells) -> Array[Elements::Cell]
+    end
+  end
+
+  # Stands in for the {Elements::Worksheet} of a sheet defined in {Xlsxrb.build}, as
+  # returned by {WorkbookBuilder#sheet}. It answers the same methods with the same
+  # results. The worksheet is built the first time one of them is called, or when the
+  # object is frozen (as Ractor.make_shareable does), so a sheet whose return value is
+  # never used costs nothing.
+  #
+  # @api public
+  class DeferredWorksheet
+    # : (WorksheetBuilder::Snapshot snapshot) -> void
+    def initialize: (WorksheetBuilder::Snapshot snapshot) -> void
+
+    # Returns the worksheet, building it on first use.
+    #
+    # @return [Elements::Worksheet]
+    # @api public
+    # : () -> Elements::Worksheet
+    def worksheet: () -> Elements::Worksheet
+
+    # : (untyped other) -> bool
+    def ==: (untyped other) -> bool
+
+    # : (untyped other) -> bool
+    def eql?: (untyped other) -> bool
+
+    # : () -> Integer
+    def hash: () -> Integer
+
+    # : () -> String
+    def inspect: () -> String
+
+    # : () -> String
+    def to_s: () -> String
+
+    # : (untyped printer) -> untyped
+    def pretty_print: (untyped printer) -> untyped
+
+    # Builds the worksheet before freezing, so that a frozen stand-in still answers.
+    # : () -> self
+    def freeze: () -> self
+
+    # : (Symbol name, *untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def method_missing: (Symbol name, *untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (Symbol name, ?bool include_private) -> bool
+    def respond_to_missing?: (Symbol name, ?bool include_private) -> bool
   end
 
   # Builder context for configuring an Excel Table (ListObject) in block form.

@@ -27,7 +27,8 @@ module Xlsxrb
     def initialize(strict_excel_mode: true, default_font: nil)
       @strict_excel_mode = strict_excel_mode
       @default_font = default_font
-      @sheets = []
+      @sheets = [] # Each sheet without its rows, for its name and state
+      @sheet_snapshots = [] # Each sheet as its block left it, rows still pending
       @sheet_builders = [] # Keep track of sheet builders for style processing
       @defined_names = []
       @styles = {}
@@ -252,10 +253,11 @@ module Xlsxrb
     # @param opts [Hash] Additional sheet properties.
     # @yield [sheet_builder]
     # @yieldparam sheet_builder [Xlsxrb::WorksheetBuilder]
-    # @return [Elements::Worksheet]
+    # @return [DeferredWorksheet] The sheet as {WorksheetBuilder#build} returns it, with
+    #   style names in its cells. It is built when first used.
     # @raise [ArgumentError] If sheet name violates Excel limits in strict mode.
     # @api public
-    #: (?String? name, ?state: Symbol | String | nil, ?tab_color: String | Hash[Symbol, untyped] | Symbol | nil, ?code_name: String | Symbol | nil, **untyped opts) ?{ (WorksheetBuilder) -> void } -> Elements::Worksheet
+    #: (?String? name, ?state: Symbol | String | nil, ?tab_color: String | Hash[Symbol, untyped] | Symbol | nil, ?code_name: String | Symbol | nil, **untyped opts) ?{ (WorksheetBuilder) -> void } -> DeferredWorksheet
     def sheet(name = nil, state: nil, tab_color: nil, code_name: nil, **opts)
       sheet_count = [@sheets.size, @sheet_builders.size].max
       name ||= "Sheet#{sheet_count + 1}"
@@ -287,18 +289,19 @@ module Xlsxrb
       yield sheet_builder if block_given?
       @defined_names.concat(sheet_builder.defined_names)
       sheet_builder.defined_names.clear
-      built = sheet_builder.build
-      @sheets << built
-      built
+      snapshot = sheet_builder.close
+      @sheet_snapshots << snapshot
+      @sheets << snapshot.frame
+      DeferredWorksheet.new(snapshot)
     end
 
     # Accesses or defines a worksheet by name.
     #
     # @param name_or_index [String, Symbol, Integer, nil]
     # @yield [sheet_builder]
-    # @return [Elements::Worksheet]
+    # @return [DeferredWorksheet]
     # @api public
-    #: (?String | Symbol | Integer | nil name_or_index) ?{ (WorksheetBuilder) -> void } -> Elements::Worksheet
+    #: (?String | Symbol | Integer | nil name_or_index) ?{ (WorksheetBuilder) -> void } -> DeferredWorksheet
     def [](name_or_index = nil, &)
       sheet(name_or_index&.to_s, &)
     end
@@ -604,7 +607,7 @@ module Xlsxrb
       end
 
       # Process styles from all sheets and collect style definitions
-      processed_sheets, styles_definition = process_styles(@sheets)
+      processed_sheets, styles_definition = process_styles(@sheet_snapshots)
 
       # Auto-register print_area and print_titles defined names from sheet builders if not explicitly defined
       @sheet_builders.each do |sb|
@@ -700,7 +703,9 @@ module Xlsxrb
       end
     end
 
-    #: (untyped sheets) -> (::Array[untyped | ::Hash[untyped, untyped]] | ::Array[untyped])
+    # Registers the styles of every sheet and builds the sheets' rows with their style
+    # names resolved to style indexes. Each cell is created once, here.
+    #: (Array[WorksheetBuilder::Snapshot] sheets) -> [Array[Elements::Worksheet], Hash[Symbol, untyped]]
     def process_styles(sheets)
       # Collect all unique StyleBuilders from workbook and sheets
       all_style_builders = @styles.dup
@@ -712,7 +717,7 @@ module Xlsxrb
 
       # Also collect inline styles from columns and rows
       sheets.each do |sheet|
-        sheet.columns.each do |col|
+        sheet.frame.columns.each do |col|
           raw_col_style = col.style_index
           next unless raw_col_style.is_a?(Hash)
 
@@ -725,7 +730,7 @@ module Xlsxrb
         end
 
         sheet.rows.each do |row|
-          raw_row_style = row.style_index || row.unmapped_data&.[](:style_index)
+          raw_row_style = row.style
           next unless raw_row_style.is_a?(Hash)
 
           inline_name = "__inline_row_#{raw_row_style.hash}"
@@ -735,49 +740,59 @@ module Xlsxrb
           sb.apply_options!(**raw_row_style)
           all_style_builders[inline_name] = sb
         end
-
-        # Style names that were never defined are a mistake, not an unstyled cell.
-        sheet.columns.each { |col| DslHelpers.check_style_name!(col.style_index, all_style_builders) }
-        sheet.rows.each do |row|
-          DslHelpers.check_style_name!(row.style_index || row.unmapped_data&.[](:style_index), all_style_builders)
-          row.cells.each do |cell|
-            style = cell.style
-            # Skip the check for defined names: it allocates a String for a Symbol.
-            next if style.nil? || all_style_builders.key?(style.is_a?(Symbol) ? style.name : style)
-
-            DslHelpers.check_style_name!(style, all_style_builders)
-          end
-        end
       end
 
-      # Date and Time cells styled without a number format get a variant of their style
-      # that keeps the default date or time format.
+      # One pass over the cells checks their style names (names that were never defined
+      # are a mistake, not an unstyled cell) and finds the Date and Time cells styled
+      # without a number format. Those get a variant of their style that keeps the
+      # default date or time format. The variants are registered after every other
+      # style, in the order they are found.
       date_variants = {}
+      variant_builders = {}
+      checked_style = style_key = nil
       sheets.each do |sheet|
+        sheet.frame.columns.each { |col| DslHelpers.check_style_name!(col.style_index, all_style_builders) }
         sheet.rows.each do |row|
-          row.cells.each do |cell|
-            style_name = cell.style
-            next unless style_name.is_a?(String) || style_name.is_a?(Symbol)
+          DslHelpers.check_style_name!(row.style, all_style_builders)
+          styles = row.styles
+          next if styles.nil?
 
-            value = cell.value
-            next unless value.is_a?(Date) || value.is_a?(Time)
-
-            variant = DslHelpers.date_style_variant(value, style_name.to_s, all_style_builders[style_name.to_s])
-            next unless variant
-
-            variant_name, number_format = variant
-            date_variants[[style_name.to_s, cell.value.is_a?(Time) || cell.value.is_a?(DateTime)]] = variant
-            all_style_builders[variant_name] ||= all_style_builders[style_name.to_s].with_number_format(variant_name, number_format)
+          values = row.values
+          if styles.is_a?(Array)
+            col_index = 0
+            while col_index < styles.size
+              style = styles[col_index]
+              unless style.nil?
+                # Rows usually repeat one style object; check it once.
+                unless style.equal?(checked_style)
+                  # Symbol#name looks a Symbol up without allocating a String.
+                  style_key = style.is_a?(Symbol) ? style.name : style
+                  DslHelpers.check_style_name!(style, all_style_builders) unless all_style_builders.key?(style_key)
+                  checked_style = style
+                end
+                add_date_variant(values[col_index], style_key, all_style_builders, date_variants, variant_builders) if style_key.is_a?(String)
+              end
+              col_index += 1
+            end
+          elsif row.width.positive?
+            unless styles.equal?(checked_style)
+              style_key = styles.is_a?(Symbol) ? styles.name : styles
+              DslHelpers.check_style_name!(styles, all_style_builders) unless all_style_builders.key?(style_key)
+              checked_style = styles
+            end
+            values.each { |value| add_date_variant(value, style_key, all_style_builders, date_variants, variant_builders) } if style_key.is_a?(String)
           end
         end
       end
+      variant_builders.each { |name, builder| all_style_builders[name] ||= builder }
 
       if all_style_builders.empty?
+        named_sheets = sheets.map(&:worksheet)
         if @default_font
           temp_writer = Ooxml::Writer.new(default_font: @default_font)
-          return [sheets, extract_styles_from_writer(temp_writer)]
+          return [named_sheets, extract_styles_from_writer(temp_writer)]
         end
-        return [sheets, {}]
+        return [named_sheets, {}]
       end
 
       # Create a temporary writer to register styles and get numeric IDs
@@ -791,12 +806,12 @@ module Xlsxrb
       # Capture the style definitions from the temporary writer
       styles_definition = extract_styles_from_writer(temp_writer)
 
-      # Update all sheets with resolved style IDs and style inheritance
+      # Build all sheets with resolved style IDs and style inheritance
       updated_sheets = sheets.map do |sheet|
         col_style_map = {}
         col_fmt_map = {}
 
-        new_columns = sheet.columns.map do |col|
+        new_columns = sheet.frame.columns.map do |col|
           raw_col_style = col.style_index
           resolved_col_style = if raw_col_style.is_a?(Hash)
                                  inline_name = "__inline_col_#{raw_col_style.hash}"
@@ -837,8 +852,9 @@ module Xlsxrb
           end
         end
 
+        last_raw_style = last_resolved_style = nil
         new_rows = sheet.rows.map do |row|
-          raw_row_style = row.style_index || row.unmapped_data&.[](:style_index)
+          raw_row_style = row.style
           resolved_row_style = if raw_row_style.is_a?(Hash)
                                  inline_name = "__inline_row_#{raw_row_style.hash}"
                                  style_name_to_id[inline_name]
@@ -847,80 +863,109 @@ module Xlsxrb
                                elsif raw_row_style.is_a?(Integer)
                                  raw_row_style
                                end
-          row_unmapped = row.unmapped_data
-          if row_unmapped&.key?(:style_index)
-            row_unmapped = row_unmapped.dup
-            row_unmapped.delete(:style_index)
-          end
 
-          cells_changed = false
-          new_cells = row.cells.map do |cell|
-            raw_cell_style = cell.style || cell.style_index
-            dated = (cell.value.is_a?(Date) || cell.value.is_a?(Time)) && (raw_cell_style.is_a?(String) || raw_cell_style.is_a?(Symbol))
-            date_variant = dated ? date_variants[[raw_cell_style.to_s, cell.value.is_a?(Time) || cell.value.is_a?(DateTime)]] : nil
-            raw_cell_style = date_variant.first if date_variant
-            # Symbol#name looks a Symbol up without allocating a String for every cell.
-            style_key = if raw_cell_style.is_a?(Symbol)
-                          raw_cell_style.name
-                        elsif raw_cell_style.is_a?(String)
-                          raw_cell_style
-                        end
-            resolved_cell_style = if style_key && style_name_to_id.key?(style_key)
-                                    style_name_to_id[style_key]
-                                  elsif raw_cell_style.nil?
-                                    resolved_row_style || col_style_map[cell.column_index]
+          row_index = row.index
+          values = row.values
+          styles = row.styles
+          codes = row.format_codes
+          style_lookup = styles.is_a?(Array)
+          code_lookup = codes.is_a?(Array)
+          all_valid = row.within_limits?
+          width = row.width
+          cells = [] #: Array[Elements::Cell]
+          col_index = 0
+          while col_index < width
+            value = col_index < values.size ? values[col_index] : nil
+            style = style_lookup ? styles[col_index] : styles
+            if value.nil? && style.nil?
+              col_index += 1
+              next
+            end
+
+            format_code = code_lookup ? codes[col_index] : codes
+            raw_cell_style = style
+            date_format = nil
+            unless date_variants.empty?
+              cell_value = value.is_a?(Elements::Formula) ? value.cached_value : value
+              if (cell_value.is_a?(Date) || cell_value.is_a?(Time)) && (style.is_a?(String) || style.is_a?(Symbol))
+                date_variant = date_variants[[style.to_s, cell_value.is_a?(Time) || cell_value.is_a?(DateTime)]]
+                raw_cell_style, date_format = date_variant if date_variant
+              end
+            end
+
+            resolved_cell_style = if raw_cell_style.nil?
+                                    resolved_row_style || col_style_map[col_index]
+                                  elsif raw_cell_style.equal?(last_raw_style)
+                                    # Rows usually repeat one style object; reuse its last resolution.
+                                    last_resolved_style
                                   else
-                                    raw_cell_style
+                                    last_raw_style = raw_cell_style
+                                    # Symbol#name looks a Symbol up without allocating a String.
+                                    style_key = raw_cell_style.is_a?(Symbol) ? raw_cell_style.name : raw_cell_style
+                                    last_resolved_style = (style_key.is_a?(String) && style_name_to_id[style_key]) || raw_cell_style
                                   end
 
-            target_fmt = cell.format_code || date_variant&.last || col_fmt_map[cell.column_index]
+            target_fmt = format_code || date_format || col_fmt_map[col_index]
+            unchanged = resolved_cell_style == style && target_fmt == format_code
+            valid = all_valid || Elements::Cell.valid_coordinates?(row_index, col_index)
 
-            if resolved_cell_style == (cell.style || cell.style_index) && target_fmt == cell.format_code
-              cell
-            elsif cell.hyperlink.nil? && cell.comment.nil? && cell.threaded_comments.empty? && cell.unmapped_data.empty? && cell.errors.empty?
-              # The same cell as Cell.new below would build, without its keyword arguments and checks.
-              cells_changed = true
-              Elements::Cell.fast_create(cell.row_index, cell.column_index, cell.value, resolved_cell_style, cell.formula, cell.raw_value, target_fmt)
-            else
-              cells_changed = true
-              Elements::Cell.new(
-                row_index: cell.row_index,
-                column_index: cell.column_index,
-                value: cell.value,
-                formula: cell.formula,
-                style: (resolved_cell_style unless resolved_cell_style.is_a?(Integer)),
-                style_index: (resolved_cell_style if resolved_cell_style.is_a?(Integer)),
-                hyperlink: cell.hyperlink,
-                comment: cell.comment,
-                raw_value: cell.raw_value,
-                format_code: target_fmt,
-                unmapped_data: cell.unmapped_data,
-                errors: cell.errors,
-                threaded_comments: cell.threaded_comments
-              )
-            end
+            cells << if valid && !value.is_a?(Elements::Formula) && !(unchanged && style.is_a?(Integer))
+                       # A valid cell has no errors, so it skips the checks of Cell.new.
+                       Elements::Cell.fast_create(row_index, col_index, value, resolved_cell_style, nil, value&.to_s, target_fmt)
+                     elsif unchanged
+                       WorksheetBuilder::PendingRow.cell(row_index, col_index, value, style, format_code, valid)
+                     else
+                       resolved_cell(row_index, col_index, value, resolved_cell_style, target_fmt, valid)
+                     end
+            col_index += 1
           end
 
-          next row if !cells_changed && resolved_row_style == row.style_index && row_unmapped.equal?(row.unmapped_data)
-
-          Elements::Row.new(
-            index: row.index,
-            cells: new_cells,
-            height: row.height,
-            hidden: row.hidden?,
-            custom_height: row.custom_height?,
-            collapsed: row.collapsed?,
-            outline_level: row.outline_level,
-            style_index: resolved_row_style,
-            unmapped_data: row_unmapped,
-            errors: row.errors
-          )
+          row.to_row(sheet.attach_links(cells), resolved_row_style)
         end
 
-        sheet.with(columns: new_columns, rows: new_rows)
+        sheet.worksheet(new_rows, new_columns)
       end
 
       [updated_sheets, styles_definition]
+    end
+
+    # Records the date or time variant of the style named +style_key+ that a Date or
+    # Time +value+ needs, if any.
+    #: (untyped value, String style_key, Hash[String, untyped] all_style_builders, Hash[untyped, untyped] date_variants, Hash[String, untyped] variant_builders) -> void
+    def add_date_variant(value, style_key, all_style_builders, date_variants, variant_builders)
+      value = value.cached_value if value.is_a?(Elements::Formula)
+      return unless value.is_a?(Date) || value.is_a?(Time)
+
+      variant = DslHelpers.date_style_variant(value, style_key, all_style_builders[style_key])
+      return unless variant
+
+      variant_name, number_format = variant
+      date_variants[[style_key, value.is_a?(Time) || value.is_a?(DateTime)]] = variant
+      variant_builders[variant_name] ||= all_style_builders[style_key].with_number_format(variant_name, number_format)
+    end
+
+    # Creates a cell whose style was resolved to +style+ (an index, or a name with no index).
+    #: (Integer row_index, Integer column_index, untyped value, untyped style, String? format_code, bool valid_coordinates) -> Elements::Cell
+    def resolved_cell(row_index, column_index, value, style, format_code, valid_coordinates)
+      formula = nil
+      if value.is_a?(Elements::Formula)
+        formula = value
+        value = formula.cached_value
+        valid_coordinates &&= Elements::Cell.valid_value?(value)
+      end
+      raw_value = value&.to_s
+      return Elements::Cell.fast_create(row_index, column_index, value, style, formula, raw_value, format_code) if valid_coordinates
+
+      Elements::Cell.new(
+        row_index: row_index,
+        column_index: column_index,
+        value: value,
+        formula: formula,
+        style: (style unless style.is_a?(Integer)),
+        style_index: (style if style.is_a?(Integer)),
+        raw_value: raw_value,
+        format_code: format_code
+      )
     end
 
     #: (untyped writer) -> Hash[Symbol, untyped]
