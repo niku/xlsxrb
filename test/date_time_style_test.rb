@@ -77,6 +77,29 @@ class DateTimeStyleTest < Test::Unit::TestCase
     assert_equal [["0.00"]], rows[4]
   end
 
+  test "stream writer gives dates the variant of a style's current definition" do
+    d = Date.new(2026, 4, 1)
+    io = StringIO.new
+    Xlsxrb.write(io) do |w|
+      w.style(:b, bold: true)
+      w.sheet("S") do |s|
+        s.row([d], cell_styles: :b)
+        s.style(:b, italic: true)
+        s.row([d], cell_styles: :b)
+      end
+    end
+    wb = Xlsxrb.load(StringIO.new(io.string))
+    styles = wb.styles
+    fonts = wb.sheets.first.rows.map do |row|
+      xf = styles.cell_xf(row.cells.first.style_index.to_i)
+      assert_equal "yyyy-mm-dd", styles.number_format_code(xf.num_fmt_id.to_i)
+      font = styles.fonts[xf.font_id.to_i]
+      [font&.bold?, font&.italic?]
+    end
+
+    assert_equal [[true, false], [false, true]], fonts
+  end
+
   test "build leaves the cell_styles array it is given unchanged" do
     styles = [nil, :b]
     wb = Xlsxrb.build do |w|

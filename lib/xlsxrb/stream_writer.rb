@@ -223,6 +223,9 @@ module Xlsxrb
 
       # Register immediately with low-level style writer
       @style_name_to_id[style_name] = style_builder.register_with(@style_writer)
+      # Date and time variants of an earlier definition do not apply to this one.
+      @style_name_to_id.delete("#{style_name}__xlsxrb_date")
+      @style_name_to_id.delete("#{style_name}__xlsxrb_time")
 
       style_builder
     end
