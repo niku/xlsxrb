@@ -1659,10 +1659,13 @@ module Xlsxrb
     # Builds and returns the in-memory {Elements::Worksheet}. Cells carry their style
     # names; {WorkbookBuilder#build} resolves them to style indexes.
     #
+    # @deprecated Read the sheet from the workbook that {Xlsxrb.build} returns. This
+    #   method will be private in version 0.3.0.
     # @return [Elements::Worksheet]
     # @api public
     #: () -> Elements::Worksheet
     def build
+      Deprecation.warn("WorksheetBuilder#build is deprecated; read the sheet from the workbook that Xlsxrb.build returns. It will be private in version 0.3.0.")
       snapshot(@rows.dup.freeze).worksheet
     end
 
@@ -1995,12 +1998,19 @@ module Xlsxrb
   # object is frozen (as Ractor.make_shareable does), so a sheet whose return value is
   # never used costs nothing.
   #
+  # @deprecated Read the sheet from the workbook that {Xlsxrb.build} returns. In version
+  #   0.3.0, {WorkbookBuilder#sheet} will return the sheet's {WorksheetBuilder}, and
+  #   {WorkbookBuilder#[]} will return the {WorksheetBuilder} of an existing sheet.
   # @api public
   class DeferredWorksheet
+    DEPRECATION_MESSAGE = "Using the sheet that WorkbookBuilder#sheet and #[] return is deprecated; " \
+                          "read it from the workbook that Xlsxrb.build returns. In version 0.3.0, sheet will return " \
+                          "the sheet's WorksheetBuilder, and #[] will return the WorksheetBuilder of an existing sheet."
+
     #: (WorksheetBuilder::Snapshot snapshot) -> void
     def initialize(snapshot)
       @snapshot = snapshot
-      @worksheet = nil
+      @built_worksheet = nil
     end
 
     # Returns the worksheet, building it on first use.
@@ -2008,36 +2018,34 @@ module Xlsxrb
     # @return [Elements::Worksheet]
     # @api public
     #: () -> Elements::Worksheet
-    def worksheet
-      @worksheet ||= @snapshot&.worksheet || raise(Error, "worksheet is not available")
-    end
+    def worksheet = built_worksheet
 
     #: (untyped other) -> bool
     def ==(other)
-      worksheet == (other.is_a?(DeferredWorksheet) ? other.worksheet : other)
+      built_worksheet == (other.is_a?(DeferredWorksheet) ? other.built_worksheet : other)
     end
 
     #: (untyped other) -> bool
     def eql?(other)
-      worksheet.eql?(other.is_a?(DeferredWorksheet) ? other.worksheet : other)
+      built_worksheet.eql?(other.is_a?(DeferredWorksheet) ? other.built_worksheet : other)
     end
 
     #: () -> Integer
-    def hash = worksheet.hash
+    def hash = built_worksheet.hash
 
     #: () -> String
-    def inspect = worksheet.inspect
+    def inspect = built_worksheet.inspect
 
     #: () -> String
-    def to_s = worksheet.to_s
+    def to_s = built_worksheet.to_s
 
     #: (untyped printer) -> untyped
-    def pretty_print(printer) = printer.pp(worksheet)
+    def pretty_print(printer) = printer.pp(built_worksheet)
 
     # Builds the worksheet before freezing, so that a frozen stand-in still answers.
     #: () -> self
     def freeze
-      worksheet
+      built_worksheet
       @snapshot = nil
       super
     end
@@ -2046,12 +2054,24 @@ module Xlsxrb
     def method_missing(name, ...)
       return super unless Elements::Worksheet.public_method_defined?(name)
 
-      worksheet.public_send(name, ...)
+      built_worksheet.public_send(name, ...)
     end
 
     #: (Symbol name, ?bool include_private) -> bool
     def respond_to_missing?(name, include_private = false)
       Elements::Worksheet.public_method_defined?(name) || super
+    end
+
+    protected
+
+    # Returns the worksheet, building it on first use with a deprecation warning that
+    # points at the caller of the public method.
+    #: () -> Elements::Worksheet
+    def built_worksheet
+      @built_worksheet ||= begin
+        Deprecation.warn(DEPRECATION_MESSAGE, uplevel: 2)
+        @snapshot&.worksheet || raise(Error, "worksheet is not available")
+      end
     end
   end
 

@@ -77,6 +77,15 @@ module Xlsxrb
   # Base class for all exceptions raised by Xlsxrb.
   class Error < StandardError; end
 
+  # @api private
+  module Deprecation
+    # Warns that a feature is deprecated, at the location +uplevel+ frames above the caller.
+    #: (String message, ?uplevel: Integer) -> void
+    def self.warn(message, uplevel: 1)
+      Kernel.warn("[Xlsxrb DEPRECATION] #{message}", uplevel: uplevel + 1)
+    end
+  end
+
   # Raised when parsing malformed or invalid XML structures.
   class ParseError < Error; end
 
@@ -1258,6 +1267,10 @@ module Xlsxrb
   #     end
   #   end
   #
+  # @note Planned for version 0.3.0: Cell#format_code of the built cells will be the
+  #   number format of each cell's resolved style, as in a loaded workbook; cells styled
+  #   :default or :none will have style index 0; and a style index given in cell_styles
+  #   will be kept only in Cell#style_index.
   # @param strict_excel_mode [Boolean] Whether to enforce Microsoft Excel specification limits.
   # @param default_font [Hash, nil] Optional default font options.
   # @yield [builder]

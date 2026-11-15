@@ -904,6 +904,8 @@ module Xlsxrb
     # Builds and returns the in-memory {Elements::Worksheet}. Cells carry their style
     # names; {WorkbookBuilder#build} resolves them to style indexes.
     #
+    # @deprecated Read the sheet from the workbook that {Xlsxrb.build} returns. This
+    #   method will be private in version 0.3.0.
     # @return [Elements::Worksheet]
     # @api public
     # : () -> Elements::Worksheet
@@ -1042,8 +1044,12 @@ module Xlsxrb
   # object is frozen (as Ractor.make_shareable does), so a sheet whose return value is
   # never used costs nothing.
   #
+  # @deprecated Read the sheet from the workbook that {Xlsxrb.build} returns. In version
+  #   0.3.0, {WorkbookBuilder#sheet} and {WorkbookBuilder#[]} will return nil.
   # @api public
   class DeferredWorksheet
+    DEPRECATION_MESSAGE: ::String
+
     # : (WorksheetBuilder::Snapshot snapshot) -> void
     def initialize: (WorksheetBuilder::Snapshot snapshot) -> void
 
@@ -1081,6 +1087,11 @@ module Xlsxrb
 
     # : (Symbol name, ?bool include_private) -> bool
     def respond_to_missing?: (Symbol name, ?bool include_private) -> bool
+
+    # Returns the worksheet, building it on first use with a deprecation warning that
+    # points at the caller of the public method.
+    # : () -> Elements::Worksheet
+    def built_worksheet: () -> Elements::Worksheet
   end
 
   # Builder context for configuring an Excel Table (ListObject) in block form.

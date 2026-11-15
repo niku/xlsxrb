@@ -3793,7 +3793,9 @@ class PublicApiTest < Test::Unit::TestCase
 
     # Canonical cell_styles and row_style
     builder.row([1, 2], cell_styles: [:b, nil], row_style: :r)
-    row = builder.build.rows.last
+    row = nil
+    err = capture_stderr { row = builder.build.rows.last }
+    assert_match(/\[Xlsxrb DEPRECATION\] WorksheetBuilder#build is deprecated/, err)
     assert_equal(:r, row.style_index)
     assert_equal(:b, row.cells[0].style)
   end
@@ -3811,12 +3813,20 @@ class PublicApiTest < Test::Unit::TestCase
 
     assert_kind_of(Xlsxrb::DeferredWorksheet, sheet)
     assert_respond_to(sheet, :rows)
-    assert_equal("S", sheet.name)
+    # The first use warns once; later uses do not.
+    err = capture_stderr { assert_equal("S", sheet.name) }
+    assert_match(/\[Xlsxrb DEPRECATION\] Using the sheet that WorkbookBuilder#sheet and #\[\] return is deprecated/, err)
+    assert_match(/In version 0\.3\.0, sheet will return the sheet's WorksheetBuilder/, err)
+    assert_equal("", capture_stderr { sheet.rows })
     assert_equal([[1, "x"]], sheet.rows.map { |row| row.cells.map(&:value) })
     assert_equal(:b, sheet.rows[0].cells[0].style)
     assert_equal(20, sheet.rows[0].height)
-    assert_equal(sheet_builder.build.rows, sheet.rows)
+    assert_equal(sheet_builder.__send__(:snapshot, sheet_builder.instance_variable_get(:@rows)).worksheet.rows, sheet.rows)
     assert_equal(sheet.worksheet.inspect, sheet.inspect)
+  end
+
+  test "using a sheet only through the workbook does not warn" do
+    assert_equal("", capture_stderr { Xlsxrb.build { |w| w.sheet("S") { |s| s.row([1]) } } })
   end
 
   test "a sheet stand-in builds its worksheet when made shareable" do
@@ -3826,7 +3836,7 @@ class PublicApiTest < Test::Unit::TestCase
       sheet = w.sheet("S") { |s| s.row([1, "x"], cell_styles: :b) }
     end
 
-    Ractor.make_shareable(sheet)
+    assert_match(/\[Xlsxrb DEPRECATION\]/, capture_stderr { Ractor.make_shareable(sheet) })
     assert(Ractor.shareable?(sheet))
     assert_equal(["x"], sheet.rows[0].cells.drop(1).map(&:value))
   end
