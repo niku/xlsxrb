@@ -212,6 +212,40 @@ class DslHelpersTest < Test::Unit::TestCase
     assert_equal(:bold, Xlsxrb::DslHelpers.normalize_row_styles(:bold))
   end
 
+  test "normalize_row_styles accepts each kind of style in a hash" do
+    assert_equal([nil, :x], Xlsxrb::DslHelpers.normalize_row_styles({ b: :x }))
+    assert_equal([nil], Xlsxrb::DslHelpers.normalize_row_styles({ "A" => nil }))
+    assert_equal(["s"], Xlsxrb::DslHelpers.normalize_row_styles({ "A" => "s" }))
+    assert_equal([:s], Xlsxrb::DslHelpers.normalize_row_styles({ "A" => :s }))
+    assert_equal([1], Xlsxrb::DslHelpers.normalize_row_styles({ "A" => 1 }))
+    assert_equal([{ bold: true }], Xlsxrb::DslHelpers.normalize_row_styles({ "A" => { bold: true } }))
+
+    # String and Hash subclass support
+    name = Class.new(String).new("s")
+    inline = Class.new(Hash).new.merge!(bold: true)
+    assert_equal([name, inline], Xlsxrb::DslHelpers.normalize_row_styles({ "A" => name, "B" => inline }))
+  end
+
+  test "normalize_row_styles rejects a hash that reads like an inline style" do
+    hint = "a Hash given to cell_styles maps columns to styles; " \
+           "pass inline styles in an Array, as in cell_styles: [{ bold: true }], " \
+           "or style the whole row with row_style: { bold: true }"
+
+    error = assert_raise(ArgumentError) { Xlsxrb::DslHelpers.normalize_row_styles({ bold: true }) }
+    assert_equal(":bold is a style option, but #{hint}", error.message)
+    error = assert_raise(ArgumentError) { Xlsxrb::DslHelpers.normalize_row_styles({ "A" => :s, font_size: 12 }) }
+    assert_equal(":font_size is a style option, but #{hint}", error.message)
+
+    error = assert_raise(ArgumentError) { Xlsxrb::DslHelpers.normalize_row_styles({ b: true }) }
+    assert_equal("true for column :b is not a style; #{hint}", error.message)
+    error = assert_raise(ArgumentError) { Xlsxrb::DslHelpers.normalize_row_styles({ "B" => false }) }
+    assert_equal("false for column \"B\" is not a style; #{hint}", error.message)
+    error = assert_raise(ArgumentError) { Xlsxrb::DslHelpers.normalize_row_styles({ (0..1) => 1.5 }) }
+    assert_equal("1.5 for column 0..1 is not a style; #{hint}", error.message)
+    error = assert_raise(ArgumentError) { Xlsxrb::DslHelpers.normalize_row_styles({ "A" => 1/3r }) }
+    assert_equal("(1/3) for column \"A\" is not a style; #{hint}", error.message)
+  end
+
   test "normalize_row_styles converts hash with ranges and arrays to sparse array" do
     assert_equal([], Xlsxrb::DslHelpers.normalize_row_styles({}))
     assert_equal([:header], Xlsxrb::DslHelpers.normalize_row_styles({ "A" => :header }))

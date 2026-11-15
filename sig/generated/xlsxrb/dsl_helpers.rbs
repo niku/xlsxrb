@@ -83,8 +83,23 @@ module Xlsxrb
     #
     # @param styles [untyped]
     # @return [untyped]
+    # @raise [ArgumentError] If the Hash looks like an inline style rather than columns mapped to styles.
     # : (untyped styles) -> untyped
     def self.normalize_row_styles: (untyped styles) -> untyped
+
+    # Hint for a cell_styles Hash that reads like an inline style.
+    INLINE_CELL_STYLES_HINT: ::String
+
+    # Raises when an entry of a cell_styles Hash cannot be a column mapped to a style:
+    # a style option name as the key (a column name has at most three letters), or a
+    # value that is not a style name, a style index, an inline style, or nil.
+    #
+    # @param column [Object] The entry's key.
+    # @param style [Object] The entry's value.
+    # @return [void]
+    # @raise [ArgumentError]
+    # : (untyped column, untyped style) -> void
+    def self.check_column_style!: (untyped column, untyped style) -> void
 
     # Style names that select the workbook's default cell format.
     DEFAULT_STYLE_NAMES: untyped

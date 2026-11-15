@@ -1063,6 +1063,7 @@ namespace :mutant do
           "Xlsxrb::DslHelpers.absolute_range",
           "Xlsxrb::DslHelpers.normalize_row_values",
           "Xlsxrb::DslHelpers.normalize_row_styles",
+          "Xlsxrb::DslHelpers.check_column_style!",
           "Xlsxrb::DslHelpers.validate_row_bounds!",
           "Xlsxrb::DslHelpers.compress_runs",
           "Xlsxrb::DslHelpers.complement_runs",

@@ -189,12 +189,14 @@ module Xlsxrb
     #
     # @param styles [untyped]
     # @return [untyped]
+    # @raise [ArgumentError] If the Hash looks like an inline style rather than columns mapped to styles.
     #: (untyped styles) -> untyped
     def self.normalize_row_styles(styles)
       return styles unless styles.is_a?(Hash)
 
       styles_array = []
       styles.each do |k, v|
+        check_column_style!(k, v)
         if k.is_a?(Range) || k.is_a?(Array)
           k.each { |idx| styles_array[Elements::Cell._column_index(idx)] = v }
         else
@@ -202,6 +204,31 @@ module Xlsxrb
         end
       end
       styles_array
+    end
+
+    # Hint for a cell_styles Hash that reads like an inline style.
+    INLINE_CELL_STYLES_HINT = "a Hash given to cell_styles maps columns to styles; " \
+                              "pass inline styles in an Array, as in cell_styles: [{ bold: true }], " \
+                              "or style the whole row with row_style: { bold: true }"
+
+    # Raises when an entry of a cell_styles Hash cannot be a column mapped to a style:
+    # a style option name as the key (a column name has at most three letters), or a
+    # value that is not a style name, a style index, an inline style, or nil.
+    #
+    # @param column [Object] The entry's key.
+    # @param style [Object] The entry's value.
+    # @return [void]
+    # @raise [ArgumentError]
+    #: (untyped column, untyped style) -> void
+    def self.check_column_style!(column, style)
+      raise ArgumentError, "#{column.inspect} is a style option, but #{INLINE_CELL_STYLES_HINT}" if StyleBuilder::OPTION_KEYS.include?(column)
+
+      case style
+      when nil, String, Symbol, Integer, Hash
+        nil
+      else
+        raise ArgumentError, "#{style.inspect} for column #{column.inspect} is not a style; #{INLINE_CELL_STYLES_HINT}"
+      end
     end
 
     # Style names that select the workbook's default cell format.

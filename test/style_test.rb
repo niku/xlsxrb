@@ -432,4 +432,13 @@ class StyleTest < Test::Unit::TestCase
       tmp&.close!
     end
   end
+
+  test "build and stream reject an inline style given to cell_styles as a Hash" do
+    assert_raise_message(/style option, but a Hash given to cell_styles maps columns to styles/) do
+      Xlsxrb.build { |w| w.sheet("S") { |s| s.row([1, 2], cell_styles: { bold: true }) } }
+    end
+    assert_raise_message(/true for column :b is not a style/) do
+      Xlsxrb.write(StringIO.new) { |w| w.sheet("S") { |s| s.row([1, 2], cell_styles: { b: true }) } }
+    end
+  end
 end
