@@ -12,9 +12,12 @@ module Xlsxrb
     # @param name [String] The worksheet name.
     # @param strict_excel_mode [Boolean] Whether to enforce Microsoft Excel limits.
     # @param state [Symbol] Sheet visibility state (:visible, :hidden, or :very_hidden).
-    #: (String name, ?strict_excel_mode: bool, ?state: Symbol) -> void
-    def initialize(name, strict_excel_mode: true, state: :visible)
+    # @param style_log [StyleLog] When the workbook's styles are defined (internal).
+    #: (String name, ?strict_excel_mode: bool, ?state: Symbol, ?style_log: StyleLog) -> void
+    def initialize(name, strict_excel_mode: true, state: :visible, style_log: StyleLog.new)
       @name = name
+      @style_log = style_log
+      @column_style_clocks = {} # { column index => style log clock when its style was set }
       @strict_excel_mode = strict_excel_mode
       @state = state ? state.to_sym : :visible
       @next_row_index = 0
@@ -88,6 +91,7 @@ module Xlsxrb
       style_builder.apply_options!(**opts) unless opts.empty?
       yield style_builder if block_given?
       @styles[style_name] = style_builder
+      @style_log.record(style_name, style_builder)
       style_builder
     end
 
@@ -253,7 +257,7 @@ module Xlsxrb
       values = values.dup unless values_copied || values.frozen?
       cell_styles = cell_styles.dup if style_lookup && !styles_copied && !cell_styles.frozen?
       @rows << PendingRow.new(row_index, values, cell_styles, format_codes, max_len, height, hidden,
-                              custom_height || !height.nil?, collapsed, outline_level, row_style)
+                              custom_height || !height.nil?, collapsed, outline_level, row_style, @style_log.clock)
     end
 
     # Appends a row to the worksheet and returns self for chaining.
@@ -306,6 +310,7 @@ module Xlsxrb
       raise ArgumentError, "Column width #{width} must be between 0 and 255 characters (Excel limitation)" if @strict_excel_mode && width && (width.negative? || width > 255)
 
       DslHelpers.normalize_column_indices(index).each do |idx|
+        @column_style_clocks[idx] = @style_log.clock unless style.nil?
         existing_idx = @columns.find_index { |c| c.index == idx }
         if existing_idx
           prev = @columns[existing_idx]
@@ -1802,7 +1807,7 @@ module Xlsxrb
         sheet_calc_properties: @sheet_calc_pr,
         background_image: @background_image
       )
-      Snapshot.new(frame, rows, hl_hash, cm_hash, tc_hash)
+      Snapshot.new(frame, rows, hl_hash, cm_hash, tc_hash, @column_style_clocks.dup)
     end
   end
 
@@ -1839,9 +1844,12 @@ module Xlsxrb
       # The row style as given: a name, an index, an inline Hash, or nil.
       #: untyped
       attr_reader :style
+      # The style log clock when the row was added: its styles are the definitions made before.
+      #: Integer
+      attr_reader :clock
 
-      #: (Integer index, Array[untyped] values, untyped styles, untyped format_codes, Integer width, (Float | Integer)? height, untyped hidden, bool custom_height, untyped collapsed, Integer? outline_level, untyped style) -> void
-      def initialize(index, values, styles, format_codes, width, height, hidden, custom_height, collapsed, outline_level, style)
+      #: (Integer index, Array[untyped] values, untyped styles, untyped format_codes, Integer width, (Float | Integer)? height, untyped hidden, bool custom_height, untyped collapsed, Integer? outline_level, untyped style, Integer clock) -> void
+      def initialize(index, values, styles, format_codes, width, height, hidden, custom_height, collapsed, outline_level, style, clock)
         @index = index
         @values = values
         @styles = styles
@@ -1853,11 +1861,12 @@ module Xlsxrb
         @collapsed = collapsed
         @outline_level = outline_level
         @style = style
+        @clock = clock
       end
 
       #: (hidden: untyped, collapsed: untyped, outline_level: Integer?) -> PendingRow
       def with_outline(hidden:, collapsed:, outline_level:)
-        PendingRow.new(@index, @values, @styles, @format_codes, @width, @height, hidden, @custom_height, collapsed, outline_level, @style)
+        PendingRow.new(@index, @values, @styles, @format_codes, @width, @height, hidden, @custom_height, collapsed, outline_level, @style, @clock)
       end
 
       # Returns whether every cell of the row is within Excel's row and column limits.
@@ -1935,11 +1944,15 @@ module Xlsxrb
       attr_reader :frame
       #: Array[PendingRow]
       attr_reader :rows
+      # The style log clock when each column's style was set.
+      #: Hash[Integer, Integer]
+      attr_reader :column_style_clocks
 
-      #: (Elements::Worksheet frame, Array[PendingRow] rows, Hash[String, untyped] hyperlinks, Hash[String, untyped] comments, Hash[String, Array[untyped]] threaded_comments) -> void
-      def initialize(frame, rows, hyperlinks, comments, threaded_comments)
+      #: (Elements::Worksheet frame, Array[PendingRow] rows, Hash[String, untyped] hyperlinks, Hash[String, untyped] comments, Hash[String, Array[untyped]] threaded_comments, Hash[Integer, Integer] column_style_clocks) -> void
+      def initialize(frame, rows, hyperlinks, comments, threaded_comments, column_style_clocks)
         @frame = frame
         @rows = rows
+        @column_style_clocks = column_style_clocks
         @hyperlinks = hyperlinks
         @comments = comments
         @threaded_comments = threaded_comments

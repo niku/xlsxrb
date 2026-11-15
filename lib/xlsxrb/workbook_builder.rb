@@ -30,6 +30,7 @@ module Xlsxrb
       @sheets = [] # Each sheet without its rows, for its name and state
       @sheet_snapshots = [] # Each sheet as its block left it, rows still pending
       @sheet_builders = [] # Keep track of sheet builders for style processing
+      @style_log = StyleLog.new # When each style is defined, for the rows that use it
       @defined_names = []
       @styles = {}
       @core_properties = {}
@@ -84,6 +85,8 @@ module Xlsxrb
       style_builder.apply_options!(**opts) unless opts.empty?
       yield style_builder if block_given?
       @styles[style_name] = style_builder
+      @style_log.record(style_name, style_builder)
+      style_builder
     end
 
     # Creates an {Elements::Formula} object.
@@ -281,7 +284,7 @@ module Xlsxrb
 
       @active_sheet = name if active
 
-      sheet_builder = WorksheetBuilder.new(name, strict_excel_mode: @strict_excel_mode, state: state)
+      sheet_builder = WorksheetBuilder.new(name, strict_excel_mode: @strict_excel_mode, state: state, style_log: @style_log)
       sheet_builder.code_name = code_name if code_name
       sheet_builder.tab_color = tab_color if tab_color
       sheet_builder.sheet_properties(**opts) unless opts.empty?
@@ -742,6 +745,27 @@ module Xlsxrb
         end
       end
 
+      # A name defined more than once with different formats stands for the definition
+      # made last before each row was added, or for the first one if the row came before
+      # all of them, as for rows written by StreamWriter. The definition the name holds
+      # in all_style_builders keeps the name; each other one gets a key of its own, and
+      # is registered after the other styles if a row, a column, or a cell uses it.
+      versions = {} #: Hash[String, Array[[Integer, String]]]
+      version_builders = {} #: Hash[String, StyleBuilder]
+      @style_log.definitions.each do |name, definitions|
+        current = all_style_builders[name]
+        next if current.nil? || definitions.all? { |(_, builder)| builder.equal?(current) || builder.same_format?(current) }
+
+        versions[name] = definitions.map do |defined_at, builder|
+          next [defined_at, name] if builder.equal?(current)
+
+          key = "#{name}\u0000#{defined_at}"
+          version_builders[key] = builder
+          [defined_at, key]
+        end
+      end
+      used_versions = {} #: Hash[String, true]
+
       # One pass over the cells checks their style names (names that were never defined
       # are a mistake, not an unstyled cell) and finds the Date and Time cells styled
       # without a number format. Those get a variant of their style that keeps the
@@ -751,9 +775,13 @@ module Xlsxrb
       variant_builders = {}
       checked_style = style_key = nil
       sheets.each do |sheet|
-        sheet.frame.columns.each { |col| DslHelpers.check_style_name!(col.style_index, all_style_builders) }
+        sheet.frame.columns.each do |col|
+          DslHelpers.check_style_name!(col.style_index, all_style_builders)
+          use_style_version(col.style_index, sheet.column_style_clocks[col.index], versions, used_versions) unless versions.empty?
+        end
         sheet.rows.each do |row|
           DslHelpers.check_style_name!(row.style, all_style_builders)
+          use_style_version(row.style, row.clock, versions, used_versions) unless versions.empty?
           styles = row.styles
           next if styles.nil?
 
@@ -770,7 +798,8 @@ module Xlsxrb
                   DslHelpers.check_style_name!(style, all_style_builders) unless all_style_builders.key?(style_key)
                   checked_style = style
                 end
-                add_date_variant(values[col_index], style_key, all_style_builders, date_variants, variant_builders) if style_key.is_a?(String)
+                use_style_version(style_key, row.clock, versions, used_versions) unless versions.empty?
+                add_date_variant(values[col_index], style_key, row.clock, versions, all_style_builders, version_builders, date_variants, variant_builders) if style_key.is_a?(String)
               end
               col_index += 1
             end
@@ -780,10 +809,12 @@ module Xlsxrb
               DslHelpers.check_style_name!(styles, all_style_builders) unless all_style_builders.key?(style_key)
               checked_style = styles
             end
-            values.each { |value| add_date_variant(value, style_key, all_style_builders, date_variants, variant_builders) } if style_key.is_a?(String)
+            use_style_version(style_key, row.clock, versions, used_versions) unless versions.empty?
+            values.each { |value| add_date_variant(value, style_key, row.clock, versions, all_style_builders, version_builders, date_variants, variant_builders) } if style_key.is_a?(String)
           end
         end
       end
+      version_builders.each { |key, builder| all_style_builders[key] ||= builder if used_versions.key?(key) }
       variant_builders.each { |name, builder| all_style_builders[name] ||= builder }
 
       if all_style_builders.empty?
@@ -821,11 +852,12 @@ module Xlsxrb
                                  end
                                  style_name_to_id[inline_name]
                                elsif (raw_col_style.is_a?(String) || raw_col_style.is_a?(Symbol)) && style_name_to_id.key?(raw_col_style.to_s)
-                                 sb = all_style_builders[raw_col_style.to_s]
+                                 col_key = style_version(raw_col_style.to_s, sheet.column_style_clocks[col.index], versions)
+                                 sb = all_style_builders[col_key]
                                  if sb&.number_format
                                    col_fmt_map[col.index] = sb.number_format.is_a?(String) ? sb.number_format : Ooxml::Utils::BUILTIN_NUM_FMT_CODES[sb.number_format]
                                  end
-                                 style_name_to_id[raw_col_style.to_s]
+                                 style_name_to_id[col_key]
                                else
                                  raw_col_style
                                end
@@ -854,12 +886,15 @@ module Xlsxrb
 
         last_raw_style = last_resolved_style = nil
         new_rows = sheet.rows.map do |row|
+          row_clock = row.clock
+          # A name may stand for another definition in this row, so resolve it again.
+          last_raw_style = nil unless versions.empty?
           raw_row_style = row.style
           resolved_row_style = if raw_row_style.is_a?(Hash)
                                  inline_name = "__inline_row_#{raw_row_style.hash}"
                                  style_name_to_id[inline_name]
                                elsif (raw_row_style.is_a?(String) || raw_row_style.is_a?(Symbol)) && style_name_to_id.key?(raw_row_style.to_s)
-                                 style_name_to_id[raw_row_style.to_s]
+                                 style_name_to_id[style_version(raw_row_style.to_s, row_clock, versions)]
                                elsif raw_row_style.is_a?(Integer)
                                  raw_row_style
                                end
@@ -888,7 +923,7 @@ module Xlsxrb
             unless date_variants.empty?
               cell_value = value.is_a?(Elements::Formula) ? value.cached_value : value
               if (cell_value.is_a?(Date) || cell_value.is_a?(Time)) && (style.is_a?(String) || style.is_a?(Symbol))
-                date_variant = date_variants[[style.to_s, cell_value.is_a?(Time) || cell_value.is_a?(DateTime)]]
+                date_variant = date_variants[[style_version(style.to_s, row_clock, versions), cell_value.is_a?(Time) || cell_value.is_a?(DateTime)]]
                 raw_cell_style, date_format = date_variant if date_variant
               end
             end
@@ -902,6 +937,7 @@ module Xlsxrb
                                     last_raw_style = raw_cell_style
                                     # Symbol#name looks a Symbol up without allocating a String.
                                     style_key = raw_cell_style.is_a?(Symbol) ? raw_cell_style.name : raw_cell_style
+                                    style_key = style_version(style_key, row_clock, versions) if style_key.is_a?(String) && !versions.empty?
                                     last_resolved_style = (style_key.is_a?(String) && style_name_to_id[style_key]) || raw_cell_style
                                   end
 
@@ -929,19 +965,47 @@ module Xlsxrb
       [updated_sheets, styles_definition]
     end
 
+    # Returns the key of the definition that the style +name+ stands for at style log
+    # +clock+: the last one made by then, or the first one if none was. A name defined
+    # once, or always with the same format, is its own key.
+    #: (String name, Integer? clock, Hash[String, Array[[Integer, String]]] versions) -> String
+    def style_version(name, clock, versions)
+      definitions = versions[name]
+      return name if definitions.nil? || clock.nil?
+
+      key = definitions.first.last
+      definitions.each do |defined_at, version_key|
+        break if defined_at > clock
+
+        key = version_key
+      end
+      key
+    end
+
+    # Marks the definition that the style +name+ stands for at style log +clock+ as used.
+    #: (untyped name, Integer? clock, Hash[String, Array[[Integer, String]]] versions, Hash[String, true] used_versions) -> void
+    def use_style_version(name, clock, versions, used_versions)
+      name = name.name if name.is_a?(Symbol)
+      return unless name.is_a?(String) && versions.key?(name)
+
+      used_versions[style_version(name, clock, versions)] = true
+    end
+
     # Records the date or time variant of the style named +style_key+ that a Date or
-    # Time +value+ needs, if any.
-    #: (untyped value, String style_key, Hash[String, untyped] all_style_builders, Hash[untyped, untyped] date_variants, Hash[String, untyped] variant_builders) -> void
-    def add_date_variant(value, style_key, all_style_builders, date_variants, variant_builders)
+    # Time +value+ in a row added at style log +clock+ needs, if any.
+    #: (untyped value, String style_key, Integer clock, Hash[String, Array[[Integer, String]]] versions, Hash[String, untyped] all_style_builders, Hash[String, StyleBuilder] version_builders, Hash[untyped, untyped] date_variants, Hash[String, untyped] variant_builders) -> void
+    def add_date_variant(value, style_key, clock, versions, all_style_builders, version_builders, date_variants, variant_builders)
       value = value.cached_value if value.is_a?(Elements::Formula)
       return unless value.is_a?(Date) || value.is_a?(Time)
 
-      variant = DslHelpers.date_style_variant(value, style_key, all_style_builders[style_key])
+      style_key = style_version(style_key, clock, versions)
+      style_builder = all_style_builders[style_key] || version_builders[style_key]
+      variant = DslHelpers.date_style_variant(value, style_key, style_builder)
       return unless variant
 
       variant_name, number_format = variant
       date_variants[[style_key, value.is_a?(Time) || value.is_a?(DateTime)]] = variant
-      variant_builders[variant_name] ||= all_style_builders[style_key].with_number_format(variant_name, number_format)
+      variant_builders[variant_name] ||= style_builder.with_number_format(variant_name, number_format)
     end
 
     # Creates a cell whose style was resolved to +style+ (an index, or a name with no index).

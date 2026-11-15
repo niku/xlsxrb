@@ -572,6 +572,17 @@ module Xlsxrb
     # : (untyped writer) -> Integer
     def register_with: (untyped writer) -> Integer
 
+    # Returns whether +other+ describes the same cell format, whatever the names.
+    #
+    # @param other [StyleBuilder]
+    # @return [Boolean]
+    # @api private
+    # : (StyleBuilder other) -> bool
+    def same_format?: (StyleBuilder other) -> bool
+
+    # : () -> Array[untyped]
+    def format_signature: () -> Array[untyped]
+
     private
 
     # Raises ArgumentError for option keys #apply_options! does not know, and for a nested
@@ -582,5 +593,27 @@ module Xlsxrb
     def unknown_option_message: (untyped key, untyped allowed, untyped kind) -> untyped
 
     def resolve_color: (untyped color) -> untyped
+  end
+
+  # The order in which the styles of an {Xlsxrb.build} workbook are defined, shared by
+  # the workbook builder and its sheet builders. A row records the clock when it is
+  # added, so that it uses the definitions made before it, as a row written by
+  # {StreamWriter} does.
+  #
+  # @api private
+  class StyleLog
+    # Number of definitions so far.
+    # : Integer
+    attr_reader clock: untyped
+
+    # Each name's definitions, as [clock, builder] pairs in the order they were made.
+    # : Hash[String, Array[[Integer, StyleBuilder]]]
+    attr_reader definitions: untyped
+
+    # : () -> void
+    def initialize: () -> void
+
+    # : (String name, StyleBuilder builder) -> void
+    def record: (String name, StyleBuilder builder) -> void
   end
 end

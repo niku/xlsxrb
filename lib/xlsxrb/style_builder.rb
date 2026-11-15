@@ -1244,6 +1244,23 @@ module Xlsxrb
       writer.add_cell_style(**cell_style_opts)
     end
 
+    # Returns whether +other+ describes the same cell format, whatever the names.
+    #
+    # @param other [StyleBuilder]
+    # @return [Boolean]
+    # @api private
+    #: (StyleBuilder other) -> bool
+    def same_format?(other)
+      format_signature == other.format_signature
+    end
+
+    protected
+
+    #: () -> Array[untyped]
+    def format_signature
+      [@font_props, @fill_props, @border_props, @num_fmt_id, @alignment, @protection]
+    end
+
     private
 
     # Raises ArgumentError for option keys #apply_options! does not know, and for a nested
@@ -1278,6 +1295,33 @@ module Xlsxrb
 
     def resolve_color(color)
       self.class.resolve_color(color)
+    end
+  end
+
+  # The order in which the styles of an {Xlsxrb.build} workbook are defined, shared by
+  # the workbook builder and its sheet builders. A row records the clock when it is
+  # added, so that it uses the definitions made before it, as a row written by
+  # {StreamWriter} does.
+  #
+  # @api private
+  class StyleLog
+    # Number of definitions so far.
+    #: Integer
+    attr_reader :clock
+    # Each name's definitions, as [clock, builder] pairs in the order they were made.
+    #: Hash[String, Array[[Integer, StyleBuilder]]]
+    attr_reader :definitions
+
+    #: () -> void
+    def initialize
+      @clock = 0
+      @definitions = {}
+    end
+
+    #: (String name, StyleBuilder builder) -> void
+    def record(name, builder)
+      @clock += 1
+      (@definitions[name] ||= []) << [@clock, builder]
     end
   end
 end

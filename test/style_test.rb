@@ -441,4 +441,81 @@ class StyleTest < Test::Unit::TestCase
       Xlsxrb.write(StringIO.new) { |w| w.sheet("S") { |s| s.row([1, 2], cell_styles: { b: true }) } }
     end
   end
+
+  # Fonts and number formats of each sheet's cells, read back from the written file.
+  def describe_cell_formats(xlsx)
+    workbook = Xlsxrb.load(StringIO.new(xlsx))
+    styles = workbook.styles
+    workbook.sheets.map do |sheet|
+      sheet.rows.map do |row|
+        row.cells.map do |cell|
+          xf = styles.cell_xf(cell.style_index.to_i)
+          font = styles.fonts[xf.font_id.to_i]
+          [font&.bold? ? "B" : "", font&.italic? ? "I" : "", font&.underline ? "U" : "", styles.number_format_code(xf.num_fmt_id.to_i).to_s].join
+        end
+      end
+    end
+  end
+
+  test "build styles cells with the definition made before each row, as stream does" do
+    date = Date.new(2026, 4, 1)
+    scenarios = {
+      "a sheet defines a workbook style again" => lambda do |w|
+        w.style(:b, bold: true)
+        w.sheet("A") { |s| s.row(["a"], cell_styles: :b) }
+        w.sheet("B") do |s|
+          s.style(:b, italic: true)
+          s.row(["b"], cell_styles: :b)
+        end
+        w.sheet("C") { |s| s.row(["c"], cell_styles: :b) }
+      end,
+      "a style defined again within a sheet" => lambda do |w|
+        w.style(:b, bold: true)
+        w.sheet("A") do |s|
+          s.row(["1", date], cell_styles: :b)
+          s.style(:b, italic: true)
+          s.row(["2", date], cell_styles: :b)
+        end
+      end,
+      "row and column styles defined again" => lambda do |w|
+        w.style(:b, bold: true)
+        w.sheet("A") do |s|
+          s.column(1, style: :b)
+          s.row(%w[r c], row_style: :b)
+        end
+        w.sheet("B") do |s|
+          s.style(:b, underline: true)
+          s.column(1, style: :b)
+          s.row(%w[r c], row_style: :b)
+        end
+      end
+    }
+    expected = {
+      "a sheet defines a workbook style again" => [[["B"]], [["I"]], [["I"]]],
+      "a style defined again within a sheet" => [[%w[B Byyyy-mm-dd], %w[I Iyyyy-mm-dd]]],
+      "row and column styles defined again" => [[%w[B B]], [%w[U U]]]
+    }
+
+    scenarios.each do |name, scenario|
+      stream = StringIO.new
+      Xlsxrb.write(stream) { |w| scenario.call(w) }
+      built = StringIO.new
+      Xlsxrb.write(built, Xlsxrb.build { |w| scenario.call(w) })
+
+      assert_equal(expected[name], describe_cell_formats(stream.string), "stream: #{name}")
+      assert_equal(expected[name], describe_cell_formats(built.string), "build: #{name}")
+    end
+  end
+
+  test "build uses the first definition of a style for rows added before it" do
+    built = StringIO.new
+    workbook = Xlsxrb.build do |w|
+      w.sheet("A") { |s| s.row(["a"], cell_styles: :b) }
+      assert_kind_of(Xlsxrb::StyleBuilder, w.style(:b, bold: true))
+      w.style(:b, italic: true)
+    end
+    Xlsxrb.write(built, workbook)
+
+    assert_equal([[["B"]]], describe_cell_formats(built.string))
+  end
 end

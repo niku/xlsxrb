@@ -403,10 +403,20 @@ module Xlsxrb
     # : (Array[WorksheetBuilder::Snapshot] sheets) -> [Array[Elements::Worksheet], Hash[Symbol, untyped]]
     def process_styles: (Array[WorksheetBuilder::Snapshot] sheets) -> [ Array[Elements::Worksheet], Hash[Symbol, untyped] ]
 
+    # Returns the key of the definition that the style +name+ stands for at style log
+    # +clock+: the last one made by then, or the first one if none was. A name defined
+    # once, or always with the same format, is its own key.
+    # : (String name, Integer? clock, Hash[String, Array[[Integer, String]]] versions) -> String
+    def style_version: (String name, Integer? clock, Hash[String, Array[[ Integer, String ]]] versions) -> String
+
+    # Marks the definition that the style +name+ stands for at style log +clock+ as used.
+    # : (untyped name, Integer? clock, Hash[String, Array[[Integer, String]]] versions, Hash[String, true] used_versions) -> void
+    def use_style_version: (untyped name, Integer? clock, Hash[String, Array[[ Integer, String ]]] versions, Hash[String, true] used_versions) -> void
+
     # Records the date or time variant of the style named +style_key+ that a Date or
-    # Time +value+ needs, if any.
-    # : (untyped value, String style_key, Hash[String, untyped] all_style_builders, Hash[untyped, untyped] date_variants, Hash[String, untyped] variant_builders) -> void
-    def add_date_variant: (untyped value, String style_key, Hash[String, untyped] all_style_builders, Hash[untyped, untyped] date_variants, Hash[String, untyped] variant_builders) -> void
+    # Time +value+ in a row added at style log +clock+ needs, if any.
+    # : (untyped value, String style_key, Integer clock, Hash[String, Array[[Integer, String]]] versions, Hash[String, untyped] all_style_builders, Hash[String, StyleBuilder] version_builders, Hash[untyped, untyped] date_variants, Hash[String, untyped] variant_builders) -> void
+    def add_date_variant: (untyped value, String style_key, Integer clock, Hash[String, Array[[ Integer, String ]]] versions, Hash[String, untyped] all_style_builders, Hash[String, StyleBuilder] version_builders, Hash[untyped, untyped] date_variants, Hash[String, untyped] variant_builders) -> void
 
     # Creates a cell whose style was resolved to +style+ (an index, or a name with no index).
     # : (Integer row_index, Integer column_index, untyped value, untyped style, String? format_code, bool valid_coordinates) -> Elements::Cell
