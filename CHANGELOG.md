@@ -2,6 +2,7 @@
 
 ### Fixed
 - Write the Playground `quick_start`, `sales_report`, and `sheet_properties` preset formulas with `s.formula(...)`. Since 0.2.0 plain strings starting with `=` are written as text, so these presets showed `=D12` and similar strings instead of computed values.
+- Write the formulas in the Visual Gallery `sheet_properties` example with `s.formula(...)`, so its second sheet shows computed totals instead of `=SUM(...)` text.
 
 ## [0.2.0] - 2026-11-10
 

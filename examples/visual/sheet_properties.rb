@@ -41,8 +41,8 @@ Xlsxrb.write(output_path) do |wb|
     s.background_image = subtle_bg
 
     s.row(%w[Metric Calculation], cell_styles: :meta_hdr)
-    s.row(["Total Units", "=SUM('Active Summary'!C2:C4)"], cell_styles: :border_cell)
-    s.row(["Average Stock", "=AVERAGE('Active Summary'!C2:C4)"], cell_styles: :border_cell)
+    s.row(["Total Units", s.formula("SUM('Active Summary'!C2:C4)")], cell_styles: :border_cell)
+    s.row(["Average Stock", s.formula("AVERAGE('Active Summary'!C2:C4)")], cell_styles: :border_cell)
   end
 
   # Sheet 3: Hidden configuration sheet
