@@ -160,21 +160,32 @@ module Xlsxrb
       values = DslHelpers.normalize_row_values(values)
       cell_styles = DslHelpers.normalize_row_styles(cell_styles)
 
-      # Auto-detect Date / Time for built-in styles
+      # Auto-detect Date / Time for built-in styles. The styles are copied before the
+      # first change, so that an Array the caller passes stays as it is.
+      styles_copied = false
       values.each_with_index do |val, idx|
         cell_style = cell_styles.is_a?(Array) ? cell_styles[idx] : cell_styles
 
         if val.is_a?(Date) && !val.is_a?(DateTime) && cell_style.nil?
           style("__xlsxrb_date", number_format: "yyyy-mm-dd") unless @styles.key?("__xlsxrb_date")
-          cell_styles = [] if cell_styles.nil?
-          cell_styles = Array.new(values.size, cell_styles) unless cell_styles.is_a?(Array)
-          cell_styles[idx] = "__xlsxrb_date"
+          auto_style = "__xlsxrb_date"
         elsif (val.is_a?(Time) || val.is_a?(DateTime)) && cell_style.nil?
           style("__xlsxrb_time", number_format: "yyyy-mm-dd hh:mm:ss") unless @styles.key?("__xlsxrb_time")
-          cell_styles = [] if cell_styles.nil?
-          cell_styles = Array.new(values.size, cell_styles) unless cell_styles.is_a?(Array)
-          cell_styles[idx] = "__xlsxrb_time"
+          auto_style = "__xlsxrb_time"
+        else
+          next
         end
+        unless styles_copied
+          cell_styles = if cell_styles.nil?
+                          []
+                        elsif cell_styles.is_a?(Array)
+                          cell_styles.dup
+                        else
+                          Array.new(values.size, cell_styles)
+                        end
+          styles_copied = true
+        end
+        cell_styles[idx] = auto_style
       end
 
       max_len = values.size

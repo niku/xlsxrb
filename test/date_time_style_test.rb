@@ -77,6 +77,22 @@ class DateTimeStyleTest < Test::Unit::TestCase
     assert_equal [["0.00"]], rows[4]
   end
 
+  test "build leaves the cell_styles array it is given unchanged" do
+    styles = [nil, :b]
+    wb = Xlsxrb.build do |w|
+      w.style(:b, bold: true)
+      w.sheet("S") do |s|
+        s.row([Date.new(2026, 1, 1), 1], cell_styles: styles)
+        s.row(["x", 2], cell_styles: styles)
+      end
+    end
+
+    assert_equal [nil, :b], styles
+    second_row = wb.sheets.first.rows[1]
+    assert_nil second_row.cells[0].style_index
+    assert_nil second_row.cells[0].format_code
+  end
+
   test "stream writer with date1904 property serializes dates with 1904 epoch and reads back correctly" do
     target_date = Date.new(2026, 9, 27)
     target_time = Time.utc(2026, 9, 27, 12, 0, 0)
