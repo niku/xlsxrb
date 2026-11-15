@@ -780,6 +780,8 @@ module Xlsxrb
 
       def resolve_style_id(style, style_map)
         return nil if style.nil?
+        # Without names to look up, an index is the style id.
+        return style if style_map.nil? && style.is_a?(Integer)
 
         if style_map
           mapped = style_map[style] || style_map[style.to_s]
