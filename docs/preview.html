@@ -893,16 +893,16 @@ Xlsxrb.write("executive_dashboard.xlsx") do |wb|
 
     # KPI Summary Cards
     s.row(["", "ACTUAL REVENUE", "TARGET REVENUE", "VARIANCE", "ATTAINMENT"], height: 14, cell_styles: [nil, :kpi_lbl, :kpi_lbl, :kpi_lbl, :kpi_lbl])
-    s.row(["", "=D12", "=C12", "=D12-C12", "=D12/C12"], height: 24, cell_styles: [nil, :kpi_val, :kpi_val, :kpi_var, :kpi_pct])
+    s.row(["", s.formula("D12"), s.formula("C12"), s.formula("D12-C12"), s.formula("D12/C12")], height: 24, cell_styles: [nil, :kpi_val, :kpi_val, :kpi_var, :kpi_pct])
     s.row([])
 
     # Business Line Breakdown Table
     s.row(["", "Business Line", "Target", "Actual", "Attainment"], height: 22, cell_styles: [nil, :th_l, :th_r, :th_r, :th_r])
-    s.row(["", "Cloud Platform", 50000, 54500, "=D8/C8"], cell_styles: [nil, :td_txt, :td_num, :td_num, :td_pct])
-    s.row(["", "AI & Analytics", 35000, 39200, "=D9/C9"], cell_styles: [nil, :td_txt_alt, :td_num_alt, :td_num_alt, :td_pct_alt])
-    s.row(["", "Cybersecurity", 25000, 26800, "=D10/C10"], cell_styles: [nil, :td_txt, :td_num, :td_num, :td_pct])
-    s.row(["", "Consulting", 30000, 28000, "=D11/C11"], cell_styles: [nil, :td_txt_alt, :td_num_alt, :td_num_alt, :td_pct_alt])
-    s.row(["", "Total Portfolio", "=SUM(C8:C11)", "=SUM(D8:D11)", "=D12/C12"], height: 20, cell_styles: [nil, :tot_l, :tot_r, :tot_r, :tot_pct])
+    s.row(["", "Cloud Platform", 50000, 54500, s.formula("D8/C8")], cell_styles: [nil, :td_txt, :td_num, :td_num, :td_pct])
+    s.row(["", "AI & Analytics", 35000, 39200, s.formula("D9/C9")], cell_styles: [nil, :td_txt_alt, :td_num_alt, :td_num_alt, :td_pct_alt])
+    s.row(["", "Cybersecurity", 25000, 26800, s.formula("D10/C10")], cell_styles: [nil, :td_txt, :td_num, :td_num, :td_pct])
+    s.row(["", "Consulting", 30000, 28000, s.formula("D11/C11")], cell_styles: [nil, :td_txt_alt, :td_num_alt, :td_num_alt, :td_pct_alt])
+    s.row(["", "Total Portfolio", s.formula("SUM(C8:C11)"), s.formula("SUM(D8:D11)"), s.formula("D12/C12")], height: 20, cell_styles: [nil, :tot_l, :tot_r, :tot_r, :tot_pct])
 
     # Target vs Actual Clustered Bar Chart (Opaque Card Background)
     s.chart(
@@ -947,13 +947,13 @@ Xlsxrb.write("sales_report.xlsx") do |wb|
     s.row([])
 
     s.row(%w[Product_Item Quantity Unit_Price Total_Value], cell_styles: :header)
-    s.row(["Wireless Headphones", 120, 89.99, "=B5*C5"], cell_styles: %i[td_left td_center currency currency])
-    s.row(["Smart Watch", 85, 199.50, "=B6*C6"], cell_styles: %i[td_left td_center currency currency])
-    s.row(["Bluetooth Speaker", 150, 45.00, "=B7*C7"], cell_styles: %i[td_left td_center currency currency])
-    s.row(["Mechanical Keyboard", 60, 129.00, "=B8*C8"], cell_styles: %i[td_left td_center currency currency])
-    s.row(["Ergonomic Mouse", 210, 59.90, "=B9*C9"], cell_styles: %i[td_left td_center currency currency])
+    s.row(["Wireless Headphones", 120, 89.99, s.formula("B5*C5")], cell_styles: %i[td_left td_center currency currency])
+    s.row(["Smart Watch", 85, 199.50, s.formula("B6*C6")], cell_styles: %i[td_left td_center currency currency])
+    s.row(["Bluetooth Speaker", 150, 45.00, s.formula("B7*C7")], cell_styles: %i[td_left td_center currency currency])
+    s.row(["Mechanical Keyboard", 60, 129.00, s.formula("B8*C8")], cell_styles: %i[td_left td_center currency currency])
+    s.row(["Ergonomic Mouse", 210, 59.90, s.formula("B9*C9")], cell_styles: %i[td_left td_center currency currency])
 
-    s.row(["Total Portfolio Value", nil, nil, "=SUM(D5:D9)"], cell_styles: %i[total_label total_label total_label total])
+    s.row(["Total Portfolio Value", nil, nil, s.formula("SUM(D5:D9)")], cell_styles: %i[total_label total_label total_label total])
     s.merge("A10:C10")
   end
 end
@@ -1231,8 +1231,8 @@ Xlsxrb.write("sheet_properties.xlsx") do |wb|
     s.background_image = subtle_bg
 
     s.row(%w[Metric Calculation], cell_styles: :meta_hdr)
-    s.row(["Total Units", "=SUM('Active Summary'!C2:C4)"], cell_styles: :border_cell)
-    s.row(["Average Stock", "=AVERAGE('Active Summary'!C2:C4)"], cell_styles: :border_cell)
+    s.row(["Total Units", s.formula("SUM('Active Summary'!C2:C4)")], cell_styles: :border_cell)
+    s.row(["Average Stock", s.formula("AVERAGE('Active Summary'!C2:C4)")], cell_styles: :border_cell)
   end
 
   # Sheet 3: Hidden configuration sheet
