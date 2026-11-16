@@ -134,7 +134,11 @@ module Xlsxrb
 
       def parse_catalog_from_local_headers: (untyped io) -> untyped
 
-      def find_data_descriptor_stream: (untyped io, untyped method, ?zip64: untyped) -> untyped
+      # Finds where a deflate stream of unknown length ends by inflating it, without keeping
+      # the output, and consumes the data descriptor that follows.
+      # Returns the compressed size, the uncompressed size, and the descriptor's CRC-32.
+      # : (untyped io, Integer method, ?zip64: bool) -> [Integer, Integer, Integer?]
+      def scan_data_descriptor_entry: (untyped io, Integer method, ?zip64: bool) -> [ Integer, Integer, Integer? ]
 
       def decompress: (untyped raw, untyped method) -> untyped
 

@@ -277,7 +277,6 @@ module Xlsxrb
         @io = nil
         @catalog = nil
         @ci_catalog = nil
-        @cached_entries = nil
       end
 
       # Returns a Hash { entry_name => raw_bytes } for all entries.
@@ -293,14 +292,8 @@ module Xlsxrb
       # Returns raw bytes for a single entry, or nil if not found.
       #: (String name) -> String?
       def read_entry(name)
-        norm_name = normalize_entry_name(name)
-        cached = @cached_entries[norm_name] if @cached_entries&.key?(norm_name)
-
-        entry = lookup_entry(norm_name)
+        entry = lookup_entry(name)
         return nil unless entry
-
-        cached ||= @cached_entries[entry.name] if @cached_entries&.key?(entry.name)
-        return normalize_text_encoding(cached) if cached
 
         raw = if @should_close_io && @raw_io.respond_to?(:closed?) && @raw_io.closed? && @filepath
                 File.open(@filepath, "rb") do |f|
@@ -592,16 +585,13 @@ module Xlsxrb
 
           if has_data_descriptor && compressed_size.zero?
             # A ZIP64 entry (version needed 4.5) carries 8-byte sizes in its data descriptor.
-            entry_data, = find_data_descriptor_stream(io, method, zip64: version_needed >= 45)
-            @cached_entries ||= {}
-            @cached_entries[norm_name] = entry_data
-            @cached_entries[entry_name] = entry_data if entry_name != norm_name
+            compressed_size, uncompressed_size, descriptor_crc = scan_data_descriptor_entry(io, method, zip64: version_needed >= 45)
             entry = Entry.new(
               name: norm_name,
               method: method,
-              compressed_size: entry_data.bytesize,
-              uncompressed_size: entry_data.bytesize,
-              crc32: crc,
+              compressed_size: compressed_size,
+              uncompressed_size: uncompressed_size,
+              crc32: descriptor_crc || crc,
               local_header_offset: header_pos,
               data_offset: data_offset
             )
@@ -626,48 +616,52 @@ module Xlsxrb
         result
       end
 
-      def find_data_descriptor_stream(io, method, zip64: false)
-        if method == 8
-          inflater = Zlib::Inflate.new(-Zlib::MAX_WBITS)
-          result = +""
-          chunk_size = 4096
-          fed = 0
-          begin
-            while !inflater.finished? && (chunk = io.read(chunk_size))
-              break if chunk.empty?
+      # Finds where a deflate stream of unknown length ends by inflating it, without keeping
+      # the output, and consumes the data descriptor that follows.
+      # Returns the compressed size, the uncompressed size, and the descriptor's CRC-32.
+      #: (untyped io, Integer method, ?zip64: bool) -> [Integer, Integer, Integer?]
+      def scan_data_descriptor_entry(io, method, zip64: false)
+        return [0, 0, nil] unless method == 8
 
-              fed += chunk.bytesize
-              inflated = inflater.inflate(chunk)
-              limit = @max_uncompressed_size || MAX_UNCOMPRESSED_SIZE
-              raise ZipBombError, "ZIP bomb detected: Uncompressed size exceeds #{limit} bytes" if result.bytesize + inflated.bytesize > limit
+        inflater = Zlib::Inflate.new(-Zlib::MAX_WBITS)
+        limit = @max_uncompressed_size || MAX_UNCOMPRESSED_SIZE
+        chunk_size = 4096
+        fed = 0
+        uncompressed_size = 0
+        begin
+          while !inflater.finished? && (chunk = io.read(chunk_size))
+            break if chunk.empty?
 
-              result << inflated
-            end
-          rescue Zlib::BufError, Zlib::DataError
-            # Inflation ended
-          ensure
-            # Ruby's Zlib::Inflate drops input past the end of the deflate stream (avail_in
-            # is 0), so rewind by what was read beyond the compressed length (total_in).
-            remaining_bytes = fed - inflater.total_in
-            inflater.close
+            fed += chunk.bytesize
+            uncompressed_size += inflater.inflate(chunk).bytesize
+            raise ZipBombError, "ZIP bomb detected: Uncompressed size exceeds #{limit} bytes" if uncompressed_size > limit
           end
-
-          io.seek(-remaining_bytes, IO::SEEK_CUR) if io.respond_to?(:seek) && remaining_bytes.positive?
-
-          desc_sig = io.read(4)
-          sizes_len = zip64 ? 16 : 8
-          if desc_sig == [0x50, 0x4B, 0x07, 0x08].pack("C4")
-            io.read(4 + sizes_len)
-          elsif desc_sig == [0x50, 0x4B, 0x03, 0x04].pack("C4") || desc_sig == [0x50, 0x4B, 0x01, 0x02].pack("C4")
-            io.seek(-4, IO::SEEK_CUR) if io.respond_to?(:seek)
-          elsif desc_sig
-            io.read(sizes_len)
-          end
-
-          [result, 0]
-        else
-          [io.read(0), 0]
+        rescue Zlib::BufError, Zlib::DataError
+          # Inflation ended
+        ensure
+          # Ruby's Zlib::Inflate drops input past the end of the deflate stream (avail_in
+          # is 0), so rewind by what was read beyond the compressed length (total_in).
+          compressed_size = inflater.total_in
+          inflater.close
         end
+
+        remaining_bytes = fed - compressed_size
+        io.seek(-remaining_bytes, IO::SEEK_CUR) if io.respond_to?(:seek) && remaining_bytes.positive?
+
+        desc_sig = io.read(4)
+        sizes_len = zip64 ? 16 : 8
+        descriptor_crc = nil
+        if desc_sig == [0x50, 0x4B, 0x07, 0x08].pack("C4")
+          descriptor_crc = io.read(4)&.unpack1("V")
+          io.read(sizes_len)
+        elsif desc_sig == [0x50, 0x4B, 0x03, 0x04].pack("C4") || desc_sig == [0x50, 0x4B, 0x01, 0x02].pack("C4")
+          io.seek(-4, IO::SEEK_CUR) if io.respond_to?(:seek)
+        elsif desc_sig
+          descriptor_crc = desc_sig.unpack1("V") if desc_sig.bytesize == 4
+          io.read(sizes_len)
+        end
+
+        [compressed_size, uncompressed_size, descriptor_crc]
       end
 
       def decompress(raw, method)
