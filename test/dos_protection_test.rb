@@ -95,6 +95,20 @@ class DosProtectionTest < Test::Unit::TestCase
     assert_not_include error.message, "\n"
   end
 
+  test "a row number above Excel's last row raises ParseError" do
+    ["1048577", "4000000000", "9" * 200_000].each do |number|
+      bytes = workbook_bytes(sheet: sheet_xml(%(<row r="#{number}"><c r="A1"><v>1</v></c></row>)))
+
+      within(5, "load #{number.size}") { assert_raise(Xlsxrb::ParseError) { Xlsxrb.load(bytes) } }
+      within(5, "read #{number.size}") do
+        assert_raise(Xlsxrb::ParseError) { Xlsxrb.read(bytes, pad_empty_rows: true) { |sheet| sheet.each_row(&:values) } }
+      end
+    end
+
+    last_row = workbook_bytes(sheet: sheet_xml(%(<row r="1048576"><c r="A1048576"><v>1</v></c></row>)))
+    assert_equal [1_048_575], Xlsxrb.load(last_row).sheets.first.rows.map(&:index)
+  end
+
   test "cell values with many digits are read as Float, and shared string indexes out of range as empty" do
     digits = "7" * 2_000_000
     cells = [

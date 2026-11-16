@@ -607,6 +607,10 @@ module Xlsxrb
           raise(ParseError, "invalid numeric cell value: #{text[0, 40].inspect}")
       end
 
+      # Excel's last row. A larger row number is not a worksheet row, and an unbounded one
+      # would be built digit by digit into an arbitrarily large Integer.
+      MAX_ROW_NUMBER = 1_048_576
+
       # Digits (with a sign) up to which a cell value is read as an Integer. Longer values are
       # read as Float, as Excel stores them: converting millions of digits to an Integer takes
       # time that grows faster than their number.
@@ -741,6 +745,8 @@ module Xlsxrb
                 break unless cb.between?(48, 57)
 
                 parsed_r = (parsed_r * 10) + (cb - 48)
+                raise ParseError, "row number exceeds #{MAX_ROW_NUMBER}" if parsed_r > MAX_ROW_NUMBER
+
                 ri += 1
               end
               row_index = parsed_r - 1
@@ -941,6 +947,8 @@ module Xlsxrb
                   break unless cb.between?(48, 57)
 
                   parsed_r = (parsed_r * 10) + (cb - 48)
+                  raise ParseError, "row number exceeds #{MAX_ROW_NUMBER}" if parsed_r > MAX_ROW_NUMBER
+
                   ri += 1
                 end
                 row_index = parsed_r - 1
