@@ -4,6 +4,45 @@ require "test_helper"
 require "tempfile"
 
 class WriterTest < Test::Unit::TestCase
+  XSTRING_TEXTS = ["_x0041_", "a\u0001b\uFFFEc", "x_x005f_y", "plain_text", "_x004_", "_X0041_", "tab\there"].freeze
+
+  test "cell text that looks like _xHHHH_ or has characters XML cannot hold reads back as written" do
+    files = {}
+    files[:stream] = StringIO.new.tap do |io|
+      Xlsxrb.write(io) do |w|
+        w.style("b", bold: true)
+        w.sheet("S") do |s|
+          s.row(XSTRING_TEXTS)
+          s.row(XSTRING_TEXTS, cell_styles: "b")
+          s.row([w.rich_text({ text: "_x0041_\u0002" }, { text: "b", bold: true })])
+        end
+      end
+    end
+    files[:stream_inline] = StringIO.new.tap { |io| Xlsxrb.write(io, shared_strings: false) { |w| w.sheet("S") { |s| s.row(XSTRING_TEXTS) } } }
+    built = Xlsxrb.build do |w|
+      w.style("b", bold: true)
+      w.sheet("S") do |s|
+        s.row(XSTRING_TEXTS)
+        s.row(XSTRING_TEXTS, cell_styles: "b")
+      end
+    end
+    files[:build] = StringIO.new.tap { |io| Xlsxrb.write(io, built) }
+    writer = Xlsxrb::Ooxml::Writer.new
+    XSTRING_TEXTS.each_with_index { |text, i| writer.set_cell("#{Xlsxrb::Elements::Cell.calculate_column_letter(i)}1", text) }
+    Tempfile.create(["xstring", ".xlsx"]) do |file|
+      writer.write(file.path)
+      files[:writer] = StringIO.new(File.binread(file.path))
+    end
+
+    files.each do |mode, io|
+      rows = Xlsxrb.load(StringIO.new(io.string)).sheets.first.rows
+      assert_equal(XSTRING_TEXTS, rows[0].cells.map(&:value), mode.to_s)
+      assert_equal(XSTRING_TEXTS, rows[1].cells.map(&:value), mode.to_s) if rows[1]
+    end
+    rich = Xlsxrb.load(StringIO.new(files[:stream].string)).sheets.first.rows[2].cells.first.value
+    assert_equal("_x0041_\u0002b", rich)
+  end
+
   test "can instantiate Writer" do
     writer = Xlsxrb::Ooxml::Writer.new
     assert_not_nil(writer)

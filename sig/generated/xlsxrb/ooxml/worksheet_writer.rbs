@@ -158,6 +158,11 @@ module Xlsxrb
       ESCAPE_MAP: untyped
 
       def escape_xml: (untyped value) -> untyped
+
+      # Escapes cell text: encodes it as ST_Xstring (XmlBuilder.encode_xstring), so that
+      # text that looks like _xHHHH_ and characters XML 1.0 cannot hold are read back as
+      # written, then escapes the XML special characters.
+      def escape_text: (untyped value) -> untyped
     end
   end
 end

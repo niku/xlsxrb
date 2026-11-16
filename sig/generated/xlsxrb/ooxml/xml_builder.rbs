@@ -46,6 +46,18 @@ module Xlsxrb
       # : (untyped value) -> String
       def self.escape: (untyped value) -> String
 
+      XSTRING_ENCODE_RE: ::Regexp
+
+      # Encodes cell text as ISO/IEC 29500-1 ST_Xstring, the inverse of the _xHHHH_ part
+      # of unescape: an underscore that starts an _xHHHH_ sequence becomes _x005F_, and a
+      # character that XML 1.0 cannot hold, such as U+0001 or U+FFFE, becomes _xHHHH_.
+      # Excel and unescape read the original text back. The value must be UTF-8.
+      #
+      # @param value [String]
+      # @return [String]
+      # : (String value) -> String
+      def self.encode_xstring: (String value) -> String
+
       NUM_ENTITY_RE: ::Regexp
 
       XSTRING_RE: ::Regexp

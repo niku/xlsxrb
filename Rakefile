@@ -1052,6 +1052,7 @@ namespace :mutant do
         tests: ["./test/xlsxrb/ooxml_test.rb"],
         subjects: [
           "Xlsxrb::Ooxml::XmlBuilder.escape",
+          "Xlsxrb::Ooxml::XmlBuilder.encode_xstring",
           "Xlsxrb::Ooxml::XmlBuilder.unescape"
         ]
       },

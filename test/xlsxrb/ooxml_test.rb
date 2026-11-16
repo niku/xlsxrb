@@ -505,6 +505,36 @@ class OoxmlTest < Test::Unit::TestCase
     assert_same(empty, Xlsxrb::Ooxml::XmlBuilder.escape(empty))
   end
 
+  test "XmlBuilder.encode_xstring encodes text that unescape would change" do
+    encode = ->(text) { Xlsxrb::Ooxml::XmlBuilder.encode_xstring(text) }
+    plain = "no_x_sequences_x12_ or _X0041_ here"
+    assert_same(plain, encode.call(plain))
+    empty = ""
+    assert_same(empty, encode.call(empty))
+
+    # An underscore that starts _xHHHH_ (lowercase x, four hex digits, closing underscore).
+    assert_equal("_x005F_x0041_", encode.call("_x0041_"))
+    assert_equal("a_x005F_x00ff_b", encode.call("a_x00ff_b"))
+    assert_equal("__x005F_xABCD_", encode.call("__xABCD_"))
+    assert_equal("_x005F_x005f_", encode.call("_x005f_"))
+    assert_equal("_x004_", encode.call("_x004_"))
+    assert_equal("_x00412_", encode.call("_x00412_"))
+    assert_equal("_x004g_", encode.call("_x004g_"))
+    assert_equal("x0041_", encode.call("x0041_"))
+
+    # Characters XML 1.0 cannot hold, as four uppercase hex digits.
+    assert_equal("a_x0001_b", encode.call("a\u0001b"))
+    assert_equal("_x0000__x001F_", encode.call("\u0000\u001F"))
+    assert_equal("_x000B__x000C_", encode.call("\u000B\u000C"))
+    assert_equal("a_xFFFE__xFFFF_", encode.call("a￾￿"))
+    kept = "tab\tline\nreturn\rあ\u{1F600}퟿�"
+    assert_same(kept, encode.call(kept))
+
+    %W[_x0041_ a\u0001b x_x005f_y \u0000￾ _x0041_\u0002].each do |text|
+      assert_equal(text, Xlsxrb::Ooxml::XmlBuilder.unescape(encode.call(text)))
+    end
+  end
+
   test "XmlBuilder.unescape correctly unescapes XML entities" do
     assert_equal("Tom & Jerry", Xlsxrb::Ooxml::XmlBuilder.unescape("Tom &amp; Jerry"))
     assert_equal("<tag>", Xlsxrb::Ooxml::XmlBuilder.unescape("&lt;tag&gt;"))

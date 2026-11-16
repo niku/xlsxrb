@@ -31,7 +31,7 @@ Running mutation testing across the entire codebase (which includes heavy file I
    - MS-DOS packed datetime calculation with arithmetic bitfield combinations (`ZipGenerator.dos_datetime`).
    - Compound File Binary (CFB) magic header recognition (`Cfb::Reader.cfb?`) and directory entry predicates (`DirEntry#stream?`, `#root?`, `#storage?`).
 5. XML Character Escaping (`Xlsxrb::Ooxml::XmlBuilder`):
-   - Pure escaping and unescaping of XML characters (`XmlBuilder.escape`, `XmlBuilder.unescape`) with object identity preservation for clean strings.
+   - Pure escaping and unescaping of XML characters (`XmlBuilder.escape`, `XmlBuilder.unescape`) and the ST_Xstring encoding of cell text (`XmlBuilder.encode_xstring`), with object identity preservation for clean strings.
 6. DSL Normalization (`Xlsxrb::DslHelpers`):
    - Column indices, range, and alphabet normalization (`DslHelpers.normalize_column_indices`).
    - Range string absolute coordinate formatting (`DslHelpers.absolute_range`).

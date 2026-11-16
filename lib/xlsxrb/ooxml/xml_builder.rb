@@ -118,6 +118,24 @@ module Xlsxrb
         str.match?(ESCAPE_RE) ? str.gsub(ESCAPE_RE, ESCAPE_MAP) : str
       end
 
+      XSTRING_ENCODE_RE = /_(?=x\h{4}_)|[^\x09\x0A\x0D\x20-\uD7FF\uE000-\uFFFD\u{10000}-\u{10FFFF}]/
+      private_constant :XSTRING_ENCODE_RE
+
+      # Encodes cell text as ISO/IEC 29500-1 ST_Xstring, the inverse of the _xHHHH_ part
+      # of unescape: an underscore that starts an _xHHHH_ sequence becomes _x005F_, and a
+      # character that XML 1.0 cannot hold, such as U+0001 or U+FFFE, becomes _xHHHH_.
+      # Excel and unescape read the original text back. The value must be UTF-8.
+      #
+      # @param value [String]
+      # @return [String]
+      #: (String value) -> String
+      def self.encode_xstring(value)
+        return value unless value.match?(XSTRING_ENCODE_RE)
+
+        # The underscore is U+005F, so the same format gives _x005F_.
+        value.gsub(XSTRING_ENCODE_RE) { |char| format("_x%04X_", char.ord) }
+      end
+
       NUM_ENTITY_RE = /&#(?:(\d+)|x([0-9a-fA-F]+));/
       XSTRING_RE = /_x([0-9A-Fa-f]{4})_/
       private_constant :NUM_ENTITY_RE, :XSTRING_RE

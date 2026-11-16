@@ -1257,6 +1257,17 @@ module Xlsxrb
         str.match?(ESCAPE_RE) ? str.gsub(ESCAPE_RE, ESCAPE_MAP) : str
       end
 
+      # Escapes cell text: encodes it as ST_Xstring (XmlBuilder.encode_xstring), so that
+      # text that looks like _xHHHH_ and characters XML 1.0 cannot hold are read back as
+      # written, then escapes the XML special characters.
+      def escape_text(value)
+        str = value.to_s
+        str = str.dup.force_encoding(Encoding::UTF_8) if str.encoding == Encoding::BINARY
+        # Most text has neither; the checks cost less than encode_xstring's own.
+        str = XmlBuilder.encode_xstring(str) if str.include?("_x") || str.match?(INVALID_XML_CHARS_RE)
+        str.match?(ESCAPE_RE) ? str.gsub(ESCAPE_RE, ESCAPE_MAP) : str
+      end
+
       def write_shared_strings_xml(zip)
         return if @shared_strings.empty?
 
@@ -1306,11 +1317,11 @@ module Xlsxrb
               else
                 buf << "<r><t>"
               end
-              buf << escape_xml(text.to_s) << "</t></r>"
+              buf << escape_text(text.to_s) << "</t></r>"
             end
             buf << "</si>"
           else
-            buf << "<si><t>" << escape_xml(str.to_s) << "</t></si>"
+            buf << "<si><t>" << escape_text(str.to_s) << "</t></si>"
           end
 
           if buf.bytesize >= 32_768

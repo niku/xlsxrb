@@ -339,6 +339,13 @@ module Xlsxrb
         end
 
         # : (untyped value) -> untyped
+        # Escapes cell text: ST_Xstring (XmlBuilder.encode_xstring), then XML.
+        def xml_escape_text(value)
+          str = value.to_s
+          str = str.dup.force_encoding(Encoding::UTF_8) if str.encoding == Encoding::BINARY
+          xml_escape(XmlBuilder.encode_xstring(str))
+        end
+
         def xml_escape(value)
           value.to_s
                .gsub(/[^\x09\x0A\x0D\x20-\uD7FF\uE000-\uFFFD\u{10000}-\u{10FFFF}]/, "")
@@ -381,9 +388,9 @@ module Xlsxrb
               rpr << %(<rFont val="#{xml_escape(font[:name])}"/>) if font[:name]
               rpr << %(<family val="#{font[:family]}"/>) if font[:family]
               rpr << %(<scheme val="#{font[:scheme]}"/>) if font[:scheme]
-              "<r><rPr>#{rpr}</rPr><t>#{xml_escape(text)}</t></r>"
+              "<r><rPr>#{rpr}</rPr><t>#{xml_escape_text(text)}</t></r>"
             else
-              "<r><t>#{xml_escape(text)}</t></r>"
+              "<r><t>#{xml_escape_text(text)}</t></r>"
             end
           end.join
         end
@@ -431,7 +438,7 @@ module Xlsxrb
                       "<f#{f_attrs}/>"
                     end
             parts = %(<c r="#{cell_ref}"#{t_attr}#{s_attr}#{ph_attr}>#{f_tag})
-            parts << "<v>#{xml_escape(cached_val_str)}</v>" unless value.cached_value.nil?
+            parts << "<v>#{xml_escape_text(cached_val_str)}</v>" unless value.cached_value.nil?
             parts << "</c>"
             parts
           when Xlsxrb::Elements::RichText
@@ -462,7 +469,7 @@ module Xlsxrb
               idx = str_sst[value.to_s]
               %(<c r="#{cell_ref}" t="s"#{s_attr}#{ph_attr}><v>#{idx}</v></c>)
             else
-              %(<c r="#{cell_ref}" t="inlineStr"#{s_attr}#{ph_attr}><is><t>#{xml_escape(value)}</t></is></c>)
+              %(<c r="#{cell_ref}" t="inlineStr"#{s_attr}#{ph_attr}><is><t>#{xml_escape_text(value)}</t></is></c>)
             end
           end
         end

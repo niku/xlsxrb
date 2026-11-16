@@ -3180,7 +3180,7 @@ module Xlsxrb
           parts << if entry[:type] == :rt
                      "<si>#{rich_text_xml(entry[:value])}</si>"
                    else
-                     "<si><t>#{xml_escape(entry[:value])}</t></si>"
+                     "<si><t>#{xml_escape_text(entry[:value])}</t></si>"
                    end
         end
         parts << "</sst>"

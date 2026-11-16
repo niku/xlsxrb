@@ -40,6 +40,9 @@ module Xlsxrb
         def build_line_end_xml: (untyped element, untyped opts) -> untyped
 
         # : (untyped value) -> untyped
+        # Escapes cell text: ST_Xstring (XmlBuilder.encode_xstring), then XML.
+        def xml_escape_text: (untyped value) -> untyped
+
         def xml_escape: (untyped value) -> untyped
 
         # : (untyped rich_text) -> untyped

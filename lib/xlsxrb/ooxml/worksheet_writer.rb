@@ -320,7 +320,7 @@ module Xlsxrb
             if xml_val.is_a?(Xlsxrb::Elements::RichText)
               write_inline_rich_text(buf, xml_val)
             else
-              buf << "><is><t>" << escape_xml(xml_val.to_s) << "</t></is></c>"
+              buf << "><is><t>" << escape_text(xml_val.to_s) << "</t></is></c>"
             end
           elsif formula_expr || (formula_type && formula_type.to_sym == :shared && !formula_si.nil?)
             f_attrs = +""
@@ -346,7 +346,7 @@ module Xlsxrb
             else
               v_str = xml_val.to_s
               v_str = v_str.dup.force_encoding(Encoding::UTF_8) if v_str.encoding == Encoding::BINARY
-              v_str = escape_xml(v_str) if type == "str" || xml_val.is_a?(String)
+              v_str = escape_text(v_str) if type == "str" || xml_val.is_a?(String)
               buf << "<v>" << v_str << "</v></c>"
             end
           else
@@ -403,7 +403,7 @@ module Xlsxrb
                 idx_str = idx < 65_536 ? INTEGER_STRINGS[idx] : idx.to_s
                 buf << '<c r="' << col_ref << row_num_str << '" t="s"><v>' << idx_str << "</v></c>"
               else
-                buf << '<c r="' << col_ref << row_num_str << '" t="inlineStr"><is><t>' << escape_xml(value) << "</t></is></c>"
+                buf << '<c r="' << col_ref << row_num_str << '" t="inlineStr"><is><t>' << escape_text(value) << "</t></is></c>"
               end
             when true
               buf << '<c r="' << col_ref << row_num_str << '" t="b"><v>1</v></c>'
@@ -534,7 +534,7 @@ module Xlsxrb
                 buf << '<c r="' << col_ref << row_num_str << '" t="inlineStr"'
                 write_inline_rich_text(buf, value)
               else
-                buf << "<c r=\"#{col_ref}#{row_num_str}\" t=\"inlineStr\"><is><t>#{escape_xml(value.to_s)}</t></is></c>"
+                buf << "<c r=\"#{col_ref}#{row_num_str}\" t=\"inlineStr\"><is><t>#{escape_text(value.to_s)}</t></is></c>"
               end
             end
           end
@@ -678,7 +678,7 @@ module Xlsxrb
               end
               buf << '<c r="' << col_ref << row_num_str << s_attr << '" t="s"><v>' << (INTEGER_STRINGS[idx] || idx.to_s) << "</v></c>"
             else
-              buf << '<c r="' << col_ref << row_num_str << s_attr << '" t="inlineStr"><is><t>' << escape_xml(value) << "</t></is></c>"
+              buf << '<c r="' << col_ref << row_num_str << s_attr << '" t="inlineStr"><is><t>' << escape_text(value) << "</t></is></c>"
             end
           when true
             buf << '<c r="' << col_ref << row_num_str << s_attr << '" t="b"><v>1</v></c>'
@@ -831,14 +831,14 @@ module Xlsxrb
             buf << "<v>0</v></c>"
           else
             v_str = xml_val.to_s
-            v_str = escape_xml(v_str) if type == "str" || xml_val.is_a?(String)
+            v_str = escape_text(v_str) if type == "str" || xml_val.is_a?(String)
             buf << "<v>" << v_str << "</v></c>"
           end
         elsif type == "inlineStr"
           if xml_val.is_a?(Xlsxrb::Elements::RichText)
             write_inline_rich_text(buf, xml_val)
           else
-            buf << "><is><t>" << escape_xml(xml_val.to_s) << "</t></is></c>"
+            buf << "><is><t>" << escape_text(xml_val.to_s) << "</t></is></c>"
           end
         else
           buf << "><v>" << xml_val.to_s << "</v></c>"
@@ -1802,7 +1802,7 @@ module Xlsxrb
           else
             buf << "<r><t>"
           end
-          buf << escape_xml(text.to_s) << "</t></r>"
+          buf << escape_text(text.to_s) << "</t></r>"
         end
         buf << "</is></c>"
       end
@@ -1816,6 +1816,17 @@ module Xlsxrb
         str = value.to_s
         str = str.dup.force_encoding(Encoding::UTF_8) if str.encoding == Encoding::BINARY
         str = str.gsub(INVALID_XML_CHARS_RE, "") if str.match?(INVALID_XML_CHARS_RE)
+        str.match?(ESCAPE_RE) ? str.gsub(ESCAPE_RE, ESCAPE_MAP) : str
+      end
+
+      # Escapes cell text: encodes it as ST_Xstring (XmlBuilder.encode_xstring), so that
+      # text that looks like _xHHHH_ and characters XML 1.0 cannot hold are read back as
+      # written, then escapes the XML special characters.
+      def escape_text(value)
+        str = value.to_s
+        str = str.dup.force_encoding(Encoding::UTF_8) if str.encoding == Encoding::BINARY
+        # Most text has neither; the checks cost less than encode_xstring's own.
+        str = XmlBuilder.encode_xstring(str) if str.include?("_x") || str.match?(INVALID_XML_CHARS_RE)
         str.match?(ESCAPE_RE) ? str.gsub(ESCAPE_RE, ESCAPE_MAP) : str
       end
     end
