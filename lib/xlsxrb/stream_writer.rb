@@ -1776,6 +1776,7 @@ module Xlsxrb
 
       sheet if @current_sheet.nil?
       @current_row_index += count
+      nil
     end
 
     # Sets column formatting and properties for one or multiple columns.
@@ -1928,6 +1929,7 @@ module Xlsxrb
         @current_row_collapsed = prev_collapsed
         @current_row_hidden = prev_hidden
       end
+      nil
     end
 
     # Configures or queries worksheet-level outline and grouping view properties.

@@ -261,4 +261,23 @@ class ApiSymmetryTest < Test::Unit::TestCase
     assert_equal :visible, stream_wb.sheet(0).state
     assert_equal :hidden, stream_wb.sheet(1).state
   end
+
+  # ADR 0010: commands that add rows return nothing in both modes; only << returns the receiver.
+  def test_row_commands_return_nil_in_both_modes
+    results = {}
+    collect = lambda do |mode, s|
+      results[mode] = {
+        row: s.row([1]),
+        skip_rows: s.skip_rows,
+        group_rows_indexes: s.group_rows(0..0),
+        group_rows_block: s.group_rows { s.row([2]) },
+        append: (s << [3]).equal?(s)
+      }
+    end
+    Xlsxrb.build { |w| w.sheet("S") { |s| collect.call(:build, s) } }
+    Xlsxrb.write(StringIO.new) { |w| w.sheet("S") { |s| collect.call(:stream, s) } }
+
+    expected = { row: nil, skip_rows: nil, group_rows_indexes: nil, group_rows_block: nil, append: true }
+    assert_equal({ build: expected, stream: expected }, results)
+  end
 end

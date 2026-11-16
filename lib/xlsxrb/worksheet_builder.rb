@@ -260,6 +260,7 @@ module Xlsxrb
       cell_styles = cell_styles.dup if style_lookup && !styles_copied && !cell_styles.frozen?
       @rows << PendingRow.new(row_index, values, cell_styles, format_codes, max_len, height, hidden,
                               custom_height || !height.nil?, collapsed, outline_level, row_style, @style_log.clock)
+      nil
     end
 
     # Appends a row to the worksheet and returns self for chaining.
@@ -290,6 +291,7 @@ module Xlsxrb
       raise ArgumentError, "count must be positive: #{count.inspect}" if !count.is_a?(Integer) || count < 1
 
       @next_row_index += count
+      nil
     end
 
     # Sets column formatting and properties for one or multiple columns.
@@ -438,6 +440,7 @@ module Xlsxrb
           end
         end
       end
+      nil
     end
 
     # Configures or queries worksheet-level outline and grouping view properties.
