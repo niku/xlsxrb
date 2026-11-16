@@ -220,6 +220,7 @@ module Xlsxrb
                     end
           if bg_data.is_a?(String) && !bg_data.include?("\x00") && File.file?(bg_data)
             bg_ext = File.extname(bg_data).delete_prefix(".").downcase
+            bg_ext = "png" if bg_ext.empty?
             bg_data = File.binread(bg_data)
           else
             bg_ext = if bg_img.is_a?(Hash)
@@ -231,6 +232,7 @@ module Xlsxrb
                      end
           end
           if bg_data && !bg_data.empty?
+            bg_ext = media_extension(bg_ext)
             p_rid_num = sheet_rels.size + 1
             picture_rid = "rId#{p_rid_num}"
             sheet_rels << { id: picture_rid, type: "#{DOC_REL}/image", target: "../media/sheet#{idx + 1}_bg.#{bg_ext}" }
@@ -293,7 +295,7 @@ module Xlsxrb
             sheet_images.each do |img|
               # One media file per image: a sheet can hold several.
               media_idx += 1
-              media_name = "image#{media_idx}.#{img[:ext] || "png"}"
+              media_name = "image#{media_idx}.#{media_extension(img[:ext])}"
               zip.add_binary_entry("xl/media/#{media_name}", img[:file_data])
               drawing_rels_data << { type: :image, target: "../media/#{media_name}" }
               drawing_parts << { kind: :pic, img: img, rid_index: drawing_rels_data.size }
@@ -1249,6 +1251,20 @@ module Xlsxrb
       ESCAPE_RE = /[&<>"']/
       ESCAPE_MAP = { "&" => "&amp;", "<" => "&lt;", ">" => "&gt;", '"' => "&quot;", "'" => "&apos;" }.freeze
       private_constant :INVALID_XML_CHARS_RE, :ESCAPE_RE, :ESCAPE_MAP
+
+      MEDIA_EXTENSION_RE = /\A[A-Za-z0-9]{1,10}\z/
+      private_constant :MEDIA_EXTENSION_RE
+
+      # Returns the extension for a media part name. It becomes part of a ZIP entry name, a
+      # relationship target, and a content type, so anything but letters and digits is
+      # rejected.
+      #: (untyped ext) -> String
+      def media_extension(ext)
+        str = (ext || "png").to_s
+        raise ArgumentError, "Invalid image extension: #{str.inspect}. Use letters and digits only, such as \"png\"." unless str.match?(MEDIA_EXTENSION_RE)
+
+        str
+      end
 
       def escape_xml(value)
         str = value.to_s

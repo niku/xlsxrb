@@ -541,7 +541,7 @@ module Xlsxrb
                        when :image then "#{DOC_REL_NS}/image"
                        when :chart then "#{DOC_REL_NS}/chart"
                        end
-            parts << %(<Relationship Id="rId#{i + 1}" Type="#{rel_type}" Target="#{rel[:target]}"/>)
+            parts << %(<Relationship Id="rId#{i + 1}" Type="#{rel_type}" Target="#{xml_escape(rel[:target])}"/>)
           end
           parts << "</Relationships>"
           parts.join

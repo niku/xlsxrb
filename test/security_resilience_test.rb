@@ -151,4 +151,48 @@ class SecurityResilienceTest < Test::Unit::TestCase
     assert_true status.success?, stderr
     assert_equal "0,512,3", stdout
   end
+
+  # Values that reach attribute values, relationship targets, and ZIP entry names.
+  ATTRIBUTE_BREAKOUT = '1" injected="1"><injected/><x y="'
+
+  def test_image_extension_cannot_reach_entry_names_or_relationships
+    ["png/../../../evil", 'png"/><Relationship Id="rId9" Target="file:///x" TargetMode="External', "p\u0001g", ""].each do |ext|
+      error = assert_raise(ArgumentError, ext.inspect) do
+        write_both_modes { |sheet| sheet.image("PNGDATA", ext: ext) }
+      end
+      assert_match(/Invalid image extension/, error.message)
+
+      assert_raise(ArgumentError, ext.inspect) do
+        Xlsxrb.write(StringIO.new) do |w|
+          w.sheet("S") do |sheet|
+            sheet.background_image = { data: "PNGDATA", ext: ext }
+            sheet.row([1])
+          end
+        end
+      end
+    end
+
+    write_both_modes { |sheet| sheet.image("PNGDATA", ext: "jpeg") }.each do |bytes|
+      assert_include entry_names(bytes), "xl/media/image1.jpeg"
+    end
+  end
+
+  private
+
+  # Writes one sheet with Xlsxrb.build and with the streaming writer; returns both files.
+  def write_both_modes(&)
+    built = StringIO.new
+    Xlsxrb.write(built, Xlsxrb.build { |b| b.sheet("S", &) })
+    streamed = StringIO.new
+    Xlsxrb.write(streamed) { |w| w.sheet("S", &) }
+    [built.string, streamed.string]
+  end
+
+  def entry_names(bytes)
+    Xlsxrb::Ooxml::ZipReader.open(bytes, &:entry_names)
+  end
+
+  def read_part(bytes, name)
+    Xlsxrb::Ooxml::ZipReader.open(bytes) { |zip| zip.read_entry(name) }
+  end
 end

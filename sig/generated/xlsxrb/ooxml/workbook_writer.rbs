@@ -88,6 +88,14 @@ module Xlsxrb
 
       ESCAPE_MAP: untyped
 
+      MEDIA_EXTENSION_RE: ::Regexp
+
+      # Returns the extension for a media part name. It becomes part of a ZIP entry name, a
+      # relationship target, and a content type, so anything but letters and digits is
+      # rejected.
+      # : (untyped ext) -> String
+      def media_extension: (untyped ext) -> String
+
       def escape_xml: (untyped value) -> untyped
 
       # Escapes cell text: encodes it as ST_Xstring (XmlBuilder.encode_xstring), so that
