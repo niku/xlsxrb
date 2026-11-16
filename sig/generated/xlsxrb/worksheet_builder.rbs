@@ -931,6 +931,14 @@ module Xlsxrb
     # : () -> void
     def check_open!: () -> void
 
+    # The style that a Date or Time cell without a cell style inherits, to give the cell
+    # in its place: the row style, or the sheet's column style in a row without one. The
+    # workbook then gives the cell a variant of that style with the default date or
+    # date-time format, so it keeps the style's font, fill, and border, as StreamWriter
+    # does. Returns nil for a style index or for no style.
+    # : (untyped row_style, Integer column_index) -> (String | Symbol | Hash[Symbol, untyped])?
+    def inherited_date_style: (untyped row_style, Integer column_index) -> (String | Symbol | Hash[Symbol, untyped])?
+
     # Returns the number format code of the sheet style named +style_name+, if it has one.
     # : (untyped style_name) -> String?
     def format_code_of: (untyped style_name) -> String?

@@ -176,11 +176,17 @@ module Xlsxrb
         cell_style = cell_styles.is_a?(Array) ? cell_styles[idx] : cell_styles
 
         if val.is_a?(Date) && !val.is_a?(DateTime) && cell_style.nil?
-          style("__xlsxrb_date", number_format: "yyyy-mm-dd") unless @styles.key?("__xlsxrb_date")
-          auto_style = "__xlsxrb_date"
+          auto_style = inherited_date_style(row_style, idx)
+          unless auto_style
+            style("__xlsxrb_date", number_format: "yyyy-mm-dd") unless @styles.key?("__xlsxrb_date")
+            auto_style = "__xlsxrb_date"
+          end
         elsif (val.is_a?(Time) || val.is_a?(DateTime)) && cell_style.nil?
-          style("__xlsxrb_time", number_format: "yyyy-mm-dd hh:mm:ss") unless @styles.key?("__xlsxrb_time")
-          auto_style = "__xlsxrb_time"
+          auto_style = inherited_date_style(row_style, idx)
+          unless auto_style
+            style("__xlsxrb_time", number_format: "yyyy-mm-dd hh:mm:ss") unless @styles.key?("__xlsxrb_time")
+            auto_style = "__xlsxrb_time"
+          end
         else
           next
         end
@@ -1695,6 +1701,21 @@ module Xlsxrb
     #: () -> void
     def check_open!
       raise Error, "Sheet '#{@name}' is closed: add its rows inside its sheet block" if @closed
+    end
+
+    # The style that a Date or Time cell without a cell style inherits, to give the cell
+    # in its place: the row style, or the sheet's column style in a row without one. The
+    # workbook then gives the cell a variant of that style with the default date or
+    # date-time format, so it keeps the style's font, fill, and border, as StreamWriter
+    # does. Returns nil for a style index or for no style.
+    #: (untyped row_style, Integer column_index) -> (String | Symbol | Hash[Symbol, untyped])?
+    def inherited_date_style(row_style, column_index)
+      style = if !row_style.nil?
+                row_style
+              elsif @column_style_clocks.key?(column_index)
+                @columns.find { |column| column.index == column_index }&.style_index
+              end
+      style if style.is_a?(String) || style.is_a?(Symbol) || style.is_a?(Hash)
     end
 
     # Returns the number format code of the sheet style named +style_name+, if it has one.
