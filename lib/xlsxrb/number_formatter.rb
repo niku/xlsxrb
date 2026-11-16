@@ -41,16 +41,23 @@ module Xlsxrb
 
         code = format_code.to_s.strip
         return default_format(value) if code.empty? || code.casecmp("general").zero? || code.length > MAX_FORMAT_CODE_LENGTH
+        # Infinity and NaN, from values such as 1e999, have no date or digits to format.
+        return value.to_s if value.is_a?(Float) && !value.finite?
 
         return format_datetime(value, code) if value.is_a?(Date) || value.is_a?(DateTime) || value.is_a?(Time)
 
         if value.is_a?(Numeric) && date_format?(code)
-          dt = if value.is_a?(Float) && (value % 1).positive?
-                 Ooxml::Utils.serial_to_datetime(value, date1904: date1904)
-               else
-                 Ooxml::Utils.serial_to_date(value.to_i, date1904: date1904)
-               end
-          return format_datetime(dt, code)
+          dt = begin
+            if value.is_a?(Float) && (value % 1).positive?
+              Ooxml::Utils.serial_to_datetime(value, date1904: date1904)
+            else
+              Ooxml::Utils.serial_to_date(value.to_i, date1904: date1904)
+            end
+          rescue ArgumentError, RangeError
+            # A serial number outside the dates Excel supports.
+            nil
+          end
+          return dt ? format_datetime(dt, code) : default_format(value)
         end
 
         return format_number(value, code) if value.is_a?(Numeric)

@@ -90,6 +90,13 @@ class DosProtectionTest < Test::Unit::TestCase
     assert_equal "1.5", Xlsxrb::NumberFormatter.format(1.5, "0.#{"0" * 2000}")
     assert_equal "1.50", Xlsxrb::NumberFormatter.format(1.5, "0.00#{" " * 1000}")
     assert_equal "1.#{"0" * 1022}", Xlsxrb::NumberFormatter.format(1, "0.#{"0" * 1022}")
+
+    assert_equal "Infinity", Xlsxrb::NumberFormatter.format(Float::INFINITY, "yyyy-mm-dd")
+    assert_equal "-Infinity", Xlsxrb::NumberFormatter.format(-Float::INFINITY, "0.00")
+    assert_equal "NaN", Xlsxrb::NumberFormatter.format(Float::NAN, "0")
+    assert_equal "1000000000000000", Xlsxrb::NumberFormatter.format(1e15, "yyyy-mm-dd")
+    assert_equal "-5", Xlsxrb::NumberFormatter.format(-5, "yyyy-mm-dd")
+    assert_equal "2023-03-15", Xlsxrb::NumberFormatter.format(45_000, "yyyy-mm-dd")
   end
 
   private
