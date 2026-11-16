@@ -110,6 +110,15 @@ class ZipBombTest < Test::Unit::TestCase
     assert_raise(Xlsxrb::ParseError) { Xlsxrb.load(truncated) }
   end
 
+  test "invalid UTF-16 in a part is replaced instead of raising an encoding error" do
+    # UTF-16LE "<a/>" followed by an unpaired high surrogate.
+    expected = "<a/>#{[0xFFFD].pack("U")}"
+    Xlsxrb::Ooxml::ZipReader.open(local_entry("a.xml", "\xFF\xFE<\x00a\x00/\x00>\x00\x00\xD8".b)) do |zip|
+      assert_equal expected, zip.read_entry("a.xml")
+      assert_equal expected, zip.open_entry_io("a.xml").read
+    end
+  end
+
   private
 
   def raw_deflate(data)

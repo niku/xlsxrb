@@ -227,7 +227,7 @@ module Xlsxrb
             while (chunk = fetch_chunk(DEFAULT_CHUNK_SIZE))
               rest << chunk
             end
-            full = (peek + rest).force_encoding(Encoding::UTF_16LE).encode(Encoding::UTF_8).delete_prefix("\uFEFF")
+            full = (peek + rest).force_encoding(Encoding::UTF_16LE).encode(Encoding::UTF_8, invalid: :replace, undef: :replace).delete_prefix("\uFEFF")
             @buffer = full.b
             @eof = true
           elsif raw_b.start_with?("\xFE\xFF".b)
@@ -235,7 +235,7 @@ module Xlsxrb
             while (chunk = fetch_chunk(DEFAULT_CHUNK_SIZE))
               rest << chunk
             end
-            full = (peek + rest).force_encoding(Encoding::UTF_16BE).encode(Encoding::UTF_8).delete_prefix("\uFEFF")
+            full = (peek + rest).force_encoding(Encoding::UTF_16BE).encode(Encoding::UTF_8, invalid: :replace, undef: :replace).delete_prefix("\uFEFF")
             @buffer = full.b
             @eof = true
           elsif raw_b.start_with?("\xEF\xBB\xBF".b)
@@ -748,9 +748,9 @@ module Xlsxrb
 
         raw_b = data.b
         if raw_b.start_with?("\xFF\xFE".b)
-          data.force_encoding(Encoding::UTF_16LE).encode(Encoding::UTF_8).delete_prefix("\uFEFF")
+          data.force_encoding(Encoding::UTF_16LE).encode(Encoding::UTF_8, invalid: :replace, undef: :replace).delete_prefix("\uFEFF")
         elsif raw_b.start_with?("\xFE\xFF".b)
-          data.force_encoding(Encoding::UTF_16BE).encode(Encoding::UTF_8).delete_prefix("\uFEFF")
+          data.force_encoding(Encoding::UTF_16BE).encode(Encoding::UTF_8, invalid: :replace, undef: :replace).delete_prefix("\uFEFF")
         elsif raw_b.start_with?("\xEF\xBB\xBF".b)
           data.b.delete_prefix("\xEF\xBB\xBF".b).force_encoding(Encoding::UTF_8)
         else
