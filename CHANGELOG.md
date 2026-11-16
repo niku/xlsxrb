@@ -20,6 +20,7 @@
 - Find streamed rows in time proportional to the sheet when a row, or markup between rows, spans many chunks. Each 64 KB chunk searched the whole buffer again: 16 MB of elements whose names start with `row` (a 27 KB file) took over 60 seconds, and that buffer had no size limit. Rows and tags over 50 MB now raise `Xlsxrb::ParseError` on every path (it was `ArgumentError`, for unclosed rows only).
 - Raise `Xlsxrb::ParseError` for a row number above 1,048,576, Excel's last row. The number was built digit by digit into an Integer of any size (400,000 digits took over 20 seconds), and `pad_empty_rows: true` yielded one empty row for every number below it.
 - Read cell values of more than 19 characters as `Float` instead of `Integer`, as Excel stores them, and values of more than 400 characters as text unless the cell is typed as a number, which raises `Xlsxrb::ParseError`. Converting 16 million digits (an 18 KB file) to an Integer took over 20 seconds. A shared string index that is negative or longer than 10 digits reads as an empty string instead of the last string or `RangeError`.
+- Stop `StreamSheet#dimension`, `#row_range`, and `#column_range` after the first 1 MB of a sheet that has neither `<dimension>` nor `<sheetData>`. They searched everything read so far again for each chunk, so a 16 MB sheet (a 19 KB file) took 19 seconds.
 - Format numbers as General for format codes longer than 1,024 characters (Excel accepts 255). The time to format grows with the code for every cell that uses it.
 
 ### Fixed

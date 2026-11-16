@@ -1239,6 +1239,9 @@ module Xlsxrb
                          end
     end
 
+    DIMENSION_SCAN_LIMIT = 1024 * 1024
+    private_constant :DIMENSION_SCAN_LIMIT
+
     # Extracts dimension reference from XML source lazily without parsing the entire file.
     #: () -> String?
     def extract_dimension
@@ -1254,6 +1257,8 @@ module Xlsxrb
             break
           end
           break if buf.include?("<sheetData") || buf.include?(":sheetData")
+          # <dimension> precedes <sheetData>; a part with neither is not searched to its end.
+          break if buf.bytesize > DIMENSION_SCAN_LIMIT
         end
         dim
       elsif @sheet_source.respond_to?(:call)
@@ -1266,6 +1271,8 @@ module Xlsxrb
             break
           end
           break if buf.include?("<sheetData") || buf.include?(":sheetData")
+          # <dimension> precedes <sheetData>; a part with neither is not searched to its end.
+          break if buf.bytesize > DIMENSION_SCAN_LIMIT
         end
         dim
       elsif @sheet_source.respond_to?(:seek) && @sheet_source.respond_to?(:pos)

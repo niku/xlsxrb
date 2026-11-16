@@ -645,6 +645,8 @@ module Xlsxrb
     # : () -> String
     def raw_sheet_xml: () -> String
 
+    DIMENSION_SCAN_LIMIT: untyped
+
     # Extracts dimension reference from XML source lazily without parsing the entire file.
     # : () -> String?
     def extract_dimension: () -> String?

@@ -188,6 +188,16 @@ class DosProtectionTest < Test::Unit::TestCase
     assert_match(/exceeds 52428800 bytes/, error.message)
   end
 
+  test "dimension stops searching a sheet that has neither a dimension nor sheet data" do
+    omit "Time limits do not hold under RBS runtime checks, which wrap every method call" if defined?(RBS::Test)
+
+    filler = %(<worksheet #{SML_NS}>#{"<a/>" * (16 * 1024 * 1024 / 4)}</worksheet>)
+    assert_nil(within(5, "dimension") { Xlsxrb.read(workbook_bytes(sheet: filler)).first.dimension })
+
+    with_dimension = sheet_xml(%(<row r="1"><c r="A1"><v>1</v></c></row>), before: %(<dimension ref="A1:C3"/>))
+    assert_equal "A1:C3", Xlsxrb.read(workbook_bytes(sheet: with_dimension)).first.dimension
+  end
+
   test "a percent sign in a date format code is literal text, not a strftime directive" do
     code = "yyyy#{"%999999d" * 100}"
     formatted = within(5, "format") { Xlsxrb::NumberFormatter.format(45_000.5, code) }
