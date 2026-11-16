@@ -52,6 +52,14 @@ module Xlsxrb
 
       private
 
+      UNSAFE_ENTRY_NAME_RE: ::Regexp
+
+      # Rejects names that a program extracting the archive could write outside its target
+      # directory (absolute paths, ".." segments, backslashes) and names with control
+      # characters.
+      # : (String path) -> void
+      def validate_entry_name!: (String path) -> void
+
       def determine_seekable: () -> untyped
 
       # : (Integer value) -> bool

@@ -177,6 +177,26 @@ class SecurityResilienceTest < Test::Unit::TestCase
     end
   end
 
+  def test_zip_writer_rejects_entry_names_that_escape_the_extraction_directory
+    ["../evil", "/etc/passwd", "xl/../../evil", "xl/media/..", "xl\\media\\a.png", "xl/a\u0000.xml", "xl/a\n.xml", ""].each do |name|
+      Xlsxrb::Ooxml::ZipWriter.open(StringIO.new) do |zip|
+        assert_raise(Xlsxrb::ZipError, name.inspect) { zip.add_entry(name, "x") }
+        assert_raise(Xlsxrb::ZipError, name.inspect) { zip.add_binary_entry(name, "x") }
+        assert_raise(Xlsxrb::ZipError, name.inspect) { zip.start_entry(name) }
+        assert_raise(Xlsxrb::ZipError, name.inspect) do
+          zip.copy_raw_entry(name, StringIO.new("x"), data_offset: 0, compressed_size: 1, uncompressed_size: 1, crc32: 0, method: 0)
+        end
+      end
+    end
+
+    io = StringIO.new
+    Xlsxrb::Ooxml::ZipWriter.open(io) do |zip|
+      zip.add_entry("[Content_Types].xml", "x")
+      zip.add_entry("xl/a..b/c...xml", "x")
+    end
+    assert_equal ["[Content_Types].xml", "xl/a..b/c...xml"], entry_names(io.string)
+  end
+
   private
 
   # Writes one sheet with Xlsxrb.build and with the streaming writer; returns both files.

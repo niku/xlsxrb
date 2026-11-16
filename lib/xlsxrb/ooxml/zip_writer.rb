@@ -77,6 +77,7 @@ module Xlsxrb
       def start_entry(path)
         raise "ZipWriter is closed" if @closed
 
+        validate_entry_name!(path)
         @entry_path = path
         @entry_offset = @bytes_written
         @entry_gp_flag = @seekable ? 0 : DATA_DESCRIPTOR_FLAG
@@ -150,6 +151,7 @@ module Xlsxrb
       def copy_raw_entry(path, source_io, data_offset:, compressed_size:, uncompressed_size:, crc32:, method: 8)
         raise "ZipWriter is closed" if @closed
 
+        validate_entry_name!(path)
         offset = @bytes_written
         write_local_header(path, crc32, compressed_size, uncompressed_size, gp_flag: 0, method: method)
 
@@ -182,6 +184,19 @@ module Xlsxrb
       end
 
       private
+
+      UNSAFE_ENTRY_NAME_RE = %r{\A/|\\|[\x00-\x1F\x7F]|(?:\A|/)\.\.(?:/|\z)}
+      private_constant :UNSAFE_ENTRY_NAME_RE
+
+      # Rejects names that a program extracting the archive could write outside its target
+      # directory (absolute paths, ".." segments, backslashes) and names with control
+      # characters.
+      #: (String path) -> void
+      def validate_entry_name!(path)
+        return unless path.empty? || path.b.match?(UNSAFE_ENTRY_NAME_RE)
+
+        raise ZipError, "Unsafe ZIP entry name: #{path.inspect}"
+      end
 
       def determine_seekable
         return true if @io.is_a?(StringIO)
@@ -222,6 +237,7 @@ module Xlsxrb
       end
 
       def write_raw_entry(path, content_bytes)
+        validate_entry_name!(path)
         crc = Zlib.crc32(content_bytes) & 0xFFFFFFFF
         compressed = deflate(content_bytes)
         offset = @bytes_written

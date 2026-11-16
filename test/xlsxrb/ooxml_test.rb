@@ -87,12 +87,14 @@ class OoxmlTest < Test::Unit::TestCase
   end
 
   test "zip_reader normalizes Windows backslash path separators" do
-    io = StringIO.new
-    Xlsxrb::Ooxml::ZipWriter.open(io) do |w|
-      w.add_entry("xl\\workbook.xml", "<workbook/>")
-      w.add_entry("xl\\worksheets\\sheet1.xml", "<worksheet/>")
+    # ZipWriter rejects backslashes, so write the names with slashes and replace them in the
+    # local headers and the central directory.
+    written = StringIO.new
+    Xlsxrb::Ooxml::ZipWriter.open(written) do |w|
+      w.add_entry("xl/workbook.xml", "<workbook/>")
+      w.add_entry("xl/worksheets/sheet1.xml", "<worksheet/>")
     end
-    io.rewind
+    io = StringIO.new(written.string.gsub("xl/workbook.xml", "xl\\workbook.xml").gsub("xl/worksheets/sheet1.xml", "xl\\worksheets\\sheet1.xml"))
 
     reader = Xlsxrb::Ooxml::ZipReader.new(io)
     assert_equal(true, reader.entry?("xl/workbook.xml"))
