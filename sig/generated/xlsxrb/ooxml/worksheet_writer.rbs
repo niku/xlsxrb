@@ -30,6 +30,12 @@ module Xlsxrb
 
       def initialize: (untyped io, ?date1904: untyped) -> untyped
 
+      # Makes the row writers reject text longer than a cell holds (32,767 characters),
+      # as the strict Excel mode of the caller asks.
+      # @api private
+      # : (bool strict) -> void
+      def strict_excel_mode=: (bool strict) -> void
+
       # Sets what gives the style id for a Time-like value in a styled cell, so that a
       # style without a number format can be given its date-time variant.
       # @api private

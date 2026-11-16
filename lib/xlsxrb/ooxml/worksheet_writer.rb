@@ -55,6 +55,15 @@ module Xlsxrb
         @column_style_ids = nil # column index => resolved style id, see column_style_ids
         @column_style_ids_map = nil
         @time_like_style_resolver = nil
+        @strict_excel_mode = false
+      end
+
+      # Makes the row writers reject text longer than a cell holds (32,767 characters),
+      # as the strict Excel mode of the caller asks.
+      # @api private
+      #: (bool strict) -> void
+      def strict_excel_mode=(strict)
+        @strict_excel_mode = strict ? true : false
       end
 
       # Sets what gives the style id for a Time-like value in a styled cell, so that a
@@ -393,7 +402,8 @@ module Xlsxrb
 
               buf << '<c r="' << col_ref << row_num_str << '"><v>' << value.to_s << "</v></c>"
             when String
-              raise ArgumentError, "Cell text length #{value.length} exceeds Excel limit of 32,767 characters" if @strict_excel_mode && value.length > 32_767
+              # bytesize is O(1); length scans the text, so it is checked only for long text.
+              raise ArgumentError, "Cell text length #{value.length} exceeds Excel limit of 32,767 characters" if @strict_excel_mode && value.bytesize > 32_767 && value.length > 32_767
 
               if sst_index
                 idx = (sst_index[value] ||= begin
@@ -669,6 +679,8 @@ module Xlsxrb
 
             buf << '<c r="' << col_ref << row_num_str << s_attr << '"><v>' << value.to_s << "</v></c>"
           when String
+            raise ArgumentError, "Cell text length #{value.length} exceeds Excel limit of 32,767 characters" if @strict_excel_mode && value.bytesize > 32_767 && value.length > 32_767
+
             if sst_index
               idx = sst_index[value]
               unless idx

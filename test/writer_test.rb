@@ -43,6 +43,30 @@ class WriterTest < Test::Unit::TestCase
     assert_equal("_x0041_\u0002b", rich)
   end
 
+  test "StreamWriter rejects text longer than a cell holds in strict Excel mode, as build does" do
+    longest = "x" * 32_767
+    multibyte = [0x3042].pack("U") * 20_000 # 60,000 bytes, 20,000 characters
+    too_long = "x" * 32_768
+    { plain: {}, styled: { cell_styles: "b" } }.each do |name, opts|
+      [true, false].each do |shared_strings|
+        write = lambda do |text, strict|
+          Xlsxrb.write(StringIO.new, shared_strings: shared_strings, strict_excel_mode: strict) do |w|
+            w.style("b", bold: true)
+            w.sheet("S") { |s| s.row([text], **opts) }
+          end
+        end
+        assert_nothing_raised("#{name}, shared_strings: #{shared_strings}") do
+          write.call(longest, true)
+          write.call(multibyte, true)
+          write.call(too_long, false)
+        end
+        error = assert_raise(ArgumentError) { write.call(too_long, true) }
+        assert_equal("Cell text length 32768 exceeds Excel limit of 32,767 characters", error.message)
+      end
+    end
+    assert_raise(ArgumentError) { Xlsxrb.build { |w| w.sheet("S") { |s| s.row([too_long]) } } }
+  end
+
   test "can instantiate Writer" do
     writer = Xlsxrb::Ooxml::Writer.new
     assert_not_nil(writer)
