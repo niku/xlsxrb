@@ -275,6 +275,19 @@ module Xlsxrb
 
     MAX_SHEET_NAME_LENGTH: ::Integer
 
+    MAX_CELL_TEXT_LENGTH: ::Integer
+
+    # Raises ArgumentError if +text+ is longer than a cell holds: 32,767 UTF-16 code units,
+    # as Excel counts it (ADR 0011). Text of N UTF-16 code units has at least N bytes, so
+    # callers on hot paths call this only for text longer than MAX_CELL_TEXT_LENGTH bytes,
+    # which bytesize tells in O(1).
+    #
+    # @param text [String]
+    # @return [void]
+    # @raise [ArgumentError]
+    # : (String text) -> void
+    def self.check_cell_text_length!: (String text) -> void
+
     # Sanitizes a worksheet name to ensure it conforms to Excel constraints within 31 characters.
     # Replaces forbidden characters (\ / ? * [ ] : and control characters),
     # replaces leading/trailing apostrophes, and replaces reserved 'History' with 'History_'.

@@ -800,6 +800,24 @@ module Xlsxrb
     FORBIDDEN_SHEET_CHARS = %r{[\\/?*\[\]:]|[\x00-\x08\x0B\x0C\x0E-\x1F]}
     MAX_SHEET_NAME_LENGTH = 31
 
+    MAX_CELL_TEXT_LENGTH = 32_767
+
+    # Raises ArgumentError if +text+ is longer than a cell holds: 32,767 UTF-16 code units,
+    # as Excel counts it (ADR 0011). Text of N UTF-16 code units has at least N bytes, so
+    # callers on hot paths call this only for text longer than MAX_CELL_TEXT_LENGTH bytes,
+    # which bytesize tells in O(1).
+    #
+    # @param text [String]
+    # @return [void]
+    # @raise [ArgumentError]
+    #: (String text) -> void
+    def self.check_cell_text_length!(text)
+      length = Ooxml::Utils.utf16_length(text)
+      return if length <= MAX_CELL_TEXT_LENGTH
+
+      raise ArgumentError, "Cell text length #{length} exceeds Excel limit of 32,767 characters, counted in UTF-16 code units as Excel does"
+    end
+
     # Sanitizes a worksheet name to ensure it conforms to Excel constraints within 31 characters.
     # Replaces forbidden characters (\ / ? * [ ] : and control characters),
     # replaces leading/trailing apostrophes, and replaces reserved 'History' with 'History_'.
@@ -814,7 +832,10 @@ module Xlsxrb
       str = str.sub(/\A'+/) { replace_char * Regexp.last_match(0).length }
       str = "Sheet" if str.empty?
 
-      base = str[0, MAX_SHEET_NAME_LENGTH].sub(/'+\z/) { replace_char * Regexp.last_match(0).length }
+      # Excel counts the limit in UTF-16 code units (ADR 0011); keep whole characters.
+      units = 0
+      base = str.each_char.take_while { |char| (units += Ooxml::Utils.utf16_length(char)) <= MAX_SHEET_NAME_LENGTH }.join
+      base = base.sub(/'+\z/) { replace_char * Regexp.last_match(0).length }
       return "#{base}#{replace_char}" if base.casecmp?("History")
 
       base

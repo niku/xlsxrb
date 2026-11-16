@@ -1015,7 +1015,8 @@ namespace :mutant do
           "Xlsxrb::Ooxml::Utils.serial_to_date",
           "Xlsxrb::Ooxml::Utils.date_to_serial",
           "Xlsxrb::Ooxml::Utils.datetime_to_serial",
-          "Xlsxrb::Ooxml::Utils.serial_to_datetime"
+          "Xlsxrb::Ooxml::Utils.serial_to_datetime",
+          "Xlsxrb::Ooxml::Utils.utf16_length"
         ]
       },
       {
@@ -1065,6 +1066,7 @@ namespace :mutant do
           "Xlsxrb::DslHelpers.normalize_row_values",
           "Xlsxrb::DslHelpers.normalize_row_styles",
           "Xlsxrb::DslHelpers.check_column_style!",
+          "Xlsxrb::DslHelpers.check_cell_text_length!",
           "Xlsxrb::DslHelpers.validate_row_bounds!",
           "Xlsxrb::DslHelpers.compress_runs",
           "Xlsxrb::DslHelpers.complement_runs",

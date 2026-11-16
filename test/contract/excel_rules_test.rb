@@ -101,6 +101,28 @@ class ExcelRulesTest < Test::Unit::TestCase
     assert_equal(%i[relationship_target content_type], rules(data))
   end
 
+  test "cell text and sheet names over Excel's limits in UTF-16 code units are reported" do
+    emoji = [0x1F600].pack("U")
+    within = patched("xl/workbook.xml" => ->(xml) { xml.sub('name="Data"', %(name="#{emoji * 15}")) })
+    assert_equal([], rules(within).grep(:text_length))
+
+    long_name = patched("xl/workbook.xml" => ->(xml) { xml.sub('name="Data"', %(name="#{emoji * 16}")) })
+    assert_include(ExcelRules.check(long_name).map(&:to_s), "text_length xl/workbook.xml: a sheet name has 32 UTF-16 code units, over 31")
+
+    io = StringIO.new
+    Xlsxrb.write(io, shared_strings: false, strict_excel_mode: false) { |w| w.sheet("S") { |s| s.row([emoji * 16_384, "x" * 32_767]) } }
+    assert_equal(["text_length xl/worksheets/sheet1.xml: an inline string has 32768 UTF-16 code units, over 32767"],
+                 ExcelRules.check(io.string).select { |v| v.rule == :text_length }.map(&:to_s))
+    io = StringIO.new
+    Xlsxrb.write(io, strict_excel_mode: false) { |w| w.sheet("S") { |s| s.row(["x" * 32_768]) } }
+    assert_equal(["text_length xl/sharedStrings.xml: shared string 0 has 32768 UTF-16 code units, over 32767"],
+                 ExcelRules.check(io.string).select { |v| v.rule == :text_length }.map(&:to_s))
+    # Escaped control characters count as the one character they stand for.
+    io = StringIO.new
+    Xlsxrb.write(io) { |w| w.sheet("S") { |s| s.row([("x" * 32_766) + 1.chr]) } }
+    assert_equal([], ExcelRules.check(io.string).select { |v| v.rule == :text_length })
+  end
+
   test "a part stored twice is reported" do
     parts = Xlsxrb::Ooxml::ZipReader.new(StringIO.new(base_workbook)).read_all
     io = StringIO.new

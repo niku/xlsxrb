@@ -491,6 +491,32 @@ class DslHelpersTest < Test::Unit::TestCase
 
   # --- sheet_name ---
 
+  test "check_cell_text_length! counts UTF-16 code units against 32,767" do
+    emoji = [0x1F600].pack("U")
+    [
+      "x" * 32_767,
+      [0x3042].pack("U") * 20_000, # 60,000 bytes
+      emoji * 16_383, # 32,766 code units
+      "a#{emoji * 16_383}" # 32,767 code units
+    ].each { |text| assert_nil(Xlsxrb::DslHelpers.check_cell_text_length!(text)) }
+
+    { "x" * 32_768 => 32_768, emoji * 16_384 => 32_768, "ab#{emoji * 16_383}" => 32_768, emoji * 20_000 => 40_000 }.each do |text, length|
+      error = assert_raise(ArgumentError) { Xlsxrb::DslHelpers.check_cell_text_length!(text) }
+      assert_equal("Cell text length #{length} exceeds Excel limit of 32,767 characters, counted in UTF-16 code units as Excel does", error.message)
+    end
+  end
+
+  test "sanitize_sheet_name keeps a name within 31 UTF-16 code units without splitting a character" do
+    emoji = [0x1F600].pack("U")
+    assert_equal(emoji * 15, Xlsxrb::DslHelpers.sanitize_sheet_name(emoji * 16))
+    assert_equal(emoji * 15, Xlsxrb::DslHelpers.sanitize_sheet_name(emoji * 40))
+    assert_equal("a#{emoji * 15}", Xlsxrb::DslHelpers.sanitize_sheet_name("a#{emoji * 15}"))
+    assert_equal("a#{emoji * 15}", Xlsxrb::DslHelpers.sanitize_sheet_name("a#{emoji * 16}"))
+    assert_equal([0x3042].pack("U") * 31, Xlsxrb::DslHelpers.sanitize_sheet_name([0x3042].pack("U") * 40))
+    # An apostrophe left at the end by the cut is replaced, as for other names.
+    assert_equal("#{"x" * 28}__", Xlsxrb::DslHelpers.sanitize_sheet_name("#{"x" * 28}''#{emoji}"))
+  end
+
   test "sanitize_sheet_name with nil, empty string, or whitespace defaults to 'Sheet'" do
     assert_equal("Sheet", Xlsxrb::DslHelpers.sanitize_sheet_name(nil))
     assert_equal("Sheet", Xlsxrb::DslHelpers.sanitize_sheet_name(""))

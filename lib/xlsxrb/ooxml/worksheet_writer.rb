@@ -402,8 +402,7 @@ module Xlsxrb
 
               buf << '<c r="' << col_ref << row_num_str << '"><v>' << value.to_s << "</v></c>"
             when String
-              # bytesize is O(1); length scans the text, so it is checked only for long text.
-              raise ArgumentError, "Cell text length #{value.length} exceeds Excel limit of 32,767 characters" if @strict_excel_mode && value.bytesize > 32_767 && value.length > 32_767
+              DslHelpers.check_cell_text_length!(value) if @strict_excel_mode && value.bytesize > DslHelpers::MAX_CELL_TEXT_LENGTH
 
               if sst_index
                 idx = (sst_index[value] ||= begin
@@ -679,7 +678,7 @@ module Xlsxrb
 
             buf << '<c r="' << col_ref << row_num_str << s_attr << '"><v>' << value.to_s << "</v></c>"
           when String
-            raise ArgumentError, "Cell text length #{value.length} exceeds Excel limit of 32,767 characters" if @strict_excel_mode && value.bytesize > 32_767 && value.length > 32_767
+            DslHelpers.check_cell_text_length!(value) if @strict_excel_mode && value.bytesize > DslHelpers::MAX_CELL_TEXT_LENGTH
 
             if sst_index
               idx = sst_index[value]

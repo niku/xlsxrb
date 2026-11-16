@@ -40,7 +40,8 @@ module ExcelRules
       style_references(parts, docs),
       pivot_tables(parts, docs),
       style_names(parts, docs),
-      comment_notes(parts, docs)
+      comment_notes(parts, docs),
+      text_lengths(parts, docs)
     ].flatten
   end
 
@@ -192,6 +193,31 @@ module ExcelRules
     return unless cache && parts.key?(cache)
 
     elements(docs[cache], "cacheField").map { |f| elements(f, "sharedItems").first&.elements&.size.to_i }
+  end
+
+  CELL_TEXT_LIMIT = 32_767
+  SHEET_NAME_LIMIT = 31
+
+  # Cell text and sheet names are within Excel's limits, counted in UTF-16 code units as
+  # Excel counts them (ADR 0011). Excel repairs a file with a longer one.
+  def text_lengths(parts, docs)
+    too_long = lambda do |part, text, limit, what|
+      length = Xlsxrb::Ooxml::Utils.utf16_length(Xlsxrb::Ooxml::XmlBuilder.unescape(text))
+      Violation.new(:text_length, part, "#{what} has #{length} UTF-16 code units, over #{limit}") if length > limit
+    end
+    names = parts.key?("xl/workbook.xml") ? elements(docs["xl/workbook.xml"], "sheet").map { |sheet| sheet.attributes["name"].to_s } : []
+    shared = parts.key?("xl/sharedStrings.xml") ? elements(docs["xl/sharedStrings.xml"], "si") : []
+    inline = parts.keys.grep(%r{\Axl/worksheets/[^/]+\.xml\z}).flat_map { |sheet| elements(docs[sheet], "is").map { |is| [sheet, is] } }
+    [
+      names.filter_map { |name| too_long.call("xl/workbook.xml", name, SHEET_NAME_LIMIT, "a sheet name") },
+      shared.each_with_index.filter_map { |si, i| too_long.call("xl/sharedStrings.xml", run_text(si), CELL_TEXT_LIMIT, "shared string #{i}") },
+      inline.filter_map { |sheet, is| too_long.call(sheet, run_text(is), CELL_TEXT_LIMIT, "an inline string") }
+    ]
+  end
+
+  # The text of a string item: its t elements, except phonetic runs (rPh).
+  def run_text(node)
+    elements(node, "t").reject { |t| t.parent&.name == "rPh" }.map { |t| t.text.to_s }.join
   end
 
   def elements(node, name)

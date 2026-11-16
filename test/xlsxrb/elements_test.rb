@@ -721,6 +721,17 @@ class ElementsTest < Test::Unit::TestCase
     assert(errs_rows.any? { |e| e.include?("rows must be an Array") })
   end
 
+  test "worksheet name length is counted in UTF-16 code units, as Excel counts it" do
+    emoji = [0x1F600].pack("U")
+    assert_true(Xlsxrb::Elements::Worksheet.valid_name?(emoji * 15))
+    assert_true(Xlsxrb::Elements::Worksheet.valid_name?("a#{emoji * 15}"))
+    assert_false(Xlsxrb::Elements::Worksheet.valid_name?(emoji * 16))
+    assert_true(Xlsxrb::Elements::Worksheet.valid_name?([0x3042].pack("U") * 31))
+    errs = Xlsxrb::Elements::Worksheet.validate(emoji * 16, [])
+    assert_include(errs, "worksheet name cannot exceed 31 characters, counted in UTF-16 code units (got 32)")
+    assert_equal([], Xlsxrb::Elements::Worksheet.validate(emoji * 15, []))
+  end
+
   test "worksheet valid_name? checks length, forbidden chars, and non-strings" do
     assert_true(Xlsxrb::Elements::Worksheet.valid_name?("Sheet1"))
     assert_true(Xlsxrb::Elements::Worksheet.valid_name?("A" * 31))

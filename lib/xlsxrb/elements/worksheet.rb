@@ -1052,7 +1052,7 @@ module Xlsxrb
       def self.valid_name?(name)
         case name
         when String
-          !name.empty? && name.size <= 31 && !name.match?(FORBIDDEN_NAME_CHARS) && !name.start_with?("'") && !name.end_with?("'") && !name.casecmp?("History")
+          !name.empty? && Ooxml::Utils.utf16_length(name) <= 31 && !name.match?(FORBIDDEN_NAME_CHARS) && !name.start_with?("'") && !name.end_with?("'") && !name.casecmp?("History")
         else
           false
         end
@@ -1070,7 +1070,7 @@ module Xlsxrb
         if name.nil? || !name.is_a?(String) || name.empty?
           errs << "worksheet name must be a non-empty String (got #{name.inspect})"
         else
-          errs << "worksheet name cannot exceed 31 characters (got #{name.size})" if name.size > 31
+          errs << "worksheet name cannot exceed 31 characters, counted in UTF-16 code units (got #{Ooxml::Utils.utf16_length(name)})" if Ooxml::Utils.utf16_length(name) > 31
           errs << "worksheet name cannot contain \\, /, ?, *, [, ], or :" if name.match?(FORBIDDEN_NAME_CHARS)
           errs << "worksheet name cannot start or end with an apostrophe" if name.start_with?("'") || name.end_with?("'")
           errs << "worksheet name 'History' is reserved by Excel" if name.casecmp?("History")

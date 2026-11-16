@@ -1513,7 +1513,7 @@ module Xlsxrb
     def sheet(name = nil, state: nil, tab_color: nil, code_name: nil, **opts)
       sheet_count = @sheets.size + (@current_sheet ? 1 : 0)
       name ||= "Sheet#{sheet_count + 1}"
-      raise ArgumentError, "Sheet name '#{name}' must be <= 31 characters (Excel limitation)" if @strict_excel_mode && name.length > 31
+      raise ArgumentError, "Sheet name '#{name}' must be <= 31 characters, counted in UTF-16 code units as Excel does (Excel limitation)" if @strict_excel_mode && Ooxml::Utils.utf16_length(name) > 31
       raise ArgumentError, "Sheet name '#{name}' contains invalid characters (Excel limitation)" if name.match?(Elements::Worksheet.forbidden_name_chars)
       raise ArgumentError, "Sheet name '#{name}' cannot start or end with an apostrophe (Excel limitation)" if @strict_excel_mode && (name.start_with?("'") || name.end_with?("'"))
       raise ArgumentError, "Sheet name '#{name}' is reserved by Excel (Excel limitation)" if @strict_excel_mode && name.casecmp?("History")

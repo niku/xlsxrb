@@ -34,6 +34,16 @@ module Xlsxrb
       # Default date-time format code used by Writer for Time cells.
       DEFAULT_DATETIME_FORMAT: ::String
 
+      # First bytes of the four-byte UTF-8 sequences, which encode the characters outside
+      # the Basic Multilingual Plane: two UTF-16 code units each.
+      SUPPLEMENTARY_LEAD_BYTES: untyped
+
+      # The length of UTF-8 text in UTF-16 code units, the unit Excel counts its text
+      # limits in (ADR 0011): one per character, and one more for each character outside
+      # the Basic Multilingual Plane, such as an emoji.
+      # : (String text) -> Integer
+      def self.utf16_length: (String text) -> Integer
+
       # Checks whether a serial number is a valid Excel date within the supported range.
       # : (untyped serial, ?date1904: bool) -> bool
       def self.valid_excel_date?: (untyped serial, ?date1904: bool) -> bool

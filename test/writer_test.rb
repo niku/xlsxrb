@@ -61,10 +61,23 @@ class WriterTest < Test::Unit::TestCase
           write.call(too_long, false)
         end
         error = assert_raise(ArgumentError) { write.call(too_long, true) }
-        assert_equal("Cell text length 32768 exceeds Excel limit of 32,767 characters", error.message)
+        assert_equal("Cell text length 32768 exceeds Excel limit of 32,767 characters, counted in UTF-16 code units as Excel does", error.message)
       end
     end
     assert_raise(ArgumentError) { Xlsxrb.build { |w| w.sheet("S") { |s| s.row([too_long]) } } }
+  end
+
+  test "both modes count cell text and sheet names in UTF-16 code units, as Excel does" do
+    emoji = [0x1F600].pack("U")
+    stream = ->(name, text) { Xlsxrb.write(StringIO.new) { |w| w.sheet(name) { |s| s.row([text]) } } }
+    build = ->(name, text) { Xlsxrb.build { |w| w.sheet(name) { |s| s.row([text]) } } }
+    { stream: stream, build: build }.each do |mode, write|
+      assert_nothing_raised(mode.to_s) { write.call(emoji * 15, emoji * 16_383) }
+      text_error = assert_raise(ArgumentError, mode.to_s) { write.call("S", emoji * 16_384) }
+      assert_match(/\ACell text length 32768 exceeds/, text_error.message)
+      name_error = assert_raise(ArgumentError, mode.to_s) { write.call(emoji * 16, "x") }
+      assert_match(/must be <= 31 characters, counted in UTF-16 code units/, name_error.message)
+    end
   end
 
   test "can instantiate Writer" do

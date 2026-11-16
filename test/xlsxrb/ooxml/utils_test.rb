@@ -7,6 +7,26 @@ class UtilsTest < Test::Unit::TestCase
 
   # --- date_to_serial and serial_to_date ---
 
+  test "utf16_length counts UTF-16 code units, as Excel counts its text limits" do
+    emoji = [0x1F600].pack("U")
+    kanji_ext_b = [0x20BB7].pack("U")
+    assert_equal(0, Xlsxrb::Ooxml::Utils.utf16_length(""))
+    assert_equal(5, Xlsxrb::Ooxml::Utils.utf16_length("Sheet"))
+    assert_equal(3, Xlsxrb::Ooxml::Utils.utf16_length([0x3042].pack("U") * 3))
+    assert_equal(2, Xlsxrb::Ooxml::Utils.utf16_length(emoji))
+    assert_equal(2, Xlsxrb::Ooxml::Utils.utf16_length(kanji_ext_b))
+    assert_equal(7, Xlsxrb::Ooxml::Utils.utf16_length("a#{emoji}b#{kanji_ext_b}c"))
+    assert_equal(32_768, Xlsxrb::Ooxml::Utils.utf16_length(emoji * 16_384))
+    # Code points U+FFFF and U+10000 are the last of one and first of two units.
+    assert_equal(1, Xlsxrb::Ooxml::Utils.utf16_length([0xFFFF].pack("U")))
+    assert_equal(2, Xlsxrb::Ooxml::Utils.utf16_length([0x10000].pack("U")))
+    assert_equal(2, Xlsxrb::Ooxml::Utils.utf16_length([0x10FFFF].pack("U")))
+    %w[x é あ 😀 􏿿].each do |char|
+      text = char * 3
+      assert_equal(text.encode("UTF-16LE").bytesize / 2, Xlsxrb::Ooxml::Utils.utf16_length(text))
+    end
+  end
+
   test "converts date before, around, and after 1900 leap day bug" do
     # Serial 1 = Jan 1, 1900
     d1 = Date.new(1900, 1, 1)
