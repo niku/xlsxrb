@@ -41,7 +41,10 @@ module Xlsxrb
             k_ver_val = derive_key(digest, h_final, BLOCK_KEY_VERIFIER_VALUE, key_bytes)
             decrypted_hash = aes_decrypt(cipher_name, k_ver_val, info[:encryptor_salt], info[:encrypted_verifier_hash_value])
 
+            # A hashSize shorter than the digest would compare fewer bytes, and 0 would accept
+            # any password.
             hash_size = info[:hash_size]
+            raise Xlsxrb::DecryptionError, "Invalid hashSize in EncryptionInfo: #{hash_size}" unless hash_size == digest.digest_length
             raise Xlsxrb::InvalidPasswordError, "Password verification failed" unless OpenSSL.secure_compare(decrypted_hash[0, hash_size], expected_hash[0, hash_size])
 
             # 3. Decrypt package master key

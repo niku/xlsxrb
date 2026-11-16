@@ -257,4 +257,32 @@ class EncryptionSecurityAuditTest < Test::Unit::TestCase
     end
     assert_match(/FAT sector 0 is listed more than once/, error.message)
   end
+
+  # 11. Password Verification Bypass: hashSize="0" Compares Zero Bytes
+  def test_agile_zero_hash_size_does_not_accept_a_wrong_password
+    with_agile_encryption_info do |info, pkg|
+      forged_info = info.sub(/(<p:encryptedKey[^>]*?)hashSize="64"/) { "#{Regexp.last_match(1)}hashSize=\"0\"" }
+      assert_not_equal info, forged_info
+
+      error = assert_raise(Xlsxrb::DecryptionError) do
+        Xlsxrb.load(rebuild_cfb(forged_info, pkg), password: "WrongPassword")
+      end
+      assert_not_kind_of Xlsxrb::InvalidPasswordError, error
+      assert_match(/hashSize/, error.message)
+    end
+  end
+
+  private
+
+  def with_agile_encryption_info
+    plain = StringIO.new
+    Xlsxrb.write(plain) { |wb| wb.sheet("Data") { |s| s.row(["Value", 1]) } }
+    cfb = Xlsxrb::Ooxml::Crypto.encrypt(plain.string, "ValidPassword123", mode: :agile)
+    reader = Xlsxrb::Ooxml::Cfb::Reader.new(cfb)
+    yield reader.read_stream("EncryptionInfo"), reader.read_stream("EncryptedPackage")
+  end
+
+  def rebuild_cfb(info, pkg)
+    Xlsxrb::Ooxml::Cfb::Writer.write("EncryptionInfo" => info, "EncryptedPackage" => pkg)
+  end
 end
