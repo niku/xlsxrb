@@ -17,6 +17,12 @@ module Xlsxrb
 
       def set_column_style: (untyped col_index, untyped style_id) -> untyped
 
+      # Drops the resolved column style ids, for a caller that changed the style id a
+      # name in the style map stands for.
+      # @api private
+      # : () -> void
+      def forget_column_style_ids: () -> void
+
       # Write the worksheet header. Call once before writing rows.
       # Options for pre-sheetData elements:
       #   sheet_properties: Hash of sheet-level properties (:tab_color, etc.)
@@ -42,6 +48,12 @@ module Xlsxrb
       # It is not inlined in write_row_values because YJIT ran the same loop there about
       # 1.6 times slower, after the row attribute handling.
       def write_styled_cells: (untyped buf, untyped values, untyped max_len, untyped row_num_str, untyped styles, untyped is_styles_collection, untyped single_style_id, untyped row_style_id, untyped style_map, untyped sst, untyped sst_index) -> untyped
+
+      # The style id of each column style, indexed by column, resolved once instead of
+      # for every cell. It is resolved again when the style map is another Hash, or after
+      # set_column_style or forget_column_style_ids.
+      # : (Hash[untyped, Integer]? style_map) -> Array[Integer?]
+      def column_style_ids: (Hash[untyped, Integer]? style_map) -> Array[Integer?]
 
       # Writes a cell for write_styled_cells whose value is a formula, rich text, BigDecimal,
       # cell error, or another value that write_styled_cells does not write itself.

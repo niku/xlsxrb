@@ -34,11 +34,22 @@ module Xlsxrb
         @style_attrs = {} # style id => '" s="<id>' fragment, built once per id
         @started = false
         @finished = false
+        @column_style_ids = nil # column index => resolved style id, see column_style_ids
+        @column_style_ids_map = nil
       end
 
       def set_column_style(col_index, style_id)
         @column_styles ||= {}
         @column_styles[col_index] = style_id
+        @column_style_ids = nil
+      end
+
+      # Drops the resolved column style ids, for a caller that changed the style id a
+      # name in the style map stands for.
+      # @api private
+      #: () -> void
+      def forget_column_style_ids
+        @column_style_ids = nil
       end
 
       # Write the worksheet header. Call once before writing rows.
@@ -599,13 +610,13 @@ module Xlsxrb
       # 1.6 times slower, after the row attribute handling.
       def write_styled_cells(buf, values, max_len, row_num_str, styles, is_styles_collection, single_style_id, row_style_id, style_map, sst, sst_index)
         style_attrs = @style_attrs
-        column_styles = @column_styles
+        column_ids = @column_styles && column_style_ids(style_map)
         col_index = 0
         while col_index < max_len
           # Indexing past the end of values or styles (Array or Hash) yields nil.
           value = values[col_index]
           cell_style_id = is_styles_collection ? resolve_style_id(styles[col_index], style_map) : single_style_id
-          style_id = cell_style_id || row_style_id || (column_styles && resolve_style_id(column_styles[col_index], style_map))
+          style_id = cell_style_id || row_style_id || (column_ids && column_ids[col_index])
           col_ref = COLUMN_LETTERS[col_index] || column_letter(col_index)
           col_index += 1
 
@@ -653,6 +664,20 @@ module Xlsxrb
             write_complex_cell(buf, col_ref, row_num_str, value, style_id, sst, sst_index)
           end
         end
+      end
+
+      # The style id of each column style, indexed by column, resolved once instead of
+      # for every cell. It is resolved again when the style map is another Hash, or after
+      # set_column_style or forget_column_style_ids.
+      #: (Hash[untyped, Integer]? style_map) -> Array[Integer?]
+      def column_style_ids(style_map)
+        ids = @column_style_ids
+        return ids if ids && @column_style_ids_map.equal?(style_map)
+
+        ids = []
+        @column_styles&.each { |col_index, style| ids[col_index] = resolve_style_id(style, style_map) }
+        @column_style_ids_map = style_map
+        @column_style_ids = ids
       end
 
       # Writes a cell for write_styled_cells whose value is a formula, rich text, BigDecimal,

@@ -228,6 +228,8 @@ module Xlsxrb
       # Date and time variants of an earlier definition do not apply to this one.
       @style_name_to_id.delete("#{style_name}__xlsxrb_date")
       @style_name_to_id.delete("#{style_name}__xlsxrb_time")
+      # Column styles of the current sheet that use this name resolve to the new id.
+      @current_row_writer&.forget_column_style_ids
 
       ReturnedStyleBuilder.new(style_builder)
     end
