@@ -2055,17 +2055,434 @@ module Xlsxrb
       super
     end
 
-    #: (Symbol name, *untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
-    def method_missing(name, ...)
-      return super unless Elements::Worksheet.public_method_defined?(name)
+    # Elements::Worksheet methods, written out as the method_missing policy in
+    # ARCHITECTURE.md requires. A test checks that they cover every public method.
 
-      built_worksheet.public_send(name, ...)
-    end
+    #: (String | Symbol | Integer ref_or_row, ?Integer | String | Symbol | nil col) -> Elements::Cell?
+    def [](ref_or_row, col = nil) = built_worksheet[ref_or_row, col]
 
-    #: (Symbol name, ?bool include_private) -> bool
-    def respond_to_missing?(name, include_private = false)
-      Elements::Worksheet.public_method_defined?(name) || super
-    end
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def all?(...) = built_worksheet.all?(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def any?(...) = built_worksheet.any?(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def auto_filter(...) = built_worksheet.auto_filter(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def background_image(...) = built_worksheet.background_image(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def cell_watches(...) = built_worksheet.cell_watches(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def cells(...) = built_worksheet.cells(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def chain(...) = built_worksheet.chain(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def charts(...) = built_worksheet.charts(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def chunk(...) = built_worksheet.chunk(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def chunk_while(...) = built_worksheet.chunk_while(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def code_name(...) = built_worksheet.code_name(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def collect(...) = built_worksheet.collect(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def collect_concat(...) = built_worksheet.collect_concat(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def column_breaks(...) = built_worksheet.column_breaks(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def column_range(...) = built_worksheet.column_range(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def columns(...) = built_worksheet.columns(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def comment(...) = built_worksheet.comment(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def comments(...) = built_worksheet.comments(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def comments_by_ref(...) = built_worksheet.comments_by_ref(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def compact(...) = built_worksheet.compact(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def conditional_formats(...) = built_worksheet.conditional_formats(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def count(...) = built_worksheet.count(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def cycle(...) = built_worksheet.cycle(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def data_validations(...) = built_worksheet.data_validations(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def date1904?(...) = built_worksheet.date1904?(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def deconstruct(...) = built_worksheet.deconstruct(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def deconstruct_keys(...) = built_worksheet.deconstruct_keys(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def detect(...) = built_worksheet.detect(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def dimension(...) = built_worksheet.dimension(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def dimension_bounds(...) = built_worksheet.dimension_bounds(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def drop(...) = built_worksheet.drop(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def drop_while(...) = built_worksheet.drop_while(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def each(...) = built_worksheet.each(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def each_cell(...) = built_worksheet.each_cell(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def each_cons(...) = built_worksheet.each_cons(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def each_entry(...) = built_worksheet.each_entry(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def each_row(...) = built_worksheet.each_row(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def each_row_values(...) = built_worksheet.each_row_values(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def each_slice(...) = built_worksheet.each_slice(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def each_with_index(...) = built_worksheet.each_with_index(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def each_with_object(...) = built_worksheet.each_with_object(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def entries(...) = built_worksheet.entries(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def errors(...) = built_worksheet.errors(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def filter(...) = built_worksheet.filter(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def filter_columns(...) = built_worksheet.filter_columns(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def filter_map(...) = built_worksheet.filter_map(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def find(...) = built_worksheet.find(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def find_all(...) = built_worksheet.find_all(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def find_index(...) = built_worksheet.find_index(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def first(...) = built_worksheet.first(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def first_row(...) = built_worksheet.first_row(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def fit_to_page?(...) = built_worksheet.fit_to_page?(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def flat_map(...) = built_worksheet.flat_map(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def formatted_value(...) = built_worksheet.formatted_value(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def freeze_pane(...) = built_worksheet.freeze_pane(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def full_calc_on_load?(...) = built_worksheet.full_calc_on_load?(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def grep(...) = built_worksheet.grep(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def grep_v(...) = built_worksheet.grep_v(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def group_by(...) = built_worksheet.group_by(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def header_footer(...) = built_worksheet.header_footer(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def header_footer_images(...) = built_worksheet.header_footer_images(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def hidden?(...) = built_worksheet.hidden?(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def hyperlink(...) = built_worksheet.hyperlink(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def hyperlinks(...) = built_worksheet.hyperlinks(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def ignored_errors(...) = built_worksheet.ignored_errors(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def images(...) = built_worksheet.images(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def images_at(...) = built_worksheet.images_at(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def include?(...) = built_worksheet.include?(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def inject(...) = built_worksheet.inject(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def last_row(...) = built_worksheet.last_row(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def lazy(...) = built_worksheet.lazy(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def map(...) = built_worksheet.map(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def max(...) = built_worksheet.max(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def max_by(...) = built_worksheet.max_by(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def member?(...) = built_worksheet.member?(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def merged_cells(...) = built_worksheet.merged_cells(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def min(...) = built_worksheet.min(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def min_by(...) = built_worksheet.min_by(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def minmax(...) = built_worksheet.minmax(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def minmax_by(...) = built_worksheet.minmax_by(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def name(...) = built_worksheet.name(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def none?(...) = built_worksheet.none?(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def one?(...) = built_worksheet.one?(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def outline_properties(...) = built_worksheet.outline_properties(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def pad_empty_cells?(...) = built_worksheet.pad_empty_cells?(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def pad_empty_rows?(...) = built_worksheet.pad_empty_rows?(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def page_margins(...) = built_worksheet.page_margins(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def page_setup(...) = built_worksheet.page_setup(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def partition(...) = built_worksheet.partition(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def phonetic_properties(...) = built_worksheet.phonetic_properties(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def pivot_tables(...) = built_worksheet.pivot_tables(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def print_area(...) = built_worksheet.print_area(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def print_options(...) = built_worksheet.print_options(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def print_titles(...) = built_worksheet.print_titles(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def protected_ranges(...) = built_worksheet.protected_ranges(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def reduce(...) = built_worksheet.reduce(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def reject(...) = built_worksheet.reject(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def reverse_each(...) = built_worksheet.reverse_each(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def row_at(...) = built_worksheet.row_at(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def row_breaks(...) = built_worksheet.row_breaks(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def row_range(...) = built_worksheet.row_range(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def rows(...) = built_worksheet.rows(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def select(...) = built_worksheet.select(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def selection(...) = built_worksheet.selection(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def shapes(...) = built_worksheet.shapes(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def sheet_calc_properties(...) = built_worksheet.sheet_calc_properties(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def sheet_format(...) = built_worksheet.sheet_format(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def sheet_properties(...) = built_worksheet.sheet_properties(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def sheet_protection(...) = built_worksheet.sheet_protection(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def sheet_view(...) = built_worksheet.sheet_view(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def slice_after(...) = built_worksheet.slice_after(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def slice_before(...) = built_worksheet.slice_before(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def slice_when(...) = built_worksheet.slice_when(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def sort(...) = built_worksheet.sort(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def sort_by(...) = built_worksheet.sort_by(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def sort_state(...) = built_worksheet.sort_state(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def sparkline_groups(...) = built_worksheet.sparkline_groups(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def split_pane(...) = built_worksheet.split_pane(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def state(...) = built_worksheet.state(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def styles(...) = built_worksheet.styles(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def sum(...) = built_worksheet.sum(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def tab_color(...) = built_worksheet.tab_color(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def tables(...) = built_worksheet.tables(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def take(...) = built_worksheet.take(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def take_while(...) = built_worksheet.take_while(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def tally(...) = built_worksheet.tally(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def threaded_comment(...) = built_worksheet.threaded_comment(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def threaded_comments(...) = built_worksheet.threaded_comments(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def threaded_comments_at(...) = built_worksheet.threaded_comments_at(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def threaded_comments_by_ref(...) = built_worksheet.threaded_comments_by_ref(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def to_a(...) = built_worksheet.to_a(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def to_h(...) = built_worksheet.to_h(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def to_set(...) = built_worksheet.to_set(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def trim_empty_rows?(...) = built_worksheet.trim_empty_rows?(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def uniq(...) = built_worksheet.uniq(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def unmapped_data(...) = built_worksheet.unmapped_data(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def valid?(...) = built_worksheet.valid?(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def very_hidden?(...) = built_worksheet.very_hidden?(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def visible?(...) = built_worksheet.visible?(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def with(...) = built_worksheet.with(...)
+
+    #: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def zip(...) = built_worksheet.zip(...)
 
     protected
 

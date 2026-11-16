@@ -3922,6 +3922,13 @@ class PublicApiTest < Test::Unit::TestCase
                   "Sheet 'A' is no longer active. In streaming mode, you cannot write to a previous sheet."], messages)
   end
 
+  test "DeferredWorksheet defines every public method of Elements::Worksheet" do
+    omit "RBS::Test runtime hooks add aliased methods to the classes" if defined?(RBS::Test)
+    missing = Xlsxrb::Elements::Worksheet.public_instance_methods - Xlsxrb::DeferredWorksheet.public_instance_methods
+    assert_equal([], missing)
+    assert_false(Xlsxrb::DeferredWorksheet.private_method_defined?(:method_missing, false))
+  end
+
   test "ReturnedStyleBuilder forwards every public method of StyleBuilder" do
     omit "RBS::Test runtime hooks add aliased methods to the classes" if defined?(RBS::Test)
     missing = Xlsxrb::StyleBuilder.public_instance_methods(false) - Xlsxrb::ReturnedStyleBuilder.public_instance_methods(false)

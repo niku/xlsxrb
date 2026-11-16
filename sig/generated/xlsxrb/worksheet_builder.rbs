@@ -1085,11 +1085,431 @@ module Xlsxrb
     # : () -> self
     def freeze: () -> self
 
-    # : (Symbol name, *untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
-    def method_missing: (Symbol name, *untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    # : (String | Symbol | Integer ref_or_row, ?Integer | String | Symbol | nil col) -> Elements::Cell?
+    def []: (String | Symbol | Integer ref_or_row, ?Integer | String | Symbol | nil col) -> Elements::Cell?
 
-    # : (Symbol name, ?bool include_private) -> bool
-    def respond_to_missing?: (Symbol name, ?bool include_private) -> bool
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def all?: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def any?: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def auto_filter: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def background_image: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def cell_watches: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def cells: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def chain: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def charts: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def chunk: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def chunk_while: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def code_name: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def collect: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def collect_concat: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def column_breaks: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def column_range: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def columns: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def comment: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def comments: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def comments_by_ref: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def compact: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def conditional_formats: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def count: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def cycle: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def data_validations: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def date1904?: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def deconstruct: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def deconstruct_keys: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def detect: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def dimension: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def dimension_bounds: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def drop: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def drop_while: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def each: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def each_cell: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def each_cons: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def each_entry: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def each_row: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def each_row_values: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def each_slice: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def each_with_index: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def each_with_object: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def entries: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def errors: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def filter: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def filter_columns: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def filter_map: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def find: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def find_all: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def find_index: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def first: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def first_row: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def fit_to_page?: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def flat_map: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def formatted_value: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def freeze_pane: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def full_calc_on_load?: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def grep: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def grep_v: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def group_by: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def header_footer: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def header_footer_images: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def hidden?: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def hyperlink: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def hyperlinks: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def ignored_errors: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def images: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def images_at: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def include?: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def inject: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def last_row: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def lazy: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def map: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def max: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def max_by: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def member?: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def merged_cells: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def min: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def min_by: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def minmax: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def minmax_by: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def name: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def none?: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def one?: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def outline_properties: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def pad_empty_cells?: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def pad_empty_rows?: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def page_margins: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def page_setup: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def partition: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def phonetic_properties: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def pivot_tables: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def print_area: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def print_options: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def print_titles: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def protected_ranges: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def reduce: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def reject: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def reverse_each: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def row_at: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def row_breaks: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def row_range: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def rows: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def select: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def selection: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def shapes: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def sheet_calc_properties: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def sheet_format: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def sheet_properties: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def sheet_protection: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def sheet_view: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def slice_after: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def slice_before: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def slice_when: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def sort: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def sort_by: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def sort_state: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def sparkline_groups: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def split_pane: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def state: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def styles: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def sum: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def tab_color: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def tables: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def take: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def take_while: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def tally: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def threaded_comment: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def threaded_comments: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def threaded_comments_at: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def threaded_comments_by_ref: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def to_a: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def to_h: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def to_set: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def trim_empty_rows?: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def uniq: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def unmapped_data: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def valid?: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def very_hidden?: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def visible?: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def with: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+
+    # : (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+    def zip: (*untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
 
     # Returns the worksheet, building it on first use with a deprecation warning that
     # points at the caller of the public method.
