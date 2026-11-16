@@ -244,6 +244,10 @@ High-level API growth must be backward compatible:
 
 Symmetry is valuable, but compatibility is mandatory. A change for symmetry that breaks existing call sites follows the deprecation policy in "The `@api public` Contract and Deprecation Policy": it warns in the current minor series and lands in the next one.
 
+#### 7. Follow Ruby's established conventions
+
+Where Ruby's core classes and standard library agree, follow them: `<<` appends and returns the receiver, `name=` assigns, `name?` answers yes or no, and a method that makes or reads a value returns it. Where Ruby itself is not consistent, such as what a named command returns, do not present a choice as Ruby's convention; decide it in an ADR. [ADR 0010](adr/0010-one-dsl-for-built-and-streamed-workbooks.md) decides return values.
+
 ### Facade Rollout Strategy
 
 When promoting a low-level feature into the high-level DSL, use this order of operations:
