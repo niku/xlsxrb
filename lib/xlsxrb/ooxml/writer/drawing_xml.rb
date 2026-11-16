@@ -1730,8 +1730,8 @@ module Xlsxrb
             person_id = c[:person_id] || c[:author_id] || "{00000000-0000-0000-0000-000000000000}"
             comment_id = c[:id] || format_guid(nil)
 
-            attrs = %(ref="#{ref}" dT="#{dt_str}" personId="#{person_id}" id="#{comment_id}")
-            attrs << %( parentId="#{c[:parent_id]}") if c[:parent_id]
+            attrs = %(ref="#{xml_escape(ref)}" dT="#{xml_escape(dt_str)}" personId="#{xml_escape(person_id)}" id="#{xml_escape(comment_id)}")
+            attrs << %( parentId="#{xml_escape(c[:parent_id])}") if c[:parent_id]
             attrs << %( done="true") if [true, "true", "1"].include?(c[:done])
 
             text_val = c[:text].to_s

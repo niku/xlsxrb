@@ -197,6 +197,55 @@ class SecurityResilienceTest < Test::Unit::TestCase
     assert_equal ["[Content_Types].xml", "xl/a..b/c...xml"], entry_names(io.string)
   end
 
+  def test_formula_attributes_are_escaped
+    omit "Passes values the signatures do not allow, which RBS runtime checks reject first" if defined?(RBS::Test)
+
+    files = write_both_modes do |sheet|
+      sheet.row([Xlsxrb.array_formula("1+1", ref: ATTRIBUTE_BREAKOUT)])
+      sheet.row([Xlsxrb.shared_formula("1+1", shared_index: ATTRIBUTE_BREAKOUT, ref: "A2:A3")])
+      sheet.row([{ formula: "1+1", type: :array, ref: ATTRIBUTE_BREAKOUT }])
+    end
+    files.each do |bytes|
+      doc = REXML::Document.new(read_part(bytes, "xl/worksheets/sheet1.xml"))
+      formulas = REXML::XPath.match(doc, "//*[local-name()='f']")
+
+      assert_equal 3, formulas.size
+      assert_equal ATTRIBUTE_BREAKOUT, formulas[0].attributes["ref"]
+      assert_equal ATTRIBUTE_BREAKOUT, formulas[1].attributes["si"]
+      assert_equal ATTRIBUTE_BREAKOUT, formulas[2].attributes["ref"]
+      assert_empty REXML::XPath.match(doc, "//*[local-name()='injected'] | //@injected")
+    end
+  end
+
+  def test_row_outline_level_is_escaped
+    omit "Passes values the signatures do not allow, which RBS runtime checks reject first" if defined?(RBS::Test)
+
+    write_both_modes { |sheet| sheet.row([1], outline_level: ATTRIBUTE_BREAKOUT) }.each do |bytes|
+      doc = REXML::Document.new(read_part(bytes, "xl/worksheets/sheet1.xml"))
+      row = REXML::XPath.first(doc, "//*[local-name()='row']")
+
+      assert_equal ATTRIBUTE_BREAKOUT, row.attributes["outlineLevel"]
+      assert_nil row.attributes["injected"]
+    end
+  end
+
+  def test_threaded_comment_attributes_are_escaped
+    files = write_both_modes do |sheet|
+      sheet.row([1])
+      sheet.threaded_comment("A1", "hi", id: ATTRIBUTE_BREAKOUT, parent_id: ATTRIBUTE_BREAKOUT, timestamp: ATTRIBUTE_BREAKOUT)
+    end
+    files.each do |bytes|
+      doc = REXML::Document.new(read_part(bytes, "xl/threadedComments/threadedComment1.xml"))
+      comment = REXML::XPath.first(doc, "//*[local-name()='threadedComment']")
+
+      assert_equal ATTRIBUTE_BREAKOUT, comment.attributes["dT"]
+      assert_include comment.attributes["id"].downcase, "<injected/>"
+      assert_include comment.attributes["parentId"].downcase, "<injected/>"
+      assert_nil comment.attributes["injected"]
+      assert_empty REXML::XPath.match(doc, "//*[local-name()='injected']")
+    end
+  end
+
   private
 
   # Writes one sheet with Xlsxrb.build and with the streaming writer; returns both files.

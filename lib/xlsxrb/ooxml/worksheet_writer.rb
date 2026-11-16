@@ -151,7 +151,7 @@ module Xlsxrb
         end
         buf << ' hidden="1"' if attrs[:hidden]
         buf << ' collapsed="1"' if attrs[:collapsed]
-        buf << ' outlineLevel="' << attrs[:outline_level].to_s << '"' if attrs[:outline_level]
+        buf << ' outlineLevel="' << escape_xml(attrs[:outline_level]) << '"' if attrs[:outline_level]
         buf << ">"
 
         row_style = resolve_style_id(attrs[:style_index], nil)
@@ -337,11 +337,11 @@ module Xlsxrb
               case formula_type.to_sym
               when :array
                 f_attrs << ' t="array"'
-                f_attrs << %( ref="#{formula_ref}") if formula_ref
+                f_attrs << %( ref="#{escape_xml(formula_ref)}") if formula_ref
               when :shared
                 f_attrs << ' t="shared"'
-                f_attrs << %( si="#{formula_si}") if formula_si
-                f_attrs << %( ref="#{formula_ref}") if formula_ref
+                f_attrs << %( si="#{escape_xml(formula_si)}") if formula_si
+                f_attrs << %( ref="#{escape_xml(formula_ref)}") if formula_ref
               end
             end
             f_attrs << ' ca="1"' if formula_ca
@@ -449,11 +449,11 @@ module Xlsxrb
                 case value.type.to_sym
                 when :array
                   f_attrs << ' t="array"'
-                  f_attrs << %( ref="#{value.ref}") if value.ref
+                  f_attrs << %( ref="#{escape_xml(value.ref)}") if value.ref
                 when :shared
                   f_attrs << ' t="shared"'
-                  f_attrs << %( si="#{value.shared_index}") if value.shared_index
-                  f_attrs << %( ref="#{value.ref}") if value.ref
+                  f_attrs << %( si="#{escape_xml(value.shared_index)}") if value.shared_index
+                  f_attrs << %( ref="#{escape_xml(value.ref)}") if value.ref
                 end
               end
               f_attrs << ' ca="1"' if value.calculate_always?
@@ -489,12 +489,12 @@ module Xlsxrb
                   case f_type.to_sym
                   when :array
                     f_attrs << ' t="array"'
-                    f_attrs << %( ref="#{value[:ref]}") if value[:ref]
+                    f_attrs << %( ref="#{escape_xml(value[:ref])}") if value[:ref]
                   when :shared
                     f_attrs << ' t="shared"'
                     si = value[:si] || value[:shared_index]
-                    f_attrs << %( si="#{si}") if si
-                    f_attrs << %( ref="#{value[:ref]}") if value[:ref]
+                    f_attrs << %( si="#{escape_xml(si)}") if si
+                    f_attrs << %( ref="#{escape_xml(value[:ref])}") if value[:ref]
                   end
                 end
                 f_attrs << ' ca="1"' if value[:calculate_always]
@@ -572,7 +572,7 @@ module Xlsxrb
           end
           buf << ' hidden="1"' if attrs[:hidden]
           buf << ' collapsed="1"' if attrs[:collapsed]
-          buf << ' outlineLevel="' << attrs[:outline_level].to_s << '"' if attrs[:outline_level]
+          buf << ' outlineLevel="' << escape_xml(attrs[:outline_level]) << '"' if attrs[:outline_level]
         end
         buf << ">"
 
@@ -825,11 +825,11 @@ module Xlsxrb
             case formula_type.to_sym
             when :array
               f_attrs << ' t="array"'
-              f_attrs << %( ref="#{formula_ref}") if formula_ref
+              f_attrs << %( ref="#{escape_xml(formula_ref)}") if formula_ref
             when :shared
               f_attrs << ' t="shared"'
-              f_attrs << %( si="#{formula_si}") if formula_si
-              f_attrs << %( ref="#{formula_ref}") if formula_ref
+              f_attrs << %( si="#{escape_xml(formula_si)}") if formula_si
+              f_attrs << %( ref="#{escape_xml(formula_ref)}") if formula_ref
             end
           end
           f_attrs << ' ca="1"' if formula_ca
@@ -1786,7 +1786,7 @@ module Xlsxrb
                   norm = StyleBuilder.normalize_color(c_hash[:rgb], alpha: true) || c_hash[:rgb].to_s
                   buf << '<color rgb="' << norm << '"/>'
                 elsif c_hash[:theme]
-                  tint_attr = c_hash[:tint] ? %( tint="#{c_hash[:tint]}") : ""
+                  tint_attr = c_hash[:tint] ? %( tint="#{escape_xml(c_hash[:tint])}") : ""
                   buf << '<color theme="' << c_hash[:theme].to_s << '"' << tint_attr << "/>"
                 elsif c_hash[:indexed]
                   buf << '<color indexed="' << c_hash[:indexed].to_s << '"/>'
@@ -1799,7 +1799,7 @@ module Xlsxrb
                 buf << '<color rgb="' << norm_color << '"/>'
               end
             elsif font[:theme]
-              tint_attr = font[:tint] ? %( tint="#{font[:tint]}") : ""
+              tint_attr = font[:tint] ? %( tint="#{escape_xml(font[:tint])}") : ""
               buf << '<color theme="' << font[:theme].to_s << '"' << tint_attr << "/>"
             elsif font[:indexed]
               buf << '<color indexed="' << font[:indexed].to_s << '"/>'
