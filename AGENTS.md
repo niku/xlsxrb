@@ -19,6 +19,8 @@ Guidelines for LLM-powered coding assistants (Claude, Cursor, Copilot, Gemini, A
   Maintain `CHANGELOG.md` following [Keep a Changelog](https://keepachangelog.com/) conventions.
   - When introducing user-facing changes (features, deprecations, breaking changes, notable bug fixes, performance improvements, or dependency changes), add concise entries under the `## [Unreleased]` section.
   - Group entries under standard categories: `Added`, `Changed`, `Deprecated`, `Removed`, `Fixed`, or `Security`.
+- Deprecation Policy:
+  Do not break an `@api public` API in a patch release. Warn first with `Xlsxrb::Deprecation` in the current minor series and make the change in the next minor release, as described in "The `@api public` Contract and Deprecation Policy" in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 - Byte vs Character Indexing Consistency:
   When scanning XML or raw data with fast string indexing (`String#index` or `String#rindex`), never mix character-level indices with byte-level operations (`String#byteslice`, `String#getbyte`). Always convert the buffer to binary (`str.b` or `force_encoding(Encoding::BINARY)`) before scanning so that index positions correspond 1:1 to byte offsets. Mixing character indices with byte slicing causes terminal row truncation and silent data corruption when documents contain multibyte (e.g. CJK or emoji) characters.
 

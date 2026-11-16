@@ -35,11 +35,12 @@ Even in cases where proxy patterns (e.g. `WorksheetProxy`) or OOXML builder mapp
 
    `Xlsxrb.modify`, `Workbook#update_sheet`, and `Worksheet#update_cell` were removed in 0.2.0 in favor of `Xlsxrb.read` -> `Xlsxrb.write` streaming pipelines and `Xlsxrb.load` for in-memory inspection. Users should not instantiate low-level internal classes (such as `Xlsxrb::Ooxml::WorkbookWriter`) directly.
 
-2. The `@api public` Contract (SemVer Guarantee):
-   Any module, class, or method tagged with `# @api public` in its YARD documentation is guaranteed to follow Semantic Versioning.
-   - Patch versions (0.1.x -> 0.1.y) will not break these APIs.
-   - Minor versions (0.x.0 -> 0.y.0) will not break these APIs once 1.0.0 is released (during 0.x.x, it is a best-effort promise).
-   - Major versions (1.x -> 2.x) are the only time breaking changes to `@api public` components are permitted.
+2. The `@api public` Contract and Deprecation Policy:
+   Any module, class, or method tagged with `# @api public` in its YARD documentation follows Semantic Versioning, with these rules for when and how it may break.
+   - Patch releases (0.2.0 -> 0.2.1) do not break these APIs. They may fix behavior that contradicts the documentation, which can change output, and they may add deprecation warnings.
+   - Before 1.0.0, a breaking change is made only in the next minor release (0.2.x -> 0.3.0). A release in the current minor series first warns, through `Xlsxrb::Deprecation`, on every call the change affects, naming the version and what to use instead. A change that cannot be detected at runtime, such as a different return value, is announced in the `Deprecated` section of `CHANGELOG.md` instead.
+   - A minor release that breaks these APIs comes with an upgrade guide (`docs/UPGRADING-0.y.md`).
+   - From 1.0.0, breaking changes are made only in major releases (1.x -> 2.0.0), after the same warnings in the preceding minor series.
 
 3. Block-Yielded Objects are Public APIs:
    All builder objects yielded into blocks (e.g., `writer` in `Xlsxrb.write { |writer| }`, `sheet` in `writer.sheet { |sheet| }`, `chart` in `sheet.chart { |chart| }`) are explicitly marked as `@api public`. Their exposed methods constitute the DSL and are covered by the SemVer contract.
@@ -241,7 +242,7 @@ High-level API growth must be backward compatible:
 * adding an options form must not remove the block form
 * existing examples and tests should continue to pass unchanged
 
-Symmetry is valuable, but compatibility is mandatory.
+Symmetry is valuable, but compatibility is mandatory. A change for symmetry that breaks existing call sites follows the deprecation policy in "The `@api public` Contract and Deprecation Policy": it warns in the current minor series and lands in the next one.
 
 ### Facade Rollout Strategy
 
