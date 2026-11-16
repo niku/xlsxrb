@@ -75,6 +75,11 @@ module Xlsxrb
         DecodingSAX2Parser.new(xml_string)
       end
 
+      # Elements may nest this deep. SpreadsheetML, DrawingML, and VML parts stay far below
+      # it, and REXML's SAX2 parser takes time proportional to the depth for every tag, so
+      # that 20,000 nested elements (a 3 KB file) took 15 seconds.
+      MAX_ELEMENT_DEPTH = 256
+
       # SAX2 parser that wraps each listener in an AttributeDecoder.
       class DecodingSAX2Parser < REXML::Parsers::SAX2Parser
         # Parses the document, reporting malformed XML and exceeded entity expansion limits
@@ -104,6 +109,7 @@ module Xlsxrb
         #: (untyped listener) -> void
         def initialize(listener)
           @listener = listener
+          @depth = 0
         end
 
         # Plain methods rather than define_method blocks, which Ractors cannot share.
@@ -115,8 +121,13 @@ module Xlsxrb
         def start_prefix_mapping(*args) = @listener.start_prefix_mapping(*args)
         #: (*untyped args) -> untyped
         def end_prefix_mapping(*args) = @listener.end_prefix_mapping(*args)
+
         #: (*untyped args) -> untyped
-        def end_element(*args) = @listener.end_element(*args)
+        def end_element(*args)
+          @depth -= 1
+          @listener.end_element(*args)
+        end
+
         #: (*untyped args) -> untyped
         def characters(*args) = @listener.characters(*args)
         #: (*untyped args) -> untyped
@@ -142,6 +153,9 @@ module Xlsxrb
 
         #: (String? uri, String local_name, String qname, Hash[String, String] attributes) -> untyped
         def start_element(uri, local_name, qname, attributes)
+          @depth += 1
+          raise Xlsxrb::ParseError, "Malformed XML: elements are nested more than #{MAX_ELEMENT_DEPTH} levels deep" if @depth > MAX_ELEMENT_DEPTH
+
           if attributes.each_value.any? { |value| value.include?("&") }
             attributes = attributes.transform_values { |value| value.include?("&") ? REXML::Text.unnormalize(value) : value }
           end

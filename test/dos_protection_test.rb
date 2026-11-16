@@ -76,6 +76,19 @@ class DosProtectionTest < Test::Unit::TestCase
     )
   end
 
+  test "deeply nested elements raise ParseError instead of taking time proportional to the depth squared" do
+    depth = 40_000
+    workbook = %(<workbook #{SML_NS}><sheets><sheet name="S" sheetId="1" r:id="rId1"/></sheets>#{"<a>" * depth}#{"</a>" * depth}</workbook>)
+    bytes = workbook_bytes("xl/workbook.xml" => workbook)
+
+    within(5, "load") { assert_raise(Xlsxrb::ParseError) { Xlsxrb.load(bytes) } }
+    error = within(5, "read") { assert_raise(Xlsxrb::ParseError) { Xlsxrb.read(bytes) { |sheet| sheet.each_row(&:values) } } }
+    assert_match(/nested more than 256 levels/, error.message)
+
+    nested = %(<workbook #{SML_NS}><sheets><sheet name="S" sheetId="1" r:id="rId1"/></sheets>#{"<a>" * 200}#{"</a>" * 200}</workbook>)
+    assert_equal ["S"], Xlsxrb.load(workbook_bytes("xl/workbook.xml" => nested)).sheets.map(&:name)
+  end
+
   test "malformed XML in a part raises ParseError" do
     error = assert_raise(Xlsxrb::ParseError) { Xlsxrb.load(workbook_bytes("xl/workbook.xml" => "<workbook><sheets>")) }
     assert_match(/\AMalformed XML: /, error.message)

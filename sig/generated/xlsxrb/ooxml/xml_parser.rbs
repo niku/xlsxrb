@@ -14,6 +14,11 @@ module Xlsxrb
       # : (String xml_string) -> REXML::Parsers::SAX2Parser
       def self.sax2_parser: (String xml_string) -> REXML::Parsers::SAX2Parser
 
+      # Elements may nest this deep. SpreadsheetML, DrawingML, and VML parts stay far below
+      # it, and REXML's SAX2 parser takes time proportional to the depth for every tag, so
+      # that 20,000 nested elements (a 3 KB file) took 15 seconds.
+      MAX_ELEMENT_DEPTH: ::Integer
+
       # SAX2 parser that wraps each listener in an AttributeDecoder.
       class DecodingSAX2Parser < REXML::Parsers::SAX2Parser
         # Parses the document, reporting malformed XML and exceeded entity expansion limits
