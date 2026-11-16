@@ -3825,6 +3825,31 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal(sheet.worksheet.inspect, sheet.inspect)
   end
 
+  test "WorkbookBuilder#[] warns when it creates a sheet that 0.3.0 would look up" do
+    wb = nil
+    err = capture_stderr do
+      wb = Xlsxrb.build do |w|
+        w[] { |s| s.row([1]) }
+      end
+    end
+    assert_equal("", err, "the first sheet added by w[] is the current sheet in 0.3.0 too")
+    assert_equal(["Sheet1"], wb.sheets.map(&:name))
+
+    err = capture_stderr do
+      wb = Xlsxrb.build do |w|
+        w["A"] { |s| s.row([1]) }
+        w[0] { |s| s.row([2]) }
+        w[] { |s| s.row([3]) }
+      end
+    end
+    assert_match(/\[Xlsxrb DEPRECATION\] Creating a sheet with WorkbookBuilder#\[\] is deprecated; use sheet\./, err)
+    assert_match(/\[Xlsxrb DEPRECATION\] WorkbookBuilder#\[\] without an argument adds a sheet/, err)
+    assert_equal(3, err.scan("[Xlsxrb DEPRECATION]").size)
+    # RBS::Test runtime hooks add frames, so the warning points into the hook there.
+    assert_include(err, "#{__FILE__}:") unless defined?(RBS::Test)
+    assert_equal(%w[A 0 Sheet3], wb.sheets.map(&:name))
+  end
+
   test "using a sheet only through the workbook does not warn" do
     assert_equal("", capture_stderr { Xlsxrb.build { |w| w.sheet("S") { |s| s.row([1]) } } })
   end

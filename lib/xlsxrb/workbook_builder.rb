@@ -298,7 +298,12 @@ module Xlsxrb
       DeferredWorksheet.new(snapshot)
     end
 
-    # Accesses or defines a worksheet by name.
+    # Adds a worksheet, as {#sheet} does.
+    #
+    # @deprecated Use {#sheet} to add a sheet. In version 0.3.0, this method will return the
+    #   {WorksheetBuilder} of an existing sheet, or of the current sheet without an argument,
+    #   and raise for a sheet that does not exist. Calling it with an argument, or without
+    #   one after a sheet was added, warns.
     #
     # @param name_or_index [String, Symbol, Integer, nil]
     # @yield [sheet_builder]
@@ -306,8 +311,19 @@ module Xlsxrb
     # @api public
     #: (?String | Symbol | Integer | nil name_or_index) ?{ (WorksheetBuilder) -> void } -> DeferredWorksheet
     def [](name_or_index = nil, &)
+      if !name_or_index.nil?
+        Deprecation.warn(INDEX_CREATES_SHEET_MESSAGE)
+      elsif !@sheet_builders.empty?
+        Deprecation.warn(INDEX_ADDS_SHEET_MESSAGE)
+      end
       sheet(name_or_index&.to_s, &)
     end
+
+    INDEX_CREATES_SHEET_MESSAGE = "Creating a sheet with WorkbookBuilder#[] is deprecated; use sheet. In version 0.3.0, " \
+                                  "#[] will return the WorksheetBuilder of an existing sheet and raise for a sheet that does not exist."
+    INDEX_ADDS_SHEET_MESSAGE = "WorkbookBuilder#[] without an argument adds a sheet; in version 0.3.0 it will return " \
+                               "the current sheet instead. Use sheet to add a sheet."
+    private_constant :INDEX_CREATES_SHEET_MESSAGE, :INDEX_ADDS_SHEET_MESSAGE
 
     # --- Workbook-Level Methods ---
 
