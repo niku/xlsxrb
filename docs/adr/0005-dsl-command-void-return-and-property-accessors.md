@@ -1,6 +1,6 @@
 # ADR 0005: DSL Command Void Return, Property Accessors, and Predicate Conventions
 
-* Status: Accepted
+* Status: Superseded by [ADR 0010](0010-one-dsl-for-built-and-streamed-workbooks.md)
 * Date: 2026-11-05
 * Deciders: xlsxrb maintainers
 * Relevant Components: [`Xlsxrb::WorksheetBuilder`](../../lib/xlsxrb/worksheet_builder.rb), [`Xlsxrb::WorkbookBuilder`](../../lib/xlsxrb/workbook_builder.rb), [`Xlsxrb::StreamWriter`](../../lib/xlsxrb/stream_writer.rb), [`Xlsxrb::Elements`](../../lib/xlsxrb/elements.rb)
