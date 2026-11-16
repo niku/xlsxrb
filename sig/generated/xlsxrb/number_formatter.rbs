@@ -10,6 +10,10 @@ module Xlsxrb
     # Built-in date and time format code strings.
     DATE_PATTERNS: untyped
 
+    # Excel accepts format codes of up to 255 characters. Longer codes are not applied: the
+    # cost of formatting grows with the code, for every cell that uses it.
+    MAX_FORMAT_CODE_LENGTH: ::Integer
+
     # Stands for a literal "%" while a date format code is converted to a strftime pattern.
     LITERAL_PERCENT: ::String
 

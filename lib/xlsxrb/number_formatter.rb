@@ -17,6 +17,10 @@ module Xlsxrb
       "mm-dd-yy", "d-mmm-yy", "d-mmm", "mmm-yy", "h:mm AM/PM", "h:mm:ss AM/PM", "h:mm", "h:mm:ss", "m/d/yy h:mm", "mm:ss", "[h]:mm:ss", "mmss.0"
     ].freeze
 
+    # Excel accepts format codes of up to 255 characters. Longer codes are not applied: the
+    # cost of formatting grows with the code, for every cell that uses it.
+    MAX_FORMAT_CODE_LENGTH = 1024
+
     # Stands for a literal "%" while a date format code is converted to a strftime pattern.
     LITERAL_PERCENT = "\x01"
     private_constant :LITERAL_PERCENT
@@ -36,7 +40,7 @@ module Xlsxrb
         return value ? "TRUE" : "FALSE" if [true, false].include?(value)
 
         code = format_code.to_s.strip
-        return default_format(value) if code.empty? || code.casecmp("general").zero?
+        return default_format(value) if code.empty? || code.casecmp("general").zero? || code.length > MAX_FORMAT_CODE_LENGTH
 
         return format_datetime(value, code) if value.is_a?(Date) || value.is_a?(DateTime) || value.is_a?(Time)
 

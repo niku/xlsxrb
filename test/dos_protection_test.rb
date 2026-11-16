@@ -86,6 +86,12 @@ class DosProtectionTest < Test::Unit::TestCase
     assert_equal "50%", Xlsxrb::NumberFormatter.format(0.5, "0%")
   end
 
+  test "format codes and values outside what Excel accepts are formatted as General" do
+    assert_equal "1.5", Xlsxrb::NumberFormatter.format(1.5, "0.#{"0" * 2000}")
+    assert_equal "1.50", Xlsxrb::NumberFormatter.format(1.5, "0.00#{" " * 1000}")
+    assert_equal "1.#{"0" * 1022}", Xlsxrb::NumberFormatter.format(1, "0.#{"0" * 1022}")
+  end
+
   private
 
   def within(seconds, label, &)
