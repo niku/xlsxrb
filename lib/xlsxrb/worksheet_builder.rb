@@ -181,7 +181,18 @@ module Xlsxrb
             style("__xlsxrb_date", number_format: "yyyy-mm-dd") unless @styles.key?("__xlsxrb_date")
             auto_style = "__xlsxrb_date"
           end
-        elsif (val.is_a?(Time) || val.is_a?(DateTime)) && cell_style.nil?
+        elsif val.is_a?(Time) || val.is_a?(DateTime)
+          # A value that claims to be a Time without being one, such as
+          # ActiveSupport::TimeWithZone, is kept as a Time with the same wall clock.
+          unless Time === val || val.is_a?(DateTime) # rubocop:disable Style/CaseEquality
+            unless values_copied
+              values = values.dup
+              values_copied = true
+            end
+            values[idx] = Ooxml::WorksheetWriter::TimeLike.to_time(val)
+          end
+          next unless cell_style.nil?
+
           auto_style = inherited_date_style(row_style, idx)
           unless auto_style
             style("__xlsxrb_time", number_format: "yyyy-mm-dd hh:mm:ss") unless @styles.key?("__xlsxrb_time")

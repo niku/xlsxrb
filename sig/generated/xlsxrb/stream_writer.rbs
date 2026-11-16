@@ -2018,6 +2018,13 @@ module Xlsxrb
     # : (untyped name) -> void
     def check_style_name!: (untyped name) -> void
 
+    # The style id for a Time-like value (see Ooxml::WorksheetWriter::TimeLike) in a cell
+    # whose style id is style_id: the date-time variant of that style when the style has no
+    # number format, as a Time in the same cell gets from with_date_style_variants, and
+    # style_id otherwise. Called by the worksheet writer only for such values.
+    # : (Integer style_id) -> Integer
+    def time_like_style_id: (Integer style_id) -> Integer
+
     # Gives Date and Time values whose named style has no number format a variant of that
     # style with the default date or time format, registered on first use. A value without
     # a cell style gets a variant of the style it inherits: the row style, or the column

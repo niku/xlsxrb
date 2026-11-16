@@ -26,6 +26,24 @@ module Xlsxrb
 
       INTEGER_STRINGS = (0..65_535).map { |n| -n.to_s }.freeze
 
+      # Matches a value that claims to be a Time through is_a? without being one, such as
+      # ActiveSupport::TimeWithZone, which `when Time` does not match. The writers try it
+      # after their Time and Date branches, so other values never reach it. Such a value
+      # is written as the Time that to_time gives.
+      # @api private
+      module TimeLike
+        #: (untyped value) -> bool
+        def self.===(value) = value.is_a?(Time)
+
+        # A Time with the value's year, month, day, hour, minute, second, and UTC offset,
+        # which keeps its wall clock.
+        #: (untyped value) -> Time
+        def self.to_time(value)
+          seconds = value.sec + (value.respond_to?(:subsec) ? value.subsec : 0)
+          Time.new(value.year, value.month, value.day, value.hour, value.min, seconds, value.utc_offset)
+        end
+      end
+
       def initialize(io, date1904: false)
         @io = io
         @date1904 = date1904 ? true : false
@@ -36,7 +54,14 @@ module Xlsxrb
         @finished = false
         @column_style_ids = nil # column index => resolved style id, see column_style_ids
         @column_style_ids_map = nil
+        @time_like_style_resolver = nil
       end
+
+      # Sets what gives the style id for a Time-like value in a styled cell, so that a
+      # style without a number format can be given its date-time variant.
+      # @api private
+      #: (untyped resolver) -> void
+      attr_writer :time_like_style_resolver
 
       def set_column_style(col_index, style_id)
         @column_styles ||= {}
@@ -277,6 +302,8 @@ module Xlsxrb
               xml_val = Xlsxrb::Ooxml::Utils.datetime_to_serial(value, date1904: @date1904)
             when Date
               xml_val = Xlsxrb::Ooxml::Utils.date_to_serial(value, date1904: @date1904)
+            when TimeLike # after Date, so Date values skip TimeLike.===
+              xml_val = Xlsxrb::Ooxml::Utils.datetime_to_serial(TimeLike.to_time(value), date1904: @date1904)
             when BigDecimal
               xml_val = value.to_s("F")
             when Xlsxrb::Elements::CellError
@@ -395,6 +422,13 @@ module Xlsxrb
                        "<c r=\"#{col_ref}#{row_num_str}\" s=\"#{date_style_id}\"><v>#{Xlsxrb::Ooxml::Utils.date_to_serial(value, date1904: @date1904)}</v></c>"
                      else
                        "<c r=\"#{col_ref}#{row_num_str}\"><v>#{Xlsxrb::Ooxml::Utils.date_to_serial(value, date1904: @date1904)}</v></c>"
+                     end
+            when TimeLike # after Date, so Date values skip TimeLike.===
+              time_style_id = style_map ? style_map["__xlsxrb_time"] : nil
+              buf << if time_style_id
+                       "<c r=\"#{col_ref}#{row_num_str}\" s=\"#{time_style_id}\"><v>#{Xlsxrb::Ooxml::Utils.datetime_to_serial(TimeLike.to_time(value), date1904: @date1904)}</v></c>"
+                     else
+                       "<c r=\"#{col_ref}#{row_num_str}\"><v>#{Xlsxrb::Ooxml::Utils.datetime_to_serial(TimeLike.to_time(value), date1904: @date1904)}</v></c>"
                      end
             when Xlsxrb::Elements::Formula
               raise ArgumentError, "Non-finite Float #{value.cached_value} is not supported in XLSX" if value.cached_value.is_a?(Float) && !value.cached_value.finite?
@@ -660,6 +694,14 @@ module Xlsxrb
               s_attr = style_attrs[date_style_id] ||= -%(" s="#{date_style_id})
             end
             buf << '<c r="' << col_ref << row_num_str << s_attr << '"><v>' << Xlsxrb::Ooxml::Utils.date_to_serial(value, date1904: @date1904).to_s << "</v></c>"
+          when TimeLike
+            if style_id.nil?
+              time_style_id = style_map && style_map["__xlsxrb_time"]
+            elsif @time_like_style_resolver
+              time_style_id = @time_like_style_resolver.call(style_id)
+            end
+            s_attr = style_attrs[time_style_id] ||= -%(" s="#{time_style_id}) if time_style_id
+            buf << '<c r="' << col_ref << row_num_str << s_attr << '"><v>' << Xlsxrb::Ooxml::Utils.datetime_to_serial(TimeLike.to_time(value), date1904: @date1904).to_s << "</v></c>"
           else
             write_complex_cell(buf, col_ref, row_num_str, value, style_id, sst, sst_index)
           end

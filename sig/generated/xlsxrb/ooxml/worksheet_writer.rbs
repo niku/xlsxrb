@@ -13,7 +13,28 @@ module Xlsxrb
 
       INTEGER_STRINGS: untyped
 
+      # Matches a value that claims to be a Time through is_a? without being one, such as
+      # ActiveSupport::TimeWithZone, which `when Time` does not match. The writers try it
+      # after their Time and Date branches, so other values never reach it. Such a value
+      # is written as the Time that to_time gives.
+      # @api private
+      module TimeLike
+        # : (untyped value) -> bool
+        def self.===: (untyped value) -> bool
+
+        # A Time with the value's year, month, day, hour, minute, second, and UTC offset,
+        # which keeps its wall clock.
+        # : (untyped value) -> Time
+        def self.to_time: (untyped value) -> Time
+      end
+
       def initialize: (untyped io, ?date1904: untyped) -> untyped
+
+      # Sets what gives the style id for a Time-like value in a styled cell, so that a
+      # style without a number format can be given its date-time variant.
+      # @api private
+      # : (untyped resolver) -> void
+      attr_writer time_like_style_resolver: untyped
 
       def set_column_style: (untyped col_index, untyped style_id) -> untyped
 

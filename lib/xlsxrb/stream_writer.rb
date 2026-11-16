@@ -128,6 +128,7 @@ module Xlsxrb
       @styles = {} # { style_name => StyleBuilder }
       @style_writer = Ooxml::Writer.new(default_font: default_font)
       @style_name_to_id = {}
+      @time_like_style_ids = {} # cell style id => style id for Time-like values, see time_like_style_id
       style("__xlsxrb_date", number_format: DslHelpers::DATE_NUMBER_FORMAT)
       style("__xlsxrb_time", number_format: DslHelpers::TIME_NUMBER_FORMAT)
       # Workbook-level settings
@@ -230,6 +231,7 @@ module Xlsxrb
       @style_name_to_id.delete("#{style_name}__xlsxrb_time")
       # Column styles of the current sheet that use this name resolve to the new id.
       @current_row_writer&.forget_column_style_ids
+      @time_like_style_ids.clear
 
       ReturnedStyleBuilder.new(style_builder)
     end
@@ -1588,6 +1590,7 @@ module Xlsxrb
       @current_sheet_io = StringIO.new(@current_row_buffer)
       date1904 = @workbook_properties&.[](:date1904) ? true : false
       @current_row_writer = Ooxml::WorksheetWriter.new(@current_sheet_io, date1904: date1904)
+      @current_row_writer.time_like_style_resolver = method(:time_like_style_id)
       @current_row_writer.instance_variable_set(:@started, true)
 
       @current_columns = []
@@ -1669,6 +1672,7 @@ module Xlsxrb
 
       date1904 = @workbook_properties&.[](:date1904) ? true : false
       @current_row_writer = Ooxml::WorksheetWriter.new(zip_io, date1904: date1904)
+      @current_row_writer.time_like_style_resolver = method(:time_like_style_id)
       @current_row_writer.start(
         columns: @current_columns,
         sheet_properties: @current_sheet_properties.empty? ? nil : @current_sheet_properties,
@@ -3441,6 +3445,29 @@ module Xlsxrb
       return if name.is_a?(Symbol) ? @style_name_to_id.key?(name.name) : name.is_a?(String) && @style_name_to_id.key?(name)
 
       DslHelpers.check_style_name!(name, @style_name_to_id)
+    end
+
+    # The style id for a Time-like value (see Ooxml::WorksheetWriter::TimeLike) in a cell
+    # whose style id is style_id: the date-time variant of that style when the style has no
+    # number format, as a Time in the same cell gets from with_date_style_variants, and
+    # style_id otherwise. Called by the worksheet writer only for such values.
+    #: (Integer style_id) -> Integer
+    def time_like_style_id(style_id)
+      @time_like_style_ids[style_id] ||= begin
+        style_name = @style_name_to_id.key(style_id)
+        style_builder = style_name && @styles[style_name]
+        if style_builder.nil? || style_builder.number_format
+          style_id
+        else
+          variant_name = "#{style_name}__xlsxrb_time"
+          unless @style_name_to_id.key?(variant_name)
+            variant_builder = style_builder.with_number_format(variant_name, DslHelpers::TIME_NUMBER_FORMAT)
+            @styles[variant_name] = variant_builder
+            @style_name_to_id[variant_name] = variant_builder.register_with(@style_writer)
+          end
+          @style_name_to_id.fetch(variant_name)
+        end
+      end
     end
 
     # Gives Date and Time values whose named style has no number format a variant of that

@@ -136,6 +136,46 @@ class DateTimeStyleTest < Test::Unit::TestCase
     assert_equal [[true, false], [false, true]], fonts
   end
 
+  # Claims to be a Time through is_a?, as ActiveSupport::TimeWithZone does, without being
+  # one, so `when Time` does not match it. It has the wall clock of a zone 9 hours ahead.
+  class TimeLikeValue
+    def initialize(utc) = @local = utc.getlocal("+09:00")
+    def is_a?(klass) = klass == Time || super
+    alias kind_of? is_a?
+    %i[year month day hour min sec subsec utc_offset].each { |name| define_method(name) { @local.public_send(name) } }
+    def to_s = @local.strftime("%Y-%m-%d %H:%M:%S %z")
+  end
+
+  test "Time-like values are written as date-times with their wall clock in both modes" do
+    value = TimeLikeValue.new(Time.utc(2026, 4, 1, 0, 30, 0))
+    expected_serial = Xlsxrb::Ooxml::Utils.datetime_to_serial(Time.new(2026, 4, 1, 9, 30, 0, "+09:00"))
+    block = lambda do |w|
+      w.style("b", bold: true)
+      w.style("n", number_format: "hh:mm")
+      w.sheet("S") do |s|
+        s.row([value])
+        s.row([value], row_style: "b")
+        s.row([value], cell_styles: ["n"])
+      end
+    end
+
+    files = { stream: StringIO.new.tap { |io| Xlsxrb.write(io) { |w| block.call(w) } } }
+    built = Xlsxrb.build { |w| block.call(w) }
+    assert_equal([Time.new(2026, 4, 1, 9, 30, 0, "+09:00")] * 3, built.sheets.first.rows.map { |row| row.cells.first.value })
+    files[:build] = StringIO.new.tap { |io| Xlsxrb.write(io, built) }
+
+    files.each do |mode, io|
+      wb = Xlsxrb.load(StringIO.new(io.string))
+      styles = wb.styles
+      cells = wb.sheets.first.rows.map { |row| row.cells.first }
+      described = cells.map do |cell|
+        xf = styles.cell_xf(cell.style_index.to_i)
+        [cell.value, styles.number_format_code(xf.num_fmt_id.to_i), styles.fonts[xf.font_id.to_i]&.bold? ? :bold : nil].compact
+      end
+      assert_equal([[expected_serial, "yyyy-mm-dd hh:mm:ss"], [expected_serial, "yyyy-mm-dd hh:mm:ss", :bold], [expected_serial, "hh:mm"]], described, mode.to_s)
+    end
+  end
+
   test "build leaves the cell_styles array it is given unchanged" do
     styles = [nil, :b]
     wb = Xlsxrb.build do |w|
