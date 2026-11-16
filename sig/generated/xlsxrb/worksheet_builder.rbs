@@ -28,6 +28,8 @@ module Xlsxrb
     # @yield [style_builder]
     # @yieldparam style_builder [Xlsxrb::StyleBuilder]
     # @return [StyleBuilder]
+    #   Using the returned value is deprecated and warns; in version 0.3.0, this method
+    #   will return nil. Configure the style with options or in the block.
     # @api public
     # : (String | Symbol name, **untyped opts) ?{ (StyleBuilder) -> void } -> StyleBuilder
     def style: (String | Symbol name, **untyped opts) ?{ (StyleBuilder) -> void } -> StyleBuilder
@@ -1045,7 +1047,8 @@ module Xlsxrb
   # never used costs nothing.
   #
   # @deprecated Read the sheet from the workbook that {Xlsxrb.build} returns. In version
-  #   0.3.0, {WorkbookBuilder#sheet} and {WorkbookBuilder#[]} will return nil.
+  #   0.3.0, {WorkbookBuilder#sheet} will return the sheet's {WorksheetBuilder}, and
+  #   {WorkbookBuilder#[]} will return the {WorksheetBuilder} of an existing sheet.
   # @api public
   class DeferredWorksheet
     DEPRECATION_MESSAGE: ::String

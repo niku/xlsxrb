@@ -213,6 +213,8 @@ module Xlsxrb
     # @yield [style_builder]
     # @yieldparam style_builder [Xlsxrb::StyleBuilder]
     # @return [StyleBuilder]
+    #   Using the returned value is deprecated and warns; in version 0.3.0, this method
+    #   will return nil. Configure the style with options or in the block.
     #: (String | Symbol name, **untyped opts) ?{ (StyleBuilder) -> void } -> StyleBuilder
     def style(name, **opts)
       style_name = name.to_s
@@ -227,7 +229,7 @@ module Xlsxrb
       @style_name_to_id.delete("#{style_name}__xlsxrb_date")
       @style_name_to_id.delete("#{style_name}__xlsxrb_time")
 
-      style_builder
+      ReturnedStyleBuilder.new(style_builder)
     end
 
     # Sets or configures the workbook-wide default font.

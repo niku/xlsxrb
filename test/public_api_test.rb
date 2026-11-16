@@ -3850,6 +3850,55 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal(%w[A 0 Sheet3], wb.sheets.map(&:name))
   end
 
+  test "using the value that style returns warns once and still changes the style" do
+    builders = {}
+    err = capture_stderr do
+      Xlsxrb.write(StringIO.new) do |w|
+        builders[:stream] = w.style("s", bold: true)
+        w.sheet("S") { |s| builders[:stream_sheet] = s.style("t", italic: true) }
+      end
+      Xlsxrb.build do |w|
+        builders[:build] = w.style("b", bold: true)
+        w.sheet("S") { |s| builders[:build_sheet] = s.style("c", italic: true) }
+      end
+    end
+    assert_equal("", err, "defining a style does not warn")
+    builders.each_value { |builder| assert_kind_of(Xlsxrb::ReturnedStyleBuilder, builder) }
+
+    wb = nil
+    err = capture_stderr do
+      wb = Xlsxrb.build do |w|
+        b = w.style("b", bold: true)
+        b.italic = true
+        assert_true(b.italic?)
+        w.sheet("S") { |s| s.row([1], cell_styles: "b") }
+      end
+    end
+    assert_match(/warning: \[Xlsxrb DEPRECATION\] Using the value that style returns is deprecated/, err)
+    # RBS::Test runtime hooks add frames, so the warning points into the hook there.
+    assert_match(/\A#{Regexp.escape(__FILE__)}:\d+: /, err) unless defined?(RBS::Test)
+    assert_equal(1, err.scan("[Xlsxrb DEPRECATION]").size)
+    io = StringIO.new
+    Xlsxrb.write(io, wb)
+    loaded = Xlsxrb.load(StringIO.new(io.string))
+    font = loaded.styles.fonts[loaded.styles.cell_xf(loaded.sheets.first.rows.first.cells.first.style_index).font_id]
+    assert_true(font.bold? && font.italic?)
+
+    err = capture_stderr do
+      Xlsxrb.build do |w|
+        w.style("b", bold: true) { |b| b.italic = true }
+        w.sheet("S")
+      end
+    end
+    assert_equal("", err, "configuring in the block does not warn")
+  end
+
+  test "ReturnedStyleBuilder forwards every public method of StyleBuilder" do
+    omit "RBS::Test runtime hooks add aliased methods to the classes" if defined?(RBS::Test)
+    missing = Xlsxrb::StyleBuilder.public_instance_methods(false) - Xlsxrb::ReturnedStyleBuilder.public_instance_methods(false)
+    assert_equal([], missing)
+  end
+
   test "using a sheet only through the workbook does not warn" do
     assert_equal("", capture_stderr { Xlsxrb.build { |w| w.sheet("S") { |s| s.row([1]) } } })
   end

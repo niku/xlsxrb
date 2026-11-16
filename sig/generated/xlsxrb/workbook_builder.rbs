@@ -45,6 +45,8 @@ module Xlsxrb
     # @yield [style_builder]
     # @yieldparam style_builder [Xlsxrb::StyleBuilder]
     # @return [StyleBuilder]
+    #   Using the returned value is deprecated and warns; in version 0.3.0, this method
+    #   will return nil. Configure the style with options or in the block.
     # @api public
     # : (String | Symbol name, **untyped opts) ?{ (StyleBuilder) -> void } -> StyleBuilder
     def style: (String | Symbol name, **untyped opts) ?{ (StyleBuilder) -> void } -> StyleBuilder
@@ -197,7 +199,12 @@ module Xlsxrb
     # : (?String? name, ?state: Symbol | String | nil, ?tab_color: String | Hash[Symbol, untyped] | Symbol | nil, ?code_name: String | Symbol | nil, **untyped opts) ?{ (WorksheetBuilder) -> void } -> DeferredWorksheet
     def sheet: (?String? name, ?state: Symbol | String | nil, ?tab_color: String | Hash[Symbol, untyped] | Symbol | nil, ?code_name: String | Symbol | nil, **untyped opts) ?{ (WorksheetBuilder) -> void } -> DeferredWorksheet
 
-    # Accesses or defines a worksheet by name.
+    # Adds a worksheet, as {#sheet} does.
+    #
+    # @deprecated Use {#sheet} to add a sheet. In version 0.3.0, this method will return the
+    #   {WorksheetBuilder} of an existing sheet, or of the current sheet without an argument,
+    #   and raise for a sheet that does not exist. Calling it with an argument, or without
+    #   one after a sheet was added, warns.
     #
     # @param name_or_index [String, Symbol, Integer, nil]
     # @yield [sheet_builder]
@@ -205,6 +212,10 @@ module Xlsxrb
     # @api public
     # : (?String | Symbol | Integer | nil name_or_index) ?{ (WorksheetBuilder) -> void } -> DeferredWorksheet
     def []: (?String | Symbol | Integer | nil name_or_index) ?{ (WorksheetBuilder) -> void } -> DeferredWorksheet
+
+    INDEX_CREATES_SHEET_MESSAGE: ::String
+
+    INDEX_ADDS_SHEET_MESSAGE: ::String
 
     # Adds a defined name (named range or formula) to the workbook.
     # Bare cell references and coordinate keywords are automatically formatted with sheet quotes and absolute $ references.

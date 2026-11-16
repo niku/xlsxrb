@@ -83,6 +83,8 @@ module Xlsxrb
     # @yield [style_builder]
     # @yieldparam style_builder [Xlsxrb::StyleBuilder]
     # @return [StyleBuilder]
+    #   Using the returned value is deprecated and warns; in version 0.3.0, this method
+    #   will return nil. Configure the style with options or in the block.
     # @api public
     #: (String | Symbol name, **untyped opts) ?{ (StyleBuilder) -> void } -> StyleBuilder
     def style(name, **opts)
@@ -92,7 +94,7 @@ module Xlsxrb
       yield style_builder if block_given?
       @styles[style_name] = style_builder
       @style_log.record(style_name, style_builder)
-      style_builder
+      ReturnedStyleBuilder.new(style_builder)
     end
 
     # Creates an {Elements::Formula} object.

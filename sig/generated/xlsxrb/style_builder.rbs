@@ -595,6 +595,234 @@ module Xlsxrb
     def resolve_color: (untyped color) -> untyped
   end
 
+  # What +style+ returns in the 0.2 series, in place of the definition it records. It
+  # forwards every public method to that definition, so changes still reach it, and warns
+  # on first use at the caller's line.
+  #
+  # @deprecated Configure a style with options or in the block given to +style+. In version
+  #   0.3.0, +style+ will return nil (ADR 0010).
+  # @api public
+  class ReturnedStyleBuilder < StyleBuilder
+    DEPRECATION_MESSAGE: ::String
+
+    # @api private
+    # : (StyleBuilder definition) -> void
+    def initialize: (StyleBuilder definition) -> void
+
+    # : () -> (String | Symbol)?
+    def name: () -> (String | Symbol)?
+
+    # : () -> Hash[Symbol, untyped]
+    def font_props: () -> Hash[Symbol, untyped]
+
+    # : () -> Hash[Symbol, untyped]
+    def fill_props: () -> Hash[Symbol, untyped]
+
+    # : () -> Hash[Symbol, untyped]
+    def border_props: () -> Hash[Symbol, untyped]
+
+    # : (String name, String | Integer number_format) -> StyleBuilder
+    def with_number_format: (String name, String | Integer number_format) -> StyleBuilder
+
+    # : (**untyped) -> self
+    def apply_options!: (**untyped) -> self
+
+    # : (**untyped) -> void
+    def font: (**untyped) -> void
+
+    # : (Hash[Symbol, untyped] opts) -> Hash[Symbol, untyped]
+    def font=: (Hash[Symbol, untyped] opts) -> Hash[Symbol, untyped]
+
+    # : (bool value) -> bool
+    def bold=: (bool value) -> bool
+
+    # : () -> bool
+    def bold?: () -> bool
+
+    # : (bool value) -> bool
+    def italic=: (bool value) -> bool
+
+    # : () -> bool
+    def italic?: () -> bool
+
+    # : () -> (Integer | Float | nil)
+    def font_size: () -> (Integer | Float | nil)
+
+    # : (Numeric size_value) -> Numeric
+    def font_size=: (Numeric size_value) -> Numeric
+
+    # : () -> String?
+    def font_name: () -> String?
+
+    # : (String name) -> String
+    def font_name=: (String name) -> String
+
+    # : () -> String?
+    def font_color: () -> String?
+
+    # : (String | Symbol color) -> (String | Symbol)
+    def font_color=: (String | Symbol color) -> (String | Symbol)
+
+    # : () -> (String | Symbol | bool | nil)
+    def underline: () -> (String | Symbol | bool | nil)
+
+    # : (String | Symbol | bool val) -> (String | Symbol | bool)
+    def underline=: (String | Symbol | bool val) -> (String | Symbol | bool)
+
+    # : () -> bool
+    def underline?: () -> bool
+
+    # : (bool value) -> bool
+    def strike=: (bool value) -> bool
+
+    # : () -> bool
+    def strike?: () -> bool
+
+    # : () -> String?
+    def vert_align: () -> String?
+
+    # : (untyped val) -> untyped
+    def vert_align=: (untyped val) -> untyped
+
+    # : (untyped val) -> untyped
+    def superscript=: (untyped val) -> untyped
+
+    # : () -> bool
+    def superscript?: () -> bool
+
+    # : (untyped val) -> untyped
+    def subscript=: (untyped val) -> untyped
+
+    # : () -> bool
+    def subscript?: () -> bool
+
+    # : (?untyped pattern, ?fg_color: String | Symbol | nil, ?bg_color: String | Symbol | nil) -> void
+    def fill_pattern: (?untyped pattern, ?fg_color: String | Symbol | nil, ?bg_color: String | Symbol | nil) -> void
+
+    # : (untyped pattern) -> untyped
+    def fill_pattern=: (untyped pattern) -> untyped
+
+    # : () -> String?
+    def fill_color: () -> String?
+
+    # : (String | Symbol color) -> (String | Symbol)
+    def fill_color=: (String | Symbol color) -> (String | Symbol)
+
+    # : (?pattern: untyped, ?fg_color: String | Symbol | nil, ?bg_color: String | Symbol | nil) -> void
+    def fill: (?pattern: untyped, ?fg_color: String | Symbol | nil, ?bg_color: String | Symbol | nil) -> void
+
+    # : (untyped opts) -> untyped
+    def fill=: (untyped opts) -> untyped
+
+    # : (?type: untyped, ?degree: Numeric | nil, ?stops: Array[untyped]) -> void
+    def fill_gradient: (?type: untyped, ?degree: Numeric | nil, ?stops: Array[untyped]) -> void
+
+    # : (?all: Hash[Symbol, untyped]?, ?left: Hash[Symbol, untyped]?, ?right: Hash[Symbol, untyped]?, ?top: Hash[Symbol, untyped]?, ?bottom: Hash[Symbol, untyped]?, ?diagonal: Hash[Symbol, untyped]?) -> void
+    def border: (?all: Hash[Symbol, untyped]?, ?left: Hash[Symbol, untyped]?, ?right: Hash[Symbol, untyped]?, ?top: Hash[Symbol, untyped]?, ?bottom: Hash[Symbol, untyped]?, ?diagonal: Hash[Symbol, untyped]?) -> void
+
+    # : (Hash[Symbol, untyped] opts) -> Hash[Symbol, untyped]
+    def border=: (Hash[Symbol, untyped] opts) -> Hash[Symbol, untyped]
+
+    # : (?style: String | Symbol | Integer, ?color: String | Symbol | nil) -> void
+    def border_all: (?style: String | Symbol | Integer, ?color: String | Symbol | nil) -> void
+
+    # : (?style: String | Symbol | Integer, ?color: String | Symbol | nil) -> void
+    def border_left: (?style: String | Symbol | Integer, ?color: String | Symbol | nil) -> void
+
+    # : (?style: String | Symbol | Integer, ?color: String | Symbol | nil) -> void
+    def border_right: (?style: String | Symbol | Integer, ?color: String | Symbol | nil) -> void
+
+    # : (?style: String | Symbol | Integer, ?color: String | Symbol | nil) -> void
+    def border_top: (?style: String | Symbol | Integer, ?color: String | Symbol | nil) -> void
+
+    # : (?style: String | Symbol | Integer, ?color: String | Symbol | nil) -> void
+    def border_bottom: (?style: String | Symbol | Integer, ?color: String | Symbol | nil) -> void
+
+    # : (?style: String | Symbol | Integer, ?color: String | Symbol | nil, ?up: bool, ?down: bool) -> void
+    def border_diagonal: (?style: String | Symbol | Integer, ?color: String | Symbol | nil, ?up: bool, ?down: bool) -> void
+
+    # : (?horizontal: (String | Symbol)?, ?vertical: (String | Symbol)?, ?wrap_text: bool?, ?text_rotation: Integer?, ?indent: Integer?, ?shrink_to_fit: bool?, ?reading_order: Integer?, ?justify_last_line: bool?, ?relative_indent: Integer?) -> void
+    def alignment: (?horizontal: (String | Symbol)?, ?vertical: (String | Symbol)?, ?wrap_text: bool?, ?text_rotation: Integer?, ?indent: Integer?, ?shrink_to_fit: bool?, ?reading_order: Integer?, ?justify_last_line: bool?, ?relative_indent: Integer?) -> void
+
+    # : (Hash[Symbol, untyped] opts) -> Hash[Symbol, untyped]
+    def alignment=: (Hash[Symbol, untyped] opts) -> Hash[Symbol, untyped]
+
+    # : () -> (String | Symbol | nil)
+    def align_horizontal: () -> (String | Symbol | nil)
+
+    # : (String | Symbol value) -> (String | Symbol)
+    def align_horizontal=: (String | Symbol value) -> (String | Symbol)
+
+    # : () -> (String | Symbol | nil)
+    def align_vertical: () -> (String | Symbol | nil)
+
+    # : (String | Symbol value) -> (String | Symbol)
+    def align_vertical=: (String | Symbol value) -> (String | Symbol)
+
+    # : (bool value) -> bool
+    def wrap_text=: (bool value) -> bool
+
+    # : () -> bool
+    def wrap_text?: () -> bool
+
+    # : (bool value) -> bool
+    def shrink_to_fit=: (bool value) -> bool
+
+    # : () -> bool
+    def shrink_to_fit?: () -> bool
+
+    # : () -> (Numeric | nil)
+    def text_rotation: () -> (Numeric | nil)
+
+    # : (Numeric value) -> Numeric
+    def text_rotation=: (Numeric value) -> Numeric
+
+    # : () -> (Integer | nil)
+    def indent: () -> (Integer | nil)
+
+    # : (Numeric value) -> Numeric
+    def indent=: (Numeric value) -> Numeric
+
+    # : (?locked: bool?, ?hidden: bool?) -> void
+    def protection: (?locked: bool?, ?hidden: bool?) -> void
+
+    # : (Hash[Symbol, untyped] opts) -> Hash[Symbol, untyped]
+    def protection=: (Hash[Symbol, untyped] opts) -> Hash[Symbol, untyped]
+
+    # : (bool value) -> bool
+    def locked=: (bool value) -> bool
+
+    # : () -> bool
+    def locked?: () -> bool
+
+    # : (bool value) -> bool
+    def hidden=: (bool value) -> bool
+
+    # : () -> bool
+    def hidden?: () -> bool
+
+    # : () -> (String | Integer | nil)
+    def number_format: () -> (String | Integer | nil)
+
+    # : (String | Integer num_fmt_id) -> (String | Integer)
+    def number_format=: (String | Integer num_fmt_id) -> (String | Integer)
+
+    # : (untyped writer) -> Integer
+    def register_with: (untyped writer) -> Integer
+
+    # : (StyleBuilder other) -> bool
+    def same_format?: (StyleBuilder other) -> bool
+
+    # Lets StyleBuilder#same_format? compare with the definition without a warning.
+    # : () -> Array[untyped]
+    def format_signature: () -> Array[untyped]
+
+    private
+
+    # : () -> StyleBuilder
+    def definition_for_use: () -> StyleBuilder
+  end
+
   # The order in which the styles of an {Xlsxrb.build} workbook are defined, shared by
   # the workbook builder and its sheet builders. A row records the clock when it is
   # added, so that it uses the definitions made before it, as a row written by

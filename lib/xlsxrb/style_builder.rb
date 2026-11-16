@@ -1298,6 +1298,301 @@ module Xlsxrb
     end
   end
 
+  # What +style+ returns in the 0.2 series, in place of the definition it records. It
+  # forwards every public method to that definition, so changes still reach it, and warns
+  # on first use at the caller's line.
+  #
+  # @deprecated Configure a style with options or in the block given to +style+. In version
+  #   0.3.0, +style+ will return nil (ADR 0010).
+  # @api public
+  class ReturnedStyleBuilder < StyleBuilder
+    DEPRECATION_MESSAGE = "Using the value that style returns is deprecated; configure the style with options " \
+                          "or in the block given to style. In version 0.3.0, style will return nil."
+
+    # @api private
+    #: (StyleBuilder definition) -> void
+    def initialize(definition) # rubocop:disable Lint/MissingSuper
+      @definition = definition
+      @warned = false
+    end
+
+    #: () -> (String | Symbol)?
+    def name = definition_for_use.name
+
+    #: () -> Hash[Symbol, untyped]
+    def font_props = definition_for_use.font_props
+
+    #: () -> Hash[Symbol, untyped]
+    def fill_props = definition_for_use.fill_props
+
+    #: () -> Hash[Symbol, untyped]
+    def border_props = definition_for_use.border_props
+
+    #: (String name, String | Integer number_format) -> StyleBuilder
+    def with_number_format(name, number_format) = definition_for_use.with_number_format(name, number_format)
+
+    #: (**untyped) -> self
+    def apply_options!(**opts)
+      definition_for_use.apply_options!(**opts)
+      self
+    end
+
+    #: (**untyped) -> void
+    def font(**opts) = definition_for_use.font(**opts)
+
+    #: (Hash[Symbol, untyped] opts) -> Hash[Symbol, untyped]
+    def font=(opts)
+      definition_for_use.font = opts
+    end
+
+    #: (bool value) -> bool
+    def bold=(value)
+      definition_for_use.bold = value
+    end
+
+    #: () -> bool
+    def bold? = definition_for_use.bold?
+
+    #: (bool value) -> bool
+    def italic=(value)
+      definition_for_use.italic = value
+    end
+
+    #: () -> bool
+    def italic? = definition_for_use.italic?
+
+    #: () -> (Integer | Float | nil)
+    def font_size = definition_for_use.font_size
+
+    #: (Numeric size_value) -> Numeric
+    def font_size=(size_value)
+      definition_for_use.font_size = size_value
+    end
+
+    #: () -> String?
+    def font_name = definition_for_use.font_name
+
+    #: (String name) -> String
+    def font_name=(name)
+      definition_for_use.font_name = name
+    end
+
+    #: () -> String?
+    def font_color = definition_for_use.font_color
+
+    #: (String | Symbol color) -> (String | Symbol)
+    def font_color=(color)
+      definition_for_use.font_color = color
+    end
+
+    #: () -> (String | Symbol | bool | nil)
+    def underline = definition_for_use.underline
+
+    #: (String | Symbol | bool val) -> (String | Symbol | bool)
+    def underline=(val)
+      definition_for_use.underline = val
+    end
+
+    #: () -> bool
+    def underline? = definition_for_use.underline?
+
+    #: (bool value) -> bool
+    def strike=(value)
+      definition_for_use.strike = value
+    end
+
+    #: () -> bool
+    def strike? = definition_for_use.strike?
+
+    #: () -> String?
+    def vert_align = definition_for_use.vert_align
+
+    #: (untyped val) -> untyped
+    def vert_align=(val)
+      definition_for_use.vert_align = val
+    end
+
+    #: (untyped val) -> untyped
+    def superscript=(val)
+      definition_for_use.superscript = val
+    end
+
+    #: () -> bool
+    def superscript? = definition_for_use.superscript?
+
+    #: (untyped val) -> untyped
+    def subscript=(val)
+      definition_for_use.subscript = val
+    end
+
+    #: () -> bool
+    def subscript? = definition_for_use.subscript?
+
+    #: (?untyped pattern, ?fg_color: String | Symbol | nil, ?bg_color: String | Symbol | nil) -> void
+    def fill_pattern(...) = definition_for_use.fill_pattern(...)
+
+    #: (untyped pattern) -> untyped
+    def fill_pattern=(pattern)
+      definition_for_use.fill_pattern = pattern
+    end
+
+    #: () -> String?
+    def fill_color = definition_for_use.fill_color
+
+    #: (String | Symbol color) -> (String | Symbol)
+    def fill_color=(color)
+      definition_for_use.fill_color = color
+    end
+
+    #: (?pattern: untyped, ?fg_color: String | Symbol | nil, ?bg_color: String | Symbol | nil) -> void
+    def fill(...) = definition_for_use.fill(...)
+
+    #: (untyped opts) -> untyped
+    def fill=(opts)
+      definition_for_use.fill = opts
+    end
+
+    #: (?type: untyped, ?degree: Numeric | nil, ?stops: Array[untyped]) -> void
+    def fill_gradient(...) = definition_for_use.fill_gradient(...)
+
+    #: (?all: Hash[Symbol, untyped]?, ?left: Hash[Symbol, untyped]?, ?right: Hash[Symbol, untyped]?, ?top: Hash[Symbol, untyped]?, ?bottom: Hash[Symbol, untyped]?, ?diagonal: Hash[Symbol, untyped]?) -> void
+    def border(...) = definition_for_use.border(...)
+
+    #: (Hash[Symbol, untyped] opts) -> Hash[Symbol, untyped]
+    def border=(opts)
+      definition_for_use.border = opts
+    end
+
+    #: (?style: String | Symbol | Integer, ?color: String | Symbol | nil) -> void
+    def border_all(...) = definition_for_use.border_all(...)
+
+    #: (?style: String | Symbol | Integer, ?color: String | Symbol | nil) -> void
+    def border_left(...) = definition_for_use.border_left(...)
+
+    #: (?style: String | Symbol | Integer, ?color: String | Symbol | nil) -> void
+    def border_right(...) = definition_for_use.border_right(...)
+
+    #: (?style: String | Symbol | Integer, ?color: String | Symbol | nil) -> void
+    def border_top(...) = definition_for_use.border_top(...)
+
+    #: (?style: String | Symbol | Integer, ?color: String | Symbol | nil) -> void
+    def border_bottom(...) = definition_for_use.border_bottom(...)
+
+    #: (?style: String | Symbol | Integer, ?color: String | Symbol | nil, ?up: bool, ?down: bool) -> void
+    def border_diagonal(...) = definition_for_use.border_diagonal(...)
+
+    #: (?horizontal: (String | Symbol)?, ?vertical: (String | Symbol)?, ?wrap_text: bool?, ?text_rotation: Integer?, ?indent: Integer?, ?shrink_to_fit: bool?, ?reading_order: Integer?, ?justify_last_line: bool?, ?relative_indent: Integer?) -> void
+    def alignment(...) = definition_for_use.alignment(...)
+
+    #: (Hash[Symbol, untyped] opts) -> Hash[Symbol, untyped]
+    def alignment=(opts)
+      definition_for_use.alignment = opts
+    end
+
+    #: () -> (String | Symbol | nil)
+    def align_horizontal = definition_for_use.align_horizontal
+
+    #: (String | Symbol value) -> (String | Symbol)
+    def align_horizontal=(value)
+      definition_for_use.align_horizontal = value
+    end
+
+    #: () -> (String | Symbol | nil)
+    def align_vertical = definition_for_use.align_vertical
+
+    #: (String | Symbol value) -> (String | Symbol)
+    def align_vertical=(value)
+      definition_for_use.align_vertical = value
+    end
+
+    #: (bool value) -> bool
+    def wrap_text=(value)
+      definition_for_use.wrap_text = value
+    end
+
+    #: () -> bool
+    def wrap_text? = definition_for_use.wrap_text?
+
+    #: (bool value) -> bool
+    def shrink_to_fit=(value)
+      definition_for_use.shrink_to_fit = value
+    end
+
+    #: () -> bool
+    def shrink_to_fit? = definition_for_use.shrink_to_fit?
+
+    #: () -> (Numeric | nil)
+    def text_rotation = definition_for_use.text_rotation
+
+    #: (Numeric value) -> Numeric
+    def text_rotation=(value)
+      definition_for_use.text_rotation = value
+    end
+
+    #: () -> (Integer | nil)
+    def indent = definition_for_use.indent
+
+    #: (Numeric value) -> Numeric
+    def indent=(value)
+      definition_for_use.indent = value
+    end
+
+    #: (?locked: bool?, ?hidden: bool?) -> void
+    def protection(...) = definition_for_use.protection(...)
+
+    #: (Hash[Symbol, untyped] opts) -> Hash[Symbol, untyped]
+    def protection=(opts)
+      definition_for_use.protection = opts
+    end
+
+    #: (bool value) -> bool
+    def locked=(value)
+      definition_for_use.locked = value
+    end
+
+    #: () -> bool
+    def locked? = definition_for_use.locked?
+
+    #: (bool value) -> bool
+    def hidden=(value)
+      definition_for_use.hidden = value
+    end
+
+    #: () -> bool
+    def hidden? = definition_for_use.hidden?
+
+    #: () -> (String | Integer | nil)
+    def number_format = definition_for_use.number_format
+
+    #: (String | Integer num_fmt_id) -> (String | Integer)
+    def number_format=(num_fmt_id)
+      definition_for_use.number_format = num_fmt_id
+    end
+
+    #: (untyped writer) -> Integer
+    def register_with(writer) = definition_for_use.register_with(writer)
+
+    #: (StyleBuilder other) -> bool
+    def same_format?(other) = definition_for_use.same_format?(other)
+
+    protected
+
+    # Lets StyleBuilder#same_format? compare with the definition without a warning.
+    #: () -> Array[untyped]
+    def format_signature = @definition.format_signature
+
+    private
+
+    #: () -> StyleBuilder
+    def definition_for_use
+      unless @warned
+        @warned = true
+        Deprecation.warn(DEPRECATION_MESSAGE, uplevel: 2)
+      end
+      @definition
+    end
+  end
+
   # The order in which the styles of an {Xlsxrb.build} workbook are defined, shared by
   # the workbook builder and its sheet builders. A row records the clock when it is
   # added, so that it uses the definitions made before it, as a row written by
