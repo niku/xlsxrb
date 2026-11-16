@@ -1579,13 +1579,13 @@ Xlsxrb.write(output_path) do |wb|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.column(2, width: 25)
+    s.freeze_pane(row: 2, column: 0)
     s.row(["Merged Title Row", nil, nil], cell_styles: %w[title title title])
     s.row(["Header A", "Header B", "Header C"], cell_styles: %w[border border border])
     s.row(["Row 1 Col A", "Row 1 Col B", "Row 1 Col C"], cell_styles: %w[border border border])
     s.row(["Row 2 Col A", "Row 2 Col B", "Row 2 Col C"], cell_styles: %w[border border border])
 
     s.merge("A1:C1")
-    s.freeze_pane(row: 2, column: 0)
   end
 end
 ```
@@ -2312,12 +2312,12 @@ Xlsxrb.write(output_path) do |wb|
   wb.sheet("Data") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
+    s.sheet_properties(fit_to_page: true)
+    s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.row(["Year", "Sales A", "Sales B"])
     s.row([2024, 100, 150])
     s.row([2025, 120, 180])
     s.row([2026, 140, 210])
-    s.sheet_properties(fit_to_page: true)
-    s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.chart(
       type: :bar,
       grouping: :stacked,
@@ -2355,12 +2355,12 @@ Xlsxrb.write(output_path) do |wb|
   wb.sheet("Data") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
+    s.sheet_properties(fit_to_page: true)
+    s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.row(["Year", "Sales A", "Sales B"])
     s.row([2024, 100, 150])
     s.row([2025, 120, 180])
     s.row([2026, 140, 210])
-    s.sheet_properties(fit_to_page: true)
-    s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.chart(
       type: :bar,
       grouping: :percentStacked,
@@ -2437,12 +2437,12 @@ Xlsxrb.write(output_path) do |wb|
   wb.sheet("Data") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
+    s.sheet_properties(fit_to_page: true)
+    s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.row(["Year", "Sales A", "Sales B"])
     s.row([2024, 100, 150])
     s.row([2025, 120, 180])
     s.row([2026, 140, 210])
-    s.sheet_properties(fit_to_page: true)
-    s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.chart(
       type: :line,
       grouping: :stacked,
@@ -2518,12 +2518,12 @@ Xlsxrb.write(output_path) do |wb|
   wb.sheet("Data") do |s|
     s.column(0, width: 25)
     s.column(1, width: 25)
+    s.sheet_properties(fit_to_page: true)
+    s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.row(["Year", "Sales A", "Sales B"])
     s.row([2024, 100, 150])
     s.row([2025, 120, 180])
     s.row([2026, 140, 210])
-    s.sheet_properties(fit_to_page: true)
-    s.page_setup(fit_to_width: 1, fit_to_height: 1)
     s.chart(
       type: :area,
       grouping: :stacked,
@@ -2946,16 +2946,16 @@ dummy_png = make_png(100, 100, 255, 0, 0)
 Xlsxrb.write(output_path) do |wb|
   wb.style("center") { |st| st.align_horizontal = :center }
   wb.sheet("Images") do |s|
+    s.column(0, width: 20)
+    s.column(1, width: 15)
+    s.column(2, width: 15)
+    s.column(3, width: 15)
     s.row(["Logo Target cell:", "", "", "Boundary"], cell_styles: [nil, "center", "center", "center"])
     s.row(["", "", "", ""])
     s.row(["", "", "", ""])
     s.row(["", "", "", ""])
     s.row(["", "", "", "Boundary End"], cell_styles: [nil, "center", "center", "center"])
     s.image(dummy_png, ext: "png", from_column: 1, from_row: 1, to_column: 3, to_row: 5)
-    s.column(0, width: 20)
-    s.column(1, width: 15)
-    s.column(2, width: 15)
-    s.column(3, width: 15)
   end
 end
 ```

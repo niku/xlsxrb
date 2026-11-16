@@ -27,15 +27,15 @@ dummy_png = make_png(100, 100, 255, 0, 0)
 Xlsxrb.write(output_path) do |wb|
   wb.style("center") { |st| st.align_horizontal = :center }
   wb.sheet("Images") do |s|
+    s.column(0, width: 20)
+    s.column(1, width: 15)
+    s.column(2, width: 15)
+    s.column(3, width: 15)
     s.row(["Logo Target cell:", "", "", "Boundary"], cell_styles: [nil, "center", "center", "center"])
     s.row(["", "", "", ""])
     s.row(["", "", "", ""])
     s.row(["", "", "", ""])
     s.row(["", "", "", "Boundary End"], cell_styles: [nil, "center", "center", "center"])
     s.image(dummy_png, ext: "png", from_column: 1, from_row: 1, to_column: 3, to_row: 5)
-    s.column(0, width: 20)
-    s.column(1, width: 15)
-    s.column(2, width: 15)
-    s.column(3, width: 15)
   end
 end

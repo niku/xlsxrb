@@ -101,9 +101,9 @@ require "xlsxrb"
 
 Xlsxrb.write("large_output.xlsx") do |writer|
   writer.sheet("Sales Data") do |sheet|
+    sheet.column(0, width: 15.5)
     sheet.row(["Date", "Amount", "Status"])
     sheet.row([Date.today, 100, true])
-    sheet.column(0, width: 15.5)
   end
 end
 ```

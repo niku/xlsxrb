@@ -16,12 +16,12 @@ Xlsxrb.write(output_path) do |wb|
     s.column(0, width: 25)
     s.column(1, width: 25)
     s.column(2, width: 25)
+    s.freeze_pane(row: 2, column: 0)
     s.row(["Merged Title Row", nil, nil], cell_styles: %w[title title title])
     s.row(["Header A", "Header B", "Header C"], cell_styles: %w[border border border])
     s.row(["Row 1 Col A", "Row 1 Col B", "Row 1 Col C"], cell_styles: %w[border border border])
     s.row(["Row 2 Col A", "Row 2 Col B", "Row 2 Col C"], cell_styles: %w[border border border])
 
     s.merge("A1:C1")
-    s.freeze_pane(row: 2, column: 0)
   end
 end
