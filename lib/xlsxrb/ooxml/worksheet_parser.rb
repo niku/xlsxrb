@@ -789,6 +789,10 @@ module Xlsxrb
 
       private_class_method :fast_scan_rows_direct
 
+      # Bytes of one row, or of markup between rows, held while streaming a worksheet.
+      MAX_STREAM_BUFFER_BYTES = 50 * 1024 * 1024
+      private_constant :MAX_STREAM_BUFFER_BYTES
+
       # rubocop:disable Style/OptionalBooleanParameter
       def self.scan_rows_stream(source, shared_strings, _part_name, styles = nil, date1904 = false, pad_empty_cells = false, &block)
         # rubocop:enable Style/OptionalBooleanParameter
@@ -802,6 +806,11 @@ module Xlsxrb
         row_end_len = 6
         sd_end_tag = "</sheetData>"
         last_row_index = -1
+        # SECURITY NOTE: The buffer is searched again each time a chunk is added. These hold
+        # how far the previous searches got without a match, so that a row or a stretch of
+        # other markup spanning many chunks is searched once, not once per chunk.
+        sd_end_scan_from = 0
+        row_end_scan_from = 0
 
         push_chunk = lambda do |chunk|
           return if in_sheet_data == :closed
@@ -844,7 +853,8 @@ module Xlsxrb
 
           pos = 0
           last_consumed_pos = 0
-          sd_end_pos = buffer.index(sd_end_tag)
+          sd_end_pos = buffer.index(sd_end_tag, sd_end_scan_from)
+          sd_end_scan_from = sd_end_pos || [buffer.bytesize - sd_end_tag.bytesize, 0].max
 
           loop do
             row_start = buffer.index(row_start_pattern, pos)
@@ -855,14 +865,24 @@ module Xlsxrb
               return
             end
 
-            break if row_start.nil?
+            if row_start.nil?
+              # No row starts here: keep only the end, which may hold the start of a tag.
+              keep_from = buffer.bytesize - [row_start_len, sd_end_tag.bytesize].max
+              last_consumed_pos = keep_from if keep_from > last_consumed_pos
+              break
+            end
 
             next_pos = row_start + row_start_len
-            break if next_pos >= buffer.bytesize
+            if next_pos >= buffer.bytesize
+              last_consumed_pos = row_start if row_start > last_consumed_pos
+              break
+            end
 
             nb = buffer.getbyte(next_pos)
             unless TAG_DELIM_BYTES.include?(nb)
+              # Another element whose name starts with "row": nothing before it is needed.
               pos = next_pos
+              last_consumed_pos = pos
               next
             end
 
@@ -872,10 +892,14 @@ module Xlsxrb
             is_self_closing = buffer.getbyte(tag_end - 1) == 47
 
             unless is_self_closing
-              row_end = buffer.index(row_end_tag, tag_end + 1)
+              row_end_from = tag_end + 1
+              row_end_from = row_end_scan_from if row_end_scan_from > row_end_from
+              row_end_scan_from = 0
+              row_end = buffer.index(row_end_tag, row_end_from)
               if row_end.nil?
-                raise ArgumentError, "Malformed XML: row size exceeds maximum buffer limit" if buffer.bytesize > 50 * 1024 * 1024
-
+                # The row continues in the next chunk. It will then start where the consumed
+                # part of the buffer ends, so the position is kept relative to that.
+                row_end_scan_from = [buffer.bytesize - row_end_len - last_consumed_pos, 0].max
                 break
               end
             end
@@ -962,7 +986,11 @@ module Xlsxrb
             last_consumed_pos = pos
           end
 
-          buffer.slice!(0...last_consumed_pos) if last_consumed_pos.positive?
+          if last_consumed_pos.positive?
+            buffer.slice!(0...last_consumed_pos)
+            sd_end_scan_from = [sd_end_scan_from - last_consumed_pos, 0].max
+          end
+          raise ParseError, "malformed worksheet XML: a row or tag exceeds #{MAX_STREAM_BUFFER_BYTES} bytes" if buffer.bytesize > MAX_STREAM_BUFFER_BYTES
         end
 
         catch(:done) do

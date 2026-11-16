@@ -17,6 +17,7 @@
 - Raise `Xlsxrb::ParseError` for XML parts whose elements nest more than 256 levels deep. REXML's SAX2 parser takes time proportional to the depth for every tag: 20,000 nested elements (a 2.5 KB file) took 15 seconds in `Xlsxrb.read` and `Xlsxrb.load`, and 40,000 took 58 seconds.
 - Raise `Xlsxrb::ParseError` for a row whose last `<c>` or `<is>` start tag has no end tag. The cell pattern searched to the end of the row once for each such tag, so a row of 40,000 unclosed `<c>` tags (a 3 KB file) took over 100 seconds to read. A `<c>` start tag without an end tag was read as an empty cell before.
 - Read shared strings in time proportional to the part. An `<si>` without `<t>`, and a `<t>` in a string table that has `<rPh>` elements, each searched the rest of the part, so 100,000 empty `<si>` elements (a 4 KB file) took over 60 seconds before the first sheet was read.
+- Find streamed rows in time proportional to the sheet when a row, or markup between rows, spans many chunks. Each 64 KB chunk searched the whole buffer again: 16 MB of elements whose names start with `row` (a 27 KB file) took over 60 seconds, and that buffer had no size limit. Rows and tags over 50 MB now raise `Xlsxrb::ParseError` on every path (it was `ArgumentError`, for unclosed rows only).
 - Format numbers as General for format codes longer than 1,024 characters (Excel accepts 255). The time to format grows with the code for every cell that uses it.
 
 ### Fixed

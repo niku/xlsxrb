@@ -105,6 +105,9 @@ module Xlsxrb
       # rubocop:disable Style/OptionalBooleanParameter
       def self.fast_scan_rows_direct: (untyped xml_src, untyped shared_strings, untyped _part_name, ?untyped styles, ?untyped date1904, ?untyped pad_empty_cells) ?{ (?) -> untyped } -> untyped
 
+      # Bytes of one row, or of markup between rows, held while streaming a worksheet.
+      MAX_STREAM_BUFFER_BYTES: untyped
+
       # rubocop:disable Style/OptionalBooleanParameter
       def self.scan_rows_stream: (untyped source, untyped shared_strings, untyped _part_name, ?untyped styles, ?untyped date1904, ?untyped pad_empty_cells) ?{ (?) -> untyped } -> untyped
 

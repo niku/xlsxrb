@@ -130,6 +130,29 @@ class DosProtectionTest < Test::Unit::TestCase
     assert_equal ["a" * count, "x"], strings.map(&:to_s)
   end
 
+  test "streamed rows are found in time proportional to the sheet when markup spans many chunks" do
+    omit "Time limits do not hold under RBS runtime checks, which wrap every method call" if defined?(RBS::Test)
+
+    megabyte = 1024 * 1024
+    {
+      "elements named like rows" => "<rowX" * (8 * megabyte / 5),
+      "a row without an end tag" => %(<row r="1">#{"A" * (16 * megabyte)}),
+      "a comment before the rows" => "<!--#{"x" * (16 * megabyte)}-->"
+    }.each do |label, markup|
+      bytes = workbook_bytes(sheet: sheet_xml(%(#{markup}<row r="5"><c r="A5"><v>1</v></c></row>)))
+      rows = within(8, label) { Xlsxrb.read(bytes).first.each_row.map(&:values) }
+
+      assert_equal(label == "a row without an end tag" ? 1 : [[1]], label == "a row without an end tag" ? rows.size : rows, label)
+    end
+  end
+
+  test "a streamed row larger than the buffer limit raises ParseError" do
+    bytes = workbook_bytes(sheet: sheet_xml(%(<row r="1">#{"A" * (51 * 1024 * 1024)})))
+
+    error = assert_raise(Xlsxrb::ParseError) { Xlsxrb.read(bytes) { |sheet| sheet.each_row(&:values) } }
+    assert_match(/exceeds 52428800 bytes/, error.message)
+  end
+
   test "a percent sign in a date format code is literal text, not a strftime directive" do
     code = "yyyy#{"%999999d" * 100}"
     formatted = within(5, "format") { Xlsxrb::NumberFormatter.format(45_000.5, code) }
