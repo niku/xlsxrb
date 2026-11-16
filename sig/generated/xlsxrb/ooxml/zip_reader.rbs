@@ -142,6 +142,11 @@ module Xlsxrb
 
       def decompress: (untyped raw, untyped method) -> untyped
 
+      # Raises ZipError when the entry's data would lie outside the archive, so that a
+      # forged size is never passed to IO#read as a length to allocate.
+      # : (Entry entry) -> void
+      def verify_entry_bounds!: (Entry entry) -> void
+
       def safe_inflate: (untyped raw, untyped wbits) -> untyped
 
       def normalize_entry_name: (untyped name) -> untyped

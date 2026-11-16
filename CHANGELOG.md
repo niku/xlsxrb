@@ -4,6 +4,7 @@
 - Add `Xlsxrb.truncate_cell_text`, which cuts text to what a cell holds: 32,767 characters counted in UTF-16 code units, as Excel counts them ([ADR 0011](docs/adr/0011-count-excel-text-limits-as-excel-does.md)). A character is never split, so 20,000 emoji become 16,383. `strict_excel_mode` raises `ArgumentError` for longer text; callers that want to keep the start of the text instead can call this for every cell. Text of 32,767 bytes or fewer is returned as is without being counted.
 
 ### Security
+- Raise `Xlsxrb::ZipError` for a ZIP entry whose declared size runs past the end of the archive, in `Xlsxrb.load`, `Xlsxrb.read`, and `Ooxml::ZipReader`. The size was passed to `IO#read` as the length to read: a 150-byte file declaring 4 GB made Ruby allocate over 1 GB before failing with `Errno::EINVAL`, and a ZIP64 size of 2**62 raised `NoMemoryError`, which `rescue StandardError` does not catch.
 - Stop holding the inflated data of every entry in memory when reading an archive that has no central directory and uses data descriptors. Each entry is inflated to find where it ends, and the output was kept until the reader was closed, so `max_uncompressed_size` (500 MB by default) bounded one entry but not their total: a 2 MB file could hold 2 GB. Such an entry is now inflated once to measure it, without keeping the output, and again when it is read. Its `Entry#compressed_size` and `Entry#crc32` now hold the compressed size and the CRC-32 from the data descriptor instead of the uncompressed size and 0.
 
 ## [0.2.1] - 2026-11-16

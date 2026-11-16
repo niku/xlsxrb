@@ -66,6 +66,29 @@ class ZipBombTest < Test::Unit::TestCase
     end
   end
 
+  test "an entry whose declared size runs past the end of the archive raises ZipError" do
+    name = "xl/workbook.xml"
+    # 2**62 comes from a ZIP64 extra field; IO#read would try to allocate it.
+    { 0xFFFF_FFF0 => "".b, 0xFFFF_FFFF => [1, 8, 2**62].pack("vvQ<") }.each do |declared_size, extra|
+      local = local_entry(name, "x")
+      central = ["PK\x01\x02".b, [45, 45, 0, 8, 0, 33, 0, declared_size, 1, name.bytesize, extra.bytesize, 0, 0, 0, 0, 0].pack("vvvvvvVVVvvvvvVV"), name, extra].join
+      eocd = ["PK\x05\x06".b, [0, 0, 1, 1, central.bytesize, local.bytesize, 0].pack("vvvvVVv")].join
+
+      Tempfile.create(["forged_size", ".xlsx"]) do |f|
+        f.binmode
+        f.write(local + central + eocd)
+        f.flush
+
+        Xlsxrb::Ooxml::ZipReader.open(f.path) do |zip|
+          error = assert_raise(Xlsxrb::ZipError) { zip.read_entry(name) }
+          assert_match(/extends past the end of the archive/, error.message)
+          assert_raise(Xlsxrb::ZipError) { zip.open_entry_io(name) }
+          assert_raise(Xlsxrb::ZipError) { zip.each_entry_chunk(name) { |chunk| chunk } }
+        end
+      end
+    end
+  end
+
   private
 
   def raw_deflate(data)

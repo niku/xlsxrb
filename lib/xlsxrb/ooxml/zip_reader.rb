@@ -277,6 +277,7 @@ module Xlsxrb
         @io = nil
         @catalog = nil
         @ci_catalog = nil
+        @archive_size = 0
       end
 
       # Returns a Hash { entry_name => raw_bytes } for all entries.
@@ -295,6 +296,7 @@ module Xlsxrb
         entry = lookup_entry(name)
         return nil unless entry
 
+        verify_entry_bounds!(entry)
         raw = if @should_close_io && @raw_io.respond_to?(:closed?) && @raw_io.closed? && @filepath
                 File.open(@filepath, "rb") do |f|
                   f.seek(entry.data_offset, IO::SEEK_SET)
@@ -324,6 +326,7 @@ module Xlsxrb
         entry = lookup_entry(entry_name)
         raise ZipError, "Entry not found in archive: #{entry_name}" unless entry
 
+        verify_entry_bounds!(entry)
         resolved_encoding = if encoding == false
                               nil
                             elsif encoding
@@ -353,6 +356,7 @@ module Xlsxrb
             entry = lookup_entry(entry_name)
             raise ZipError, "Entry not found in archive: #{entry_name}" unless entry
 
+            verify_entry_bounds!(entry)
             resolved_encoding = if encoding == false
                                   nil
                                 elsif encoding
@@ -409,6 +413,7 @@ module Xlsxrb
         entry = lookup_entry(entry_name)
         raise ZipError, "Entry not found in archive: #{entry_name}" unless entry
 
+        verify_entry_bounds!(entry)
         if entry.compressed_size.zero? && entry.uncompressed_size.positive?
           data = read_entry(entry_name)
           writer.add_binary_entry(target_path || entry_name, data || "")
@@ -465,6 +470,9 @@ module Xlsxrb
       def parse_catalog
         first_sig = io.read(4)
         raise ZipError, "Invalid magic number: Expected a valid ZIP/XLSX file format (PK\\x03\\x04)" unless first_sig == LOCAL_HEADER_SIG
+
+        io.seek(0, IO::SEEK_END)
+        @archive_size = io.pos
 
         # Try Central Directory first
         cd_catalog = parse_catalog_from_central_directory(io)
@@ -610,6 +618,10 @@ module Xlsxrb
             result[norm_name] = entry
             result[entry_name] = entry if entry_name != norm_name
 
+            # An entry that claims to run past the end of the archive ends the scan; reading
+            # it raises ZipError.
+            break if data_offset + compressed_size > @archive_size
+
             io.seek(compressed_size, IO::SEEK_CUR) if io.respond_to?(:seek)
           end
         end
@@ -674,6 +686,15 @@ module Xlsxrb
       rescue Zlib::DataError
         data = safe_inflate(raw || "", -Zlib::MAX_WBITS)
         normalize_text_encoding(data)
+      end
+
+      # Raises ZipError when the entry's data would lie outside the archive, so that a
+      # forged size is never passed to IO#read as a length to allocate.
+      #: (Entry entry) -> void
+      def verify_entry_bounds!(entry)
+        return if entry.data_offset + entry.compressed_size <= @archive_size
+
+        raise ZipError, "Malformed ZIP archive: entry #{entry.name.inspect} extends past the end of the archive"
       end
 
       def safe_inflate(raw, wbits)
