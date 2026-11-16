@@ -506,6 +506,26 @@ class DslHelpersTest < Test::Unit::TestCase
     end
   end
 
+  test "truncate_cell_text keeps the whole characters that fit in 32,767 UTF-16 code units" do
+    truncate = Xlsxrb::DslHelpers.method(:truncate_cell_text)
+    emoji = [0x1F600].pack("U")
+    hiragana = [0x3042].pack("U")
+
+    ["", "x", hiragana * 10_922, "x" * 32_767].each { |within_bytes| assert_same(within_bytes, truncate.call(within_bytes)) }
+
+    fits = hiragana * 20_000 # 60,000 bytes
+    assert_equal(fits, truncate.call(fits))
+    assert_not_same(fits, truncate.call(fits))
+
+    assert_equal("x" * 32_767, truncate.call("x" * 32_768))
+    assert_equal(hiragana * 32_767, truncate.call(hiragana * 40_000))
+    assert_equal(emoji * 16_383, truncate.call(emoji * 16_384)) # the cut falls inside an emoji
+    assert_equal("a#{emoji * 16_383}", truncate.call("a#{emoji * 16_384}"))
+
+    sjis = truncate.call((hiragana * 40_000).encode(Encoding::Windows_31J))
+    assert_equal([Encoding::UTF_8, hiragana * 32_767], [sjis.encoding, sjis])
+  end
+
   test "sanitize_sheet_name keeps a name within 31 UTF-16 code units without splitting a character" do
     emoji = [0x1F600].pack("U")
     assert_equal(emoji * 15, Xlsxrb::DslHelpers.sanitize_sheet_name(emoji * 16))

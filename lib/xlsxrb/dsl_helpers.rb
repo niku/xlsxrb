@@ -818,6 +818,22 @@ module Xlsxrb
       raise ArgumentError, "Cell text length #{length} exceeds Excel limit of 32,767 characters, counted in UTF-16 code units as Excel does"
     end
 
+    # Cuts +text+ to the whole characters that fit in a cell: 32,767 UTF-16 code units, as
+    # Excel counts them (ADR 0011). Text of 32,767 bytes or fewer always fits and is returned
+    # as is, so most text is not counted. Longer text is returned as a new UTF-8 String.
+    #
+    # @param text [String]
+    # @return [String]
+    #: (String text) -> String
+    def self.truncate_cell_text(text)
+      return text if text.bytesize <= MAX_CELL_TEXT_LENGTH
+
+      units = text.encode(Encoding::UTF_16LE).byteslice(0, MAX_CELL_TEXT_LENGTH * 2) #: String
+      # A cut between the two code units of a character leaves a lone high surrogate.
+      units = units.byteslice(0, units.bytesize - 2) unless units.valid_encoding? #: String
+      units.encode(Encoding::UTF_8)
+    end
+
     # Sanitizes a worksheet name to ensure it conforms to Excel constraints within 31 characters.
     # Replaces forbidden characters (\ / ? * [ ] : and control characters),
     # replaces leading/trailing apostrophes, and replaces reserved 'History' with 'History_'.

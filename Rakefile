@@ -1067,6 +1067,7 @@ namespace :mutant do
           "Xlsxrb::DslHelpers.normalize_row_styles",
           "Xlsxrb::DslHelpers.check_column_style!",
           "Xlsxrb::DslHelpers.check_cell_text_length!",
+          "Xlsxrb::DslHelpers.truncate_cell_text",
           "Xlsxrb::DslHelpers.validate_row_bounds!",
           "Xlsxrb::DslHelpers.compress_runs",
           "Xlsxrb::DslHelpers.complement_runs",

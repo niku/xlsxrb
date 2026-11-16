@@ -40,6 +40,7 @@ Running mutation testing across the entire codebase (which includes heavy file I
    - Coordinate compression, intervals, complement runs, and area references (`compress_runs`, `complement_runs`, `area_ref`, `chunked_sqrefs`).
    - Defined names, sheet quoting, and absolute coordinates (`quote_sheet_name`, `format_absolute_reference`, `normalize_defined_name_value`).
    - Sheet name sanitization and forbidden characters truncation (`sanitize_sheet_name`).
+   - Cell text limits counted in UTF-16 code units (`check_cell_text_length!`, `truncate_cell_text`).
 
 ### Excluded Scope (Non-Targets)
 

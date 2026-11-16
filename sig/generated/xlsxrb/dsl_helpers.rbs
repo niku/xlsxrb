@@ -288,6 +288,15 @@ module Xlsxrb
     # : (String text) -> void
     def self.check_cell_text_length!: (String text) -> void
 
+    # Cuts +text+ to the whole characters that fit in a cell: 32,767 UTF-16 code units, as
+    # Excel counts them (ADR 0011). Text of 32,767 bytes or fewer always fits and is returned
+    # as is, so most text is not counted. Longer text is returned as a new UTF-8 String.
+    #
+    # @param text [String]
+    # @return [String]
+    # : (String text) -> String
+    def self.truncate_cell_text: (String text) -> String
+
     # Sanitizes a worksheet name to ensure it conforms to Excel constraints within 31 characters.
     # Replaces forbidden characters (\ / ? * [ ] : and control characters),
     # replaces leading/trailing apostrophes, and replaces reserved 'History' with 'History_'.

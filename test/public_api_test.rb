@@ -3282,6 +3282,16 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal("History_", Xlsxrb.sanitize_sheet_name("History"))
   end
 
+  test "Xlsxrb.truncate_cell_text makes text that strict_excel_mode rejects fit in a cell" do
+    emoji = [0x1F600].pack("U")
+    text = "a#{emoji * 20_000}"
+    assert_raise(ArgumentError) { Xlsxrb.write(StringIO.new) { |w| w.sheet("S") { |s| s.row([text]) } } }
+
+    io = StringIO.new
+    Xlsxrb.write(io) { |w| w.sheet("S") { |s| s.row([Xlsxrb.truncate_cell_text(text)]) } }
+    assert_equal("a#{emoji * 16_383}", Xlsxrb.load(StringIO.new(io.string)).sheets.first.rows.first.cells.first.value)
+  end
+
   test "StreamWriter#sheet_names reports workbook sheets and WorksheetProxy#name reports sheet name" do
     io = StringIO.new
     Xlsxrb.write(io) do |w|

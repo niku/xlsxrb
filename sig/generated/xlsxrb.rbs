@@ -419,6 +419,26 @@ module Xlsxrb
   # : (untyped name, ?replace_char: String) -> String
   def self.sanitize_sheet_name: (untyped name, ?replace_char: String) -> String
 
+  # Cuts text to what a cell holds: 32,767 characters counted in UTF-16 code units, as
+  # Excel counts them, so a character outside the Basic Multilingual Plane, such as an emoji,
+  # counts as two. A character is never split. Writing longer text raises ArgumentError
+  # with +strict_excel_mode+ (the default); call this first to keep the start of the text
+  # instead.
+  #
+  # Text of 32,767 bytes or fewer always fits, so it is returned as is after its byte size
+  # is checked, without counting its characters. Longer text is returned as a new UTF-8
+  # String, even if it fits.
+  #
+  # @example
+  #   Xlsxrb.truncate_cell_text("x" * 40_000).length #=> 32767
+  #   Xlsxrb.truncate_cell_text("😀" * 20_000).length #=> 16383
+  #
+  # @param text [String]
+  # @return [String]
+  # @api public
+  # : (String text) -> String
+  def self.truncate_cell_text: (String text) -> String
+
   # Reads an XLSX file (streaming and lazy-loaded by default) from a file path, IO stream, or binary String.
   #
   # Sheets and rows are streamed lazily with O(1) constant memory. If a block is given,
