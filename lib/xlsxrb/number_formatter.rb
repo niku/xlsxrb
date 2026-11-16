@@ -17,6 +17,10 @@ module Xlsxrb
       "mm-dd-yy", "d-mmm-yy", "d-mmm", "mmm-yy", "h:mm AM/PM", "h:mm:ss AM/PM", "h:mm", "h:mm:ss", "m/d/yy h:mm", "mm:ss", "[h]:mm:ss", "mmss.0"
     ].freeze
 
+    # Stands for a literal "%" while a date format code is converted to a strftime pattern.
+    LITERAL_PERCENT = "\x01"
+    private_constant :LITERAL_PERCENT
+
     class << self
       # Formats a cell value according to an Excel format code string.
       #
@@ -380,7 +384,9 @@ module Xlsxrb
       end
 
       def excel_to_strftime(format_code)
-        code = format_code.dup
+        # A "%" in the format code is literal text. Left as is, it would be read by strftime
+        # as a directive, and "%999999d" asks for a field of 999,999 characters.
+        code = format_code.delete(LITERAL_PERCENT).gsub("%", LITERAL_PERCENT)
 
         code.gsub!(%r{am/pm}i, "%p")
         code.gsub!(%r{a/p}i, "%p")
@@ -421,6 +427,7 @@ module Xlsxrb
         code.gsub!(/yy/i, "%y")
 
         code.gsub!(/\\(.)/, "\\1")
+        code.gsub!(LITERAL_PERCENT, "%%")
 
         code
       end

@@ -76,6 +76,16 @@ class DosProtectionTest < Test::Unit::TestCase
     )
   end
 
+  test "a percent sign in a date format code is literal text, not a strftime directive" do
+    code = "yyyy#{"%999999d" * 100}"
+    formatted = within(5, "format") { Xlsxrb::NumberFormatter.format(45_000.5, code) }
+    assert_operator formatted.bytesize, :<, 2000
+
+    assert_equal "2023%15", Xlsxrb::NumberFormatter.format(45_000.5, "yyyy%d")
+    assert_equal "2023-03-15 %", Xlsxrb::NumberFormatter.format(45_000, "yyyy-mm-dd %")
+    assert_equal "50%", Xlsxrb::NumberFormatter.format(0.5, "0%")
+  end
+
   private
 
   def within(seconds, label, &)

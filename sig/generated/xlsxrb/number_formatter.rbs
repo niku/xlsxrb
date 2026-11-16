@@ -10,6 +10,9 @@ module Xlsxrb
     # Built-in date and time format code strings.
     DATE_PATTERNS: untyped
 
+    # Stands for a literal "%" while a date format code is converted to a strftime pattern.
+    LITERAL_PERCENT: ::String
+
     # Formats a cell value according to an Excel format code string.
     #
     # @param value [Object, nil] The cell's raw or typed value.
