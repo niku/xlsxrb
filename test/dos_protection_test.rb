@@ -95,6 +95,27 @@ class DosProtectionTest < Test::Unit::TestCase
     assert_not_include error.message, "\n"
   end
 
+  test "cell values with many digits are read as Float, and shared string indexes out of range as empty" do
+    digits = "7" * 2_000_000
+    cells = [
+      %(<c r="A1"><v>1234567890123456789</v></c>),
+      %(<c r="B1"><v>12345678901234567890123</v></c>),
+      %(<c r="C1" t="n"><v>-12345678901234567890123</v></c>),
+      %(<c r="D1"><v>#{digits}</v></c>),
+      %(<c r="E1" t="s"><v>99999999999999999999999</v></c>),
+      %(<c r="F1" t="s"><v>-1</v></c>),
+      %(<c r="G1" t="s"><v>0</v></c>)
+    ].join
+    bytes = workbook_bytes(sheet: sheet_xml(%(<row r="1">#{cells}</row>)))
+
+    values = within(5, "read") { Xlsxrb.read(bytes).first.each_row.first.values }
+    assert_equal [1_234_567_890_123_456_789, 1.2345678901234568e22, -1.2345678901234568e22, digits, "", "", "a"], values
+    assert_equal values, within(5, "load") { Xlsxrb.load(bytes).sheets.first.rows.first.cells.map(&:value) }
+
+    typed = workbook_bytes(sheet: sheet_xml(%(<row r="1"><c r="A1" t="n"><v>#{digits}</v></c></row>)))
+    assert_raise(Xlsxrb::ParseError) { Xlsxrb.load(typed).sheets.first.rows.first.cells.map(&:value) }
+  end
+
   test "rows with unclosed cell or inline string tags raise ParseError instead of rescanning the row for each tag" do
     count = 40_000
     {

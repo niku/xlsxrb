@@ -554,7 +554,7 @@ module Xlsxrb
       def self.resolve_cell_value(type, raw_value, is_xml, shared_strings)
         case type
         when "s"
-          raw_value ? (shared_strings[raw_value.to_i] || "") : nil
+          raw_value ? shared_string_at(shared_strings, raw_value) : nil
         when "b"
           if raw_value
             v = strip_ws(raw_value)
@@ -575,8 +575,8 @@ module Xlsxrb
             text = strip_ws(raw_value)
             return nil if text.empty?
 
-            if text.match?(STRICT_NUMERIC_RE)
-              Integer(text, 10, exception: false) ||
+            if text.bytesize <= MAX_NUMERIC_TEXT_BYTES && text.match?(STRICT_NUMERIC_RE)
+              parse_integer(text) ||
                 Float(text, exception: false) ||
                 normalize_text(raw_value)
             else
@@ -601,10 +601,34 @@ module Xlsxrb
         text = strip_ws(raw)
         return nil if text.empty?
 
-        raise(ParseError, "invalid numeric cell value: #{text.inspect}") unless text.match?(STRICT_NUMERIC_RE)
+        raise(ParseError, "invalid numeric cell value: #{text[0, 40].inspect}") unless text.bytesize <= MAX_NUMERIC_TEXT_BYTES && text.match?(STRICT_NUMERIC_RE)
 
-        Integer(text, 10, exception: false) || Float(text, exception: false) ||
-          raise(ParseError, "invalid numeric cell value: #{text.inspect}")
+        parse_integer(text) || Float(text, exception: false) ||
+          raise(ParseError, "invalid numeric cell value: #{text[0, 40].inspect}")
+      end
+
+      # Digits (with a sign) up to which a cell value is read as an Integer. Longer values are
+      # read as Float, as Excel stores them: converting millions of digits to an Integer takes
+      # time that grows faster than their number.
+      MAX_INTEGER_TEXT_BYTES = 19
+      # Longer text is not checked for being a number. Excel writes numbers in at most 25
+      # characters, and matching megabytes of digits takes memory in proportion.
+      MAX_NUMERIC_TEXT_BYTES = 400
+      private_constant :MAX_INTEGER_TEXT_BYTES, :MAX_NUMERIC_TEXT_BYTES
+
+      #: (String text) -> Integer?
+      def self.parse_integer(text)
+        text.bytesize <= MAX_INTEGER_TEXT_BYTES ? Integer(text, 10, exception: false) : nil
+      end
+
+      # Looks up a shared string by the index in a cell's <v>. An index that is negative or
+      # too long to be one reads as an empty string, as an index past the end does.
+      #: (Array[untyped] shared_strings, String raw_index) -> untyped
+      def self.shared_string_at(shared_strings, raw_index)
+        return "" if raw_index.bytesize > 10
+
+        index = raw_index.to_i
+        index.negative? ? "" : (shared_strings[index] || "")
       end
 
       # SECURITY NOTE: Decodes only standard predefined XML entities in a single pass.

@@ -78,6 +78,23 @@ module Xlsxrb
       # : (String raw) -> (Integer | Float)?
       def self.numeric_cell_value: (String raw) -> (Integer | Float)?
 
+      # Digits (with a sign) up to which a cell value is read as an Integer. Longer values are
+      # read as Float, as Excel stores them: converting millions of digits to an Integer takes
+      # time that grows faster than their number.
+      MAX_INTEGER_TEXT_BYTES: ::Integer
+
+      # Longer text is not checked for being a number. Excel writes numbers in at most 25
+      # characters, and matching megabytes of digits takes memory in proportion.
+      MAX_NUMERIC_TEXT_BYTES: ::Integer
+
+      # : (String text) -> Integer?
+      def self.parse_integer: (String text) -> Integer?
+
+      # Looks up a shared string by the index in a cell's <v>. An index that is negative or
+      # too long to be one reads as an empty string, as an index past the end does.
+      # : (Array[untyped] shared_strings, String raw_index) -> untyped
+      def self.shared_string_at: (Array[untyped] shared_strings, String raw_index) -> untyped
+
       # SECURITY NOTE: Decodes only standard predefined XML entities in a single pass.
       # This completely prevents "Billion Laughs" attacks (exponential entity expansion)
       # because it avoids recursive expansion and ignores custom entities entirely.
