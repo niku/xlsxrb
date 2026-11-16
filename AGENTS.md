@@ -19,6 +19,11 @@ Guidelines for LLM-powered coding assistants (Claude, Cursor, Copilot, Gemini, A
   Maintain `CHANGELOG.md` following [Keep a Changelog](https://keepachangelog.com/) conventions.
   - When introducing user-facing changes (features, deprecations, breaking changes, notable bug fixes, performance improvements, or dependency changes), add concise entries under the `## [Unreleased]` section.
   - Group entries under standard categories: `Added`, `Changed`, `Deprecated`, `Removed`, `Fixed`, or `Security`.
+  - When an entry has an issue, link it inline at the end of the entry's first sentence, as in `([#9](https://github.com/niku/xlsxrb/issues/9))`. When it has no issue but a pull request holds its context, link the pull request the same way. A bare `#9` does not become a link in Markdown files. Write each entry so it can be understood without opening the link.
+- Commits, Issues, Pull Requests, and ADRs:
+  The maintainer's changes are committed directly by default, with the reasons in the commit message. Open an issue or pull request only for context a commit cannot hold: a problem known before the code that fixes it (user reports, work deferred to later), raw evidence and rejected alternatives (benchmark scripts, logs, measurement environments), changes that need others' input before they land, and changes from other contributors. Record a decision that spans several commits or releases as an ADR in `docs/adr/`.
+- Architecture Decision Records:
+  An ADR states the principles and the rules a user can observe. It does not list methods, internal classes, implementation details, or version-by-version steps; those are kept in contract tests, YARD, and `CHANGELOG.md`. When a decision changes, write a new ADR that restates everything still in force, and change the old ADR's status to `Superseded by ADR NNNN` without editing the rest of it.
 - Deprecation Policy:
   Do not break an `@api public` API in a patch release. Warn first with `Xlsxrb::Deprecation` in the current minor series and make the change in the next minor release, as described in "The `@api public` Contract and Deprecation Policy" in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 - Byte vs Character Indexing Consistency:
