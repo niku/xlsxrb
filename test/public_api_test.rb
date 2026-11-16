@@ -3893,6 +3893,35 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal("", err, "configuring in the block does not warn")
   end
 
+  test "StreamWriter#[] warns for a sheet that does not exist and says so when written to" do
+    messages = []
+    err = capture_stderr do
+      Xlsxrb.write(StringIO.new) do |w|
+        w.sheet("A") { |s| s.row([1]) }
+        w["A"]
+        w[0]
+        w[]
+        begin
+          w["B"].row([1])
+        rescue Xlsxrb::Error => e
+          messages << e.message
+        end
+        w.sheet("C")
+        begin
+          w["A"].row([2])
+        rescue Xlsxrb::Error => e
+          messages << e.message
+        end
+      end
+    end
+
+    assert_equal(1, err.scan("[Xlsxrb DEPRECATION] Looking up a sheet that does not exist with StreamWriter#[] is deprecated").size)
+    # RBS::Test runtime hooks add frames, so the warning points into the hook there.
+    assert_include(err, "#{__FILE__}:") unless defined?(RBS::Test)
+    assert_equal(["Sheet 'B' does not exist. Create it with sheet before writing to it.",
+                  "Sheet 'A' is no longer active. In streaming mode, you cannot write to a previous sheet."], messages)
+  end
+
   test "ReturnedStyleBuilder forwards every public method of StyleBuilder" do
     omit "RBS::Test runtime hooks add aliased methods to the classes" if defined?(RBS::Test)
     missing = Xlsxrb::StyleBuilder.public_instance_methods(false) - Xlsxrb::ReturnedStyleBuilder.public_instance_methods(false)

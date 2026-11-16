@@ -347,7 +347,7 @@ module Xlsxrb
       # @api public
       #: (String | Symbol name, **untyped opts) ?{ (Xlsxrb::StyleBuilder) -> void } -> Xlsxrb::StyleBuilder
       def style(...)
-        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+        raise inactive_sheet_error if @writer.current_sheet != @sheet_name
 
         @writer.style(...)
       end
@@ -362,7 +362,7 @@ module Xlsxrb
       # @api public
       #: (String range) -> void
       def merge(...)
-        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+        raise inactive_sheet_error if @writer.current_sheet != @sheet_name
 
         @writer.merge(...)
       end
@@ -383,7 +383,7 @@ module Xlsxrb
       # @api public
       #: (?preset: String, ?text: String?, ?from_column: Integer?, ?from_row: Integer, ?to_column: Integer?, ?to_row: Integer, **untyped opts) -> void
       def shape(...)
-        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+        raise inactive_sheet_error if @writer.current_sheet != @sheet_name
 
         @writer.shape(...)
       end
@@ -408,7 +408,7 @@ module Xlsxrb
       # @api public
       #: (Array[untyped] | Hash[untyped, untyped] values, ?cell_styles: untyped, ?row_style: untyped, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil) -> void
       def row(values, cell_styles: nil, row_style: nil, height: nil, hidden: false, custom_height: false, collapsed: false, outline_level: nil)
-        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+        raise inactive_sheet_error if @writer.current_sheet != @sheet_name
 
         @writer.row(values, cell_styles: cell_styles, row_style: row_style, height: height, hidden: hidden, custom_height: custom_height, collapsed: collapsed, outline_level: outline_level)
       end
@@ -437,7 +437,7 @@ module Xlsxrb
       # @api public
       #: (?Integer count) -> void
       def skip_rows(count = 1)
-        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+        raise inactive_sheet_error if @writer.current_sheet != @sheet_name
 
         @writer.skip_rows(count)
       end
@@ -459,7 +459,7 @@ module Xlsxrb
       # @api public
       #: (Integer | String | Symbol | Range[Integer | String | Symbol] | Array[Integer | String | Symbol] index, ?width: Float | Integer | nil, ?hidden: bool, ?custom_width: bool, ?outline_level: Integer | nil, ?collapsed: bool, ?style: (Integer | Symbol | String | Hash[Symbol, untyped])?, ?best_fit: bool) -> void
       def column(...)
-        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+        raise inactive_sheet_error if @writer.current_sheet != @sheet_name
 
         @writer.column(...)
       end
@@ -476,7 +476,7 @@ module Xlsxrb
       # @api public
       #: (Integer | String | Range[Integer | String] | Array[Integer | String] index, ?level: Integer, ?collapsed: bool, ?hidden: bool, ?width: Float | Integer | nil, ?style: untyped) -> void
       def group_columns(...)
-        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+        raise inactive_sheet_error if @writer.current_sheet != @sheet_name
 
         @writer.group_columns(...)
       end
@@ -492,7 +492,7 @@ module Xlsxrb
       # @api public
       #: (?untyped rows, ?level: Integer, ?collapsed: bool, ?hidden: bool) ?{ (self) -> void } -> void
       def group_rows(rows = nil, level: 1, collapsed: false, hidden: false)
-        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+        raise inactive_sheet_error if @writer.current_sheet != @sheet_name
 
         if block_given?
           @writer.group_rows(rows, level: level, collapsed: collapsed, hidden: hidden) do
@@ -515,7 +515,7 @@ module Xlsxrb
       #: () -> Hash[Symbol, untyped]
       #: (?summary_below: bool?, ?summary_right: bool?, ?show_outline_symbols: bool?, ?apply_styles: bool?, **untyped opts) -> void
       def outline_properties(...)
-        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+        raise inactive_sheet_error if @writer.current_sheet != @sheet_name
 
         @writer.outline_properties(...)
       end
@@ -527,7 +527,7 @@ module Xlsxrb
       # @api public
       #: (Hash[Symbol, untyped] opts) -> void
       def outline_properties=(opts)
-        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+        raise inactive_sheet_error if @writer.current_sheet != @sheet_name
 
         @writer.outline_properties = opts
       end
@@ -548,7 +548,7 @@ module Xlsxrb
       # @api public
       #: (?Symbol | String? type, **untyped options) ?{ (ChartBuilder) -> void } -> void
       def chart(...)
-        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+        raise inactive_sheet_error if @writer.current_sheet != @sheet_name
 
         @writer.chart(...)
       end
@@ -570,7 +570,7 @@ module Xlsxrb
       # @api public
       #: (String | Integer cell, ?(String | Elements::Hyperlink)? url, ?display: String?, ?tooltip: String?, ?location: String?) -> void
       def hyperlink(...)
-        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+        raise inactive_sheet_error if @writer.current_sheet != @sheet_name
 
         @writer.hyperlink(...)
       end
@@ -581,7 +581,7 @@ module Xlsxrb
       # @api public
       #: () -> String?
       def auto_filter
-        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+        raise inactive_sheet_error if @writer.current_sheet != @sheet_name
 
         @writer.auto_filter
       end
@@ -593,7 +593,7 @@ module Xlsxrb
       # @api public
       #: (String? range) -> String?
       def auto_filter=(range)
-        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+        raise inactive_sheet_error if @writer.current_sheet != @sheet_name
 
         @writer.auto_filter = range
       end
@@ -609,7 +609,7 @@ module Xlsxrb
       # @api public
       #: (Integer | String | Symbol col_id, (Hash[untyped, untyped] | Array[untyped]) filter) -> void
       def filter_column(...)
-        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+        raise inactive_sheet_error if @writer.current_sheet != @sheet_name
 
         @writer.filter_column(...)
       end
@@ -627,7 +627,7 @@ module Xlsxrb
       #: () -> Elements::SortState?
       #: (?String? ref, ?Array[Hash[untyped, untyped]]? sort_conditions, **untyped opts) -> void
       def sort_state(...)
-        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+        raise inactive_sheet_error if @writer.current_sheet != @sheet_name
 
         @writer.sort_state(...)
       end
@@ -639,7 +639,7 @@ module Xlsxrb
       # @api public
       #: (Elements::SortState | Hash[Symbol, untyped] | nil opts) -> void
       def sort_state=(opts)
-        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+        raise inactive_sheet_error if @writer.current_sheet != @sheet_name
 
         @writer.sort_state = opts
       end
@@ -663,7 +663,7 @@ module Xlsxrb
       # @api public
       #: (?String? range, ?type: (String | Symbol)?, **untyped opts) ?{ (DataValidationBuilder) -> void } -> void
       def data_validation(...)
-        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+        raise inactive_sheet_error if @writer.current_sheet != @sheet_name
 
         @writer.data_validation(...)
       end
@@ -687,7 +687,7 @@ module Xlsxrb
       # @api public
       #: (?String? sqref, ?type: String | Symbol, **untyped opts) ?{ (ConditionalFormatBuilder) -> void } -> void
       def conditional_format(sqref = nil, **opts, &)
-        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+        raise inactive_sheet_error if @writer.current_sheet != @sheet_name
 
         @writer.conditional_format(sqref, **opts, &)
       end
@@ -714,7 +714,7 @@ module Xlsxrb
       # @api public
       #: (?String? ref, ?columns: untyped, ?name: String?, ?display_name: String?, ?style: String?, **untyped opts) ?{ (TableBuilder) -> void } -> void
       def table(...)
-        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+        raise inactive_sheet_error if @writer.current_sheet != @sheet_name
 
         @writer.table(...)
       end
@@ -732,7 +732,7 @@ module Xlsxrb
       # @api public
       #: (String | Integer cell, String text, ?author: String, ?visible: bool) -> void
       def comment(...)
-        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+        raise inactive_sheet_error if @writer.current_sheet != @sheet_name
 
         @writer.comment(...)
       end
@@ -747,7 +747,7 @@ module Xlsxrb
       # @api public
       #: (String | Integer cell, String text, ?author: untyped, ?timestamp: untyped, ?id: String?, ?parent_id: String?, ?done: bool?, ?user_id: String?, ?provider_id: String?) -> void
       def threaded_comment(...)
-        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+        raise inactive_sheet_error if @writer.current_sheet != @sheet_name
 
         @writer.threaded_comment(...)
       end
@@ -767,7 +767,7 @@ module Xlsxrb
       # @api public
       #: (String source_ref, row_fields: untyped, data_fields: untyped, ?column_fields: untyped, ?ref: String?, ?name: String?, ?field_names: untyped, ?items: untyped, **untyped opts) -> void
       def pivot_table(...)
-        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+        raise inactive_sheet_error if @writer.current_sheet != @sheet_name
 
         @writer.pivot_table(...)
       end
@@ -784,7 +784,7 @@ module Xlsxrb
       # @api public
       #: (sparklines: Array[Hash[Symbol, untyped]], ?type: (String | Symbol)?, **untyped opts) -> void
       def sparkline_group(...)
-        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+        raise inactive_sheet_error if @writer.current_sheet != @sheet_name
 
         @writer.sparkline_group(...)
       end
@@ -807,7 +807,7 @@ module Xlsxrb
       # @api public
       #: (Symbol | String new_state) -> Symbol
       def state=(new_state)
-        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+        raise inactive_sheet_error if @writer.current_sheet != @sheet_name
 
         @writer.state = new_state
         @writer.state
@@ -829,7 +829,7 @@ module Xlsxrb
       # @api public
       #: (String | Symbol | Hash[Symbol, untyped] | nil spec) -> (String | Hash[Symbol, untyped] | nil)
       def tab_color=(spec)
-        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+        raise inactive_sheet_error if @writer.current_sheet != @sheet_name
 
         @writer.tab_color = spec
       end
@@ -842,7 +842,7 @@ module Xlsxrb
       #: () -> Elements::SheetProperties
       #: (**untyped opts) -> void
       def sheet_properties(**opts)
-        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+        raise inactive_sheet_error if @writer.current_sheet != @sheet_name
 
         @writer.sheet_properties(**opts)
       end
@@ -853,7 +853,7 @@ module Xlsxrb
       # @api public
       #: (Hash[Symbol, untyped] | Elements::SheetProperties opts) -> void
       def sheet_properties=(opts)
-        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+        raise inactive_sheet_error if @writer.current_sheet != @sheet_name
 
         @writer.sheet_properties = opts
       end
@@ -873,7 +873,7 @@ module Xlsxrb
       # @api public
       #: (String name, ?untyped value, ?hidden: bool, ?columns: untyped, ?rows: untyped, ?range: untyped, ?sheet: String?, ?scope: (String | Symbol)?) -> void
       def defined_name(name, value = nil, hidden: false, columns: nil, rows: nil, range: nil, sheet: nil, scope: nil)
-        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+        raise inactive_sheet_error if @writer.current_sheet != @sheet_name
 
         ref_sheet = sheet || @sheet_name
         local_sheet = if scope
@@ -900,7 +900,7 @@ module Xlsxrb
       #: () -> Elements::FreezePane?
       #: (?row: Integer | nil, ?column: (Integer | String)?, ?top_left_cell: String?, ?active_pane: (String | Symbol)?) -> void
       def freeze_pane(...)
-        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+        raise inactive_sheet_error if @writer.current_sheet != @sheet_name
 
         @writer.freeze_pane(...)
       end
@@ -912,7 +912,7 @@ module Xlsxrb
       # @api public
       #: (Elements::FreezePane | Hash[Symbol, untyped] | nil opts) -> void
       def freeze_pane=(opts)
-        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+        raise inactive_sheet_error if @writer.current_sheet != @sheet_name
 
         @writer.freeze_pane = opts
       end
@@ -933,7 +933,7 @@ module Xlsxrb
       # @api public
       #: (String? range) -> String?
       def print_area=(range)
-        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+        raise inactive_sheet_error if @writer.current_sheet != @sheet_name
 
         @writer.send(:set_print_area, range, sheet: @sheet_name)
       end
@@ -950,7 +950,7 @@ module Xlsxrb
       #: () -> Elements::PrintTitles?
       #: (?rows: (String | Integer | Range[Integer])?, ?columns: (String | Integer | Symbol | Range[untyped])?) -> void
       def print_titles(rows: nil, columns: nil)
-        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+        raise inactive_sheet_error if @writer.current_sheet != @sheet_name
 
         if rows.nil? && columns.nil?
           @writer.print_titles(sheet: @sheet_name)
@@ -966,7 +966,7 @@ module Xlsxrb
       # @api public
       #: (Elements::PrintTitles | Hash[Symbol, untyped] | nil opts) -> (Elements::PrintTitles | Hash[Symbol, untyped] | nil)
       def print_titles=(opts)
-        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+        raise inactive_sheet_error if @writer.current_sheet != @sheet_name
 
         if opts.nil?
           @writer.print_titles = nil
@@ -985,7 +985,7 @@ module Xlsxrb
       # @api public
       #: (Integer | String first, ?(Integer | String)? last) -> void
       def repeat_rows(first, last = nil)
-        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+        raise inactive_sheet_error if @writer.current_sheet != @sheet_name
 
         @writer.repeat_rows(first, last, sheet: @sheet_name)
       end
@@ -998,7 +998,7 @@ module Xlsxrb
       # @api public
       #: (Integer | String first, ?(Integer | String)? last) -> void
       def repeat_columns(first, last = nil)
-        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+        raise inactive_sheet_error if @writer.current_sheet != @sheet_name
 
         @writer.repeat_columns(first, last, sheet: @sheet_name)
       end
@@ -1019,7 +1019,7 @@ module Xlsxrb
       #: () -> Elements::SplitPane?
       #: (?x_split: Integer | nil, ?y_split: Integer | nil, ?top_left_cell: String?, ?active_pane: (String | Symbol)?) -> void
       def split_pane(...)
-        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+        raise inactive_sheet_error if @writer.current_sheet != @sheet_name
 
         @writer.split_pane(...)
       end
@@ -1031,7 +1031,7 @@ module Xlsxrb
       # @api public
       #: (Elements::SplitPane | Hash[Symbol, untyped] | nil opts) -> void
       def split_pane=(opts)
-        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+        raise inactive_sheet_error if @writer.current_sheet != @sheet_name
 
         @writer.split_pane = opts
       end
@@ -1049,7 +1049,7 @@ module Xlsxrb
       #: () -> (Elements::Selection | Array[Elements::Selection])?
       #: (?String? active_cell, ?sqref: String?, ?pane: (String | Symbol)?) -> void
       def selection(...)
-        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+        raise inactive_sheet_error if @writer.current_sheet != @sheet_name
 
         @writer.selection(...)
       end
@@ -1061,7 +1061,7 @@ module Xlsxrb
       # @api public
       #: (Elements::Selection | Array[Elements::Selection | Hash[Symbol, untyped]] | Hash[Symbol, untyped] | nil opts) -> void
       def selection=(opts)
-        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+        raise inactive_sheet_error if @writer.current_sheet != @sheet_name
 
         @writer.selection = opts
       end
@@ -1082,7 +1082,7 @@ module Xlsxrb
       #: () -> Elements::PageMargins?
       #: (?left: Float | nil, ?right: Float | nil, ?top: Float | nil, ?bottom: Float | nil, ?header: Float | nil, ?footer: Float | nil) -> void
       def page_margins(...)
-        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+        raise inactive_sheet_error if @writer.current_sheet != @sheet_name
 
         @writer.page_margins(...)
       end
@@ -1094,7 +1094,7 @@ module Xlsxrb
       # @api public
       #: (Hash[Symbol, untyped] | Elements::PageMargins | nil opts) -> void
       def page_margins=(opts)
-        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+        raise inactive_sheet_error if @writer.current_sheet != @sheet_name
 
         @writer.page_margins = opts
       end
@@ -1112,7 +1112,7 @@ module Xlsxrb
       #: () -> Elements::PageSetup
       #: (**untyped opts) -> void
       def page_setup(...)
-        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+        raise inactive_sheet_error if @writer.current_sheet != @sheet_name
 
         @writer.page_setup(...)
       end
@@ -1124,7 +1124,7 @@ module Xlsxrb
       # @api public
       #: (Hash[Symbol, untyped] | Elements::PageSetup opts) -> void
       def page_setup=(opts)
-        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+        raise inactive_sheet_error if @writer.current_sheet != @sheet_name
 
         @writer.page_setup = opts
       end
@@ -1140,7 +1140,7 @@ module Xlsxrb
       #: () -> Elements::HeaderFooter
       #: (**untyped opts) -> void
       def header_footer(...)
-        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+        raise inactive_sheet_error if @writer.current_sheet != @sheet_name
 
         @writer.header_footer(...)
       end
@@ -1152,7 +1152,7 @@ module Xlsxrb
       # @api public
       #: (Hash[Symbol, untyped] | Elements::HeaderFooter opts) -> void
       def header_footer=(opts)
-        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+        raise inactive_sheet_error if @writer.current_sheet != @sheet_name
 
         @writer.header_footer = opts
       end
@@ -1166,7 +1166,7 @@ module Xlsxrb
       #: () -> Elements::PrintOptions
       #: (**untyped opts) -> void
       def print_options(**opts)
-        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+        raise inactive_sheet_error if @writer.current_sheet != @sheet_name
 
         @writer.print_options(**opts)
       end
@@ -1177,7 +1177,7 @@ module Xlsxrb
       # @api public
       #: (Hash[Symbol, untyped] | Elements::PrintOptions opts) -> void
       def print_options=(opts)
-        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+        raise inactive_sheet_error if @writer.current_sheet != @sheet_name
 
         @writer.print_options = opts
       end
@@ -1193,7 +1193,7 @@ module Xlsxrb
       #: () -> Elements::SheetProtection?
       #: (**untyped opts) -> void
       def sheet_protection(...)
-        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+        raise inactive_sheet_error if @writer.current_sheet != @sheet_name
 
         @writer.sheet_protection(...)
       end
@@ -1205,7 +1205,7 @@ module Xlsxrb
       # @api public
       #: (Elements::SheetProtection | Hash[Symbol, untyped] | bool | nil opts) -> void
       def sheet_protection=(opts)
-        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+        raise inactive_sheet_error if @writer.current_sheet != @sheet_name
 
         @writer.sheet_protection = opts
       end
@@ -1216,7 +1216,7 @@ module Xlsxrb
       # @api public
       #: () -> Array[Elements::Column]
       def columns
-        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+        raise inactive_sheet_error if @writer.current_sheet != @sheet_name
 
         @writer.columns
       end
@@ -1234,7 +1234,7 @@ module Xlsxrb
       # @api public
       #: (String file_data, ?ext: String, ?from_column: Integer?, ?from_row: Integer, ?to_column: Integer?, ?to_row: Integer, **untyped opts) -> void
       def image(...)
-        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+        raise inactive_sheet_error if @writer.current_sheet != @sheet_name
 
         @writer.image(...)
       end
@@ -1255,7 +1255,7 @@ module Xlsxrb
       # @api public
       #: (untyped val) -> untyped
       def background_image=(val)
-        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+        raise inactive_sheet_error if @writer.current_sheet != @sheet_name
 
         @writer.background_image = val
       end
@@ -1268,7 +1268,7 @@ module Xlsxrb
       #: () -> Elements::SheetView
       #: (**untyped opts) -> void
       def sheet_view(**opts)
-        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+        raise inactive_sheet_error if @writer.current_sheet != @sheet_name
 
         @writer.sheet_view(**opts)
       end
@@ -1279,7 +1279,7 @@ module Xlsxrb
       # @api public
       #: (Hash[Symbol, untyped] | Elements::SheetView opts) -> void
       def sheet_view=(opts)
-        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+        raise inactive_sheet_error if @writer.current_sheet != @sheet_name
 
         @writer.sheet_view = opts
       end
@@ -1292,7 +1292,7 @@ module Xlsxrb
       #: () -> Elements::SheetFormat
       #: (**untyped opts) -> void
       def sheet_format(**opts)
-        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+        raise inactive_sheet_error if @writer.current_sheet != @sheet_name
 
         @writer.sheet_format(**opts)
       end
@@ -1303,7 +1303,7 @@ module Xlsxrb
       # @api public
       #: (Hash[Symbol, untyped] | Elements::SheetFormat opts) -> void
       def sheet_format=(opts)
-        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+        raise inactive_sheet_error if @writer.current_sheet != @sheet_name
 
         @writer.sheet_format = opts
       end
@@ -1317,7 +1317,7 @@ module Xlsxrb
       # @api public
       #: (Integer row_index) -> void
       def row_break(...)
-        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+        raise inactive_sheet_error if @writer.current_sheet != @sheet_name
 
         @writer.row_break(...)
       end
@@ -1332,7 +1332,7 @@ module Xlsxrb
       # @api public
       #: (Integer | String | Symbol col) -> void
       def column_break(...)
-        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+        raise inactive_sheet_error if @writer.current_sheet != @sheet_name
 
         @writer.column_break(...)
       end
@@ -1348,7 +1348,7 @@ module Xlsxrb
       # @api public
       #: (String name, String sqref, ?password: String?, **untyped opts) -> void
       def protected_range(...)
-        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+        raise inactive_sheet_error if @writer.current_sheet != @sheet_name
 
         @writer.protected_range(...)
       end
@@ -1360,7 +1360,7 @@ module Xlsxrb
       # @api public
       #: (String ref) -> void
       def cell_watch(...)
-        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+        raise inactive_sheet_error if @writer.current_sheet != @sheet_name
 
         @writer.cell_watch(...)
       end
@@ -1373,7 +1373,7 @@ module Xlsxrb
       # @api public
       #: (String sqref, ?eval_error: bool, ?two_digit_text_year: bool, ?number_stored_as_text: bool, ?formula: bool, ?formula_range: bool, ?unlocked_formula: bool, ?empty_cell_reference: bool, ?list_data_validation: bool, ?calculated_column: bool) -> void
       def ignored_error(...)
-        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+        raise inactive_sheet_error if @writer.current_sheet != @sheet_name
 
         @writer.ignored_error(...)
       end
@@ -1403,7 +1403,7 @@ module Xlsxrb
       # @api public
       #: (Hash[Symbol, untyped] | Integer | nil spec) -> (Hash[Symbol, untyped] | Integer | nil)
       def phonetic_properties=(spec)
-        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+        raise inactive_sheet_error if @writer.current_sheet != @sheet_name
 
         @writer.phonetic_properties = spec
       end
@@ -1424,7 +1424,7 @@ module Xlsxrb
       # @api public
       #: (String | Symbol | nil val) -> String?
       def code_name=(val)
-        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+        raise inactive_sheet_error if @writer.current_sheet != @sheet_name
 
         @writer.code_name = val
       end
@@ -1445,7 +1445,7 @@ module Xlsxrb
       # @api public
       #: (bool? enabled) -> bool??
       def fit_to_page=(enabled)
-        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+        raise inactive_sheet_error if @writer.current_sheet != @sheet_name
 
         @writer.fit_to_page = enabled
       end
@@ -1466,9 +1466,20 @@ module Xlsxrb
       # @api public
       #: (Hash[Symbol, untyped]? spec) -> Hash[Symbol, untyped]?
       def sheet_calc_properties=(spec)
-        raise Error, "Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet." if @writer.current_sheet != @sheet_name
+        raise inactive_sheet_error if @writer.current_sheet != @sheet_name
 
         @writer.sheet_calc_properties = spec
+      end
+
+      private
+
+      # The error for writing through a proxy whose sheet is not the current sheet: an
+      # earlier sheet, or a sheet that was never created.
+      #: () -> Error
+      def inactive_sheet_error
+        return Error.new("Sheet '#{@sheet_name}' does not exist. Create it with sheet before writing to it.") unless @writer.sheet_names.include?(@sheet_name)
+
+        Error.new("Sheet '#{@sheet_name}' is no longer active. In streaming mode, you cannot write to a previous sheet.")
       end
     end
 
@@ -1530,7 +1541,14 @@ module Xlsxrb
       @current_sheet
     end
 
+    UNKNOWN_SHEET_MESSAGE = "Looking up a sheet that does not exist with StreamWriter#[] is deprecated; " \
+                            "create it with sheet. In version 0.3.0, this will raise ArgumentError."
+    private_constant :UNKNOWN_SHEET_MESSAGE
+
     # Returns a WorksheetProxy for the current or named sheet.
+    #
+    # Looking up a sheet that does not exist is deprecated and warns; in version 0.3.0 it
+    # will raise ArgumentError.
     #
     # @param name_or_index [String, Symbol, Integer, nil] Sheet name or 0-based sheet index.
     # @yield [proxy]
@@ -1547,6 +1565,7 @@ module Xlsxrb
                     else
                       name_or_index.to_s
                     end
+      Deprecation.warn(UNKNOWN_SHEET_MESSAGE) unless sheet_names.include?(target_name)
       proxy = WorksheetProxy.new(self, target_name)
       yield proxy if block_given?
       proxy

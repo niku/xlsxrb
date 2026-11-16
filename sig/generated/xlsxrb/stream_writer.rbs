@@ -1031,6 +1031,13 @@ module Xlsxrb
       # @api public
       # : (Hash[Symbol, untyped]? spec) -> Hash[Symbol, untyped]?
       def sheet_calc_properties=: (Hash[Symbol, untyped]? spec) -> Hash[Symbol, untyped]?
+
+      private
+
+      # The error for writing through a proxy whose sheet is not the current sheet: an
+      # earlier sheet, or a sheet that was never created.
+      # : () -> Error
+      def inactive_sheet_error: () -> Error
     end
 
     # Returns the list of worksheet names created in this workbook so far.
@@ -1054,7 +1061,12 @@ module Xlsxrb
     # : (?String? name, ?state: Symbol | String | nil, ?tab_color: String | Hash[Symbol, untyped] | Symbol | nil, ?code_name: String | Symbol | nil, **untyped opts) ?{ (WorksheetProxy) -> void } -> String
     def sheet: (?String? name, ?state: Symbol | String | nil, ?tab_color: String | Hash[Symbol, untyped] | Symbol | nil, ?code_name: String | Symbol | nil, **untyped opts) ?{ (WorksheetProxy) -> void } -> String
 
+    UNKNOWN_SHEET_MESSAGE: ::String
+
     # Returns a WorksheetProxy for the current or named sheet.
+    #
+    # Looking up a sheet that does not exist is deprecated and warns; in version 0.3.0 it
+    # will raise ArgumentError.
     #
     # @param name_or_index [String, Symbol, Integer, nil] Sheet name or 0-based sheet index.
     # @yield [proxy]
