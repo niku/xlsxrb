@@ -145,6 +145,13 @@ module Xlsxrb
           hl_tag_end = xml.index(">", hl_start + 1)
           break unless hl_tag_end
 
+          # "hyperlink" in text or a comment rather than in a tag: the tag found before it has
+          # already ended. Continue after the word, so that the position always advances.
+          if hl_tag_end < hl_start_term
+            pos = hl_start_term + 9
+            next
+          end
+
           hl_tag = xml.byteslice(hl_start, hl_tag_end - hl_start)
           ref = tag_attr(hl_tag, ' ref="')
           rid = tag_attr(hl_tag, ' r:id="') || tag_attr(hl_tag, ' id="') || hl_tag[/(?:[a-zA-Z0-9_]+:)?id="([^"]+)"/, 1]
