@@ -41,6 +41,9 @@ module Xlsxrb
           else
             raise Xlsxrb::DecryptionError, "Unsupported encryption version #{major}.#{minor}"
           end
+        rescue OpenSSL::OpenSSLError, ArgumentError => e
+          # Salts, keys, and ciphertext of the wrong length, and invalid Base64.
+          raise Xlsxrb::DecryptionError, "Malformed encrypted package: #{e.message}"
         end
 
         # Encrypts a plain ZIP payload with the given password into an encrypted CFB package.

@@ -272,6 +272,43 @@ class EncryptionSecurityAuditTest < Test::Unit::TestCase
     end
   end
 
+  # 12. Malformed Key Material Reports DecryptionError, Not OpenSSL or Argument Errors
+  def test_agile_malformed_key_material_rejection
+    with_agile_encryption_info do |info, pkg|
+      {
+        "key size" => info.gsub('keyBits="256"', 'keyBits="7"'),
+        "empty salt" => info.gsub(/saltValue="[^"]*"/, 'saltValue=""'),
+        "invalid Base64" => info.gsub(/encryptedKeyValue="[^"]*"/, 'encryptedKeyValue="!!!"'),
+        "verifier length" => info.gsub(/encryptedVerifierHashInput="[^"]*"/, 'encryptedVerifierHashInput="QUJD"')
+      }.each do |label, forged_info|
+        assert_not_equal info, forged_info, label
+        assert_raise(Xlsxrb::DecryptionError, label) do
+          Xlsxrb.load(rebuild_cfb(forged_info, pkg), password: "ValidPassword123")
+        end
+      end
+
+      assert_raise(Xlsxrb::DecryptionError, "truncated package") do
+        Xlsxrb.load(rebuild_cfb(info, pkg[0, pkg.bytesize - 5]), password: "ValidPassword123")
+      end
+    end
+  end
+
+  # 13. Truncated Standard EncryptedPackage Reports DecryptionError
+  def test_standard_truncated_package_rejection
+    Dir.mktmpdir do |dir|
+      xlsx_path = File.join(dir, "standard.xlsx")
+      Xlsxrb.write(xlsx_path, password: "ValidPassword123") do |wb|
+        wb.sheet("Data") { |s| s.row(["Value", 1]) }
+      end
+      reader = Xlsxrb::Ooxml::Cfb::Reader.new(File.binread(xlsx_path))
+      pkg = reader.read_stream("EncryptedPackage")
+
+      assert_raise(Xlsxrb::DecryptionError) do
+        Xlsxrb.load(rebuild_cfb(reader.read_stream("EncryptionInfo"), pkg[0, pkg.bytesize - 5]), password: "ValidPassword123")
+      end
+    end
+  end
+
   private
 
   def with_agile_encryption_info

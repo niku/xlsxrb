@@ -12,6 +12,7 @@
 ### Fixed
 - Raise `Xlsxrb::ZipError` for corrupt deflate data and for compression methods other than stored and deflate. These raised `Zlib::DataError` or `Zlib::BufError`, which code that rescues `Xlsxrb::Error` does not catch, and reading an entry with an unsupported compression method through `ZipReader#open_entry_io` returned no data without an error. An archive that ends inside a local file header no longer raises `NoMethodError`.
 - Replace invalid UTF-16 in a part with U+FFFD instead of raising `Encoding::InvalidByteSequenceError`.
+- Raise `Xlsxrb::DecryptionError` for encrypted packages with salts, keys, or ciphertext of the wrong length or invalid Base64. These raised `OpenSSL::Cipher::CipherError` or `ArgumentError`, which code that rescues `Xlsxrb::Error` does not catch.
 
 ## [0.2.1] - 2026-11-16
 

@@ -221,6 +221,8 @@ module Xlsxrb
           def cipher_name_for(algo, key_bits)
             case algo.to_s.upcase
             when "AES"
+              raise Xlsxrb::DecryptionError, "Unsupported AES key size: #{key_bits}" unless [128, 192, 256].include?(key_bits)
+
               "aes-#{key_bits}-cbc"
             else
               raise Xlsxrb::DecryptionError, "Unsupported cipher algorithm: #{algo}"
