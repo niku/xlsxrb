@@ -809,7 +809,8 @@ class PbtTest < Test::Unit::TestCase
       Pbt.property(Pbt.ascii_string) do |str|
         escaped = Xlsxrb::Ooxml::XmlBuilder.escape(str)
         unescaped = Xlsxrb::Ooxml::XmlBuilder.unescape(escaped)
-        assert_equal str, unescaped
+        # escape removes the control characters that XML 1.0 cannot hold.
+        assert_equal str.delete("\x00-\x08\x0B\x0C\x0E-\x1F"), unescaped
       end
     end
   end

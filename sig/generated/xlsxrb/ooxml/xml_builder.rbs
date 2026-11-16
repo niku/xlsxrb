@@ -39,7 +39,11 @@ module Xlsxrb
 
       UNESCAPE_RE: ::Regexp
 
-      # Escapes XML special characters in a string.
+      INVALID_XML_CHARS_RE: ::Regexp
+
+      # Escapes XML special characters in a string, and removes characters that XML 1.0
+      # cannot hold, such as U+0001 and U+FFFE: a part that contains one is not well-formed.
+      # Binary strings are only escaped.
       #
       # @param value [Object]
       # @return [String]

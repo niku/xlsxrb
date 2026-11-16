@@ -108,13 +108,19 @@ module Xlsxrb
 
       UNESCAPE_RE = /&(?:amp|lt|gt|quot|apos);/
 
-      # Escapes XML special characters in a string.
+      INVALID_XML_CHARS_RE = /[^\x09\x0A\x0D\x20-\uD7FF\uE000-\uFFFD\u{10000}-\u{10FFFF}]/
+      private_constant :INVALID_XML_CHARS_RE
+
+      # Escapes XML special characters in a string, and removes characters that XML 1.0
+      # cannot hold, such as U+0001 and U+FFFE: a part that contains one is not well-formed.
+      # Binary strings are only escaped.
       #
       # @param value [Object]
       # @return [String]
       #: (untyped value) -> String
       def self.escape(value)
         str = value.to_s
+        str = str.gsub(INVALID_XML_CHARS_RE, "") if !str.encoding.equal?(Encoding::BINARY) && str.match?(INVALID_XML_CHARS_RE)
         str.match?(ESCAPE_RE) ? str.gsub(ESCAPE_RE, ESCAPE_MAP) : str
       end
 

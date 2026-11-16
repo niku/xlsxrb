@@ -507,6 +507,22 @@ class OoxmlTest < Test::Unit::TestCase
     assert_same(empty, Xlsxrb::Ooxml::XmlBuilder.escape(empty))
   end
 
+  test "XmlBuilder.escape removes characters that XML 1.0 cannot hold" do
+    escape = Xlsxrb::Ooxml::XmlBuilder.method(:escape)
+    codepoints = ->(*points) { points.pack("U*") }
+
+    assert_equal("ab", escape.call("a\u0001b"))
+    assert_equal("a&amp;b", escape.call("a\u0000&\u001Fb"))
+    assert_equal("", escape.call(codepoints.call(0x08, 0x0B, 0x0C, 0x0E, 0x1F, 0xFFFE, 0xFFFF)))
+
+    kept = codepoints.call(0x09, 0x0A, 0x0D, 0x20, 0x7F, 0xD7FF, 0xE000, 0xFFFD, 0x10000, 0x10FFFF)
+    assert_same(kept, escape.call(kept))
+
+    # Binary strings are only escaped, as before.
+    binary = "a\xFF<\x01".b
+    assert_equal("a\xFF&lt;\x01".b, escape.call(binary))
+  end
+
   test "XmlBuilder.encode_xstring encodes text that unescape would change" do
     encode = ->(text) { Xlsxrb::Ooxml::XmlBuilder.encode_xstring(text) }
     plain = "no_x_sequences_x12_ or _X0041_ here"
