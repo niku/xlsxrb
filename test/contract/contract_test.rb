@@ -639,9 +639,9 @@ class ContractTest < Test::Unit::TestCase
   test "freeze_pane: settings are preserved" do |api_path|
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Frozen") do |s|
+        s.freeze_pane(row: 1, column: 0)
         s.row(["Header"])
         s.row([1])
-        s.freeze_pane(row: 1, column: 0)
       end
     end
 
@@ -788,11 +788,11 @@ class ContractTest < Test::Unit::TestCase
   test "combined: multiple features on same sheet" do |api_path|
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("All") do |s|
+        s.freeze_pane(row: 1)
         s.row(%w[Name Score])
         s.row(["Alice", 95])
         s.auto_filter = "A1:B2"
         s.merge("A1:A1")
-        s.freeze_pane(row: 1)
         s.page_margins(left: 1.0, right: 1.0)
         s.data_validation("B2", type: :whole, formula1: "0", formula2: "100")
       end
@@ -839,9 +839,9 @@ class ContractTest < Test::Unit::TestCase
   test "worksheet: split pane and selection" do |api_path|
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Sheet1") do |s|
-        s.row(["Data"])
         s.split_pane(x_split: 1, y_split: 2, top_left_cell: "B3")
         s.selection("B3", sqref: "B3:C4", pane: :bottomRight)
+        s.row(["Data"])
       end
     end
 
@@ -865,9 +865,9 @@ class ContractTest < Test::Unit::TestCase
   test "worksheet: sheet properties and views" do |api_path|
     reader, tmp = generate_and_read(api_path) do |w|
       w.sheet("Sheet1") do |s|
-        s.row(["Data"])
         s.sheet_properties(tab_color: "FF0000")
         s.sheet_view(show_grid_lines: false, zoom_scale: 150)
+        s.row(["Data"])
       end
     end
 

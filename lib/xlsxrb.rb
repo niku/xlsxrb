@@ -79,9 +79,15 @@ module Xlsxrb
 
   # @api private
   module Deprecation
-    # Warns that a feature is deprecated, at the location +uplevel+ frames above the caller.
-    #: (String message, ?uplevel: Integer) -> void
+    LIB_DIR = File.expand_path(__dir__).freeze
+    private_constant :LIB_DIR
+
+    # Warns that a feature is deprecated, at the location +uplevel+ frames above the caller,
+    # or, with +uplevel: nil+, at the first caller outside this library, for methods that
+    # are reached both directly and through another xlsxrb method.
+    #: (String message, ?uplevel: Integer?) -> void
     def self.warn(message, uplevel: 1)
+      uplevel ||= caller_locations(1)&.index { |location| !location.absolute_path.to_s.start_with?(LIB_DIR) } || 0
       Kernel.warn("[Xlsxrb DEPRECATION] #{message}", uplevel: uplevel + 1)
     end
   end

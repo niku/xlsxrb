@@ -537,9 +537,9 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     tmp = Tempfile.new(["facade_freeze_stream", ".xlsx"])
     Xlsxrb.write(tmp.path) do |w|
       w.sheet("Frozen") do |s|
+        s.freeze_pane(row: 1, column: 1)
         s.row(["Header"])
         s.row([1])
-        s.freeze_pane(row: 1, column: 1)
       end
     end
 
@@ -1250,11 +1250,11 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     tmp = Tempfile.new(["facade_combined_stream", ".xlsx"])
     Xlsxrb.write(tmp.path) do |w|
       w.sheet("Combined") do |s|
+        s.freeze_pane(row: 1)
         s.row(%w[Name Score])
         s.row(["Alice", 95])
         s.auto_filter = "A1:B2"
         s.merge("A1:B1")
-        s.freeze_pane(row: 1)
         s.page_margins(left: 0.5, right: 0.5)
         s.header_footer(odd_header: "&CTest")
         s.conditional_format("B2", type: :cell_is, operator: :greaterThan, formula: "90")

@@ -1802,6 +1802,7 @@ module Xlsxrb
       raise ArgumentError, "Column width #{width} must be between 0 and 255 characters (Excel limitation)" if @strict_excel_mode && width && (width.negative? || width > 255)
 
       sheet if @current_sheet.nil?
+      warn_late_sheet_setting("column")
 
       DslHelpers.check_style_name!(style, @style_name_to_id)
       style_id = if style.is_a?(Hash)
@@ -1957,6 +1958,7 @@ module Xlsxrb
     #: (?summary_below: bool?, ?summary_right: bool?, ?show_outline_symbols: bool?, ?apply_styles: bool?, **untyped opts) -> void
     def outline_properties(summary_below: nil, summary_right: nil, show_outline_symbols: nil, apply_styles: nil, **opts)
       sheet if @current_sheet.nil?
+      warn_late_sheet_setting("outline_properties") unless summary_below.nil? && summary_right.nil? && show_outline_symbols.nil? && apply_styles.nil? && opts.empty?
 
       return @current_sheet_properties.slice(:summary_below, :summary_right, :show_outline_symbols, :apply_styles) if summary_below.nil? && summary_right.nil? && show_outline_symbols.nil? && apply_styles.nil? && opts.empty?
 
@@ -2303,6 +2305,7 @@ module Xlsxrb
     #: (?row: Integer | nil, ?column: (Integer | String)?, ?top_left_cell: String?, ?active_pane: (String | Symbol)?) -> void
     def freeze_pane(row: nil, column: nil, top_left_cell: nil, active_pane: nil)
       sheet if @current_sheet.nil?
+      warn_late_sheet_setting("freeze_pane") unless row.nil? && column.nil? && top_left_cell.nil? && active_pane.nil?
       if row.nil? && column.nil? && top_left_cell.nil? && active_pane.nil?
         return @current_freeze_pane ? Elements::FreezePane.new(**@current_freeze_pane) : nil
       end
@@ -2323,6 +2326,7 @@ module Xlsxrb
     #: (Elements::FreezePane | Hash[Symbol, untyped] | nil opts) -> void
     def freeze_pane=(opts)
       sheet if @current_sheet.nil?
+      warn_late_sheet_setting("freeze_pane=")
       if opts.nil?
         @current_freeze_pane = nil
       else
@@ -2353,6 +2357,7 @@ module Xlsxrb
     #: (?x_split: Integer | nil, ?y_split: Integer | nil, ?top_left_cell: String?, ?active_pane: (String | Symbol)?) -> void
     def split_pane(x_split: nil, y_split: nil, top_left_cell: nil, active_pane: nil)
       sheet if @current_sheet.nil?
+      warn_late_sheet_setting("split_pane") unless x_split.nil? && y_split.nil? && top_left_cell.nil? && active_pane.nil?
       if x_split.nil? && y_split.nil? && top_left_cell.nil? && active_pane.nil?
         return @current_split_pane ? Elements::SplitPane.new(**@current_split_pane) : nil
       end
@@ -2371,6 +2376,7 @@ module Xlsxrb
     #: (Elements::SplitPane | Hash[Symbol, untyped] | nil opts) -> void
     def split_pane=(opts)
       sheet if @current_sheet.nil?
+      warn_late_sheet_setting("split_pane=")
       if opts.nil?
         @current_split_pane = nil
       else
@@ -2396,6 +2402,7 @@ module Xlsxrb
     #: (?String? active_cell, ?sqref: String?, ?pane: (String | Symbol)?) -> void
     def selection(active_cell = nil, sqref: nil, pane: nil)
       sheet if @current_sheet.nil?
+      warn_late_sheet_setting("selection") unless active_cell.nil? && sqref.nil? && pane.nil?
       if active_cell.nil? && sqref.nil? && pane.nil?
         return nil if @current_selection.nil?
         return @current_selection.map { |s| Elements::Selection.new(**s) } if @current_selection.is_a?(Array)
@@ -2423,6 +2430,7 @@ module Xlsxrb
     #: (Elements::Selection | Array[Elements::Selection | Hash[Symbol, untyped]] | Hash[Symbol, untyped] | nil opts) -> void
     def selection=(opts)
       sheet if @current_sheet.nil?
+      warn_late_sheet_setting("selection=")
       @current_selection = if opts.nil?
                              nil
                            elsif opts.is_a?(Array)
@@ -2489,6 +2497,7 @@ module Xlsxrb
     #: (**untyped opts) -> void
     def page_setup(**opts)
       sheet if @current_sheet.nil?
+      warn_late_sheet_setting("page_setup with fit_to_width or fit_to_height") if opts.key?(:fit_to_width) || opts.key?(:fit_to_height)
       return Elements::PageSetup.new(**@current_page_setup) if opts.empty?
 
       @current_page_setup.merge!(opts)
@@ -2755,6 +2764,7 @@ module Xlsxrb
     #: (String | Symbol | Hash[Symbol, untyped] | nil spec) -> (String | Hash[Symbol, untyped] | nil)
     def tab_color=(spec)
       sheet if @current_sheet.nil?
+      warn_late_sheet_setting("tab_color=")
       @current_sheet_properties[:tab_color] = spec
     end
 
@@ -2770,6 +2780,7 @@ module Xlsxrb
     #: (**untyped opts) -> void
     def sheet_properties(**opts)
       sheet if @current_sheet.nil?
+      warn_late_sheet_setting("sheet_properties") unless opts.empty?
       return Elements::SheetProperties.new(**@current_sheet_properties) if opts.empty?
 
       opts.each do |k, v|
@@ -2796,6 +2807,7 @@ module Xlsxrb
     #: (Hash[Symbol, untyped] | Elements::SheetProperties opts) -> void
     def sheet_properties=(opts)
       sheet if @current_sheet.nil?
+      warn_late_sheet_setting("sheet_properties=")
       h = opts.respond_to?(:to_h) ? opts.to_h : (opts || {})
       @current_sheet_properties = {}
       sheet_properties(**h)
@@ -2814,6 +2826,7 @@ module Xlsxrb
     #: (**untyped opts) -> void
     def sheet_view(**opts)
       sheet if @current_sheet.nil?
+      warn_late_sheet_setting("sheet_view") unless opts.empty?
       return Elements::SheetView.new(**@current_sheet_view) if opts.empty?
 
       opts.each { |k, v| @current_sheet_view[k.to_sym] = v }
@@ -2828,6 +2841,7 @@ module Xlsxrb
     #: (Hash[Symbol, untyped] | Elements::SheetView opts) -> void
     def sheet_view=(opts)
       sheet if @current_sheet.nil?
+      warn_late_sheet_setting("sheet_view=")
       h = opts.respond_to?(:to_h) ? opts.to_h : (opts || {})
       @current_sheet_view = h.transform_keys(&:to_sym)
       nil
@@ -2845,6 +2859,7 @@ module Xlsxrb
     #: (**untyped opts) -> void
     def sheet_format(**opts)
       sheet if @current_sheet.nil?
+      warn_late_sheet_setting("sheet_format") unless opts.empty?
       return Elements::SheetFormat.new(**@current_sheet_format) if opts.empty?
 
       opts.each { |k, v| @current_sheet_format[k.to_sym] = v }
@@ -2859,6 +2874,7 @@ module Xlsxrb
     #: (Hash[Symbol, untyped] | Elements::SheetFormat opts) -> void
     def sheet_format=(opts)
       sheet if @current_sheet.nil?
+      warn_late_sheet_setting("sheet_format=")
       h = opts.respond_to?(:to_h) ? opts.to_h : (opts || {})
       @current_sheet_format = h.transform_keys(&:to_sym)
       nil
@@ -2994,6 +3010,7 @@ module Xlsxrb
       if @current_sheet.nil?
         @workbook_properties[:code_name] = val&.to_s
       else
+        warn_late_sheet_setting("code_name=")
         @current_sheet_properties[:code_name] = val&.to_s
       end
     end
@@ -3016,6 +3033,7 @@ module Xlsxrb
     #: (bool? enabled) -> bool?
     def fit_to_page=(enabled)
       sheet if @current_sheet.nil?
+      warn_late_sheet_setting("fit_to_page=")
       @current_sheet_properties[:fit_to_page] = enabled ? true : false
     end
 
@@ -3445,6 +3463,20 @@ module Xlsxrb
       return if name.is_a?(Symbol) ? @style_name_to_id.key?(name.name) : name.is_a?(String) && @style_name_to_id.key?(name)
 
       DslHelpers.check_style_name!(name, @style_name_to_id)
+    end
+
+    LATE_SHEET_SETTING_MESSAGE = "Calling %s after rows of the sheet are written is deprecated; call it before the first row. " \
+                                 "StreamWriter writes this setting at the start of the sheet, so it is ignored once that start " \
+                                 "is written, after about 64 KB of rows. In version 0.3.0, it will raise Xlsxrb::Error."
+    private_constant :LATE_SHEET_SETTING_MESSAGE
+
+    # Warns when a setting that StreamWriter writes at the start of the sheet comes after
+    # rows (or skipped rows) of the sheet. ADR 0010 makes it an error in 0.3.0.
+    #: (String name) -> void
+    def warn_late_sheet_setting(name)
+      return unless @current_row_index.positive?
+
+      Deprecation.warn(format(LATE_SHEET_SETTING_MESSAGE, name), uplevel: nil)
     end
 
     # The style id for a Time-like value (see Ooxml::WorksheetWriter::TimeLike) in a cell

@@ -1276,13 +1276,12 @@ class PublicApiTest < Test::Unit::TestCase
       wb.style("red") { |s| s.font_color = :red }
 
       wb.sheet("Test")
+      wb.column("A".."B", width: 20)
+      wb.column(%w[C D], width: 10)
       wb.row(
         { "A" => 1, "B" => 2, "C" => 3, "D" => 4 },
         cell_styles: { "A" => "bold", "B".."C" => "italic", "D" => "red" }
       )
-
-      wb.column("A".."B", width: 20)
-      wb.column(%w[C D], width: 10)
     end
 
     parsed = Xlsxrb.load(temp_file.path)
@@ -2673,19 +2672,19 @@ class PublicApiTest < Test::Unit::TestCase
       w.sheet("Test") do |s|
         assert s.respond_to?(:row)
 
-        s.row([1, 2, 3])
-
-        s.merge("A1:C1")
         s.freeze_pane(row: 1, column: 1)
         s.split_pane(x_split: 1000, y_split: 1000, top_left_cell: "B2")
         s.selection("A1", sqref: "A1:A2", pane: "topRight")
+        s.sheet_view(show_grid_lines: false)
+        s.row([1, 2, 3])
+
+        s.merge("A1:C1")
 
         s.page_margins(left: 0.5, right: 0.5, top: 0.5, bottom: 0.5, header: 0.2, footer: 0.2)
         s.print_options(grid_lines: true)
         s.page_setup(paper_size: 9, orientation: "landscape")
         s.header_footer(odd_header: "&L&T")
 
-        s.sheet_view(show_grid_lines: false)
         s.sheet_protection(password: "secret", sheet: true)
       end
     end
@@ -3934,6 +3933,65 @@ class PublicApiTest < Test::Unit::TestCase
     missing = Xlsxrb::Elements::Worksheet.public_instance_methods - Xlsxrb::DeferredWorksheet.public_instance_methods
     assert_equal([], missing)
     assert_false(Xlsxrb::DeferredWorksheet.private_method_defined?(:method_missing, false))
+  end
+
+  test "StreamWriter warns for sheet settings that come after rows of the sheet" do
+    settings = {
+      "column" => ->(s) { s.column(0, width: 10) },
+      "freeze_pane" => ->(s) { s.freeze_pane(row: 1, column: 0) },
+      "freeze_pane=" => ->(s) { s.freeze_pane = { row: 1, column: 0 } },
+      "split_pane" => ->(s) { s.split_pane(x_split: 100) },
+      "split_pane=" => ->(s) { s.split_pane = { x_split: 100 } },
+      "selection" => ->(s) { s.selection("B2") },
+      "selection=" => ->(s) { s.selection = { active_cell: "B2" } },
+      "sheet_view" => ->(s) { s.sheet_view(show_grid_lines: false) },
+      "sheet_view=" => ->(s) { s.sheet_view = { show_grid_lines: false } },
+      "sheet_format" => ->(s) { s.sheet_format(default_row_height: 20) },
+      "sheet_format=" => ->(s) { s.sheet_format = { default_row_height: 20 } },
+      "sheet_properties" => ->(s) { s.sheet_properties(fit_to_page: true) },
+      "sheet_properties=" => ->(s) { s.sheet_properties = { fit_to_page: true } },
+      "tab_color=" => ->(s) { s.tab_color = "FF0000" },
+      "code_name=" => ->(s) { s.code_name = "Sheet1Code" },
+      "fit_to_page=" => ->(s) { s.fit_to_page = true },
+      "outline_properties" => ->(s) { s.outline_properties(summary_below: false) },
+      "page_setup with fit_to_width or fit_to_height" => ->(s) { s.page_setup(fit_to_width: 1) }
+    }
+
+    settings.each do |name, set|
+      before = capture_stderr do
+        Xlsxrb.write(StringIO.new) do |w|
+          w.sheet("S") do |s|
+            set.call(s) && nil
+            s.row([1])
+          end
+        end
+      end
+      assert_equal("", before, "#{name} before rows")
+      after = capture_stderr do
+        Xlsxrb.write(StringIO.new) do |w|
+          w.sheet("S") do |s|
+            s.row([1])
+            set.call(s)
+          end
+        end
+      end
+      assert_match(/\[Xlsxrb DEPRECATION\] Calling #{Regexp.escape(name)} after rows of the sheet are written is deprecated/, after, name)
+      assert_include(after, "#{__FILE__}:", name) unless defined?(RBS::Test)
+    end
+
+    quiet = capture_stderr do
+      Xlsxrb.write(StringIO.new) do |w|
+        w.sheet("S") do |s|
+          s.row([1])
+          s.freeze_pane
+          s.sheet_view
+          s.outline_properties
+          s.page_setup(orientation: :landscape)
+        end
+        w.sheet("T") { |s| s.tab_color = "00FF00" }
+      end
+    end
+    assert_equal("", quiet, "reading settings, page setup without fitting, and a new sheet do not warn")
   end
 
   test "ReturnedStyleBuilder forwards every public method of StyleBuilder" do

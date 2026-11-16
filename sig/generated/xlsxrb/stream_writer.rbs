@@ -2018,6 +2018,13 @@ module Xlsxrb
     # : (untyped name) -> void
     def check_style_name!: (untyped name) -> void
 
+    LATE_SHEET_SETTING_MESSAGE: ::String
+
+    # Warns when a setting that StreamWriter writes at the start of the sheet comes after
+    # rows (or skipped rows) of the sheet. ADR 0010 makes it an error in 0.3.0.
+    # : (String name) -> void
+    def warn_late_sheet_setting: (String name) -> void
+
     # The style id for a Time-like value (see Ooxml::WorksheetWriter::TimeLike) in a cell
     # whose style id is style_id: the date-time variant of that style when the style has no
     # number format, as a Time in the same cell gets from with_date_style_variants, and

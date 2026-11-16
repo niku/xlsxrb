@@ -29,9 +29,13 @@ module Xlsxrb
 
   # @api private
   module Deprecation
-    # Warns that a feature is deprecated, at the location +uplevel+ frames above the caller.
-    # : (String message, ?uplevel: Integer) -> void
-    def self.warn: (String message, ?uplevel: Integer) -> void
+    LIB_DIR: untyped
+
+    # Warns that a feature is deprecated, at the location +uplevel+ frames above the caller,
+    # or, with +uplevel: nil+, at the first caller outside this library, for methods that
+    # are reached both directly and through another xlsxrb method.
+    # : (String message, ?uplevel: Integer?) -> void
+    def self.warn: (String message, ?uplevel: Integer?) -> void
   end
 
   # Raised when parsing malformed or invalid XML structures.

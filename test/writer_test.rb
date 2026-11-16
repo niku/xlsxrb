@@ -8042,14 +8042,14 @@ class WriterTest < Test::Unit::TestCase
       path = File.join(dir, "view_test.xlsx")
       Xlsxrb.write(path) do |w|
         w.sheet("Sheet1") do |s|
-          s.row([1, 2, 3])
           s.freeze_pane(row: 1, column: 1)
           s.selection("B2", sqref: "B2:C3", pane: "bottomRight")
           s.sheet_view(top_left_cell: "A1", tab_selected: true, zoom_scale_normal: 120)
+          s.row([1, 2, 3])
         end
         w.sheet("Sheet2") do |s|
-          s.row([4, 5, 6])
           s.sheet_view(zoom_scale: 85)
+          s.row([4, 5, 6])
         end
       end
 

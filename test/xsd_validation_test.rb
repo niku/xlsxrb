@@ -116,6 +116,7 @@ class XsdValidationTest < Test::Unit::TestCase
         w.sheet("RichSheet", tab_color: "FFFF0000") do |s|
           s.column(0..1, width: 20)
 
+          s.freeze_pane(row: 1, column: 0)
           s.row(%w[Product Sales Status])
           s.row(["Widget A", 100, "Active"])
           s.row(["Widget B", 200, "Pending"])
@@ -123,7 +124,6 @@ class XsdValidationTest < Test::Unit::TestCase
 
           s.auto_filter = "A1:C4"
           s.merge("A6:C6")
-          s.freeze_pane(row: 1, column: 0)
 
           s.conditional_format("B2:B4",
                                type: :cellIs,
@@ -564,9 +564,9 @@ class XsdValidationTest < Test::Unit::TestCase
       Xlsxrb.write(tmp.path) do |w|
         w.code_name = "ThisWorkbook"
         w.sheet("Sheet1", code_name: "Sheet1Code") do |s|
-          s.row([1, 2, 3])
           s.fit_to_page = true
           s.page_setup(fit_to_width: 1, fit_to_height: 2)
+          s.row([1, 2, 3])
           s.sheet_calc_properties = { full_calc_on_load: true }
           s.sheet_protection(password: "secret")
         end
