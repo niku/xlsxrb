@@ -125,6 +125,23 @@ module Xlsxrb
 
       ATTR_S: ::Regexp
 
+      CELL_CLOSE_RE: ::Regexp
+
+      UNCLOSED_CELL_RE: ::Regexp
+
+      INLINE_STRING_OPEN_RE: ::Regexp
+
+      INLINE_STRING_CLOSE_RE: ::Regexp
+
+      # Raises ParseError for a row whose last <c> or <is> start tag has no end tag.
+      #
+      # SECURITY NOTE: CELL_FAST_RE looks ahead for </c> and </is>. For a start tag with no end
+      # tag after it, that search runs to the end of the row and fails, once per such tag, so
+      # a row of 40,000 unclosed <c> tags (a 3 KB file) took minutes. Every search made here
+      # is a single pass over the row.
+      # : (String chunk) -> void
+      def self.verify_cells_closed!: (String chunk) -> void
+
       def self.fast_parse_cells_direct: (untyped xml, untyped from, untyped to, untyped shared_strings, untyped row_source, ?untyped prefix) -> untyped
 
       # rubocop:disable Style/OptionalBooleanParameter

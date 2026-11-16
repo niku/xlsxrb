@@ -95,6 +95,26 @@ class DosProtectionTest < Test::Unit::TestCase
     assert_not_include error.message, "\n"
   end
 
+  test "rows with unclosed cell or inline string tags raise ParseError instead of rescanning the row for each tag" do
+    count = 40_000
+    {
+      "c" => %(<c r="A1">) * count,
+      "c with f" => %(<c r="A1"><f>) * count,
+      "c after a closed cell" => %(<c r="A1"><v>1</v></c>#{%(<c r="B1">) * count}),
+      "is" => %(<c r="A1" t="inlineStr"><is></c>) * count
+    }.each do |label, cells|
+      bytes = workbook_bytes(sheet: sheet_xml(%(<row r="1">#{cells}</row>)))
+
+      within(5, "#{label} read") { assert_raise(Xlsxrb::ParseError, label) { Xlsxrb.read(bytes) { |sheet| sheet.each_row(&:values) } } }
+      within(5, "#{label} load") { assert_raise(Xlsxrb::ParseError, label) { Xlsxrb.load(bytes).sheets.first.rows.each(&:cells) } }
+    end
+
+    cells = %(<c r="A1" t="inlineStr"><is><t>hi</t></is></c><c r="B1" s="0"/><x:c r="C1"><x:v>2</x:v></x:c> <c r="D1"/> )
+    bytes = workbook_bytes(sheet: sheet_xml(%(<row r="1">#{cells}</row><row r="2"><c r="A2"/><c r="B2"/></row>)))
+    assert_equal [["hi", nil, 2, nil], [nil, nil]], Xlsxrb.read(bytes).first.each_row.map(&:values)
+    assert_equal([["hi", nil, 2, nil], [nil, nil]], Xlsxrb.load(bytes).sheets.first.rows.map { |row| row.cells.map(&:value) })
+  end
+
   test "a percent sign in a date format code is literal text, not a strftime directive" do
     code = "yyyy#{"%999999d" * 100}"
     formatted = within(5, "format") { Xlsxrb::NumberFormatter.format(45_000.5, code) }

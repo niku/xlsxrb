@@ -15,6 +15,7 @@
 - Fix `Xlsxrb.load`, `StreamSheet#hyperlinks`, and `StreamSheet#load` never returning for a sheet in which the word `hyperlink` appears outside a tag after `<hyperlinks>`, as in `<hyperlinks>hyperlink</hyperlinks>`. The scan returned to the same position forever, and with a `ref` attribute on the enclosing tag it also added an entry on every pass until memory ran out.
 - Read date format codes that contain `%` as literal text in `Cell#formatted_value`, `Row#formatted_values`, and `Xlsxrb.format_value`. The `%` reached `Time#strftime` as a directive, so a format code such as `yyyy%999999d` produced 1 MB of text per cell, and a 3.5 KB file could ask for 1 GB from one call.
 - Raise `Xlsxrb::ParseError` for XML parts whose elements nest more than 256 levels deep. REXML's SAX2 parser takes time proportional to the depth for every tag: 20,000 nested elements (a 2.5 KB file) took 15 seconds in `Xlsxrb.read` and `Xlsxrb.load`, and 40,000 took 58 seconds.
+- Raise `Xlsxrb::ParseError` for a row whose last `<c>` or `<is>` start tag has no end tag. The cell pattern searched to the end of the row once for each such tag, so a row of 40,000 unclosed `<c>` tags (a 3 KB file) took over 100 seconds to read. A `<c>` start tag without an end tag was read as an empty cell before.
 - Format numbers as General for format codes longer than 1,024 characters (Excel accepts 255). The time to format grows with the code for every cell that uses it.
 
 ### Fixed

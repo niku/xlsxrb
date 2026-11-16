@@ -1020,6 +1020,35 @@ module Xlsxrb
       ATTR_T = /\bt="([a-zA-Z]+)"/
       ATTR_S = /\bs="(\d+)"/
 
+      CELL_CLOSE_RE = %r{</(?:[a-zA-Z0-9_]+:)?c>}
+      UNCLOSED_CELL_RE = %r{<(?:[a-zA-Z0-9_]+:)?c(?:\s[^>]*)?(?<!/)>}
+      INLINE_STRING_OPEN_RE = /<(?:[a-zA-Z0-9_]+:)?is[\s>]/
+      INLINE_STRING_CLOSE_RE = %r{</(?:[a-zA-Z0-9_]+:)?is>}
+      private_constant :CELL_CLOSE_RE, :UNCLOSED_CELL_RE, :INLINE_STRING_OPEN_RE, :INLINE_STRING_CLOSE_RE
+
+      # Raises ParseError for a row whose last <c> or <is> start tag has no end tag.
+      #
+      # SECURITY NOTE: CELL_FAST_RE looks ahead for </c> and </is>. For a start tag with no end
+      # tag after it, that search runs to the end of the row and fails, once per such tag, so
+      # a row of 40,000 unclosed <c> tags (a 3 KB file) took minutes. Every search made here
+      # is a single pass over the row.
+      #: (String chunk) -> void
+      def self.verify_cells_closed!(chunk)
+        inline = chunk.include?("<is") || chunk.include?(":is")
+        return if !inline && chunk.end_with?("</c>")
+
+        last_close = chunk.byterindex(CELL_CLOSE_RE)
+        tail_from = last_close ? last_close + 2 : 0
+        raise ParseError, "malformed worksheet XML: <c> element is not closed" if chunk.byteindex(UNCLOSED_CELL_RE, tail_from)
+        return unless inline
+
+        last_close = chunk.byterindex(INLINE_STRING_CLOSE_RE)
+        tail_from = last_close ? last_close + 2 : 0
+        raise ParseError, "malformed worksheet XML: <is> element is not closed" if chunk.byteindex(INLINE_STRING_OPEN_RE, tail_from)
+      end
+
+      private_class_method :verify_cells_closed!
+
       def self.fast_parse_cells_direct(xml, from, to, shared_strings, row_source, prefix = "")
         cells = []
         fast_scan_cells_direct(xml, from, to, shared_strings, row_source, prefix) { |c| cells << c }
@@ -1030,6 +1059,7 @@ module Xlsxrb
       def self.fast_scan_cells_direct(xml, from, to, shared_strings, row_source, _prefix = "", styles = nil, date1904 = false, &)
         # rubocop:enable Style/OptionalBooleanParameter
         chunk = xml.byteslice(from, to - from)
+        verify_cells_closed!(chunk)
         row_idx = row_source.is_a?(Hash) ? row_source[:row] : row_source
         col_idx = 0
         matched_any = false
@@ -1125,6 +1155,7 @@ module Xlsxrb
         chunk = xml.byteslice(from, to - from)
         return [] if chunk.nil? || chunk.empty?
 
+        verify_cells_closed!(chunk)
         col_idx = 0
         matched_any = false
         row_values = []
