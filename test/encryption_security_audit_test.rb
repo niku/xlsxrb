@@ -231,4 +231,30 @@ class EncryptionSecurityAuditTest < Test::Unit::TestCase
       Xlsxrb.load(corrupted_cfb, password: "Pass")
     end
   end
+
+  # 10. DoS Protection: DIFAT Listing the Same FAT Sector Repeatedly
+  def test_cfb_repeated_fat_sector_rejection
+    # 16 DIFAT sectors (4096 bytes each) whose 1023 entries all name FAT sector 0. Loading the
+    # FAT once per entry would build 16 million entries from a 70 KB file.
+    difat_sector_count = 16
+    header = +""
+    header << Xlsxrb::Ooxml::Cfb::MAGIC
+    header << ("\x00".b * 16)
+    header << [0x003E, 0x0004, 0xFFFE, 12, 6].pack("v5")
+    header << ("\x00".b * 6)
+    header << [0, 1, 0xFFFFFFFE, 0, 4096, 0xFFFFFFFE, 0, 1, difat_sector_count].pack("V9")
+    header << ([0] + Array.new(108, Xlsxrb::Ooxml::Cfb::FREESECT)).pack("V109")
+
+    data = header
+    data << Array.new(1024, Xlsxrb::Ooxml::Cfb::ENDOFCHAIN).pack("V*")
+    difat_sector_count.times do |i|
+      next_sector = i == difat_sector_count - 1 ? Xlsxrb::Ooxml::Cfb::ENDOFCHAIN : i + 2
+      data << (Array.new(1023, 0) + [next_sector]).pack("V*")
+    end
+
+    error = assert_raise(Xlsxrb::Error) do
+      Xlsxrb.load(data, password: "Pass")
+    end
+    assert_match(/FAT sector 0 is listed more than once/, error.message)
+  end
 end

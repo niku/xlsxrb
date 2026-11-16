@@ -158,11 +158,15 @@ module Xlsxrb
             end
           end
 
-          # Read all FAT sectors
+          # Read all FAT sectors. Each may be listed once: a DIFAT that repeats a sector
+          # would otherwise grow the FAT far beyond the size of the file.
           @fat = []
+          loaded = {}
           @difat_sectors.each do |fat_sec_id|
             break if [ENDOFCHAIN, FREESECT].include?(fat_sec_id)
+            raise Xlsxrb::Error, "Invalid CFB file: FAT sector #{fat_sec_id} is listed more than once" if loaded[fat_sec_id]
 
+            loaded[fat_sec_id] = true
             sec_data = read_sector(fat_sec_id)
             @fat.concat(sec_data.unpack("V*"))
           end
