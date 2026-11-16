@@ -78,6 +78,10 @@ module Xlsxrb
         rph_end_len = rph_end_tag.bytesize
         has_rph = xml.include?(rph_start_pattern)
 
+        # Position of the next <t at or after the last position searched from. Searching
+        # again from every <si> that has no <t> would scan the rest of the part each time.
+        t_hint = nil
+
         pos = sst_open_end + 1
         while pos < sst_end
           si_start = xml.index(si_start_pattern, pos)
@@ -97,15 +101,15 @@ module Xlsxrb
           break unless si_end
 
           # Fast path: check for simple single <t>...</t> inside <si>
-          first_t = xml.index(t_start_pattern, si_open_end + 1)
-          if first_t && first_t < si_end
+          first_t = t_hint = next_index(xml, t_start_pattern, si_open_end + 1, t_hint)
+          if first_t < si_end
             tb = xml.getbyte(first_t + t_start_len)
             if TAG_DELIM_BYTES.include?(tb)
               t_open_end = xml.index(">", first_t + t_start_len)
               if t_open_end && t_open_end < si_end
                 if xml.getbyte(t_open_end - 1) == 47 # <t/>
-                  next_t = xml.index(t_start_pattern, t_open_end + 1)
-                  str = if next_t && next_t < si_end
+                  next_t = t_hint = next_index(xml, t_start_pattern, t_open_end + 1, t_hint)
+                  str = if next_t < si_end
                           extract_multi_t(xml, si_open_end + 1, si_end, t_start_pattern, t_start_len, t_end_tag, t_end_len, rph_start_pattern, rph_end_tag, rph_end_len, has_rph: has_rph)
                         else
                           ""
@@ -113,8 +117,8 @@ module Xlsxrb
                 else
                   t_end = xml.index(t_end_tag, t_open_end + 1)
                   if t_end && t_end <= si_end
-                    next_t = xml.index(t_start_pattern, t_end + t_end_len)
-                    if next_t && next_t < si_end
+                    next_t = t_hint = next_index(xml, t_start_pattern, t_end + t_end_len, t_hint)
+                    if next_t < si_end
                       # Multiple <t> tags (rich text runs)
                       str = extract_multi_t(xml, si_open_end + 1, si_end, t_start_pattern, t_start_len, t_end_tag, t_end_len, rph_start_pattern, rph_end_tag, rph_end_len, has_rph: has_rph)
                     else
@@ -142,9 +146,23 @@ module Xlsxrb
 
       private_class_method :fast_scan
 
+      # Returns the index of the first +pattern+ at or after +from+, or the size of +xml+ when
+      # there is none. +cached+ is the result of the previous call for the same pattern with a
+      # smaller +from+; while it is not behind +from+ it is still the answer, so a caller that
+      # moves forward searches each stretch of +xml+ once.
+      #: (String xml, String pattern, Integer from, Integer? cached) -> Integer
+      def self.next_index(xml, pattern, from, cached)
+        return cached if cached && cached >= from
+
+        xml.index(pattern, from) || xml.bytesize
+      end
+
+      private_class_method :next_index
+
       def self.extract_multi_t(xml, from, to, t_start_pattern, t_start_len, t_end_tag, t_end_len, rph_start_pattern, rph_end_tag, rph_end_len, has_rph: false)
         buf = +""
         pos = from
+        rph_hint = nil
         while pos < to
           t_start = xml.index(t_start_pattern, pos)
           break unless t_start && t_start < to
@@ -160,8 +178,8 @@ module Xlsxrb
 
           if has_rph
             # Phonetic runs (<rPh>) hold furigana readings and are not part of the string
-            rph_start = xml.index(rph_start_pattern, pos)
-            if rph_start && rph_start < t_start
+            rph_start = rph_hint = next_index(xml, rph_start_pattern, pos, rph_hint)
+            if rph_start < t_start
               rph_end = xml.index(rph_end_tag, rph_start)
               break unless rph_end && rph_end < to
 

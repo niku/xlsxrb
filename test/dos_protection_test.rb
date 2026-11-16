@@ -115,6 +115,21 @@ class DosProtectionTest < Test::Unit::TestCase
     assert_equal([["hi", nil, 2, nil], [nil, nil]], Xlsxrb.load(bytes).sheets.first.rows.map { |row| row.cells.map(&:value) })
   end
 
+  test "shared strings without text are read in time proportional to the part" do
+    omit "Time limits do not hold under RBS runtime checks, which wrap every method call" if defined?(RBS::Test)
+
+    count = 200_000
+    empty = %(<sst #{SML_NS}>#{"<si></si>" * count}<si><t>last</t></si></sst>)
+    runs = %(<sst #{SML_NS}><si>#{"<r><t>a</t></r>" * count}</si><si><t>x</t><rPh sb="0" eb="1"><t>y</t></rPh></si></sst>)
+
+    strings = within(5, "empty") { Xlsxrb::Ooxml::SharedStringsParser.parse(empty) }
+    assert_equal count + 1, strings.size
+    assert_equal ["", "last"], strings.last(2).map(&:to_s)
+
+    strings = within(5, "runs") { Xlsxrb::Ooxml::SharedStringsParser.parse(runs) }
+    assert_equal ["a" * count, "x"], strings.map(&:to_s)
+  end
+
   test "a percent sign in a date format code is literal text, not a strftime directive" do
     code = "yyyy#{"%999999d" * 100}"
     formatted = within(5, "format") { Xlsxrb::NumberFormatter.format(45_000.5, code) }

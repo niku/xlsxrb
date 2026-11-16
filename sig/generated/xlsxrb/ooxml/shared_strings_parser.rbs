@@ -15,6 +15,13 @@ module Xlsxrb
 
       def self.fast_scan: (untyped xml_src) -> untyped
 
+      # Returns the index of the first +pattern+ at or after +from+, or the size of +xml+ when
+      # there is none. +cached+ is the result of the previous call for the same pattern with a
+      # smaller +from+; while it is not behind +from+ it is still the answer, so a caller that
+      # moves forward searches each stretch of +xml+ once.
+      # : (String xml, String pattern, Integer from, Integer? cached) -> Integer
+      def self.next_index: (String xml, String pattern, Integer from, Integer? cached) -> Integer
+
       def self.extract_multi_t: (untyped xml, untyped from, untyped to, untyped t_start_pattern, untyped t_start_len, untyped t_end_tag, untyped t_end_len, untyped rph_start_pattern, untyped rph_end_tag, untyped rph_end_len, ?has_rph: untyped) -> untyped
 
       def self.normalize_newlines: (untyped str) -> untyped
