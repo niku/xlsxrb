@@ -25,3 +25,7 @@ jobs:
 
       - name: Publish to RubyGems
         uses: rubygems/release-gem@v1
+        with:
+          # The await step runs the latest rubygems-await, which failed on Ruby 4.0.9
+          # after v0.2.1 was pushed. Nothing in this workflow installs the new gem.
+          await-release: false
