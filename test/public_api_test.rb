@@ -3726,7 +3726,14 @@ class PublicApiTest < Test::Unit::TestCase
     end
   end
 
-  def capture_stderr
+  # Tests run in parallel threads and $stderr is global, so captures take turns.
+  CAPTURE_STDERR_LOCK = Mutex.new
+
+  def capture_stderr(&)
+    CAPTURE_STDERR_LOCK.synchronize { capture_stderr_unlocked(&) }
+  end
+
+  def capture_stderr_unlocked
     old_stderr = $stderr
     old_verbose = $VERBOSE
     $VERBOSE = false
