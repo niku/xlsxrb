@@ -89,6 +89,27 @@ class ZipBombTest < Test::Unit::TestCase
     end
   end
 
+  test "malformed archives raise ZipError instead of Zlib or NoMethodError" do
+    name = "xl/workbook.xml"
+
+    unsupported = local_entry(name, "hello", method: 12)
+    Xlsxrb::Ooxml::ZipReader.open(unsupported) do |zip|
+      assert_raise(Xlsxrb::ZipError) { zip.read_entry(name) }
+      assert_raise(Xlsxrb::ZipError) { zip.open_entry_io(name).read }
+    end
+
+    corrupt = local_entry(name, "hello", compressed: "\xFF\xFF\xFF\xFF".b)
+    Xlsxrb::Ooxml::ZipReader.open(corrupt) do |zip|
+      assert_raise(Xlsxrb::ZipError) { zip.read_entry(name) }
+      assert_raise(Xlsxrb::ZipError) { zip.open_entry_io(name).read }
+    end
+
+    # The header declares a 500-byte name and the archive ends after the header.
+    truncated = "PK\x03\x04".b + [20, 0, 8, 0, 33, 0, 5, 5, 500, 0].pack("vvvvvVVVvv")
+    assert_equal [], Xlsxrb::Ooxml::ZipReader.open(truncated, &:entry_names)
+    assert_raise(Xlsxrb::ParseError) { Xlsxrb.load(truncated) }
+  end
+
   private
 
   def raw_deflate(data)

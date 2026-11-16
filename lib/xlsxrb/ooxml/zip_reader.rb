@@ -184,7 +184,11 @@ module Xlsxrb
                 else
                   @bytes_read_compressed += raw.bytesize
                   inflater = @inflater
-                  inflated << inflater.inflate(raw) if inflater
+                  begin
+                    inflated << inflater.inflate(raw) if inflater
+                  rescue Zlib::Error => e
+                    raise ZipError, "Corrupt ZIP entry data: #{e.message}"
+                  end
                 end
               else
                 inflater = @inflater
@@ -206,8 +210,7 @@ module Xlsxrb
 
             inflated.empty? && @eof ? nil : inflated
           else
-            @eof = true
-            nil
+            raise ZipError, "Unsupported ZIP compression method: #{@compression_method}"
           end
         end
 
@@ -581,7 +584,10 @@ module Xlsxrb
           name_len        = header[22, 2].unpack1("v")
           extra_len       = header[24, 2].unpack1("v")
 
-          entry_name = io.read(name_len).force_encoding("UTF-8")
+          entry_name = io.read(name_len)
+          break unless entry_name && entry_name.bytesize == name_len
+
+          entry_name.force_encoding("UTF-8")
           extra_data = extra_len.positive? ? io.read(extra_len) : nil
           uncompressed_size, compressed_size, = parse_zip64_extra(extra_data, uncompressed_size, compressed_size, 0) if extra_data && (uncompressed_size == 0xFFFF_FFFF || compressed_size == 0xFFFF_FFFF)
           data_offset = io.pos
@@ -677,15 +683,14 @@ module Xlsxrb
       end
 
       def decompress(raw, method)
-        data = if method.zero?
-                 raw&.dup || ""
-               else
-                 safe_inflate(raw || "", -Zlib::MAX_WBITS)
+        data = case method
+               when 0 then raw&.dup || ""
+               when 8 then safe_inflate(raw || "", -Zlib::MAX_WBITS)
+               else raise ZipError, "Unsupported ZIP compression method: #{method}"
                end
         normalize_text_encoding(data)
-      rescue Zlib::DataError
-        data = safe_inflate(raw || "", -Zlib::MAX_WBITS)
-        normalize_text_encoding(data)
+      rescue Zlib::Error => e
+        raise ZipError, "Corrupt ZIP entry data: #{e.message}"
       end
 
       # Raises ZipError when the entry's data would lie outside the archive, so that a
