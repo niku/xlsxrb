@@ -1,4 +1,4 @@
-## [Unreleased]
+## [0.2.1] - 2026-11-16
 
 ### Changed
 - Write styled cells faster in `Xlsxrb.write` with a block (`StreamWriter`). Writing 50,000 rows of 10 cells with every cell styled takes longer than writing them unstyled by 48% with a `row_style` (0.2.0: 131%), 45% with one `cell_styles` name (148%), 89% with a per-column `cell_styles` array (217%), and 45% with column styles (198%), on Ruby 4.0 without YJIT. With YJIT the differences are 49%, 49%, 76%, and 35% (120%, 142%, 195%, and 223%). Each figure is the fastest of three processes that each run one case seven times and take the median. The written files are unchanged.
