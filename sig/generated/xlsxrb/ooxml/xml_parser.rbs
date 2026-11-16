@@ -16,6 +16,11 @@ module Xlsxrb
 
       # SAX2 parser that wraps each listener in an AttributeDecoder.
       class DecodingSAX2Parser < REXML::Parsers::SAX2Parser
+        # Parses the document, reporting malformed XML and exceeded entity expansion limits
+        # as Xlsxrb::ParseError.
+        # : () -> untyped
+        def parse: () -> untyped
+
         # : (*untyped args) ?{ (*untyped) -> untyped } -> untyped
         def listen: (*untyped args) ?{ (*untyped) -> untyped } -> untyped
       end

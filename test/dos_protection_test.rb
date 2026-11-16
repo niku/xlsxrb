@@ -39,11 +39,11 @@ class DosProtectionTest < Test::Unit::TestCase
       generator.add_entry("xl/worksheets/sheet1.xml", '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData/></worksheet>')
       generator.generate
 
-      error = assert_raises(RuntimeError) do
+      error = assert_raises(Xlsxrb::ParseError) do
         Xlsxrb.load(zip_path)
       end
 
-      # REXML limits entity expansions and raises RuntimeError.
+      # REXML limits entity expansions; its RuntimeError is reported as ParseError.
       assert_match(/entity expansions exceeded/i, error.message)
     ensure
       FileUtils.rm_f(zip_path)
@@ -74,6 +74,12 @@ class DosProtectionTest < Test::Unit::TestCase
       [{ ref: "A1", display: "hyperlink", location: "S!A1" }, { ref: "B2", location: "S!B2" }],
       Xlsxrb::Ooxml::WorksheetParser.parse_hyperlinks(sheet_xml("", after: links))
     )
+  end
+
+  test "malformed XML in a part raises ParseError" do
+    error = assert_raise(Xlsxrb::ParseError) { Xlsxrb.load(workbook_bytes("xl/workbook.xml" => "<workbook><sheets>")) }
+    assert_match(/\AMalformed XML: /, error.message)
+    assert_not_include error.message, "\n"
   end
 
   test "a percent sign in a date format code is literal text, not a strftime directive" do

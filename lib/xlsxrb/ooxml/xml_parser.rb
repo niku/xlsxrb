@@ -77,6 +77,20 @@ module Xlsxrb
 
       # SAX2 parser that wraps each listener in an AttributeDecoder.
       class DecodingSAX2Parser < REXML::Parsers::SAX2Parser
+        # Parses the document, reporting malformed XML and exceeded entity expansion limits
+        # as Xlsxrb::ParseError.
+        #: () -> untyped
+        def parse
+          super
+        rescue REXML::ParseException => e
+          raise Xlsxrb::ParseError, "Malformed XML: #{e.message.lines.first.to_s.strip}"
+        rescue RuntimeError => e
+          # REXML raises a plain RuntimeError when an entity expansion limit is exceeded.
+          raise unless e.instance_of?(RuntimeError)
+
+          raise Xlsxrb::ParseError, "Malformed XML: #{e.message}"
+        end
+
         #: (*untyped args) ?{ (*untyped) -> untyped } -> untyped
         def listen(*args, &)
           return super if args.size != 1 || args.first.is_a?(Symbol) || args.first.is_a?(Array) || block_given?
