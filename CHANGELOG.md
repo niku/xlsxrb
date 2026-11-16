@@ -22,6 +22,7 @@
 - Read cell values of more than 19 characters as `Float` instead of `Integer`, as Excel stores them, and values of more than 400 characters as text unless the cell is typed as a number, which raises `Xlsxrb::ParseError`. Converting 16 million digits (an 18 KB file) to an Integer took over 20 seconds. A shared string index that is negative or longer than 10 digits reads as an empty string instead of the last string or `RangeError`.
 - Stop `StreamSheet#dimension`, `#row_range`, and `#column_range` after the first 1 MB of a sheet that has neither `<dimension>` nor `<sheetData>`. They searched everything read so far again for each chunk, so a 16 MB sheet (a 19 KB file) took 19 seconds.
 - Format numbers as General for format codes longer than 1,024 characters (Excel accepts 255). The time to format grows with the code for every cell that uses it.
+- Require rexml 3.4.2 or later (was `~> 3.0`), the first version without the denial of service in parsing XML that has multiple XML declarations (CVE-2025-58767). Earlier 3.x versions have further known denial-of-service advisories.
 
 ### Fixed
 - Raise `Xlsxrb::ZipError` for corrupt deflate data and for compression methods other than stored and deflate. These raised `Zlib::DataError` or `Zlib::BufError`, which code that rescues `Xlsxrb::Error` does not catch, and reading an entry with an unsupported compression method through `ZipReader#open_entry_io` returned no data without an error. An archive that ends inside a local file header no longer raises `NoMethodError`.
