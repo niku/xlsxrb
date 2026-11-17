@@ -686,6 +686,10 @@ module Xlsxrb
 
       CHART_TYPE_MAP: untyped
 
+      # The elements of EG_ColorTransform in DrawingML. A transform's type is written as an
+      # element name, so only these are accepted.
+      COLOR_TRANSFORMS: untyped
+
       NO_AXIS_CHARTS: untyped
 
       THREE_AXIS_CHARTS: untyped

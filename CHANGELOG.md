@@ -23,6 +23,7 @@
 - Stop `StreamSheet#dimension`, `#row_range`, and `#column_range` after the first 1 MB of a sheet that has neither `<dimension>` nor `<sheetData>`. They searched everything read so far again for each chunk, so a 16 MB sheet (a 19 KB file) took 19 seconds.
 - Format numbers as General for format codes longer than 1,024 characters (Excel accepts 255). The time to format grows with the code for every cell that uses it.
 - Require rexml 3.4.2 or later (was `~> 3.0`), the first version without the denial of service in parsing XML that has multiple XML declarations (CVE-2025-58767). Earlier 3.x versions have further known denial-of-service advisories.
+- Raise `ArgumentError` for a chart series `type` that is not a known chart type and for a shape color transform whose `type` is not a DrawingML color transform. Both are written as element names: a series type was written as given, so one containing `>` added elements to the chart part, and a transform type was only escaped as text. The `val` of a transform and the alpha of a color are escaped as attribute values.
 
 ### Fixed
 - Raise `Xlsxrb::ZipError` for corrupt deflate data and for compression methods other than stored and deflate. These raised `Zlib::DataError` or `Zlib::BufError`, which code that rescues `Xlsxrb::Error` does not catch, and reading an entry with an unsupported compression method through `ZipReader#open_entry_io` returned no data without an error. An archive that ends inside a local file header no longer raises `NoMethodError`.

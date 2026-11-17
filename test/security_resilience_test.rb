@@ -246,6 +246,39 @@ class SecurityResilienceTest < Test::Unit::TestCase
     end
   end
 
+  def test_values_written_as_element_names_are_checked
+    series = { cat_ref: "S!$A$1:$B$1", val_ref: "S!$A$2:$B$2" }
+    injected = "barChart><injected/></c:barChart><c:barChart"
+
+    assert_raise_with_message(ArgumentError, /Unknown chart series type/) do
+      write_both_modes { |sheet| sheet.chart(type: :bar, series: [series.merge(type: injected)]) }
+    end
+    # A chart type that is not known is written as a bar chart, as before.
+    write_both_modes { |sheet| sheet.chart(type: injected, series: [series]) }.each do |bytes|
+      chart = REXML::Document.new(read_part(bytes, "xl/charts/chart1.xml"))
+      assert_empty REXML::XPath.match(chart, "//injected")
+      assert_equal 1, REXML::XPath.match(chart, "//c:barChart").size
+    end
+    # Symbols and element names of known types are both accepted for a series.
+    write_both_modes { |sheet| sheet.chart(type: :combo, series: [series.merge(type: :line), series.merge(type: "barChart")]) }.each do |bytes|
+      chart = REXML::Document.new(read_part(bytes, "xl/charts/chart1.xml"))
+      assert_equal([1, 1], ["//c:lineChart", "//c:barChart"].map { |path| REXML::XPath.match(chart, path).size })
+    end
+  end
+
+  def test_shape_color_transforms_are_checked
+    shape = ->(transforms) { write_both_modes { |sheet| sheet.shape(preset: "rect", fill_color: "FF0000", fill_color_transforms: transforms) } }
+
+    assert_raise_with_message(ArgumentError, /Unknown color transform/) do
+      shape.call([{ type: "tint/><injected/><a:tint", val: 1 }])
+    end
+    shape.call([{ type: "lumMod", val: ATTRIBUTE_BREAKOUT }]).each do |bytes|
+      drawing = REXML::Document.new(read_part(bytes, "xl/drawings/drawing1.xml"))
+      assert_empty REXML::XPath.match(drawing, "//injected")
+      assert_equal([ATTRIBUTE_BREAKOUT], REXML::XPath.match(drawing, "//a:lumMod").map { |element| element.attributes["val"] })
+    end
+  end
+
   private
 
   # Writes one sheet with Xlsxrb.build and with the streaming writer; returns both files.

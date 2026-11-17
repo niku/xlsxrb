@@ -726,9 +726,12 @@ module Xlsxrb
             val = xml_escape(normalize_drawing_rgb(color))
           end
           children = +""
-          children << %(<a:alpha val="#{alpha}"/>) if alpha
+          children << %(<a:alpha val="#{xml_escape(alpha)}"/>) if alpha
           (transforms || []).each do |t|
-            children << %(<a:#{xml_escape(t[:type])} val="#{t[:val]}"/>)
+            type = t[:type].to_s
+            raise ArgumentError, "Unknown color transform: #{type.inspect}. Use one of: #{COLOR_TRANSFORMS.join(", ")}." unless COLOR_TRANSFORMS.include?(type)
+
+            children << %(<a:#{type} val="#{xml_escape(t[:val])}"/>)
           end
           if children.empty?
             %(<a:#{tag} val="#{val}"/>)
@@ -992,7 +995,9 @@ module Xlsxrb
           groups = []
           all_series.each_with_index do |ser, idx|
             s_type = if ser[:type]
-                       CHART_TYPE_MAP[ser[:type]] || ser[:type].to_s
+                       # The type is written as an element name, so only known types are accepted.
+                       CHART_TYPE_MAP[ser[:type]] || CHART_TYPE_MAP.values.find { |element| element == ser[:type].to_s } ||
+                         raise(ArgumentError, "Unknown chart series type: #{ser[:type].inspect}. Use one of: #{CHART_TYPE_MAP.keys.map(&:inspect).join(", ")}.")
                      elsif chart_type == "comboChart"
                        "barChart"
                      else

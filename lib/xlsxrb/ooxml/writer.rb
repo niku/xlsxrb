@@ -2129,6 +2129,13 @@ module Xlsxrb
         combo: "comboChart", column: "barChart"
       }.freeze
 
+      # The elements of EG_ColorTransform in DrawingML. A transform's type is written as an
+      # element name, so only these are accepted.
+      COLOR_TRANSFORMS = %w[
+        tint shade comp inv gray alpha alphaOff alphaMod hue hueOff hueMod sat satOff satMod
+        lum lumOff lumMod red redOff redMod green greenOff greenMod blue blueOff blueMod gamma invGamma
+      ].freeze
+
       NO_AXIS_CHARTS = %w[pieChart doughnutChart pie3DChart ofPieChart].freeze
       THREE_AXIS_CHARTS = %w[surface3DChart].freeze
       GROUPING_CHARTS = %w[barChart lineChart areaChart bar3DChart line3DChart area3DChart].freeze
