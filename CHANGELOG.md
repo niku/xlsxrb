@@ -36,6 +36,7 @@
 - Read encrypted files stored as version 4 compound files, which have 4,096-byte sectors. The first sector was taken to start 512 bytes into the file, as in version 3, instead of 4,096, so no stream was found and decryption failed.
 - Read bytes that are not UTF-8 in an XML part as U+FFFD. `Xlsxrb.load`, `StreamSheet#dimension`, and reading relationships raised `ArgumentError`, and `Xlsxrb.read` returned cell text that was not valid UTF-8, which raised when it was written or matched. A part that is not well-formed because of such bytes raises `Xlsxrb::ParseError`.
 - Read a cell style index or a parent style (`xfId`) outside the style table as no style. One too large for a machine word raised `RangeError` in `Cell#formatted_value` and `Row#formatted_values`, and a negative `xfId` took the parent counted from the end of the table.
+- Raise the decryption error for an encrypted workbook given as a stream. An error while decrypting, such as `Xlsxrb::InvalidPasswordError` for a wrong password, was discarded, and reading went on to raise `Xlsxrb::ZipError` for the encrypted bytes. A String source was not affected.
 
 ## [0.2.1] - 2026-11-16
 

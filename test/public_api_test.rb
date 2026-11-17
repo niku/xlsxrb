@@ -3802,6 +3802,15 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal("#GETTING_DATA", Xlsxrb::Elements::CellError::GETTING_DATA.code)
   end
 
+  test "an encrypted workbook given as a stream reports a wrong password" do
+    io = StringIO.new
+    Xlsxrb.write(io, password: "right") { |w| w.sheet("S") { |s| s.row([1]) } }
+
+    assert_equal(["S"], Xlsxrb.load(StringIO.new(io.string), password: "right").sheets.map(&:name))
+    assert_raise(Xlsxrb::InvalidPasswordError) { Xlsxrb.load(StringIO.new(io.string), password: "wrong") }
+    assert_raise(Xlsxrb::InvalidPasswordError) { Xlsxrb.read(StringIO.new(io.string), password: "wrong") { |sheet| sheet.each_row.to_a } }
+  end
+
   test "cell_styles and row_style in WorksheetBuilder#row with deprecation warnings" do
     builder = Xlsxrb::WorksheetBuilder.new("Sheet1")
     builder.style(:b, bold: true)

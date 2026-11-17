@@ -2654,18 +2654,20 @@ module Xlsxrb
           raise Errno::ENOENT, shown
         end
       elsif source.respond_to?(:read) && source.respond_to?(:pos) && source.respond_to?(:seek)
-        begin
+        # Only looking at the first bytes may fail, for a stream that cannot seek. An error
+        # from decrypting, such as a wrong password, is the caller's to see.
+        first_bytes = begin
           cur_pos = source.pos
-          first_bytes = source.read(8)
+          peeked = source.read(8)
           source.seek(cur_pos)
-          if Ooxml::Cfb::Reader.cfb?(first_bytes)
-            full_data = source.read
-            decrypted_zip = Ooxml::Crypto.decrypt(full_data, password)
-            StringIO.new(decrypted_zip)
-          else
-            source
-          end
+          peeked
         rescue StandardError
+          nil
+        end
+        if Ooxml::Cfb::Reader.cfb?(first_bytes)
+          decrypted_zip = Ooxml::Crypto.decrypt(source.read, password)
+          StringIO.new(decrypted_zip)
+        else
           source
         end
       else
