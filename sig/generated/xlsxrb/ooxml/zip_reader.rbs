@@ -82,6 +82,8 @@ module Xlsxrb
       # : () -> Hash[String, String?]
       def read_all: () -> Hash[String, String?]
 
+      XML_PART_SUFFIXES: untyped
+
       # Returns raw bytes for a single entry, or nil if not found.
       # : (String name) -> String?
       def read_entry: (String name) -> String?

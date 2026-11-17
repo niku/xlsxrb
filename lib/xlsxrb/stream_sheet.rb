@@ -1242,20 +1242,30 @@ module Xlsxrb
     DIMENSION_SCAN_LIMIT = 1024 * 1024
     private_constant :DIMENSION_SCAN_LIMIT
 
+    DIMENSION_RE = /<(?:[a-zA-Z0-9_]+:)?dimension\b[^>]*\bref=["']([^"']+)["']/
+    private_constant :DIMENSION_RE
+
+    # Returns the ref of the <dimension> element in +xml+, or nil. Text that is not valid
+    # UTF-8 is searched as bytes.
+    #: (String xml) -> String?
+    def dimension_ref_in(xml)
+      return xml.slice(DIMENSION_RE, 1) if xml.valid_encoding?
+
+      xml.b.slice(DIMENSION_RE, 1)&.force_encoding(Encoding::UTF_8)&.scrub
+    end
+
     # Extracts dimension reference from XML source lazily without parsing the entire file.
     #: () -> String?
     def extract_dimension
       if @sheet_source.is_a?(String)
-        @sheet_source.slice(/<(?:[a-zA-Z0-9_]+:)?dimension\b[^>]*\bref=["']([^"']+)["']/, 1)
+        dimension_ref_in(@sheet_source)
       elsif @zip_reader && @entry_name
         buf = +""
         dim = nil
         @zip_reader.each_entry_chunk(@entry_name) do |chunk|
           buf << chunk
-          if (m = buf.match(/<(?:[a-zA-Z0-9_]+:)?dimension\b[^>]*\bref=["']([^"']+)["']/))
-            dim = m[1]
-            break
-          end
+          dim = dimension_ref_in(buf)
+          break if dim
           break if buf.include?("<sheetData") || buf.include?(":sheetData")
           # <dimension> precedes <sheetData>; a part with neither is not searched to its end.
           break if buf.bytesize > DIMENSION_SCAN_LIMIT
@@ -1266,10 +1276,8 @@ module Xlsxrb
         dim = nil
         @sheet_source.call do |chunk|
           buf << chunk
-          if (m = buf.match(/<(?:[a-zA-Z0-9_]+:)?dimension\b[^>]*\bref=["']([^"']+)["']/))
-            dim = m[1]
-            break
-          end
+          dim = dimension_ref_in(buf)
+          break if dim
           break if buf.include?("<sheetData") || buf.include?(":sheetData")
           # <dimension> precedes <sheetData>; a part with neither is not searched to its end.
           break if buf.bytesize > DIMENSION_SCAN_LIMIT
@@ -1279,9 +1287,9 @@ module Xlsxrb
         pos = @sheet_source.pos
         buf = @sheet_source.read(65_536) || ""
         @sheet_source.seek(pos, IO::SEEK_SET)
-        buf.slice(/<(?:[a-zA-Z0-9_]+:)?dimension\b[^>]*\bref=["']([^"']+)["']/, 1)
+        dimension_ref_in(buf)
       else
-        raw_sheet_xml.slice(/<(?:[a-zA-Z0-9_]+:)?dimension\b[^>]*\bref=["']([^"']+)["']/, 1)
+        dimension_ref_in(raw_sheet_xml)
       end
     end
   end

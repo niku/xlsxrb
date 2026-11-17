@@ -89,6 +89,11 @@ module Xlsxrb
           super
         rescue REXML::ParseException => e
           raise Xlsxrb::ParseError, "Malformed XML: #{e.message.lines.first.to_s.strip}"
+        rescue ArgumentError => e
+          # Bytes that are not valid in the document's encoding.
+          raise unless e.message.include?("invalid byte sequence")
+
+          raise Xlsxrb::ParseError, "Malformed XML: #{e.message}"
         rescue RuntimeError => e
           # REXML raises a plain RuntimeError when an entity expansion limit is exceeded.
           raise unless e.instance_of?(RuntimeError)

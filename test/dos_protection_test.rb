@@ -242,6 +242,71 @@ class DosProtectionTest < Test::Unit::TestCase
     assert_equal expected, Xlsxrb.load(bytes).sheets.first.rows.first.cells.map(&:formatted_value)
   end
 
+  test "bytes that are not UTF-8 are read as U+FFFD" do
+    cells = %(<c r="A1" t="inlineStr"><is><t>a\xFFb</t></is></c><c r="B1" t="str"><f>"\xFF"</f><v>\xFE</v></c><c r="C1" t="s"><v>0</v></c>)
+    bytes = workbook_bytes(
+      sheet: sheet_xml(%(<row r="1">#{cells}</row>), before: %(<dimension ref="A1:C1"/>)).b,
+      "xl/sharedStrings.xml" => %(<sst #{SML_NS}><si><t>\xC3</t></si></sst>).b
+    )
+    expected = ["a�b", "�", "�"]
+
+    streamed = Xlsxrb.read(bytes).first
+    assert_equal "A1:C1", streamed.dimension
+    assert_equal expected, streamed.each_row.first.values
+    loaded = Xlsxrb.load(bytes).sheets.first.rows.first.cells
+    assert_equal expected, loaded.map(&:value)
+    assert_equal "\"�\"", loaded[1].formula.to_s
+    assert_nothing_raised { Xlsxrb.write(StringIO.new, Xlsxrb.load(bytes)) }
+
+    # Outside element content the part is not well-formed, which is a ParseError at most.
+    damaged = workbook_bytes("xl/_rels/workbook.xml.rels" => %(<Relationships \xFF/>).b, "xl/workbook.xml" => %(<workbook \xFF="1"/>).b)
+    [-> { Xlsxrb.load(damaged) }, -> { Xlsxrb.read(damaged) { |sheet| sheet.each_row.to_a } }].each do |reader|
+      reader.call
+    rescue Xlsxrb::Error
+      nil
+    end
+  end
+
+  test "damaged parts raise no error other than Xlsxrb::Error" do
+    styles = [
+      %(<styleSheet #{SML_NS}><numFmts count="1"><numFmt numFmtId="164" formatCode="yyyy-mm-dd"/></numFmts>),
+      %(<cellStyleXfs count="1"><xf numFmtId="0"/></cellStyleXfs>),
+      %(<cellXfs count="2"><xf numFmtId="0" xfId="0"/><xf numFmtId="164" xfId="0"/></cellXfs></styleSheet>)
+    ].join
+    rows = %(<row r="1" ht="20"><c r="A1" t="s"><v>0</v></c><c r="B1" s="1"><v>45000</v></c><c r="C1" t="b"><v>1</v></c></row>) +
+           %(<row r="2"><c r="A2" t="inlineStr"><is><t>x</t></is></c><c r="B2"><f>A1+1</f><v>2</v></c><c r="C2" t="d"><v>2024-01-02T03:04:05</v></c></row>)
+    after = %(<mergeCells count="1"><mergeCell ref="A5:B6"/></mergeCells><hyperlinks><hyperlink ref="A1" location="S!A2"/></hyperlinks>)
+    parts = {
+      "xl/styles.xml" => styles,
+      "xl/sharedStrings.xml" => %(<sst #{SML_NS}><si><t>a</t></si></sst>),
+      "xl/workbook.xml" => %(<workbook #{SML_NS}><sheets><sheet name="S" sheetId="1" r:id="rId1"/></sheets></workbook>),
+      "xl/worksheets/sheet1.xml" => sheet_xml(rows, before: %(<dimension ref="A1:C2"/><cols><col min="1" max="2" width="12"/></cols>), after: after)
+    }
+    replacements = ["-1", "0", "9" * 25, "1e999", '"', ">", "<", "&", "\xFF".b, ""]
+    random = Random.new(20_261_117)
+
+    400.times do |round|
+      name = parts.keys.sample(random: random)
+      part = parts[name].b
+      position = random.rand(part.bytesize)
+      part[position, 1 + random.rand(8)] = replacements.sample(random: random).b
+      bytes = workbook_bytes(parts.merge(name => part))
+      begin
+        within(10, "round #{round}") do
+          Xlsxrb.read(bytes) do |sheet|
+            sheet.dimension
+            sheet.each_row(&:formatted_values)
+          end
+          Xlsxrb.load(bytes).sheets.each { |sheet| sheet.rows.each { |row| row.cells.each(&:formatted_value) } }
+        end
+      rescue Xlsxrb::Error
+        next
+      rescue StandardError => e
+        flunk "round #{round} damaged #{name} at #{position}: #{e.class}: #{e.message}"
+      end
+    end
+  end
+
   private
 
   def within(seconds, label, &)
@@ -271,7 +336,7 @@ class DosProtectionTest < Test::Unit::TestCase
     }
     io = StringIO.new
     Xlsxrb::Ooxml::ZipWriter.open(io) do |zip|
-      defaults.merge(parts).each { |name, content| zip.add_entry(name, content) }
+      defaults.merge(parts).each { |name, content| zip.add_binary_entry(name, content.b) }
     end
     io.string
   end

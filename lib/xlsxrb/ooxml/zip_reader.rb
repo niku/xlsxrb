@@ -293,6 +293,9 @@ module Xlsxrb
         result
       end
 
+      XML_PART_SUFFIXES = %w[.xml .rels .vml].freeze
+      private_constant :XML_PART_SUFFIXES
+
       # Returns raw bytes for a single entry, or nil if not found.
       #: (String name) -> String?
       def read_entry(name)
@@ -309,7 +312,11 @@ module Xlsxrb
                 io.seek(entry.data_offset, IO::SEEK_SET)
                 io.read(entry.compressed_size)
               end
-        decompress(raw, entry.method)
+        data = decompress(raw, entry.method)
+        # Bytes that are not UTF-8 in an XML part become U+FFFD, so that the parsers and the
+        # strings they return never hold an invalid sequence. Other parts are left as they are.
+        data = data.scrub if data.encoding == Encoding::UTF_8 && !data.valid_encoding? && entry.name.end_with?(*XML_PART_SUFFIXES)
+        data
       end
 
       # Yields (entry_name, data_string) for each file in the archive.

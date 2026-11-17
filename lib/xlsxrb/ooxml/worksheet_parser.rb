@@ -1109,6 +1109,19 @@ module Xlsxrb
 
       private_class_method :verify_cells_closed!
 
+      # Returns the bytes of a row with every sequence that is not UTF-8 replaced by U+FFFD,
+      # so that the text, formulas, and attributes cut from it are valid strings. A row that
+      # is valid, as nearly all are, is returned as is.
+      #: (String chunk) -> String
+      def self.scrub_row(chunk)
+        encoding = chunk.encoding
+        chunk.force_encoding(Encoding::UTF_8)
+        chunk = chunk.scrub unless chunk.valid_encoding?
+        chunk.force_encoding(encoding)
+      end
+
+      private_class_method :scrub_row
+
       def self.fast_parse_cells_direct(xml, from, to, shared_strings, row_source, prefix = "")
         cells = []
         fast_scan_cells_direct(xml, from, to, shared_strings, row_source, prefix) { |c| cells << c }
@@ -1118,7 +1131,7 @@ module Xlsxrb
       # rubocop:disable Style/OptionalBooleanParameter
       def self.fast_scan_cells_direct(xml, from, to, shared_strings, row_source, _prefix = "", styles = nil, date1904 = false, &)
         # rubocop:enable Style/OptionalBooleanParameter
-        chunk = xml.byteslice(from, to - from)
+        chunk = scrub_row(xml.byteslice(from, to - from))
         verify_cells_closed!(chunk)
         row_idx = row_source.is_a?(Hash) ? row_source[:row] : row_source
         col_idx = 0
@@ -1215,6 +1228,7 @@ module Xlsxrb
         chunk = xml.byteslice(from, to - from)
         return [] if chunk.nil? || chunk.empty?
 
+        chunk = scrub_row(chunk)
         verify_cells_closed!(chunk)
         col_idx = 0
         matched_any = false

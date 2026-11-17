@@ -32,6 +32,7 @@
 - Return the General form when formatting Infinity or NaN, or a date serial number outside Excel's range, with a format code, instead of raising `FloatDomainError` or `ArgumentError`.
 - Decode each XML entity once in cell text, formulas, and attribute values. The predefined entities were decoded before the numeric ones, so `&amp;#60;`, which is the text `&#60;`, was read as `<`, and `&amp;lt;` written as `&#38;lt;` was read as `<` as well.
 - Read encrypted files stored as version 4 compound files, which have 4,096-byte sectors. The first sector was taken to start 512 bytes into the file, as in version 3, instead of 4,096, so no stream was found and decryption failed.
+- Read bytes that are not UTF-8 in an XML part as U+FFFD. `Xlsxrb.load`, `StreamSheet#dimension`, and reading relationships raised `ArgumentError`, and `Xlsxrb.read` returned cell text that was not valid UTF-8, which raised when it was written or matched. A part that is not well-formed because of such bytes raises `Xlsxrb::ParseError`.
 - Read a cell style index or a parent style (`xfId`) outside the style table as no style. One too large for a machine word raised `RangeError` in `Cell#formatted_value` and `Row#formatted_values`, and a negative `xfId` took the parent counted from the end of the table.
 
 ## [0.2.1] - 2026-11-16

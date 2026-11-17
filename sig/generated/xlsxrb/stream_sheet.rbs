@@ -647,6 +647,13 @@ module Xlsxrb
 
     DIMENSION_SCAN_LIMIT: untyped
 
+    DIMENSION_RE: ::Regexp
+
+    # Returns the ref of the <dimension> element in +xml+, or nil. Text that is not valid
+    # UTF-8 is searched as bytes.
+    # : (String xml) -> String?
+    def dimension_ref_in: (String xml) -> String?
+
     # Extracts dimension reference from XML source lazily without parsing the entire file.
     # : () -> String?
     def extract_dimension: () -> String?

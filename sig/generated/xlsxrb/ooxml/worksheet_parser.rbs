@@ -166,6 +166,12 @@ module Xlsxrb
       # : (String chunk) -> void
       def self.verify_cells_closed!: (String chunk) -> void
 
+      # Returns the bytes of a row with every sequence that is not UTF-8 replaced by U+FFFD,
+      # so that the text, formulas, and attributes cut from it are valid strings. A row that
+      # is valid, as nearly all are, is returned as is.
+      # : (String chunk) -> String
+      def self.scrub_row: (String chunk) -> String
+
       def self.fast_parse_cells_direct: (untyped xml, untyped from, untyped to, untyped shared_strings, untyped row_source, ?untyped prefix) -> untyped
 
       # rubocop:disable Style/OptionalBooleanParameter
