@@ -428,8 +428,10 @@ task :fetch_assets do
 
   # Fetch a Japanese font for the Playground preview; soffice.data ships no CJK font.
   # Noto Sans CJK is licensed under the SIL Open Font License 1.1; its license is
-  # published next to the font files.
-  noto_cjk_url = "https://cdn.jsdelivr.net/gh/notofonts/noto-cjk@Sans2.004/"
+  # published next to the font files. Download from GitHub directly, pinned to the
+  # commit of the Sans2.004 tag: jsDelivr answers 404 for some files of this
+  # repository (it lists only LICENSE for the tag) and caches that answer.
+  noto_cjk_url = "https://raw.githubusercontent.com/notofonts/noto-cjk/523d033d6cb47f4a80c58a35753646f5c3608a78/"
   %w[Regular Bold].each do |weight|
     download_file("#{noto_cjk_url}Sans/SubsetOTF/JP/NotoSansJP-#{weight}.otf", "docs/fonts/NotoSansJP-#{weight}.otf")
   end
@@ -495,7 +497,7 @@ task doc: %i[wasm fetch_assets] do
   # 1. Enrich Search Index with Pages, Guides, and Live Playground
   search_data_path = "doc/js/search_data.js"
   if File.exist?(search_data_path)
-    search_js = File.read(search_data_path)
+    search_js = File.read(search_data_path, encoding: Encoding::UTF_8)
     if search_js =~ /\Avar search_data = (\{.*\});?\z/m
       begin
         require "json"
@@ -598,7 +600,7 @@ task doc: %i[wasm fetch_assets] do
   Dir.glob("doc/**/*.html").each do |html_path|
     next if File.basename(html_path) == "preview.html"
 
-    html_content = File.read(html_path)
+    html_content = File.read(html_path, encoding: Encoding::UTF_8)
     depth = html_path.sub(%r{\Adoc/}, "").count("/")
     rel_prefix = "../" * depth
 
@@ -881,7 +883,7 @@ namespace :doc do
     puts "Verifying Playground preset code examples..."
     require "tmpdir"
     preview_html_path = File.expand_path("doc/preview.html", __dir__)
-    content = File.read(preview_html_path)
+    content = File.read(preview_html_path, encoding: Encoding::UTF_8)
     presets = content[%r{const PRESET_EXAMPLES = \{(.*?)\};\s*// Detect if running}m, 1]
     raise "No PRESET_EXAMPLES found in #{preview_html_path}" unless presets
 
