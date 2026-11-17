@@ -681,7 +681,9 @@ module Xlsxrb
 
     # Sets the worksheet background image (<picture>).
     #
-    # @param val [String, Hash, Elements::Image, nil] Image binary data, file path, or image options hash.
+    # @param val [String, Hash, Elements::Image, nil] Image binary data, or a Hash with +:data+ and
+    #   +:ext+. A String is always the image itself: to use a file, pass its bytes, as in
+    #   +{ data: File.binread(path), ext: "jpg" }+.
     # @return [untyped]
     # @api public
     # : (untyped val) -> untyped

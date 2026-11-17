@@ -8559,7 +8559,7 @@ class WriterTest < Test::Unit::TestCase
     assert_match(%r{<picture r:id="rId\d+"/>}, ws_xml2)
   end
 
-  test "supports worksheet background image in StreamWriter, streaming read, and file path" do
+  test "supports worksheet background image in StreamWriter, streaming read, and file data" do
     dummy_png = [
       0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A,
       0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52,
@@ -8582,7 +8582,7 @@ class WriterTest < Test::Unit::TestCase
     Xlsxrb.write(buf) do |w|
       w.sheet("StreamBg") do |s|
         s.row(["Cell1"])
-        s.background_image = tmp_img.path
+        s.background_image = File.binread(tmp_img.path)
       end
     end
 

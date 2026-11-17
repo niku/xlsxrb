@@ -266,6 +266,19 @@ class SecurityResilienceTest < Test::Unit::TestCase
     end
   end
 
+  def test_background_image_string_is_never_read_as_a_path
+    Tempfile.create(["secret", ".txt"]) do |secret|
+      secret.write("DB_PASSWORD=hunter2")
+      secret.close
+
+      write_both_modes { |sheet| sheet.background_image = secret.path }.each do |bytes|
+        media = entry_names(bytes).grep(%r{\Axl/media/})
+        assert_equal ["xl/media/sheet1_bg.png"], media
+        assert_equal secret.path.b, read_part(bytes, media.first).b
+      end
+    end
+  end
+
   def test_shape_color_transforms_are_checked
     shape = ->(transforms) { write_both_modes { |sheet| sheet.shape(preset: "rect", fill_color: "FF0000", fill_color_transforms: transforms) } }
 

@@ -1254,7 +1254,9 @@ module Xlsxrb
 
       # Sets the worksheet background image (<picture>).
       #
-      # @param val [String, Hash, Elements::Image, nil] Image binary data, file path, or image options hash.
+      # @param val [String, Hash, Elements::Image, nil] Image binary data, or a Hash with +:data+ and
+      #   +:ext+. A String is always the image itself: to use a file, pass its bytes, as in
+      #   +{ data: File.binread(path), ext: "jpg" }+.
       # @return [untyped]
       # @api public
       #: (untyped val) -> untyped
@@ -2656,7 +2658,9 @@ module Xlsxrb
 
     # Sets the worksheet background image (<picture>).
     #
-    # @param val [String, Hash, Elements::Image, nil] Image binary data, file path, or image options hash.
+    # @param val [String, Hash, Elements::Image, nil] Image binary data, or a Hash with +:data+ and
+    #   +:ext+. A String is always the image itself: to use a file, pass its bytes, as in
+    #   +{ data: File.binread(path), ext: "jpg" }+.
     # @return [untyped]
     # @api public
     #: (untyped val) -> untyped
@@ -2669,10 +2673,9 @@ module Xlsxrb
 
       data = val
       inferred_ext = nil
-      if data.is_a?(String) && !data.include?("\x00") && File.file?(data)
-        inferred_ext = File.extname(data).delete_prefix(".").downcase
-        data = File.binread(data)
-      elsif data.is_a?(Hash)
+      # SECURITY NOTE: A String is the image itself and is never read as a path. Reading it
+      # as one let text that names a file put that file's bytes into the workbook (ADR 0012).
+      if data.is_a?(Hash)
         inferred_ext = data[:ext] || (data[:filename] && File.extname(data[:filename]).delete_prefix("."))
         data = data[:file_data] || data[:data]
       elsif data.is_a?(Elements::Image)

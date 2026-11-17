@@ -218,19 +218,14 @@ module Xlsxrb
                     else
                       (bg_img.respond_to?(:data) ? bg_img.data : bg_img)
                     end
-          if bg_data.is_a?(String) && !bg_data.include?("\x00") && File.file?(bg_data)
-            bg_ext = File.extname(bg_data).delete_prefix(".").downcase
-            bg_ext = "png" if bg_ext.empty?
-            bg_data = File.binread(bg_data)
-          else
-            bg_ext = if bg_img.is_a?(Hash)
-                       (bg_img[:ext] || (bg_img[:filename] && File.extname(bg_img[:filename]).delete_prefix(".")) || "png").to_s.downcase
-                     elsif bg_img.respond_to?(:filename)
-                       File.extname(bg_img.filename).delete_prefix(".").downcase
-                     else
-                       "png"
-                     end
-          end
+          # The data is the image itself and is never read as a path (ADR 0012).
+          bg_ext = if bg_img.is_a?(Hash)
+                     (bg_img[:ext] || (bg_img[:filename] && File.extname(bg_img[:filename]).delete_prefix(".")) || "png").to_s.downcase
+                   elsif bg_img.respond_to?(:filename)
+                     File.extname(bg_img.filename).delete_prefix(".").downcase
+                   else
+                     "png"
+                   end
           if bg_data && !bg_data.empty?
             bg_ext = media_extension(bg_ext)
             p_rid_num = sheet_rels.size + 1
