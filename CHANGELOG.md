@@ -31,6 +31,7 @@
 - Raise `Xlsxrb::ParseError` for malformed XML and exceeded entity expansion limits in a part, instead of `REXML::ParseException` and `RuntimeError`. Code that rescues `RuntimeError` for these no longer catches them.
 - Return the General form when formatting Infinity or NaN, or a date serial number outside Excel's range, with a format code, instead of raising `FloatDomainError` or `ArgumentError`.
 - Decode each XML entity once in cell text, formulas, and attribute values. The predefined entities were decoded before the numeric ones, so `&amp;#60;`, which is the text `&#60;`, was read as `<`, and `&amp;lt;` written as `&#38;lt;` was read as `<` as well.
+- Read encrypted files stored as version 4 compound files, which have 4,096-byte sectors. The first sector was taken to start 512 bytes into the file, as in version 3, instead of 4,096, so no stream was found and decryption failed.
 
 ## [0.2.1] - 2026-11-16
 

@@ -83,6 +83,8 @@ module Xlsxrb
 
         def parse_header: () -> untyped
 
+        # The header takes the first sector: 512 bytes in version 3, and 4,096 in version 4,
+        # where it is padded with zeros. Sector 0 follows it.
         def sector_offset: (untyped sector_id) -> untyped
 
         def read_sector: (untyped sector_id) -> untyped

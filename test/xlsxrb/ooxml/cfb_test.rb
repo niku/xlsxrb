@@ -70,6 +70,37 @@ module Xlsxrb
         assert_raise(Xlsxrb::Error) { Cfb::Reader.new(corrupted_mini_shift) }
       end
 
+      # Version 4 files have 4,096-byte sectors, and their header takes the whole first one.
+      def test_cfb_reads_version_4_files
+        sector_size = 4096
+        payload = Array.new(5000) { |i| i % 251 }.pack("C*")
+        end_of_chain = 0xFFFFFFFE
+        free = 0xFFFFFFFF
+        dir_entry = lambda do |name, type, child, start, size|
+          utf16 = "#{name}\0".encode("UTF-16LE").b
+          utf16.ljust(64, "\0".b) + [utf16.bytesize, type, 1, free, free, child].pack("vCCVVV") +
+            ("\0".b * 36) + [start, size].pack("VQ<")
+        end
+
+        header = "\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1".b + ("\0".b * 16) +
+                 [0x3E, 4, 0xFFFE, 12, 6].pack("v5") + ("\0".b * 6) +
+                 [1, 1, 1, 0, 4096, end_of_chain, 0, end_of_chain, 0].pack("V9") +
+                 ([0] + ([free] * 108)).pack("V109")
+        # Sector 0 is the FAT, sector 1 the directory, and sectors 2 and 3 the stream.
+        fat = [0xFFFFFFFD, end_of_chain, 3, end_of_chain].pack("V4").ljust(sector_size, "\xFF".b)
+        directory = (dir_entry.call("Root Entry", Cfb::OBJ_ROOT, 1, end_of_chain, 0) +
+                     dir_entry.call("Data", Cfb::OBJ_STREAM, free, 2, payload.bytesize)).ljust(sector_size, "\0".b)
+        file = header.ljust(sector_size, "\0".b) + fat + directory + payload.ljust(sector_size * 2, "\0".b)
+
+        reader = Cfb::Reader.new(file)
+        assert_equal ["Data"], reader.stream_names
+        assert_equal payload, reader.read_stream("Data")
+
+        # A file cut short inside the last sector still has the sectors before it.
+        cut = Cfb::Reader.new(file[0, file.bytesize - 1])
+        assert_equal payload[0, sector_size], cut.read_stream("Data")
+      end
+
       def test_cfb_dir_entry_predicates
         entry_stream = Cfb::DirEntry.new(name: "TestStream", type: Cfb::OBJ_STREAM)
         assert_true entry_stream.stream?

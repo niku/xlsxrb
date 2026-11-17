@@ -125,12 +125,14 @@ module Xlsxrb
           @header_difat = @data[0x4C, 436].unpack("V109").reject { |s| [FREESECT, ENDOFCHAIN].include?(s) }
         end
 
+        # The header takes the first sector: 512 bytes in version 3, and 4,096 in version 4,
+        # where it is padded with zeros. Sector 0 follows it.
         def sector_offset(sector_id)
-          512 + (sector_id * @sector_size)
+          (sector_id + 1) * @sector_size
         end
 
         def read_sector(sector_id)
-          max_sectors = (@data.bytesize - 512) / @sector_size
+          max_sectors = (@data.bytesize / @sector_size) - 1
           return "".b if sector_id.negative? || sector_id >= max_sectors
 
           offset = sector_offset(sector_id)
