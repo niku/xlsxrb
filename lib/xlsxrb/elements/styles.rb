@@ -469,7 +469,7 @@ module Xlsxrb
       # @api public
       #: (Integer? style_index) -> String?
       def number_format(style_index)
-        return nil unless style_index.is_a?(Integer) && style_index >= 0
+        return nil unless style_index?(style_index)
 
         precompute! unless @format_codes
         @format_codes[style_index]
@@ -482,7 +482,7 @@ module Xlsxrb
       # @api public
       #: (Integer? style_index) -> Symbol?
       def format_type(style_index)
-        return nil unless style_index.is_a?(Integer) && style_index >= 0
+        return nil unless style_index?(style_index)
 
         precompute! unless @format_types
         @format_types[style_index]
@@ -495,7 +495,7 @@ module Xlsxrb
       # @api public
       #: (Integer? style_index) -> bool
       def date_format?(style_index)
-        return false unless style_index.is_a?(Integer) && style_index >= 0
+        return false unless style_index?(style_index)
 
         precompute! unless @date_flags
         @date_flags[style_index] || false
@@ -508,7 +508,7 @@ module Xlsxrb
       # @api public
       #: (Integer? style_index) -> bool
       def datetime_format?(style_index)
-        return false unless style_index.is_a?(Integer) && style_index >= 0
+        return false unless style_index?(style_index)
 
         precompute! unless @datetime_flags
         @datetime_flags[style_index] || false
@@ -521,7 +521,7 @@ module Xlsxrb
       # @api public
       #: (Integer? style_index) -> bool
       def time_format?(style_index)
-        return false unless style_index.is_a?(Integer) && style_index >= 0
+        return false unless style_index?(style_index)
 
         precompute! unless @time_flags
         @time_flags[style_index] || false
@@ -563,7 +563,9 @@ module Xlsxrb
             num_fmt_id = xf.is_a?(Elements::CellXf) ? xf.num_fmt_id : xf[:num_fmt_id]
             xf_id = xf.is_a?(Elements::CellXf) ? xf.xf_id : xf[:xf_id]
             if (num_fmt_id.nil? || num_fmt_id.zero?) && xf_id && cs_xfs.is_a?(Array)
-              parent_xf = cs_xfs[xf_id]
+              # An xfId outside the array names no parent. Array#[] would count a negative
+              # one from the end and raise RangeError for one that does not fit in a word.
+              parent_xf = xf_id.is_a?(Integer) && xf_id.between?(0, cs_xfs.size - 1) ? cs_xfs[xf_id] : nil
               if parent_xf.is_a?(Elements::CellXf)
                 num_fmt_id = parent_xf.num_fmt_id
               elsif parent_xf.is_a?(Hash)
@@ -591,6 +593,13 @@ module Xlsxrb
       end
 
       private
+
+      # Whether +value+ can be an index into cellXfs. A larger Integer is not one, and
+      # Array#[] raises RangeError for an Integer that does not fit in a machine word.
+      #: (untyped value) -> bool
+      def style_index?(value)
+        value.is_a?(Integer) && value.between?(0, 0x7FFFFFFF)
+      end
 
       def next_num_fmt_id
         max_id = [163, *number_formats.keys].max

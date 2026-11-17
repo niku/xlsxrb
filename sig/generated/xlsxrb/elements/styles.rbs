@@ -337,6 +337,11 @@ module Xlsxrb
 
       private
 
+      # Whether +value+ can be an index into cellXfs. A larger Integer is not one, and
+      # Array#[] raises RangeError for an Integer that does not fit in a machine word.
+      # : (untyped value) -> bool
+      def style_index?: (untyped value) -> bool
+
       def next_num_fmt_id: () -> untyped
 
       def invalidate_cache!: () -> untyped

@@ -221,6 +221,27 @@ class DosProtectionTest < Test::Unit::TestCase
     assert_equal "2023-03-15", Xlsxrb::NumberFormatter.format(45_000, "yyyy-mm-dd")
   end
 
+  test "style indexes outside the style table are read as unstyled" do
+    styles = [
+      %(<styleSheet #{SML_NS}><numFmts count="1"><numFmt numFmtId="164" formatCode="0.00"/></numFmts>),
+      %(<cellStyleXfs count="1"><xf numFmtId="164"/></cellStyleXfs><cellXfs count="3"><xf numFmtId="0" xfId="0"/>),
+      %(<xf numFmtId="0" xfId="#{"9" * 30}"/><xf numFmtId="0" xfId="-1"/></cellXfs></styleSheet>)
+    ].join
+    cells = ["0", "1", "2", "9" * 30, "-1"].each_with_index.map { |s, i| %(<c r="#{("A".ord + i).chr}1" s="#{s}"><v>1.5</v></c>) }.join
+    rels = [
+      %(<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">),
+      %(<Relationship Id="rId1" Type="#{REL_TYPE}/worksheet" Target="worksheets/sheet1.xml"/>),
+      %(<Relationship Id="rId2" Type="#{REL_TYPE}/sharedStrings" Target="sharedStrings.xml"/>),
+      %(<Relationship Id="rId3" Type="#{REL_TYPE}/styles" Target="styles.xml"/></Relationships>)
+    ].join
+    bytes = workbook_bytes(sheet: sheet_xml(%(<row r="1">#{cells}</row>)), "xl/styles.xml" => styles, "xl/_rels/workbook.xml.rels" => rels)
+
+    # The first style takes its format from its parent; the others name no style or no parent.
+    expected = ["1.50", "1.5", "1.5", "1.5", "1.5"]
+    assert_equal expected, Xlsxrb.read(bytes).first.each_row.first.formatted_values
+    assert_equal expected, Xlsxrb.load(bytes).sheets.first.rows.first.cells.map(&:formatted_value)
+  end
+
   private
 
   def within(seconds, label, &)
