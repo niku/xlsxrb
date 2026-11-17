@@ -8225,7 +8225,7 @@ class WriterTest < Test::Unit::TestCase
       end
     end
 
-    reread = Xlsxrb.load(buf.string)
+    reread = Xlsxrb.load(StringIO.new(buf.string))
     assert_equal([
                    ["Visible", :visible],
                    ["Hidden1", :hidden],
@@ -8278,7 +8278,7 @@ class WriterTest < Test::Unit::TestCase
         w.sheet("HiddenOnly", state: :hidden) { |s| s.row([1]) }
       end
     end
-    assert_equal(:hidden, Xlsxrb.load(non_strict_buf.string).sheets.first.state)
+    assert_equal(:hidden, Xlsxrb.load(StringIO.new(non_strict_buf.string)).sheets.first.state)
   end
 
   test "WorksheetBuilder and StreamWriter support tab_color with rgb, theme, indexed, and auto" do
@@ -8303,7 +8303,7 @@ class WriterTest < Test::Unit::TestCase
       end
     end
 
-    reread = Xlsxrb.load(buf.string)
+    reread = Xlsxrb.load(StringIO.new(buf.string))
     assert_equal("FF1122", reread.sheets[0].tab_color)
     assert_equal("00AAFF", reread.sheets[1].tab_color)
     assert_equal(5, reread.sheets[2].tab_color[:theme])
@@ -8313,7 +8313,7 @@ class WriterTest < Test::Unit::TestCase
 
     # Test via streaming reader (StreamSheet)
     streaming_colors = []
-    Xlsxrb.read(buf.string) do |s|
+    Xlsxrb.read(StringIO.new(buf.string)) do |s|
       streaming_colors << [s.name, s.tab_color]
     end
     assert_equal("FF1122", streaming_colors[0][1])
@@ -8335,7 +8335,7 @@ class WriterTest < Test::Unit::TestCase
       end
     end
     dom_xlsx = Xlsxrb.write(wb)
-    reread_dom = Xlsxrb.load(dom_xlsx)
+    reread_dom = Xlsxrb.load(StringIO.new(dom_xlsx))
     assert_equal("FFAABB", reread_dom.sheets[0].tab_color)
     assert_equal(2, reread_dom.sheets[1].tab_color[:theme])
     assert_in_delta(-0.3, reread_dom.sheets[1].tab_color[:tint], 0.001)
@@ -8357,7 +8357,7 @@ class WriterTest < Test::Unit::TestCase
     assert_true wb.sheet("DOMSheet").ignored_errors[0].number_stored_as_text?
 
     dom_xlsx = Xlsxrb.write(wb)
-    reread_dom = Xlsxrb.load(dom_xlsx)
+    reread_dom = Xlsxrb.load(StringIO.new(dom_xlsx))
     assert_equal 2, reread_dom.sheet(0).ignored_errors.size
     assert_equal "A1:A10", reread_dom.sheet(0).ignored_errors[0].sqref
     assert_true reread_dom.sheet(0).ignored_errors[0].number_stored_as_text?
@@ -8382,7 +8382,7 @@ class WriterTest < Test::Unit::TestCase
 
     # Test via streaming reader
     stream_read_errors = []
-    Xlsxrb.read(buf.string) do |s|
+    Xlsxrb.read(StringIO.new(buf.string)) do |s|
       stream_read_errors << s.ignored_errors
     end
     assert_equal 1, stream_read_errors.size
@@ -8410,7 +8410,7 @@ class WriterTest < Test::Unit::TestCase
     assert_equal "distributed", props.alignment
 
     dom_xlsx = Xlsxrb.write(wb)
-    reread_dom = Xlsxrb.load(dom_xlsx)
+    reread_dom = Xlsxrb.load(StringIO.new(dom_xlsx))
     dom_props = reread_dom.sheet(0).phonetic_properties
     assert_equal 1, dom_props.font_id
     assert_equal "Hiragana", dom_props.type
@@ -8427,7 +8427,7 @@ class WriterTest < Test::Unit::TestCase
 
     # Test via streaming reader
     stream_props = nil
-    Xlsxrb.read(buf.string) do |s|
+    Xlsxrb.read(StringIO.new(buf.string)) do |s|
       stream_props = s.phonetic_properties
     end
     assert_equal 2, stream_props.font_id
@@ -8458,7 +8458,7 @@ class WriterTest < Test::Unit::TestCase
     assert_equal({ full_calc_on_load: true }, ws.sheet_calc_properties.to_h)
 
     dom_xlsx = Xlsxrb.write(wb)
-    reread = Xlsxrb.load(dom_xlsx)
+    reread = Xlsxrb.load(StringIO.new(dom_xlsx))
     assert_equal "WorkbookCode", reread.code_name
     r_ws = reread.sheet(0)
     assert_equal "SheetCode", r_ws.code_name
@@ -8482,7 +8482,7 @@ class WriterTest < Test::Unit::TestCase
     stream_read_ftp = nil
     stream_read_fcol = nil
     stream_read_calc = nil
-    Xlsxrb.read(buf.string) do |s|
+    Xlsxrb.read(StringIO.new(buf.string)) do |s|
       stream_read_code = s.code_name
       stream_read_ftp = s.fit_to_page?
       stream_read_fcol = s.full_calc_on_load?
@@ -8544,7 +8544,7 @@ class WriterTest < Test::Unit::TestCase
     assert_includes ct_xml, '<Default Extension="png" ContentType="image/png"/>'
 
     # DOM Read
-    read_wb = Xlsxrb.load(buf.string)
+    read_wb = Xlsxrb.load(StringIO.new(buf.string))
     read_sheet = read_wb.sheets.first
     assert_not_nil read_sheet.background_image
     assert_equal dummy_png.b, read_sheet.background_image.data
@@ -8591,7 +8591,7 @@ class WriterTest < Test::Unit::TestCase
 
     # Stream read
     bg_from_stream = nil
-    Xlsxrb.read(buf.string) do |s|
+    Xlsxrb.read(StringIO.new(buf.string)) do |s|
       bg_from_stream = s.background_image
     end
     assert_not_nil bg_from_stream
@@ -8662,7 +8662,7 @@ class WriterTest < Test::Unit::TestCase
     assert_match(/<cfRule type="cellIs" priority="2" operator="lessThan" dxfId="0">/, ws_xml)
     assert_match(/<cfRule type="expression" priority="3" dxfId="1">/, ws_xml)
 
-    wb = Xlsxrb.load(buf.string)
+    wb = Xlsxrb.load(StringIO.new(buf.string))
     assert_equal(2, wb.styles.dxfs.size)
     assert_false(wb.styles.dxfs[0].font.bold?)
     assert_false(wb.styles.dxfs[0].font.italic?)
@@ -8711,7 +8711,7 @@ class WriterTest < Test::Unit::TestCase
     assert_match(/<row r="6">/, ws_xml)
 
     rows = []
-    Xlsxrb.read(buf.string) do |s|
+    Xlsxrb.read(StringIO.new(buf.string)) do |s|
       s.each { |r| rows << [r.index, r.values] }
     end
     assert_equal([[0, ["Row 1"]], [2, ["Row 3"]], [5, ["Row 6"]]], rows)
@@ -8774,7 +8774,7 @@ class WriterTest < Test::Unit::TestCase
     assert_match(/<name val="Noto Sans CJK JP"/, styles_xml1)
     assert_match(/<family val="2"/, styles_xml1)
 
-    wb1 = Xlsxrb.load(buf1.string)
+    wb1 = Xlsxrb.load(StringIO.new(buf1.string))
     assert_equal("Noto Sans CJK JP", wb1.styles.fonts[0].name)
     assert_equal(10.0, wb1.styles.fonts[0].size.to_f)
 
@@ -8820,7 +8820,7 @@ class WriterTest < Test::Unit::TestCase
     assert_match(/<name val="Noto Sans CJK JP"/, styles_xml1)
     assert_match(/<family val="2"/, styles_xml1)
 
-    wb_read = Xlsxrb.load(buf1.string)
+    wb_read = Xlsxrb.load(StringIO.new(buf1.string))
     assert_equal("Noto Sans CJK JP", wb_read.styles.fonts[0].name)
     assert_equal(10.0, wb_read.styles.fonts[0].size.to_f)
 
@@ -8865,7 +8865,7 @@ class WriterTest < Test::Unit::TestCase
     refute_match(/t="s"/, ws_xml)
 
     # Read back with in-memory reader
-    wb = Xlsxrb.load(buf.string)
+    wb = Xlsxrb.load(StringIO.new(buf.string))
     sheet = wb.sheets.first
     assert_equal([
                    %w[Item Count Price],
@@ -8875,7 +8875,7 @@ class WriterTest < Test::Unit::TestCase
 
     # Read back with streaming reader
     stream_rows = []
-    Xlsxrb.read(buf.string) do |s|
+    Xlsxrb.read(StringIO.new(buf.string)) do |s|
       s.each { |r| stream_rows << r.values }
     end
     assert_equal([
@@ -8910,7 +8910,7 @@ class WriterTest < Test::Unit::TestCase
     assert_match(%r{t="inlineStr"><is><t>World</t></is></c>}, ws_xml)
     refute_match(/t="s"/, ws_xml)
 
-    read_wb = Xlsxrb.load(buf.string)
+    read_wb = Xlsxrb.load(StringIO.new(buf.string))
     read_sheet = read_wb.sheets.first
     assert_equal([%w[Hello World], [123, true]], read_sheet.rows.map { |r| r.cells.map(&:value) })
   end
@@ -8941,13 +8941,13 @@ class WriterTest < Test::Unit::TestCase
 
     # Verify both archives read back identically
     rows_fast = []
-    Xlsxrb.read(buf_fast.string) do |s|
+    Xlsxrb.read(StringIO.new(buf_fast.string)) do |s|
       s.each { |r| rows_fast << r.values }
     end
     assert_equal(sample_data, rows_fast)
 
     rows_best = []
-    Xlsxrb.read(buf_best.string) do |s|
+    Xlsxrb.read(StringIO.new(buf_best.string)) do |s|
       s.each { |r| rows_best << r.values }
     end
     assert_equal(sample_data, rows_best)
@@ -8959,7 +8959,7 @@ class WriterTest < Test::Unit::TestCase
       assert_equal(4, w.compression_level)
       w.sheet("Sheet1") { |s| s.row(["Test", 123]) }
     end
-    wb_read = Xlsxrb.load(buf_lvl4.string)
+    wb_read = Xlsxrb.load(StringIO.new(buf_lvl4.string))
     assert_equal([["Test", 123]], wb_read.sheets.first.rows.map { |r| r.cells.map(&:value) })
 
     # Invalid compression levels raise ArgumentError
@@ -8977,7 +8977,7 @@ class WriterTest < Test::Unit::TestCase
     # An explicit number format still wins: the date reads back as its serial number.
     expected = [[[date, "yyyy-mm-dd"], [time, "yyyy-mm-dd hh:mm:ss"], ["text", "General"]], [[46_025, "#,##0"]]]
     read_back = lambda do |data|
-      wb = Xlsxrb.load(data)
+      wb = Xlsxrb.load(StringIO.new(data))
       rows = wb.sheets.first.rows
       first = rows.first.cells.first
       assert_true(wb.styles.font(wb.styles.cell_xf(first.style_index).font_id).bold?, "bold survives on the date cell")
@@ -9019,7 +9019,7 @@ class WriterTest < Test::Unit::TestCase
     assert_equal([46_024.5, 46_024.5], [Xlsxrb.time_to_serial(dt), Xlsxrb.date_to_serial(dt)])
 
     expected = [[[46_024.5, "yyyy-mm-dd hh:mm:ss"], [46_024, "yyyy-mm-dd"]], [[46_024.5, "yyyy-mm-dd hh:mm:ss"]]]
-    read_back = ->(data) { Xlsxrb.load(data).sheets.first.rows.map { |r| r.cells.map { |c| [c.value, c.format_code] } } }
+    read_back = ->(data) { Xlsxrb.load(StringIO.new(data)).sheets.first.rows.map { |r| r.cells.map { |c| [c.value, c.format_code] } } }
 
     io = StringIO.new
     Xlsxrb.write(io) do |w|
@@ -9090,7 +9090,7 @@ class WriterTest < Test::Unit::TestCase
 
     assert_operator buf_lvl1.string.bytesize, :>, buf_lvl9.string.bytesize
 
-    read_wb = Xlsxrb.load(buf_lvl1.string)
+    read_wb = Xlsxrb.load(StringIO.new(buf_lvl1.string))
     assert_equal(100, read_wb.sheets.first.rows.size)
   end
 
@@ -9135,7 +9135,7 @@ class WriterTest < Test::Unit::TestCase
     assert_equal(true, read_rt2.runs[0][:font][:italic])
 
     # Read back with streaming reader returns concatenated text
-    wb = Xlsxrb.load(buf.string)
+    wb = Xlsxrb.load(StringIO.new(buf.string))
     sheet = wb.sheet(0)
     assert_equal("Bold Normal", sheet["A1"].value.to_s)
     assert_equal("Italic Blue", sheet["A2"].value.to_s)
@@ -9505,7 +9505,7 @@ class WriterTest < Test::Unit::TestCase
     assert_equal("Verified against ERP", tcs[0][:text])
     assert_true(tcs[0][:done])
 
-    doc = Xlsxrb.load(stream_bytes)
+    doc = Xlsxrb.load(StringIO.new(stream_bytes))
     sheet = doc["Report"]
     assert_equal(1, sheet.threaded_comments.size)
     cell = sheet["B1"]

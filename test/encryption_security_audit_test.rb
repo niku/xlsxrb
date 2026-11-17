@@ -102,7 +102,7 @@ class EncryptionSecurityAuditTest < Test::Unit::TestCase
 
       # Invariant: Must safely reject with DecryptionError without allocating huge memory
       assert_raise(Xlsxrb::DecryptionError) do
-        Xlsxrb.load(corrupted_cfb, password: "ValidPassword123")
+        Xlsxrb.load(StringIO.new(corrupted_cfb), password: "ValidPassword123")
       end
     end
   end
@@ -142,7 +142,7 @@ class EncryptionSecurityAuditTest < Test::Unit::TestCase
 
     # High-level API invariant: Calling Xlsxrb.read on circular CFB must fail safely with DecryptionError without infinite loop
     assert_raise(Xlsxrb::DecryptionError) do
-      Xlsxrb.load(raw_cfb, password: "Pass")
+      Xlsxrb.load(StringIO.new(raw_cfb), password: "Pass")
     end
 
     # Invariant: Mini-stream circular loop must also terminate safely
@@ -197,7 +197,7 @@ class EncryptionSecurityAuditTest < Test::Unit::TestCase
 
     # Invariant: Must immediately reject with DecryptionError without spinning CPU 1 billion times
     assert_raise(Xlsxrb::DecryptionError) do
-      Xlsxrb.load(corrupted_cfb, password: "Pass")
+      Xlsxrb.load(StringIO.new(corrupted_cfb), password: "Pass")
     end
   end
 
@@ -212,7 +212,7 @@ class EncryptionSecurityAuditTest < Test::Unit::TestCase
     )
 
     assert_raise(Xlsxrb::DecryptionError) do
-      Xlsxrb.load(corrupted_cfb, password: "Pass")
+      Xlsxrb.load(StringIO.new(corrupted_cfb), password: "Pass")
     end
   end
 
@@ -228,7 +228,7 @@ class EncryptionSecurityAuditTest < Test::Unit::TestCase
     )
 
     assert_raise(Xlsxrb::DecryptionError) do
-      Xlsxrb.load(corrupted_cfb, password: "Pass")
+      Xlsxrb.load(StringIO.new(corrupted_cfb), password: "Pass")
     end
   end
 
@@ -253,7 +253,7 @@ class EncryptionSecurityAuditTest < Test::Unit::TestCase
     end
 
     error = assert_raise(Xlsxrb::Error) do
-      Xlsxrb.load(data, password: "Pass")
+      Xlsxrb.load(StringIO.new(data), password: "Pass")
     end
     assert_match(/FAT sector 0 is listed more than once/, error.message)
   end
@@ -265,7 +265,7 @@ class EncryptionSecurityAuditTest < Test::Unit::TestCase
       assert_not_equal info, forged_info
 
       error = assert_raise(Xlsxrb::DecryptionError) do
-        Xlsxrb.load(rebuild_cfb(forged_info, pkg), password: "WrongPassword")
+        Xlsxrb.load(StringIO.new(rebuild_cfb(forged_info, pkg)), password: "WrongPassword")
       end
       assert_not_kind_of Xlsxrb::InvalidPasswordError, error
       assert_match(/hashSize/, error.message)
@@ -283,12 +283,12 @@ class EncryptionSecurityAuditTest < Test::Unit::TestCase
       }.each do |label, forged_info|
         assert_not_equal info, forged_info, label
         assert_raise(Xlsxrb::DecryptionError, label) do
-          Xlsxrb.load(rebuild_cfb(forged_info, pkg), password: "ValidPassword123")
+          Xlsxrb.load(StringIO.new(rebuild_cfb(forged_info, pkg)), password: "ValidPassword123")
         end
       end
 
       assert_raise(Xlsxrb::DecryptionError, "truncated package") do
-        Xlsxrb.load(rebuild_cfb(info, pkg[0, pkg.bytesize - 5]), password: "ValidPassword123")
+        Xlsxrb.load(StringIO.new(rebuild_cfb(info, pkg[0, pkg.bytesize - 5])), password: "ValidPassword123")
       end
     end
   end
@@ -304,7 +304,7 @@ class EncryptionSecurityAuditTest < Test::Unit::TestCase
       pkg = reader.read_stream("EncryptedPackage")
 
       assert_raise(Xlsxrb::DecryptionError) do
-        Xlsxrb.load(rebuild_cfb(reader.read_stream("EncryptionInfo"), pkg[0, pkg.bytesize - 5]), password: "ValidPassword123")
+        Xlsxrb.load(StringIO.new(rebuild_cfb(reader.read_stream("EncryptionInfo"), pkg[0, pkg.bytesize - 5])), password: "ValidPassword123")
       end
     end
   end

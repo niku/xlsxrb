@@ -254,7 +254,7 @@ class DateTimeStyleTest < Test::Unit::TestCase
     assert_equal(target_date, wb_read["Sheet1"]["A1"].to_date)
 
     # Verify reading back in-memory binary string
-    wb_buf = Xlsxrb.load(File.binread(temp.path))
+    wb_buf = Xlsxrb.load(StringIO.new(File.binread(temp.path)))
     assert_true(wb_buf.date1904?)
     assert_equal(target_date, wb_buf["Sheet1"]["A1"].to_date)
 

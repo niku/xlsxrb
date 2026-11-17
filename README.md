@@ -92,6 +92,26 @@ Xlsxrb.read("large_file.xlsx") do |sheet|
 end
 ```
 
+### Reading from a File or from Memory
+
+`Xlsxrb.read` and `Xlsxrb.load` take the workbook from a file path or from a stream:
+
+| Source | Pass | Example |
+| :--- | :--- | :--- |
+| A file | Its path, as a String | `Xlsxrb.load("workbook.xlsx")` |
+| xlsx data in memory, such as an upload | A stream (an IO) | `Xlsxrb.load(StringIO.new(data))` |
+| An open file | The IO | `File.open("workbook.xlsx", "rb") { \|file\| Xlsxrb.load(file) }` |
+
+```ruby
+require "xlsxrb"
+require "stringio"
+
+# In a web application: read the uploaded workbook, not a file named by the upload.
+workbook = Xlsxrb.load(StringIO.new(params[:file].read))
+```
+
+A String is a file path. Passing xlsx data as a String still works in 0.2 and warns: xlsxrb tells the two apart by the content of the String, so data that someone else supplied can be made to name a file on the machine instead ([ADR 0012](docs/adr/0012-the-argument-fixes-what-a-string-means.md)). From 0.3.0 a String is always a path. A path that comes from someone you do not trust opens whatever it names; check it before passing it, as with `File.open`.
+
 ### Streaming Write (Low Memory)
 
 Pipes row and cell XML directly to the archive without buffering rows in memory:

@@ -107,7 +107,7 @@ class ZipBombTest < Test::Unit::TestCase
     # The header declares a 500-byte name and the archive ends after the header.
     truncated = "PK\x03\x04".b + [20, 0, 8, 0, 33, 0, 5, 5, 500, 0].pack("vvvvvVVVvv")
     assert_equal [], Xlsxrb::Ooxml::ZipReader.open(truncated, &:entry_names)
-    assert_raise(Xlsxrb::ParseError) { Xlsxrb.load(truncated) }
+    assert_raise(Xlsxrb::ParseError) { Xlsxrb.load(StringIO.new(truncated)) }
   end
 
   test "invalid UTF-16 in a part is replaced instead of raising an encoding error" do

@@ -359,7 +359,7 @@ class OoxmlTest < Test::Unit::TestCase
       w.sheet("Data") { |s| 50.times { |i| s.row(["row #{i}", i, i * 1.5]) } }
     end
 
-    rows = Xlsxrb.load(buf).sheets.first.rows.map { |r| r.cells.map(&:value) }
+    rows = Xlsxrb.load(StringIO.new(buf)).sheets.first.rows.map { |r| r.cells.map(&:value) }
     assert_equal(50, rows.size)
     assert_equal(["row 49", 49, 73.5], rows.last)
     assert_external_zip_test(buf)
@@ -1494,14 +1494,14 @@ class OoxmlTest < Test::Unit::TestCase
       w.sheet("Second") { |s| s.row(["B"]) }
     end
 
-    wb = Xlsxrb.load(bytes)
+    wb = Xlsxrb.load(StringIO.new(bytes))
     assert_equal(1, wb.active_sheet_index)
     assert_true(wb.full_calc_on_load?)
     assert_equal(1, wb.workbook_properties.active_sheet)
     assert_true(wb.workbook_properties.full_calc_on_load?)
 
     roundtrip_bytes = Xlsxrb.write(wb)
-    wb2 = Xlsxrb.load(roundtrip_bytes)
+    wb2 = Xlsxrb.load(StringIO.new(roundtrip_bytes))
     assert_equal(1, wb2.active_sheet_index)
     assert_true(wb2.full_calc_on_load?)
   end
@@ -1531,7 +1531,7 @@ class OoxmlTest < Test::Unit::TestCase
       assert_equal(false, cells["D1"].cached_value)
     end
 
-    wb = Xlsxrb.load(bytes)
+    wb = Xlsxrb.load(StringIO.new(bytes))
     sheet = wb.sheets.first
     assert_equal(true, sheet["A1"].value)
     assert_equal(false, sheet["B1"].value)
@@ -1539,7 +1539,7 @@ class OoxmlTest < Test::Unit::TestCase
     assert_equal(false, sheet["D1"].value)
 
     roundtrip_bytes = Xlsxrb.write(wb)
-    wb2 = Xlsxrb.load(roundtrip_bytes)
+    wb2 = Xlsxrb.load(StringIO.new(roundtrip_bytes))
     sheet2 = wb2.sheets.first
     assert_equal(true, sheet2["A1"].value)
     assert_equal(false, sheet2["B1"].value)

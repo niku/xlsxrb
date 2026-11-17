@@ -754,7 +754,7 @@ class PbtTest < Test::Unit::TestCase
 
           # Invariant: Tampered payload MUST either raise an expected safe error or load safely without crashing
           begin
-            wb = Xlsxrb.load(corrupted, password: password)
+            wb = Xlsxrb.load(StringIO.new(corrupted), password: password)
             assert_instance_of Xlsxrb::Elements::Workbook, wb
           rescue Xlsxrb::Error, ArgumentError, OpenSSL::OpenSSLError, Zlib::Error, REXML::ParseException => e
             # Expected graceful failure on corrupted bytes with known exception types

@@ -107,13 +107,13 @@ class ConcurrentTest < Test::Unit::TestCase
         end
 
         # 2. In-Memory read
-        mem_wb = Xlsxrb.load(xlsx_bin)
+        mem_wb = Xlsxrb.load(StringIO.new(xlsx_bin))
         mem_sheet = mem_wb.sheets[0]
         mem_worker_id = mem_sheet.rows[0].cells[1].value
 
         # 3. Streaming read
         stream_meta = nil
-        Xlsxrb.read(xlsx_bin) do |sheet|
+        Xlsxrb.read(StringIO.new(xlsx_bin)) do |sheet|
           next unless sheet.name == "Info"
 
           sheet.each do |row|
@@ -124,7 +124,7 @@ class ConcurrentTest < Test::Unit::TestCase
         # 4. Streaming transform
         mod_io = StringIO.new
         Xlsxrb.write(mod_io) do |w|
-          Xlsxrb.read(xlsx_bin) do |sheet|
+          Xlsxrb.read(StringIO.new(xlsx_bin)) do |sheet|
             w.sheet(sheet.name) do |ws|
               sheet.each_row do |row|
                 vals = row.values
@@ -135,7 +135,7 @@ class ConcurrentTest < Test::Unit::TestCase
           end
         end
 
-        mod_wb = Xlsxrb.load(mod_io.string)
+        mod_wb = Xlsxrb.load(StringIO.new(mod_io.string))
         mod_val = mod_wb.sheets[1].rows[0].cells[1].value
 
         {

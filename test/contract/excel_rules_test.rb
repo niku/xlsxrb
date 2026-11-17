@@ -146,7 +146,7 @@ class ExcelRulesTest < Test::Unit::TestCase
         files.each do |file|
           data = File.binread(file)
           assert_no_violations(data, "#{mode} #{File.basename(file)}")
-          assert_no_violations(Xlsxrb.write(Xlsxrb.load(data)), "#{mode} #{File.basename(file)} loaded and written")
+          assert_no_violations(Xlsxrb.write(Xlsxrb.load(StringIO.new(data))), "#{mode} #{File.basename(file)} loaded and written")
         end
       end
     end

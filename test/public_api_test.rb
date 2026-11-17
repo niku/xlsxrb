@@ -52,7 +52,7 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal(Encoding::ASCII_8BIT, binary.encoding)
 
     # Validate that it can be parsed back
-    parsed = Xlsxrb.load(binary)
+    parsed = Xlsxrb.load(StringIO.new(binary))
     assert_equal(1, parsed.sheets.size)
     assert_equal("In-Memory", parsed.sheet(0)["A1"]&.value)
   end
@@ -65,7 +65,7 @@ class PublicApiTest < Test::Unit::TestCase
     end
     binary = Xlsxrb.write(wb)
 
-    parsed = Xlsxrb.load(binary)
+    parsed = Xlsxrb.load(StringIO.new(binary))
     assert_equal(1, parsed.sheets.size)
     assert_equal("Alice", parsed.sheet("Users")["A1"]&.value)
   end
@@ -99,10 +99,10 @@ class PublicApiTest < Test::Unit::TestCase
       z.add_binary_entry("docProps/app.xml", app_xml) unless reader.entry_names.include?("docProps/app.xml")
     end
 
-    loaded = Xlsxrb.load(patched.string)
+    loaded = Xlsxrb.load(StringIO.new(patched.string))
     assert_equal([["Worksheets", 1]], loaded.app_properties.heading_pairs)
 
-    rewritten = Xlsxrb.load(Xlsxrb.write(loaded))
+    rewritten = Xlsxrb.load(StringIO.new(Xlsxrb.write(loaded)))
     assert_equal([["x", 1]], rewritten.sheets.first.rows.map { |r| r.cells.map(&:value) })
   end
 
@@ -122,7 +122,7 @@ class PublicApiTest < Test::Unit::TestCase
 
     xml = Xlsxrb::Ooxml::ZipReader.new(StringIO.new(data)).read_entry("xl/worksheets/sheet1.xml")
     assert_equal(%w[topRight bottomLeft bottomRight], xml.scan(/<selection pane="(\w+)"/).flatten)
-    assert_equal("C2", Xlsxrb.load(data).sheets.first.selection.active_cell)
+    assert_equal("C2", Xlsxrb.load(StringIO.new(data)).sheets.first.selection.active_cell)
   end
 
   test "read and load report a missing path as Errno::ENOENT" do
@@ -131,7 +131,7 @@ class PublicApiTest < Test::Unit::TestCase
     assert_raise(Errno::EISDIR) { Xlsxrb.load(Dir.tmpdir) }
     assert_raise_message(/\ANo such file or directory - "x{60}"\.\.\. \(500 bytes\)\z/) { Xlsxrb.load("x" * 500) }
     # Bytes that are not an XLSX archive are still a format error, not a missing file.
-    assert_raise(Xlsxrb::ZipError) { Xlsxrb.load("\x00\x01not a zip".b) }
+    assert_raise(Xlsxrb::ZipError) { Xlsxrb.load(StringIO.new("\x00\x01not a zip".b)) }
   end
 
   test "freeze and split panes keep their top-left cell" do
@@ -146,7 +146,7 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal("D10", built.sheets.first.freeze_pane.top_left_cell)
     data = Xlsxrb.write(built)
     assert_include(pane_tag.call(data), 'topLeftCell="D10"')
-    loaded = Xlsxrb.load(data)
+    loaded = Xlsxrb.load(StringIO.new(data))
     assert_equal([1, 2, "D10"], loaded.sheets.first.freeze_pane.then { |fp| [fp.row, fp.column, fp.top_left_cell] })
     assert_include(pane_tag.call(Xlsxrb.write(loaded)), 'topLeftCell="D10"')
 
@@ -163,7 +163,7 @@ class PublicApiTest < Test::Unit::TestCase
     split = built.sheets.first.with(freeze_pane: nil, split_pane: Xlsxrb::Elements::SplitPane.new(x_split: 1200, y_split: 600, top_left_cell: "E9"))
     split_data = Xlsxrb.write(built.with(sheets: [split]))
     assert_include(pane_tag.call(split_data), 'topLeftCell="E9"')
-    assert_equal("E9", Xlsxrb.load(split_data).sheets.first.split_pane.top_left_cell)
+    assert_equal("E9", Xlsxrb.load(StringIO.new(split_data)).sheets.first.split_pane.top_left_cell)
   end
 
   test "workbook protection keeps its password through build, write, and load" do
@@ -175,7 +175,7 @@ class PublicApiTest < Test::Unit::TestCase
     tag = ->(d) { Xlsxrb::Ooxml::ZipReader.new(StringIO.new(d)).read_entry("xl/workbook.xml")[/<workbookProtection[^>]*>/] }
     assert_match(/workbookAlgorithmName="SHA-512" workbookHashValue="[^"]+" workbookSaltValue="[^"]+" workbookSpinCount="100000"/, tag.call(data))
 
-    loaded = Xlsxrb.load(data)
+    loaded = Xlsxrb.load(StringIO.new(data))
     assert_equal(["SHA-512", 100_000, true], [loaded.workbook_protection.algorithm_name, loaded.workbook_protection.spin_count, loaded.workbook_protection.lock_structure?])
     assert_equal(tag.call(data), tag.call(Xlsxrb.write(loaded)))
 
@@ -205,7 +205,7 @@ class PublicApiTest < Test::Unit::TestCase
     data = Xlsxrb.write(built)
     auto_filter = ->(d) { Xlsxrb::Ooxml::ZipReader.new(StringIO.new(d)).read_entry("xl/worksheets/sheet1.xml")[%r{<autoFilter.*?</autoFilter>}m] }
 
-    loaded = Xlsxrb.load(data)
+    loaded = Xlsxrb.load(StringIO.new(data))
     assert_equal(specs, loaded.sheets.first.filter_columns.transform_values(&:to_spec))
     Xlsxrb.read(StringIO.new(data)) { |sheet| assert_equal(specs, sheet.filter_columns.transform_values(&:to_spec)) }
 
@@ -221,13 +221,13 @@ class PublicApiTest < Test::Unit::TestCase
         s.row(%w[x], cell_styles: [:sup])
       end
     end
-    loaded = Xlsxrb.load(Xlsxrb.write(built))
+    loaded = Xlsxrb.load(StringIO.new(Xlsxrb.write(built)))
     setup = loaded.sheets.first.page_setup
     assert_equal([300, 300, "overThenDown"], [setup.horizontal_dpi, setup.vertical_dpi, setup.page_order])
     font = loaded.styles.font(loaded.styles.cell_xf(loaded.sheets.first.rows.first.cells.first.style_index).font_id)
     assert_equal("superscript", font.vert_align)
 
-    again = Xlsxrb.load(Xlsxrb.write(loaded.with(sheets: [loaded.sheets.first.with(unmapped_data: {})])))
+    again = Xlsxrb.load(StringIO.new(Xlsxrb.write(loaded.with(sheets: [loaded.sheets.first.with(unmapped_data: {})]))))
     assert_equal([300, 300], [again.sheets.first.page_setup.horizontal_dpi, again.sheets.first.page_setup.vertical_dpi])
   end
 
@@ -236,11 +236,11 @@ class PublicApiTest < Test::Unit::TestCase
     comment = loaded.sheets.first.comments.first
     assert_kind_of(Xlsxrb::Elements::RichText, comment.to_h[:text])
 
-    again = Xlsxrb.load(Xlsxrb.write(loaded.with(sheets: [loaded.sheets.first.with(unmapped_data: {})])))
+    again = Xlsxrb.load(StringIO.new(Xlsxrb.write(loaded.with(sheets: [loaded.sheets.first.with(unmapped_data: {})]))))
     written = again.sheets.first.comments.first
     assert_equal(["A1", "TestAuthor", "Important note text"], [written.ref, written.author, written.text.map { |run| run[:text] }.join])
     assert_equal(true, written.text.first[:font][:bold])
-    assert_equal(comment.text.to_a, Xlsxrb.load(Xlsxrb.write(loaded)).sheets.first.comments.first.text.to_a)
+    assert_equal(comment.text.to_a, Xlsxrb.load(StringIO.new(Xlsxrb.write(loaded))).sheets.first.comments.first.text.to_a)
   end
 
   test "pivot tables resolve field names given in field_names" do
@@ -279,7 +279,7 @@ class PublicApiTest < Test::Unit::TestCase
       assert_match(%r{<worksheetSource ref="#{original.cache[:source_ref]}" sheet="#{original.cache[:source_sheet]}"/>}, cache, fixture)
       original.cache[:fields].each { |f| assert_include(cache, %(<cacheField name="#{f[:name]}"), fixture) }
 
-      again = Xlsxrb.load(Xlsxrb.write(loaded)).sheets[index].pivot_tables.first
+      again = Xlsxrb.load(StringIO.new(Xlsxrb.write(loaded))).sheets[index].pivot_tables.first
       assert_equal(original.to_h.slice(:name, :ref, :row_fields, :column_fields, :data_fields), again.to_h.slice(:name, :ref, :row_fields, :column_fields, :data_fields), fixture)
       assert_equal(original.cache[:fields].map { |f| f[:name] }, again.cache[:fields].map { |f| f[:name] }, fixture)
     end
@@ -303,7 +303,7 @@ class PublicApiTest < Test::Unit::TestCase
       assert_equal(%w[xl/media/image1.png xl/media/image2.png xl/media/image3.png], entries.keys.grep(%r{\Axl/media/}).sort)
       targets = entries.select { |name, _| name.start_with?("xl/drawings/_rels/") }.values.join.scan(/Target="([^"]+)"/).flatten
       assert_equal(%w[../media/image1.png ../media/image2.png ../media/image3.png], targets.sort)
-      assert_equal(3, Xlsxrb.load(data).sheets.sum { |s| s.images.size })
+      assert_equal(3, Xlsxrb.load(StringIO.new(data)).sheets.sum { |s| s.images.size })
     end
     add_images = lambda do |w|
       w.sheet("A") do |s|
@@ -340,7 +340,7 @@ class PublicApiTest < Test::Unit::TestCase
     rels = Xlsxrb::Ooxml::ZipReader.new(StringIO.new(io.string)).read_entry("xl/worksheets/_rels/sheet2.xml.rels")
     %w[drawings/drawing2.xml comments2.xml threadedComments/threadedComment2.xml tables/table2.xml].each { |part| assert_include(rels, part) }
 
-    sheets = Xlsxrb.load(io.string).sheets
+    sheets = Xlsxrb.load(StringIO.new(io.string)).sheets
     assert_equal([["note 0"], ["note 1"]], sheets.map { |s| s.comments.map { |c| c.text.to_s } })
     assert_equal([["thread 0"], ["thread 1"]], sheets.map { |s| s.threaded_comments.map(&:text) })
     assert_equal([["T0"], ["T1"]], sheets.map { |s| s.tables.map(&:name) })
@@ -369,7 +369,7 @@ class PublicApiTest < Test::Unit::TestCase
     io = StringIO.new
     Xlsxrb::Ooxml::ZipWriter.open(io) { |zip| base.merge("xl/styles.xml" => styles_xml).each { |name, data| zip.add_entry(name, data) } }
 
-    loaded = Xlsxrb.load(io.string)
+    loaded = Xlsxrb.load(StringIO.new(io.string))
     assert_equal([["Heading 1", 1, 16], ["Normal", 0, 0]], loaded.styles.cell_styles.map { |cs| [cs.name, cs.xf_id, cs.builtin_id] })
     written = Xlsxrb::Ooxml::ZipReader.new(StringIO.new(Xlsxrb.write(loaded))).read_entry("xl/styles.xml")
     assert_match(%r{<cellStyleXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/><xf numFmtId="0" fontId="1"}, written)
@@ -384,7 +384,7 @@ class PublicApiTest < Test::Unit::TestCase
         s.chart(type: :line, series: [{ cat_ref: "S!$A$1:$B$1", val_ref: "S!$A$2:$B$2" }])
       end
     end
-    loaded = Xlsxrb.load(Xlsxrb.write(built))
+    loaded = Xlsxrb.load(StringIO.new(Xlsxrb.write(built)))
     chart_xml = Xlsxrb::Ooxml::ZipReader.new(StringIO.new(Xlsxrb.write(loaded))).read_entry("xl/charts/chart1.xml")
     assert_match(%r{<c:plotArea><c:layout/><c:lineChart>}, chart_xml)
   end
@@ -395,7 +395,7 @@ class PublicApiTest < Test::Unit::TestCase
       zip.add_entry("mimetype", "application/vnd.oasis.opendocument.spreadsheet")
       zip.add_entry("content.xml", "<office:document-content/>")
     end
-    assert_raise_message(/not an XLSX workbook/) { Xlsxrb.load(io.string) }
+    assert_raise_message(/not an XLSX workbook/) { Xlsxrb.load(StringIO.new(io.string)) }
     assert_raise_message(/not an XLSX workbook/) { Xlsxrb.read(StringIO.new(io.string)) { |_sheet| nil } }
   end
 
@@ -450,7 +450,7 @@ class PublicApiTest < Test::Unit::TestCase
     style_tag = ->(d) { Xlsxrb::Ooxml::ZipReader.new(StringIO.new(d)).read_entry("xl/tables/table1.xml")[/<tableStyleInfo[^>]*>/] }
     assert_equal('<tableStyleInfo name="TableStyleLight9" showFirstColumn="1" showRowStripes="1"/>', style_tag.call(data))
 
-    loaded = Xlsxrb.load(data)
+    loaded = Xlsxrb.load(StringIO.new(data))
     assert_equal(%w[TableStyleLight9], loaded.sheets.first.tables.map { |t| t.style_info.name })
     Xlsxrb.read(StringIO.new(data)) { |sheet| assert_equal(%w[TableStyleLight9], sheet.tables.map { |t| t.style_info.name }) }
     assert_equal(style_tag.call(data), style_tag.call(Xlsxrb.write(loaded)))
@@ -472,7 +472,7 @@ class PublicApiTest < Test::Unit::TestCase
     io = StringIO.new
     Xlsxrb::Ooxml::ZipWriter.open(io) { |zip| base.merge("xl/worksheets/sheet1.xml" => sheet_xml).each { |name, data| zip.add_entry(name, data) } }
 
-    loaded = Xlsxrb.load(io.string)
+    loaded = Xlsxrb.load(StringIO.new(io.string))
     assert_equal(false, loaded.sheets.first.sheet_protection.sheet?)
     written = Xlsxrb::Ooxml::ZipReader.new(StringIO.new(Xlsxrb.write(loaded))).read_entry("xl/worksheets/sheet1.xml")
     assert_equal('<sheetProtection selectLockedCells="1"/>', written[/<sheetProtection[^>]*>/])
@@ -492,7 +492,7 @@ class PublicApiTest < Test::Unit::TestCase
     io = StringIO.new
     Xlsxrb::Ooxml::ZipWriter.open(io) { |zip| base.merge("xl/styles.xml" => styles_xml).each { |name, data| zip.add_entry(name, data) } }
 
-    loaded = Xlsxrb.load(io.string)
+    loaded = Xlsxrb.load(StringIO.new(io.string))
     assert_equal([2, "minor"], [loaded.styles.fonts.first.family, loaded.styles.fonts.first.scheme])
     written = Xlsxrb::Ooxml::ZipReader.new(StringIO.new(Xlsxrb.write(loaded))).read_entry("xl/styles.xml")
     assert_match(%r{<font><sz val="11(\.0)?"/><name val="Calibri"/><family val="2"/><scheme val="minor"/></font>}, written)
@@ -511,7 +511,7 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal(1, vml.call(data).scan("<x:Visible/>").size)
     assert_equal(%w[visible hidden], vml.call(data).scan(/visibility:(\w+)/).flatten)
 
-    loaded = Xlsxrb.load(data)
+    loaded = Xlsxrb.load(StringIO.new(data))
     assert_equal({ "A1" => true, "B1" => false }, loaded.sheets.first.comments.to_h { |c| [c.ref, c.visible?] })
     Xlsxrb.read(StringIO.new(data)) { |sheet| assert_equal([true, false], sheet.comments.map(&:visible?)) }
     assert_equal(1, vml.call(Xlsxrb.write(loaded)).scan("<x:Visible/>").size)
@@ -537,7 +537,7 @@ class PublicApiTest < Test::Unit::TestCase
     data = Xlsxrb.write(built)
     assert_equal(["<x:Anchor>2, 15, 0, 10, 4, 15, 4, 4</x:Anchor>"], vml.call(data).scan(%r{<x:Anchor>[^<]*</x:Anchor>}))
 
-    loaded = Xlsxrb.load(data)
+    loaded = Xlsxrb.load(StringIO.new(data))
     assert_nil(loaded.sheets.first.comments.first.anchor, "the default box reads back as no anchor")
     moved = loaded.sheets.first.comments.first.with(anchor: [5, 0, 1, 0, 7, 0, 4, 0])
     rewritten = Xlsxrb.write(loaded.with(sheets: [loaded.sheets.first.with(comments: [moved])]))
@@ -555,7 +555,7 @@ class PublicApiTest < Test::Unit::TestCase
     fills = ->(d) { Xlsxrb::Ooxml::ZipReader.new(StringIO.new(d)).read_entry("xl/styles.xml")[%r{<fills.*?</fills>}] }
     data = Xlsxrb.write(built)
     assert_equal(%w[none gray125 solid], fills.call(data).scan(/patternType="(\w+)"/).flatten)
-    assert_equal(fills.call(data), fills.call(Xlsxrb.write(Xlsxrb.load(data))))
+    assert_equal(fills.call(data), fills.call(Xlsxrb.write(Xlsxrb.load(StringIO.new(data)))))
   end
 
   test "attribute values with entity references read back decoded" do
@@ -571,7 +571,7 @@ class PublicApiTest < Test::Unit::TestCase
       end
     end
     data = Xlsxrb.write(built)
-    loaded = Xlsxrb.load(data)
+    loaded = Xlsxrb.load(StringIO.new(data))
     sheet = loaded.sheets.first
     assert_equal('"Q"0 & "x"', loaded.styles.number_formats.to_h.values.last)
     assert_equal({ "A1" => { url: "https://example.com/?a=1&b=2", tooltip: "x & y" }, "A2" => { display: "<go>", location: "'R&D'!B1" } },
@@ -591,7 +591,7 @@ class PublicApiTest < Test::Unit::TestCase
     end
     gradient_xml = ->(d) { Xlsxrb::Ooxml::ZipReader.new(StringIO.new(d)).read_entry("xl/styles.xml")[%r{<gradientFill.*?</gradientFill>}] }
     data = Xlsxrb.write(built)
-    loaded = Xlsxrb.load(data)
+    loaded = Xlsxrb.load(StringIO.new(data))
     gradient = loaded.styles.fills.map(&:gradient).compact.first
     assert_equal(["linear", 45.0, [[0.0, "FFFFFFFF"], [1.0, "FF4F81BD"]]],
                  [gradient[:type], gradient[:degree], gradient[:stops].map { |stop| [stop[:position], stop[:color][:rgb]] }])
@@ -788,7 +788,7 @@ class PublicApiTest < Test::Unit::TestCase
       defined_names: [{ name: "MyConstant", value: "'HiddenSheet'!A1", local_sheet_name: "HiddenSheet" }]
     )
     binary = Xlsxrb.write(wb)
-    read_wb = Xlsxrb.load(binary)
+    read_wb = Xlsxrb.load(StringIO.new(binary))
     sheet = read_wb.sheets.first
 
     assert_equal(:hidden, sheet.state)
@@ -838,7 +838,7 @@ class PublicApiTest < Test::Unit::TestCase
     binary = Xlsxrb.write(wb)
 
     cells_streamed = []
-    Xlsxrb.read(binary) do |sheet|
+    Xlsxrb.read(StringIO.new(binary)) do |sheet|
       sheet.each_row do |row|
         assert_kind_of(Xlsxrb::StreamRow, row)
         row.each_cell do |cell|
@@ -860,7 +860,7 @@ class PublicApiTest < Test::Unit::TestCase
     binary = Xlsxrb.write(wb)
 
     cells = []
-    Xlsxrb.read(binary) do |sheet|
+    Xlsxrb.read(StringIO.new(binary)) do |sheet|
       sheet.each_cell do |cell|
         cells << cell.value
       end
@@ -882,13 +882,13 @@ class PublicApiTest < Test::Unit::TestCase
     binary = Xlsxrb.write(wb)
 
     all_rows = []
-    Xlsxrb.read(binary) do |sheet|
+    Xlsxrb.read(StringIO.new(binary)) do |sheet|
       sheet.each_row_values { |v| all_rows << v }
     end
     assert_equal([["Header", 100], [], ["Data", 200], [], []], all_rows)
 
     trimmed_rows = []
-    Xlsxrb.read(binary, trim_empty_rows: true) do |sheet|
+    Xlsxrb.read(StringIO.new(binary), trim_empty_rows: true) do |sheet|
       assert_true(sheet.trim_empty_rows?)
       sheet.each_row_values { |v| trimmed_rows << v }
     end
@@ -934,7 +934,7 @@ class PublicApiTest < Test::Unit::TestCase
     end
     binary = Xlsxrb.write(wb_data)
 
-    sheets = Xlsxrb.read(binary).to_a
+    sheets = Xlsxrb.read(StringIO.new(binary)).to_a
     sheet = sheets.first
 
     # 1. Sheet is a StreamSheet (O(1) memory)
@@ -959,7 +959,7 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal(2, doc_sheet.rows.size)
 
     # 5. Xlsxrb.load loads all sheets into memory
-    loaded_wb = Xlsxrb.load(binary)
+    loaded_wb = Xlsxrb.load(StringIO.new(binary))
     assert_kind_of(Xlsxrb::Elements::Worksheet, loaded_wb.sheet(0))
     assert_equal("Header1", loaded_wb["LazySheet"]["A1"].value)
   end
@@ -1509,7 +1509,7 @@ class PublicApiTest < Test::Unit::TestCase
 
     # Test round-trip via write and read
     binary = Xlsxrb.write(wb)
-    read_wb = Xlsxrb.load(binary)
+    read_wb = Xlsxrb.load(StringIO.new(binary))
 
     assert_equal("Quarterly Report", read_wb.core_properties.title)
     assert_equal("Finance Team", read_wb.core_properties.creator)
@@ -2978,7 +2978,7 @@ class PublicApiTest < Test::Unit::TestCase
 
     assert_kind_of(String, data1)
     assert(data1.start_with?("PK\x03\x04"))
-    wb1 = Xlsxrb.load(data1)
+    wb1 = Xlsxrb.load(StringIO.new(data1))
     sheet1 = wb1.sheet(0)
     assert_equal("Items", sheet1.name)
     assert_equal("Header1", sheet1["A1"]&.value)
@@ -2997,7 +2997,7 @@ class PublicApiTest < Test::Unit::TestCase
     data2 = Xlsxrb.write(wb_in)
     assert_kind_of(String, data2)
     assert(data2.start_with?("PK\x03\x04"))
-    wb2 = Xlsxrb.load(data2)
+    wb2 = Xlsxrb.load(StringIO.new(data2))
     sheet2 = wb2.sheet(0)
     assert_equal("DOM", sheet2.name)
     assert_equal("DOM_A", sheet2["A1"]&.value)
@@ -3024,7 +3024,7 @@ class PublicApiTest < Test::Unit::TestCase
 
     # Write and read back
     data = Xlsxrb.write(wb_built)
-    stream_sheet = Xlsxrb.read(data).first
+    stream_sheet = Xlsxrb.read(StringIO.new(data)).first
     assert_equal(24.5, stream_sheet.sheet_format.default_row_height)
     assert_equal(18.0, stream_sheet.sheet_format.default_column_width)
     assert_equal(2, stream_sheet.sheet_format.outline_level_row)
@@ -3042,7 +3042,7 @@ class PublicApiTest < Test::Unit::TestCase
       end
     end
 
-    stream_sheet2 = Xlsxrb.read(stream_data).first
+    stream_sheet2 = Xlsxrb.read(StringIO.new(stream_data)).first
     assert_equal(30.0, stream_sheet2.sheet_format.default_row_height)
     assert_equal(12.5, stream_sheet2.sheet_format.default_column_width)
     assert_equal(30.0, stream_sheet2.load.sheet_format.default_row_height)
@@ -3075,7 +3075,7 @@ class PublicApiTest < Test::Unit::TestCase
 
     # Write and read back
     data = Xlsxrb.write(wb_built)
-    stream_sheet = Xlsxrb.read(data).first
+    stream_sheet = Xlsxrb.read(StringIO.new(data)).first
 
     assert_equal(2, stream_sheet.protected_ranges.size)
     assert_equal("Range1", stream_sheet.protected_ranges[0].name)
@@ -3100,7 +3100,7 @@ class PublicApiTest < Test::Unit::TestCase
       end
     end
 
-    ss = Xlsxrb.read(stream_data).first
+    ss = Xlsxrb.read(StringIO.new(stream_data)).first
     assert_equal(1, ss.protected_ranges.size)
     assert_equal("StreamRange", ss.protected_ranges[0].name)
     assert_equal("B2:F20", ss.protected_ranges[0].sqref)
@@ -3159,7 +3159,7 @@ class PublicApiTest < Test::Unit::TestCase
 
     # Write and read back
     data = Xlsxrb.write(wb_built)
-    stream_sheet = Xlsxrb.read(data).first
+    stream_sheet = Xlsxrb.read(StringIO.new(data)).first
 
     assert_equal(1, stream_sheet.tables.size)
     assert_equal("ScoreTable", stream_sheet.tables.first.name)
@@ -3186,7 +3186,7 @@ class PublicApiTest < Test::Unit::TestCase
       end
     end
 
-    wb_stream_sheet = Xlsxrb.read(stream_data).first
+    wb_stream_sheet = Xlsxrb.read(StringIO.new(stream_data)).first
     assert_equal(1, wb_stream_sheet.tables.size)
     assert_equal("A1:B3", wb_stream_sheet.tables.first.ref)
     assert_equal(1, wb_stream_sheet.data_validations.size)
@@ -3257,7 +3257,7 @@ class PublicApiTest < Test::Unit::TestCase
     raw_bytes = buf.string.b
 
     # 1. Xlsxrb.load
-    wb = Xlsxrb.load(raw_bytes)
+    wb = Xlsxrb.load(StringIO.new(raw_bytes))
     assert_equal(["DataSheet"], wb.sheets.map(&:name))
     assert_equal([[42]], wb.sheet("DataSheet").each_row_values.to_a)
     assert_equal(1, wb.unmapped_data[:non_worksheet_sheets].size)
@@ -3311,7 +3311,7 @@ class PublicApiTest < Test::Unit::TestCase
       assert_equal(["Sheet1", "Sales_ 2026"], w.sheet_names)
     end
 
-    wb = Xlsxrb.load(io.string.b)
+    wb = Xlsxrb.load(StringIO.new(io.string.b))
     assert_equal(["Sheet1", "Sales_ 2026"], wb.sheets.map(&:name))
   end
 
@@ -3362,7 +3362,7 @@ class PublicApiTest < Test::Unit::TestCase
       w.sheet { |s| s.row([1]) }
       w.sheet { |s| s.row([2]) }
     end
-    assert_equal(%w[Sheet1 Sheet2], Xlsxrb.load(default_io.string.b).sheets.map(&:name))
+    assert_equal(%w[Sheet1 Sheet2], Xlsxrb.load(StringIO.new(default_io.string.b)).sheets.map(&:name))
 
     # WorkbookBuilder
     assert_raises(ArgumentError) do
@@ -3663,7 +3663,7 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal :very_hidden, wb1.sheet(2).state
 
     data1 = Xlsxrb.write(wb1)
-    wb1_read = Xlsxrb.load(data1)
+    wb1_read = Xlsxrb.load(StringIO.new(data1))
     assert_equal :visible, wb1_read.sheet(0).state
     assert_equal :hidden, wb1_read.sheet(1).state
     assert_equal :very_hidden, wb1_read.sheet(2).state
@@ -3678,7 +3678,7 @@ class PublicApiTest < Test::Unit::TestCase
       w.state = :very_hidden
       w.row([3])
     end
-    wb2 = Xlsxrb.load(data2)
+    wb2 = Xlsxrb.load(StringIO.new(data2))
     assert_equal :visible, wb2.sheet(0).state
     assert_equal :hidden, wb2.sheet(1).state
     assert_equal :very_hidden, wb2.sheet(2).state
@@ -3695,7 +3695,7 @@ class PublicApiTest < Test::Unit::TestCase
     end
     data = Xlsxrb.write(wb_dom)
 
-    wb = Xlsxrb.load(data)
+    wb = Xlsxrb.load(StringIO.new(data))
     sheet = wb.sheet(0)
 
     # Merged cells roundtrip from range string
@@ -3726,7 +3726,7 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal([nil, 50], row3.values)
 
     # StreamSheet dimension bounds and row_range/column_range (nil when no <dimension> tag is present)
-    Xlsxrb.read(data) do |stream_sheet|
+    Xlsxrb.read(StringIO.new(data)) do |stream_sheet|
       assert_nil(stream_sheet.dimension)
       assert_nil(stream_sheet.row_range)
       assert_nil(stream_sheet.column_range)
@@ -3800,6 +3800,34 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal("#NUM!", Xlsxrb::Elements::CellError::NUM.code)
     assert_equal("#N/A", Xlsxrb::Elements::CellError::NA.code)
     assert_equal("#GETTING_DATA", Xlsxrb::Elements::CellError::GETTING_DATA.code)
+  end
+
+  test "xlsx data passed as a String to load and read warns, and a stream or a path does not" do
+    io = StringIO.new
+    Xlsxrb.write(io) { |w| w.sheet("S") { |s| s.row([1]) } }
+    data = io.string
+    message = /\[Xlsxrb DEPRECATION\] Passing xlsx data as a String to Xlsxrb\.load and Xlsxrb\.read is deprecated; pass a stream, as in StringIO\.new\(data\)\. In version 0\.3\.0 a String is always a file path\./
+
+    readers = {
+      "load" => ->(source) { Xlsxrb.load(source).sheets.map(&:name) },
+      "read with a block" => ->(source) { Xlsxrb.read(source) { |sheet| sheet.each_row.to_a } },
+      "read without a block" => ->(source) { Xlsxrb.read(source).map(&:name) }
+    }
+    readers.each do |label, reader|
+      err = capture_stderr { reader.call(data) }
+      assert_match(message, err, label)
+      assert_equal(1, err.scan("[Xlsxrb DEPRECATION]").size, label)
+      # RBS runtime checks wrap each method, so the first caller outside the library is the wrapper.
+      assert_match(/#{Regexp.escape(File.basename(__FILE__))}:\d+: warning:/, err, label) unless defined?(RBS::Test)
+
+      assert_equal("", capture_stderr { reader.call(StringIO.new(data)) }, label)
+      Tempfile.create(["book", ".xlsx"]) do |file|
+        file.binmode
+        file.write(data)
+        file.close
+        assert_equal("", capture_stderr { reader.call(file.path) }, label)
+      end
+    end
   end
 
   test "an encrypted workbook given as a stream reports a wrong password" do

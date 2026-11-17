@@ -757,12 +757,13 @@ module Xlsxrb
   #: (untyped source, ?password: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?max_uncompressed_size: Integer?) { (StreamSheet) -> void } -> void
   #: (untyped source, ?password: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?max_uncompressed_size: Integer?) -> Enumerator[StreamSheet, void]
   def self.read(source, password: nil, trim_empty_rows: false, pad_empty_rows: false, pad_empty_cells: false, max_uncompressed_size: nil, &)
-    prepared_source = prepare_source_io(source, password)
+    # The prepared source is what the Enumerator reads, so that it is prepared once.
+    source = prepare_source_io(source, password)
     return to_enum(:read, source, password: password, trim_empty_rows: trim_empty_rows, pad_empty_rows: pad_empty_rows, pad_empty_cells: pad_empty_cells, max_uncompressed_size: max_uncompressed_size) unless block_given?
 
     zip_options = {}
     zip_options[:max_uncompressed_size] = max_uncompressed_size if max_uncompressed_size
-    zip_reader = Ooxml::ZipReader.open(prepared_source, **zip_options)
+    zip_reader = Ooxml::ZipReader.open(source, **zip_options)
 
     begin
       workbook_path = resolve_workbook_entry(zip_reader)
@@ -2621,11 +2622,16 @@ module Xlsxrb
       )
     end
 
+    STRING_SOURCE_AS_DATA_MESSAGE = "Passing xlsx data as a String to Xlsxrb.load and Xlsxrb.read is deprecated; " \
+                                    "pass a stream, as in StringIO.new(data). In version 0.3.0 a String is always a file path."
+    private_constant :STRING_SOURCE_AS_DATA_MESSAGE
+
     #: (untyped source, String? password) -> untyped
     def prepare_source_io(source, password)
       if source.is_a?(String)
         bin_source = source.encoding == Encoding::BINARY ? source : source.b
         if bin_source.start_with?("PK\x03\x04".b) || bin_source.include?("\x00".b) || Ooxml::Cfb::Reader.cfb?(bin_source)
+          Deprecation.warn(STRING_SOURCE_AS_DATA_MESSAGE, uplevel: nil)
           if Ooxml::Cfb::Reader.cfb?(bin_source)
             decrypted_zip = Ooxml::Crypto.decrypt(bin_source, password)
             StringIO.new(decrypted_zip)

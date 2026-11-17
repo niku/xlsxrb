@@ -66,7 +66,7 @@ class DosProtectionTest < Test::Unit::TestCase
       %(<hyperlinks ref="A1">hyperlink</hyperlinks>),
       "<!-- hyperlinks> hyperlink -->"
     ].each do |markup|
-      within(5, markup) { Xlsxrb.load(workbook_bytes(sheet: sheet_xml(%(<row r="1"><c r="A1"><v>1</v></c></row>), after: markup))) }
+      within(5, markup) { Xlsxrb.load(StringIO.new(workbook_bytes(sheet: sheet_xml(%(<row r="1"><c r="A1"><v>1</v></c></row>), after: markup)))) }
     end
 
     links = %(<hyperlinks><hyperlink ref="A1" location="S!A1" display="hyperlink"/>hyperlink<hyperlink ref="B2" location="S!B2"/></hyperlinks>)
@@ -81,16 +81,16 @@ class DosProtectionTest < Test::Unit::TestCase
     workbook = %(<workbook #{SML_NS}><sheets><sheet name="S" sheetId="1" r:id="rId1"/></sheets>#{"<a>" * depth}#{"</a>" * depth}</workbook>)
     bytes = workbook_bytes("xl/workbook.xml" => workbook)
 
-    within(5, "load") { assert_raise(Xlsxrb::ParseError) { Xlsxrb.load(bytes) } }
-    error = within(5, "read") { assert_raise(Xlsxrb::ParseError) { Xlsxrb.read(bytes) { |sheet| sheet.each_row(&:values) } } }
+    within(5, "load") { assert_raise(Xlsxrb::ParseError) { Xlsxrb.load(StringIO.new(bytes)) } }
+    error = within(5, "read") { assert_raise(Xlsxrb::ParseError) { Xlsxrb.read(StringIO.new(bytes)) { |sheet| sheet.each_row(&:values) } } }
     assert_match(/nested more than 256 levels/, error.message)
 
     nested = %(<workbook #{SML_NS}><sheets><sheet name="S" sheetId="1" r:id="rId1"/></sheets>#{"<a>" * 200}#{"</a>" * 200}</workbook>)
-    assert_equal ["S"], Xlsxrb.load(workbook_bytes("xl/workbook.xml" => nested)).sheets.map(&:name)
+    assert_equal ["S"], Xlsxrb.load(StringIO.new(workbook_bytes("xl/workbook.xml" => nested))).sheets.map(&:name)
   end
 
   test "malformed XML in a part raises ParseError" do
-    error = assert_raise(Xlsxrb::ParseError) { Xlsxrb.load(workbook_bytes("xl/workbook.xml" => "<workbook><sheets>")) }
+    error = assert_raise(Xlsxrb::ParseError) { Xlsxrb.load(StringIO.new(workbook_bytes("xl/workbook.xml" => "<workbook><sheets>"))) }
     assert_match(/\AMalformed XML: /, error.message)
     assert_not_include error.message, "\n"
   end
@@ -99,14 +99,14 @@ class DosProtectionTest < Test::Unit::TestCase
     ["1048577", "4000000000", "9" * 200_000].each do |number|
       bytes = workbook_bytes(sheet: sheet_xml(%(<row r="#{number}"><c r="A1"><v>1</v></c></row>)))
 
-      within(5, "load #{number.size}") { assert_raise(Xlsxrb::ParseError) { Xlsxrb.load(bytes) } }
+      within(5, "load #{number.size}") { assert_raise(Xlsxrb::ParseError) { Xlsxrb.load(StringIO.new(bytes)) } }
       within(5, "read #{number.size}") do
-        assert_raise(Xlsxrb::ParseError) { Xlsxrb.read(bytes, pad_empty_rows: true) { |sheet| sheet.each_row(&:values) } }
+        assert_raise(Xlsxrb::ParseError) { Xlsxrb.read(StringIO.new(bytes), pad_empty_rows: true) { |sheet| sheet.each_row(&:values) } }
       end
     end
 
     last_row = workbook_bytes(sheet: sheet_xml(%(<row r="1048576"><c r="A1048576"><v>1</v></c></row>)))
-    assert_equal [1_048_575], Xlsxrb.load(last_row).sheets.first.rows.map(&:index)
+    assert_equal [1_048_575], Xlsxrb.load(StringIO.new(last_row)).sheets.first.rows.map(&:index)
   end
 
   test "cell values of more digits than a number has are not converted, and shared string indexes out of range are empty" do
@@ -122,13 +122,13 @@ class DosProtectionTest < Test::Unit::TestCase
     ].join
     bytes = workbook_bytes(sheet: sheet_xml(%(<row r="1">#{cells}</row>)))
 
-    values = within(5, "read") { Xlsxrb.read(bytes).first.each_row.first.values }
+    values = within(5, "read") { Xlsxrb.read(StringIO.new(bytes)).first.each_row.first.values }
     # Integers keep every digit, as before; only text too long to be a number is left as text.
     assert_equal [1_234_567_890_123_456_789, 12_345_678_901_234_567_890_123, -12_345_678_901_234_567_890_123, digits, "", "", "a"], values
-    assert_equal values, within(5, "load") { Xlsxrb.load(bytes).sheets.first.rows.first.cells.map(&:value) }
+    assert_equal values, within(5, "load") { Xlsxrb.load(StringIO.new(bytes)).sheets.first.rows.first.cells.map(&:value) }
 
     typed = workbook_bytes(sheet: sheet_xml(%(<row r="1"><c r="A1" t="n"><v>#{digits}</v></c></row>)))
-    assert_raise(Xlsxrb::ParseError) { Xlsxrb.load(typed).sheets.first.rows.first.cells.map(&:value) }
+    assert_raise(Xlsxrb::ParseError) { Xlsxrb.load(StringIO.new(typed)).sheets.first.rows.first.cells.map(&:value) }
   end
 
   test "rows with unclosed cell or inline string tags raise ParseError instead of rescanning the row for each tag" do
@@ -141,14 +141,14 @@ class DosProtectionTest < Test::Unit::TestCase
     }.each do |label, cells|
       bytes = workbook_bytes(sheet: sheet_xml(%(<row r="1">#{cells}</row>)))
 
-      within(5, "#{label} read") { assert_raise(Xlsxrb::ParseError, label) { Xlsxrb.read(bytes) { |sheet| sheet.each_row(&:values) } } }
-      within(5, "#{label} load") { assert_raise(Xlsxrb::ParseError, label) { Xlsxrb.load(bytes).sheets.first.rows.each(&:cells) } }
+      within(5, "#{label} read") { assert_raise(Xlsxrb::ParseError, label) { Xlsxrb.read(StringIO.new(bytes)) { |sheet| sheet.each_row(&:values) } } }
+      within(5, "#{label} load") { assert_raise(Xlsxrb::ParseError, label) { Xlsxrb.load(StringIO.new(bytes)).sheets.first.rows.each(&:cells) } }
     end
 
     cells = %(<c r="A1" t="inlineStr"><is><t>hi</t></is></c><c r="B1" s="0"/><x:c r="C1"><x:v>2</x:v></x:c> <c r="D1"/> )
     bytes = workbook_bytes(sheet: sheet_xml(%(<row r="1">#{cells}</row><row r="2"><c r="A2"/><c r="B2"/></row>)))
-    assert_equal [["hi", nil, 2, nil], [nil, nil]], Xlsxrb.read(bytes).first.each_row.map(&:values)
-    assert_equal([["hi", nil, 2, nil], [nil, nil]], Xlsxrb.load(bytes).sheets.first.rows.map { |row| row.cells.map(&:value) })
+    assert_equal [["hi", nil, 2, nil], [nil, nil]], Xlsxrb.read(StringIO.new(bytes)).first.each_row.map(&:values)
+    assert_equal([["hi", nil, 2, nil], [nil, nil]], Xlsxrb.load(StringIO.new(bytes)).sheets.first.rows.map { |row| row.cells.map(&:value) })
   end
 
   test "shared strings without text are read in time proportional to the part" do
@@ -176,7 +176,7 @@ class DosProtectionTest < Test::Unit::TestCase
       "a comment before the rows" => "<!--#{"x" * (16 * megabyte)}-->"
     }.each do |label, markup|
       bytes = workbook_bytes(sheet: sheet_xml(%(#{markup}<row r="5"><c r="A5"><v>1</v></c></row>)))
-      rows = within(8, label) { Xlsxrb.read(bytes).first.each_row.map(&:values) }
+      rows = within(8, label) { Xlsxrb.read(StringIO.new(bytes)).first.each_row.map(&:values) }
 
       assert_equal(label == "a row without an end tag" ? 1 : [[1]], label == "a row without an end tag" ? rows.size : rows, label)
     end
@@ -185,7 +185,7 @@ class DosProtectionTest < Test::Unit::TestCase
   test "a streamed row larger than the buffer limit raises ParseError" do
     bytes = workbook_bytes(sheet: sheet_xml(%(<row r="1">#{"A" * (51 * 1024 * 1024)})))
 
-    error = assert_raise(Xlsxrb::ParseError) { Xlsxrb.read(bytes) { |sheet| sheet.each_row(&:values) } }
+    error = assert_raise(Xlsxrb::ParseError) { Xlsxrb.read(StringIO.new(bytes)) { |sheet| sheet.each_row(&:values) } }
     assert_match(/exceeds 52428800 bytes/, error.message)
   end
 
@@ -193,10 +193,10 @@ class DosProtectionTest < Test::Unit::TestCase
     omit "Time limits do not hold under RBS runtime checks, which wrap every method call" if defined?(RBS::Test)
 
     filler = %(<worksheet #{SML_NS}>#{"<a/>" * (16 * 1024 * 1024 / 4)}</worksheet>)
-    assert_nil(within(5, "dimension") { Xlsxrb.read(workbook_bytes(sheet: filler)).first.dimension })
+    assert_nil(within(5, "dimension") { Xlsxrb.read(StringIO.new(workbook_bytes(sheet: filler))).first.dimension })
 
     with_dimension = sheet_xml(%(<row r="1"><c r="A1"><v>1</v></c></row>), before: %(<dimension ref="A1:C3"/>))
-    assert_equal "A1:C3", Xlsxrb.read(workbook_bytes(sheet: with_dimension)).first.dimension
+    assert_equal "A1:C3", Xlsxrb.read(StringIO.new(workbook_bytes(sheet: with_dimension))).first.dimension
   end
 
   test "a percent sign in a date format code is literal text, not a strftime directive" do
@@ -239,8 +239,8 @@ class DosProtectionTest < Test::Unit::TestCase
 
     # The first style takes its format from its parent; the others name no style or no parent.
     expected = ["1.50", "1.5", "1.5", "1.5", "1.5"]
-    assert_equal expected, Xlsxrb.read(bytes).first.each_row.first.formatted_values
-    assert_equal expected, Xlsxrb.load(bytes).sheets.first.rows.first.cells.map(&:formatted_value)
+    assert_equal expected, Xlsxrb.read(StringIO.new(bytes)).first.each_row.first.formatted_values
+    assert_equal expected, Xlsxrb.load(StringIO.new(bytes)).sheets.first.rows.first.cells.map(&:formatted_value)
   end
 
   test "bytes that are not UTF-8 are read as U+FFFD" do
@@ -251,17 +251,17 @@ class DosProtectionTest < Test::Unit::TestCase
     )
     expected = ["a�b", "�", "�"]
 
-    streamed = Xlsxrb.read(bytes).first
+    streamed = Xlsxrb.read(StringIO.new(bytes)).first
     assert_equal "A1:C1", streamed.dimension
     assert_equal expected, streamed.each_row.first.values
-    loaded = Xlsxrb.load(bytes).sheets.first.rows.first.cells
+    loaded = Xlsxrb.load(StringIO.new(bytes)).sheets.first.rows.first.cells
     assert_equal expected, loaded.map(&:value)
     assert_equal "\"�\"", loaded[1].formula.to_s
-    assert_nothing_raised { Xlsxrb.write(StringIO.new, Xlsxrb.load(bytes)) }
+    assert_nothing_raised { Xlsxrb.write(StringIO.new, Xlsxrb.load(StringIO.new(bytes))) }
 
     # Outside element content the part is not well-formed, which is a ParseError at most.
     damaged = workbook_bytes("xl/_rels/workbook.xml.rels" => %(<Relationships \xFF/>).b, "xl/workbook.xml" => %(<workbook \xFF="1"/>).b)
-    [-> { Xlsxrb.load(damaged) }, -> { Xlsxrb.read(damaged) { |sheet| sheet.each_row.to_a } }].each do |reader|
+    [-> { Xlsxrb.load(StringIO.new(damaged)) }, -> { Xlsxrb.read(StringIO.new(damaged)) { |sheet| sheet.each_row.to_a } }].each do |reader|
       reader.call
     rescue Xlsxrb::Error
       nil
@@ -294,11 +294,11 @@ class DosProtectionTest < Test::Unit::TestCase
       bytes = workbook_bytes(parts.merge(name => part))
       begin
         within(10, "round #{round}") do
-          Xlsxrb.read(bytes) do |sheet|
+          Xlsxrb.read(StringIO.new(bytes)) do |sheet|
             sheet.dimension
             sheet.each_row(&:formatted_values)
           end
-          Xlsxrb.load(bytes).sheets.each { |sheet| sheet.rows.each { |row| row.cells.each(&:formatted_value) } }
+          Xlsxrb.load(StringIO.new(bytes)).sheets.each { |sheet| sheet.rows.each { |row| row.cells.each(&:formatted_value) } }
         end
       rescue Xlsxrb::Error
         next

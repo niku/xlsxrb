@@ -59,7 +59,7 @@ class ReaderTest < Test::Unit::TestCase
       end
 
       utf8_buffer = File.binread(file).force_encoding(Encoding::UTF_8)
-      wb = Xlsxrb.load(utf8_buffer)
+      wb = Xlsxrb.load(StringIO.new(utf8_buffer))
       assert_equal("Hello", wb.sheets.first.row_at(0)[0].value)
     end
   end
@@ -11020,7 +11020,7 @@ class ReaderTest < Test::Unit::TestCase
     end
     src_reader.close
 
-    wb = Xlsxrb.load(modified_io.string)
+    wb = Xlsxrb.load(StringIO.new(modified_io.string))
     sheet = wb.sheets.first
     assert_equal("CaseInsensitiveString", sheet.row_at(0)[0].value)
   end
@@ -11156,7 +11156,7 @@ class ReaderTest < Test::Unit::TestCase
     end
     src_reader.close
 
-    wb = Xlsxrb.load(modified_io.string)
+    wb = Xlsxrb.load(StringIO.new(modified_io.string))
     sheet = wb.sheets.first
     assert_equal("UTF-16 Cell Value", sheet.row_at(0)[0].value)
   end
@@ -11180,7 +11180,7 @@ class ReaderTest < Test::Unit::TestCase
     end
     src_reader.close
 
-    wb = Xlsxrb.load(modified_io.string)
+    wb = Xlsxrb.load(StringIO.new(modified_io.string))
     assert_equal(1, wb.sheets.size)
     assert_equal("Sheet1", wb.sheets.first.name)
     assert_equal("Hello", wb.sheets.first.row_at(0)[0].value)
@@ -11218,7 +11218,7 @@ class ReaderTest < Test::Unit::TestCase
     end
     src_reader.close
 
-    wb = Xlsxrb.load(modified_io.string)
+    wb = Xlsxrb.load(StringIO.new(modified_io.string))
     assert_equal(1, wb.sheets.size)
     assert_equal("Sheet1", wb.sheets.first.name)
     assert_equal("Cell 1", wb.sheets.first.row_at(0)[0].value)
