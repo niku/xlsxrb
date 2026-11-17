@@ -584,6 +584,15 @@ class OoxmlTest < Test::Unit::TestCase
     # Mixed entities and text
     assert_equal("Hello <World> & 😀!", Xlsxrb::Ooxml::XmlBuilder.unescape("Hello &lt;World&gt; &amp; &#x1F600;!"))
 
+    # Each entity is decoded once: the output of one is not the start of another.
+    assert_equal("&lt;", Xlsxrb::Ooxml::XmlBuilder.unescape("&amp;lt;"))
+    assert_equal("&#60;", Xlsxrb::Ooxml::XmlBuilder.unescape("&amp;#60;"))
+    assert_equal("&#x3C;", Xlsxrb::Ooxml::XmlBuilder.unescape("&amp;#x3C;"))
+    assert_equal("&lt;", Xlsxrb::Ooxml::XmlBuilder.unescape("&#38;lt;"))
+    assert_equal("&#60;", Xlsxrb::Ooxml::XmlBuilder.unescape("&#38;#60;"))
+    assert_equal("&amp;<A", Xlsxrb::Ooxml::XmlBuilder.unescape("&amp;amp;&lt;&#65;"))
+    assert_equal("&#xD800;", Xlsxrb::Ooxml::XmlBuilder.unescape("&#xD800;"))
+
     # ISO/IEC 29500-1 ST_Xstring (_xHHHH_) escape sequences
     assert_equal("\r", Xlsxrb::Ooxml::XmlBuilder.unescape("_x000D_"))
     assert_equal("\n", Xlsxrb::Ooxml::XmlBuilder.unescape("_x000A_"))

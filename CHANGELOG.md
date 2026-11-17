@@ -30,6 +30,7 @@
 - Raise `Xlsxrb::DecryptionError` for encrypted packages with salts, keys, or ciphertext of the wrong length or invalid Base64. These raised `OpenSSL::Cipher::CipherError` or `ArgumentError`, which code that rescues `Xlsxrb::Error` does not catch.
 - Raise `Xlsxrb::ParseError` for malformed XML and exceeded entity expansion limits in a part, instead of `REXML::ParseException` and `RuntimeError`. Code that rescues `RuntimeError` for these no longer catches them.
 - Return the General form when formatting Infinity or NaN, or a date serial number outside Excel's range, with a format code, instead of raising `FloatDomainError` or `ArgumentError`.
+- Decode each XML entity once in cell text, formulas, and attribute values. The predefined entities were decoded before the numeric ones, so `&amp;#60;`, which is the text `&#60;`, was read as `<`, and `&amp;lt;` written as `&#38;lt;` was read as `<` as well.
 
 ## [0.2.1] - 2026-11-16
 

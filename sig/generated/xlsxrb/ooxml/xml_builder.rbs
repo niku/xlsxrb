@@ -62,12 +62,13 @@ module Xlsxrb
       # : (String value) -> String
       def self.encode_xstring: (String value) -> String
 
-      NUM_ENTITY_RE: ::Regexp
+      ENTITY_RE: ::Regexp
 
       XSTRING_RE: ::Regexp
 
       # Unescapes predefined and numeric/hex XML entities, as well as
       # ISO/IEC 29500-1 ST_Xstring (_xHHHH_) control character sequences.
+      # Each entity is decoded once: "&amp;lt;" is the text "&lt;", not "<".
       #
       # @param value [Object]
       # @return [String]

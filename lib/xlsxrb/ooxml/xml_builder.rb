@@ -142,12 +142,13 @@ module Xlsxrb
         value.gsub(XSTRING_ENCODE_RE) { |char| format("_x%04X_", char.ord) }
       end
 
-      NUM_ENTITY_RE = /&#(?:(\d+)|x([0-9a-fA-F]+));/
+      ENTITY_RE = /&(?:amp|lt|gt|quot|apos|#(\d+)|#x([0-9a-fA-F]+));/
       XSTRING_RE = /_x([0-9A-Fa-f]{4})_/
-      private_constant :NUM_ENTITY_RE, :XSTRING_RE
+      private_constant :ENTITY_RE, :XSTRING_RE
 
       # Unescapes predefined and numeric/hex XML entities, as well as
       # ISO/IEC 29500-1 ST_Xstring (_xHHHH_) control character sequences.
+      # Each entity is decoded once: "&amp;lt;" is the text "&lt;", not "<".
       #
       # @param value [Object]
       # @return [String]
@@ -156,11 +157,14 @@ module Xlsxrb
         str = value.to_s
         return str unless str.include?("&") || str.include?("_x")
 
-        res = str.gsub(UNESCAPE_RE, UNESCAPE_MAP)
-        res = res.gsub(NUM_ENTITY_RE) do |match|
+        # Predefined and numeric entities in one pass, so that the output of one is not read
+        # as the start of another.
+        res = str.gsub(ENTITY_RE) do |match|
           dec = Regexp.last_match(1)
-          codepoint = dec ? Integer(dec) : Integer(Regexp.last_match(2), 16)
-          codepoint.chr(Encoding::UTF_8)
+          hex = Regexp.last_match(2)
+          next UNESCAPE_MAP.fetch(match) unless dec || hex
+
+          (dec ? Integer(dec) : Integer(hex, 16)).chr(Encoding::UTF_8)
         rescue RangeError
           match
         end
