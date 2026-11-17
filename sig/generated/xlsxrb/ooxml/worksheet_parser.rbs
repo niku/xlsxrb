@@ -82,17 +82,10 @@ module Xlsxrb
       # would be built digit by digit into an arbitrarily large Integer.
       MAX_ROW_NUMBER: ::Integer
 
-      # Digits (with a sign) up to which a cell value is read as an Integer. Longer values are
-      # read as Float, as Excel stores them: converting millions of digits to an Integer takes
-      # time that grows faster than their number.
-      MAX_INTEGER_TEXT_BYTES: ::Integer
-
-      # Longer text is not checked for being a number. Excel writes numbers in at most 25
-      # characters, and matching megabytes of digits takes memory in proportion.
+      # Longer text is not read as a number. Excel writes numbers in at most 25 characters;
+      # converting millions of digits to an Integer takes time that grows faster than their
+      # number, and matching them takes memory in proportion.
       MAX_NUMERIC_TEXT_BYTES: ::Integer
-
-      # : (String text) -> Integer?
-      def self.parse_integer: (String text) -> Integer?
 
       # Looks up a shared string by the index in a cell's <v>. An index that is negative or
       # too long to be one reads as an empty string, as an index past the end does.

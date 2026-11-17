@@ -576,7 +576,7 @@ module Xlsxrb
             return nil if text.empty?
 
             if text.bytesize <= MAX_NUMERIC_TEXT_BYTES && text.match?(STRICT_NUMERIC_RE)
-              parse_integer(text) ||
+              Integer(text, 10, exception: false) ||
                 Float(text, exception: false) ||
                 normalize_text(raw_value)
             else
@@ -603,7 +603,7 @@ module Xlsxrb
 
         raise(ParseError, "invalid numeric cell value: #{text[0, 40].inspect}") unless text.bytesize <= MAX_NUMERIC_TEXT_BYTES && text.match?(STRICT_NUMERIC_RE)
 
-        parse_integer(text) || Float(text, exception: false) ||
+        Integer(text, 10, exception: false) || Float(text, exception: false) ||
           raise(ParseError, "invalid numeric cell value: #{text[0, 40].inspect}")
       end
 
@@ -611,19 +611,11 @@ module Xlsxrb
       # would be built digit by digit into an arbitrarily large Integer.
       MAX_ROW_NUMBER = 1_048_576
 
-      # Digits (with a sign) up to which a cell value is read as an Integer. Longer values are
-      # read as Float, as Excel stores them: converting millions of digits to an Integer takes
-      # time that grows faster than their number.
-      MAX_INTEGER_TEXT_BYTES = 19
-      # Longer text is not checked for being a number. Excel writes numbers in at most 25
-      # characters, and matching megabytes of digits takes memory in proportion.
+      # Longer text is not read as a number. Excel writes numbers in at most 25 characters;
+      # converting millions of digits to an Integer takes time that grows faster than their
+      # number, and matching them takes memory in proportion.
       MAX_NUMERIC_TEXT_BYTES = 400
-      private_constant :MAX_INTEGER_TEXT_BYTES, :MAX_NUMERIC_TEXT_BYTES
-
-      #: (String text) -> Integer?
-      def self.parse_integer(text)
-        text.bytesize <= MAX_INTEGER_TEXT_BYTES ? Integer(text, 10, exception: false) : nil
-      end
+      private_constant :MAX_NUMERIC_TEXT_BYTES
 
       # Looks up a shared string by the index in a cell's <v>. An index that is negative or
       # too long to be one reads as an empty string, as an index past the end does.

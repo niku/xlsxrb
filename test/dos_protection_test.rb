@@ -109,7 +109,7 @@ class DosProtectionTest < Test::Unit::TestCase
     assert_equal [1_048_575], Xlsxrb.load(last_row).sheets.first.rows.map(&:index)
   end
 
-  test "cell values with many digits are read as Float, and shared string indexes out of range as empty" do
+  test "cell values of more digits than a number has are not converted, and shared string indexes out of range are empty" do
     digits = "7" * 2_000_000
     cells = [
       %(<c r="A1"><v>1234567890123456789</v></c>),
@@ -123,7 +123,8 @@ class DosProtectionTest < Test::Unit::TestCase
     bytes = workbook_bytes(sheet: sheet_xml(%(<row r="1">#{cells}</row>)))
 
     values = within(5, "read") { Xlsxrb.read(bytes).first.each_row.first.values }
-    assert_equal [1_234_567_890_123_456_789, 1.2345678901234568e22, -1.2345678901234568e22, digits, "", "", "a"], values
+    # Integers keep every digit, as before; only text too long to be a number is left as text.
+    assert_equal [1_234_567_890_123_456_789, 12_345_678_901_234_567_890_123, -12_345_678_901_234_567_890_123, digits, "", "", "a"], values
     assert_equal values, within(5, "load") { Xlsxrb.load(bytes).sheets.first.rows.first.cells.map(&:value) }
 
     typed = workbook_bytes(sheet: sheet_xml(%(<row r="1"><c r="A1" t="n"><v>#{digits}</v></c></row>)))
