@@ -145,7 +145,7 @@ module Xlsxrb
         buf << '<row r="' << row_num_str << '"'
         buf << ' s="' << attrs[:style_index].to_s << '" customFormat="1"' if attrs[:style_index].is_a?(Integer)
         if attrs[:height]
-          buf << ' ht="' << attrs[:height].to_s << '" customHeight="1"'
+          buf << ' ht="' << escape_xml(attrs[:height]) << '" customHeight="1"'
         elsif attrs[:custom_height]
           buf << ' customHeight="1"'
         end
@@ -566,7 +566,7 @@ module Xlsxrb
         buf << ' s="' << row_style_id.to_s << '" customFormat="1"' if row_style_id.is_a?(Integer)
         if attrs
           if attrs[:height]
-            buf << ' ht="' << attrs[:height].to_s << '" customHeight="1"'
+            buf << ' ht="' << escape_xml(attrs[:height]) << '" customHeight="1"'
           elsif attrs[:custom_height]
             buf << ' customHeight="1"'
           end
@@ -1767,7 +1767,7 @@ module Xlsxrb
                 buf << "<u/>"
               else
                 mapped_u = StyleBuilder::UNDERLINE_MAP[u_val.to_sym] || u_val
-                buf << '<u val="' << mapped_u.to_s << '"/>'
+                buf << '<u val="' << escape_xml(mapped_u) << '"/>'
               end
             end
             va_val = font[:vert_align] || font[:vertical_align]
@@ -1775,40 +1775,40 @@ module Xlsxrb
             va_val ||= "subscript" if font[:subscript]
             if va_val
               mapped_va = StyleBuilder::VERT_ALIGN_MAP[va_val.to_sym] || va_val
-              buf << '<vertAlign val="' << mapped_va.to_s << '"/>'
+              buf << '<vertAlign val="' << escape_xml(mapped_va) << '"/>'
             end
             font_sz = font[:sz] || font[:size]
-            buf << '<sz val="' << font_sz.to_s << '"/>' if font_sz
+            buf << '<sz val="' << escape_xml(font_sz) << '"/>' if font_sz
             if font[:color]
               if font[:color].is_a?(Hash)
                 c_hash = font[:color]
                 if c_hash[:rgb]
                   norm = StyleBuilder.normalize_color(c_hash[:rgb], alpha: true) || c_hash[:rgb].to_s
-                  buf << '<color rgb="' << norm << '"/>'
+                  buf << '<color rgb="' << escape_xml(norm) << '"/>'
                 elsif c_hash[:theme]
                   tint_attr = c_hash[:tint] ? %( tint="#{escape_xml(c_hash[:tint])}") : ""
-                  buf << '<color theme="' << c_hash[:theme].to_s << '"' << tint_attr << "/>"
+                  buf << '<color theme="' << escape_xml(c_hash[:theme]) << '"' << tint_attr << "/>"
                 elsif c_hash[:indexed]
-                  buf << '<color indexed="' << c_hash[:indexed].to_s << '"/>'
+                  buf << '<color indexed="' << escape_xml(c_hash[:indexed]) << '"/>'
                 elsif c_hash[:auto]
                   buf << '<color auto="1"/>'
                 end
               else
                 raw_color = font[:color]
                 norm_color = StyleBuilder.normalize_color(raw_color, alpha: true) || raw_color.to_s
-                buf << '<color rgb="' << norm_color << '"/>'
+                buf << '<color rgb="' << escape_xml(norm_color) << '"/>'
               end
             elsif font[:theme]
               tint_attr = font[:tint] ? %( tint="#{escape_xml(font[:tint])}") : ""
-              buf << '<color theme="' << font[:theme].to_s << '"' << tint_attr << "/>"
+              buf << '<color theme="' << escape_xml(font[:theme]) << '"' << tint_attr << "/>"
             elsif font[:indexed]
-              buf << '<color indexed="' << font[:indexed].to_s << '"/>'
+              buf << '<color indexed="' << escape_xml(font[:indexed]) << '"/>'
             elsif font[:auto]
               buf << '<color auto="1"/>'
             end
             buf << '<rFont val="' << escape_xml(font[:name]) << '"/>' if font[:name]
-            buf << '<family val="' << font[:family].to_s << '"/>' if font[:family]
-            buf << '<scheme val="' << font[:scheme].to_s << '"/>' if font[:scheme]
+            buf << '<family val="' << escape_xml(font[:family]) << '"/>' if font[:family]
+            buf << '<scheme val="' << escape_xml(font[:scheme]) << '"/>' if font[:scheme]
             buf << "</rPr><t>"
           else
             buf << "<r><t>"

@@ -18,7 +18,7 @@ module Xlsxrb
           unless @num_fmts.empty?
             parts << %(<numFmts count="#{@num_fmts.size}">)
             @num_fmts.each do |nf|
-              parts << %(<numFmt numFmtId="#{nf[:num_fmt_id]}" formatCode="#{xml_escape(nf[:format_code])}"/>)
+              parts << %(<numFmt numFmtId="#{xml_escape(nf[:num_fmt_id])}" formatCode="#{xml_escape(nf[:format_code])}"/>)
             end
             parts << "</numFmts>"
           end
@@ -41,7 +41,7 @@ module Xlsxrb
           # cellStyleXfs
           parts << %(<cellStyleXfs count="#{@cell_style_xfs.size}">)
           @cell_style_xfs.each do |xf|
-            parts << %(<xf numFmtId="#{xf[:num_fmt_id]}" fontId="#{xf[:font_id]}" fillId="#{xf[:fill_id]}" borderId="#{xf[:border_id]}"/>)
+            parts << %(<xf numFmtId="#{xml_escape(xf[:num_fmt_id])}" fontId="#{xml_escape(xf[:font_id])}" fillId="#{xml_escape(xf[:fill_id])}" borderId="#{xml_escape(xf[:border_id])}"/>)
           end
           parts << "</cellStyleXfs>"
 
@@ -62,9 +62,9 @@ module Xlsxrb
             children << emit_protection_xml(xf[:protection]) if xf[:protection]
             xf_id = xf[:xf_id] || 0
             parts << if children.any?
-                       %(<xf numFmtId="#{xf[:num_fmt_id]}" fontId="#{xf[:font_id]}" fillId="#{xf[:fill_id]}" borderId="#{xf[:border_id]}" xfId="#{xf_id}"#{apply_attrs.join}>#{children.join}</xf>)
+                       %(<xf numFmtId="#{xml_escape(xf[:num_fmt_id])}" fontId="#{xml_escape(xf[:font_id])}" fillId="#{xml_escape(xf[:fill_id])}" borderId="#{xml_escape(xf[:border_id])}" xfId="#{xml_escape(xf_id)}"#{apply_attrs.join}>#{children.join}</xf>)
                      else
-                       %(<xf numFmtId="#{xf[:num_fmt_id]}" fontId="#{xf[:font_id]}" fillId="#{xf[:fill_id]}" borderId="#{xf[:border_id]}" xfId="#{xf_id}"#{apply_attrs.join}/>)
+                       %(<xf numFmtId="#{xml_escape(xf[:num_fmt_id])}" fontId="#{xml_escape(xf[:font_id])}" fillId="#{xml_escape(xf[:fill_id])}" borderId="#{xml_escape(xf[:border_id])}" xfId="#{xml_escape(xf_id)}"#{apply_attrs.join}/>)
                      end
           end
           parts << "</cellXfs>"
@@ -72,9 +72,9 @@ module Xlsxrb
           # cellStyles
           parts << %(<cellStyles count="#{@cell_style_names.size}">)
           @cell_style_names.each do |cs|
-            cs_attrs = %(name="#{xml_escape(cs[:name])}" xfId="#{cs[:xf_id]}")
-            cs_attrs << %( builtinId="#{cs[:builtin_id]}") if cs[:builtin_id]
-            cs_attrs << %( iLevel="#{cs[:i_level]}") if cs[:i_level]
+            cs_attrs = %(name="#{xml_escape(cs[:name])}" xfId="#{xml_escape(cs[:xf_id])}")
+            cs_attrs << %( builtinId="#{xml_escape(cs[:builtin_id])}") if cs[:builtin_id]
+            cs_attrs << %( iLevel="#{xml_escape(cs[:i_level])}") if cs[:i_level]
             cs_attrs << ' hidden="1"' if cs[:hidden]
             cs_attrs << ' customBuiltin="1"' if cs[:custom_builtin]
             parts << "<cellStyle #{cs_attrs}/>"
@@ -108,9 +108,9 @@ module Xlsxrb
                 else
                   parts << "<tableStyle #{s_attrs.join(" ")}>"
                   ts[:elements].each do |el|
-                    el_attrs = [%(type="#{el[:type]}")]
-                    el_attrs << %(size="#{el[:size]}") if el[:size] && el[:size] != 1
-                    el_attrs << %(dxfId="#{el[:dxf_id]}") if el[:dxf_id]
+                    el_attrs = [%(type="#{xml_escape(el[:type])}")]
+                    el_attrs << %(size="#{xml_escape(el[:size])}") if el[:size] && el[:size] != 1
+                    el_attrs << %(dxfId="#{xml_escape(el[:dxf_id])}") if el[:dxf_id]
                     parts << "<tableStyleElement #{el_attrs.join(" ")}/>"
                   end
                   parts << "</tableStyle>"
@@ -127,7 +127,7 @@ module Xlsxrb
               parts << "<indexedColors>"
               @indexed_colors.each do |c|
                 rgb_str = format_rgb_hex(c) || c
-                parts << %(<rgbColor rgb="#{rgb_str}"/>)
+                parts << %(<rgbColor rgb="#{xml_escape(rgb_str)}"/>)
               end
               parts << "</indexedColors>"
             end
@@ -146,14 +146,14 @@ module Xlsxrb
         # : (untyped alignment) -> ::String
         def emit_alignment_xml(alignment)
           attrs = []
-          attrs << %(horizontal="#{alignment[:horizontal]}") if alignment[:horizontal]
-          attrs << %(vertical="#{alignment[:vertical]}") if alignment[:vertical]
+          attrs << %(horizontal="#{xml_escape(alignment[:horizontal])}") if alignment[:horizontal]
+          attrs << %(vertical="#{xml_escape(alignment[:vertical])}") if alignment[:vertical]
           attrs << %(wrapText="1") if alignment[:wrap_text]
-          attrs << %(textRotation="#{alignment[:text_rotation]}") if alignment[:text_rotation]
-          attrs << %(indent="#{alignment[:indent]}") if alignment[:indent]
-          attrs << %(relativeIndent="#{alignment[:relative_indent]}") if alignment[:relative_indent]
+          attrs << %(textRotation="#{xml_escape(alignment[:text_rotation])}") if alignment[:text_rotation]
+          attrs << %(indent="#{xml_escape(alignment[:indent])}") if alignment[:indent]
+          attrs << %(relativeIndent="#{xml_escape(alignment[:relative_indent])}") if alignment[:relative_indent]
           attrs << %(shrinkToFit="1") if alignment[:shrink_to_fit]
-          attrs << %(readingOrder="#{alignment[:reading_order]}") if alignment[:reading_order]
+          attrs << %(readingOrder="#{xml_escape(alignment[:reading_order])}") if alignment[:reading_order]
           attrs << %(justifyLastLine="1") if alignment[:justify_last_line]
           "<alignment #{attrs.join(" ")}/>"
         end
@@ -210,19 +210,19 @@ module Xlsxrb
             elsif spec[:rgb] || (spec[:color] && !spec[:color].is_a?(Hash))
               raw_rgb = spec[:rgb] || spec[:color]
               formatted_rgb = format_rgb_hex(raw_rgb)
-              formatted_rgb ? %(<#{tag} rgb="#{formatted_rgb}"/>) : ""
+              formatted_rgb ? %(<#{tag} rgb="#{xml_escape(formatted_rgb)}"/>) : ""
             elsif spec[:theme]
-              attrs = [%(theme="#{spec[:theme]}")]
-              attrs << %(tint="#{spec[:tint]}") if spec[:tint]
+              attrs = [%(theme="#{xml_escape(spec[:theme])}")]
+              attrs << %(tint="#{xml_escape(spec[:tint])}") if spec[:tint]
               %(<#{tag} #{attrs.join(" ")}/>)
             elsif spec[:indexed]
-              %(<#{tag} indexed="#{spec[:indexed]}"/>)
+              %(<#{tag} indexed="#{xml_escape(spec[:indexed])}"/>)
             else
               ""
             end
           elsif spec.is_a?(String) || spec.is_a?(Symbol)
             formatted_rgb = format_rgb_hex(spec)
-            formatted_rgb ? %(<#{tag} rgb="#{formatted_rgb}"/>) : ""
+            formatted_rgb ? %(<#{tag} rgb="#{xml_escape(formatted_rgb)}"/>) : ""
           else
             ""
           end
@@ -250,7 +250,7 @@ module Xlsxrb
               parts << "<u/>"
             else
               mapped_u = StyleBuilder::UNDERLINE_MAP[u_val.to_sym] || u_val
-              parts << %(<u val="#{mapped_u}"/>)
+              parts << %(<u val="#{xml_escape(mapped_u)}"/>)
             end
           end
           va_val = font[:vert_align] || font[:vertical_align]
@@ -258,15 +258,15 @@ module Xlsxrb
           va_val ||= "subscript" if font[:subscript]
           if va_val
             mapped_va = StyleBuilder::VERT_ALIGN_MAP[va_val.to_sym] || va_val
-            parts << %(<vertAlign val="#{mapped_va}"/>)
+            parts << %(<vertAlign val="#{xml_escape(mapped_va)}"/>)
           end
           font_sz = font[:size] || font[:sz]
-          parts << %(<sz val="#{font_sz}"/>) if font_sz
+          parts << %(<sz val="#{xml_escape(font_sz)}"/>) if font_sz
           parts << emit_color_xml(font)
           parts << %(<name val="#{xml_escape(font[:name])}"/>) if font[:name]
-          parts << %(<family val="#{font[:family]}"/>) if font[:family]
-          parts << %(<charset val="#{font[:charset]}"/>) if font[:charset]
-          parts << %(<scheme val="#{font[:scheme]}"/>) if font[:scheme]
+          parts << %(<family val="#{xml_escape(font[:family])}"/>) if font[:family]
+          parts << %(<charset val="#{xml_escape(font[:charset])}"/>) if font[:charset]
+          parts << %(<scheme val="#{xml_escape(font[:scheme])}"/>) if font[:scheme]
           parts << "</font>"
           parts.join
         end
@@ -278,11 +278,11 @@ module Xlsxrb
           has_fg = fill[:fg_color] || fill[:fg_color_theme] || fill[:fg_color_indexed] || fill[:fg_color_auto]
           has_bg = fill[:bg_color] || fill[:bg_color_theme] || fill[:bg_color_indexed] || fill[:bg_color_auto]
           fill_pattern = fill[:pattern_type] || fill[:pattern]
-          return "<fill><patternFill patternType=\"#{fill_pattern}\"/></fill>" if fill_pattern && !has_fg && !has_bg
+          return "<fill><patternFill patternType=\"#{xml_escape(fill_pattern)}\"/></fill>" if fill_pattern && !has_fg && !has_bg
 
           parts = ["<fill>"]
           pt = fill_pattern || "solid"
-          parts << %(<patternFill patternType="#{pt}">)
+          parts << %(<patternFill patternType="#{xml_escape(pt)}">)
           parts << emit_fill_color_xml("fgColor", fill, :fg)
           parts << emit_fill_color_xml("bgColor", fill, :bg)
           parts << "</patternFill>"
@@ -296,11 +296,11 @@ module Xlsxrb
           if val
             emit_color_xml(val, tag: tag)
           elsif fill[:"#{prefix}_color_theme"]
-            attrs = [%(theme="#{fill[:"#{prefix}_color_theme"]}")]
-            attrs << %(tint="#{fill[:"#{prefix}_color_tint"]}") if fill[:"#{prefix}_color_tint"]
+            attrs = [%(theme="#{xml_escape(fill[:"#{prefix}_color_theme"])}")]
+            attrs << %(tint="#{xml_escape(fill[:"#{prefix}_color_tint"])}") if fill[:"#{prefix}_color_tint"]
             %(<#{tag} #{attrs.join(" ")}/>)
           elsif fill[:"#{prefix}_color_indexed"]
-            %(<#{tag} indexed="#{fill[:"#{prefix}_color_indexed"]}"/>)
+            %(<#{tag} indexed="#{xml_escape(fill[:"#{prefix}_color_indexed"])}"/>)
           elsif fill[:"#{prefix}_color_auto"]
             %(<#{tag} auto="1"/>)
           else
@@ -311,18 +311,18 @@ module Xlsxrb
         # : (untyped gradient) -> untyped
         def emit_gradient_fill_xml(gradient)
           attrs = []
-          attrs << %(type="#{gradient[:type]}") if gradient[:type]
-          attrs << %(degree="#{gradient[:degree]}") if gradient[:degree]
-          attrs << %(left="#{gradient[:left]}") if gradient[:left]
-          attrs << %(right="#{gradient[:right]}") if gradient[:right]
-          attrs << %(top="#{gradient[:top]}") if gradient[:top]
-          attrs << %(bottom="#{gradient[:bottom]}") if gradient[:bottom]
+          attrs << %(type="#{xml_escape(gradient[:type])}") if gradient[:type]
+          attrs << %(degree="#{xml_escape(gradient[:degree])}") if gradient[:degree]
+          attrs << %(left="#{xml_escape(gradient[:left])}") if gradient[:left]
+          attrs << %(right="#{xml_escape(gradient[:right])}") if gradient[:right]
+          attrs << %(top="#{xml_escape(gradient[:top])}") if gradient[:top]
+          attrs << %(bottom="#{xml_escape(gradient[:bottom])}") if gradient[:bottom]
           parts = ["<fill>"]
           parts << "<gradientFill#{" #{attrs.join(" ")}" unless attrs.empty?}"
           if gradient[:stops]&.any?
             parts[-1] = "#{parts[-1]}>"
             gradient[:stops].each do |stop|
-              parts << %(<stop position="#{stop[:position]}">#{emit_color_xml(stop)}</stop>)
+              parts << %(<stop position="#{xml_escape(stop[:position])}">#{emit_color_xml(stop)}</stop>)
             end
             parts << "</gradientFill>"
           else
@@ -336,9 +336,9 @@ module Xlsxrb
         def emit_brk_xml(brk, default_max:)
           brk = brk.to_h if brk.is_a?(Elements::MetadataRecord)
           if brk.is_a?(Hash)
-            attrs = %(id="#{brk[:id]}")
-            attrs << %( min="#{brk[:min]}") if brk[:min]
-            attrs << %( max="#{brk.respond_to?(:fetch) ? brk.fetch(:max, default_max) : (brk[:max] || default_max)}")
+            attrs = %(id="#{xml_escape(brk[:id])}")
+            attrs << %( min="#{xml_escape(brk[:min])}") if brk[:min]
+            attrs << %( max="#{xml_escape(brk.respond_to?(:fetch) ? brk.fetch(:max, default_max) : (brk[:max] || default_max))}")
             man_val = if brk.respond_to?(:fetch)
                         brk.fetch(:man, true)
                       else
@@ -348,7 +348,7 @@ module Xlsxrb
             attrs << ' pt="1"' if brk[:pt]
             "<brk #{attrs}/>"
           else
-            %(<brk id="#{brk}" max="#{default_max}" man="1"/>)
+            %(<brk id="#{xml_escape(brk)}" max="#{xml_escape(default_max)}" man="1"/>)
           end
         end
 
@@ -362,7 +362,7 @@ module Xlsxrb
           %i[left right top bottom diagonal vertical horizontal].each do |side|
             s = bdr[side]
             if s.is_a?(Hash)
-              parts << %(<#{side} style="#{s[:style]}">)
+              parts << %(<#{side} style="#{xml_escape(s[:style])}">)
               parts << emit_color_xml(s)
               parts << "</#{side}>"
             else
@@ -381,7 +381,7 @@ module Xlsxrb
           nf = dxf.is_a?(Elements::MetadataRecord) ? dxf.number_format : (dxf[:number_format] || dxf[:num_fmt])
           if nf
             nf_h = nf.is_a?(Elements::MetadataRecord) ? nf.to_h : nf
-            parts << %(<numFmt numFmtId="#{nf_h[:num_fmt_id]}" formatCode="#{xml_escape(nf_h[:format_code])}"/>)
+            parts << %(<numFmt numFmtId="#{xml_escape(nf_h[:num_fmt_id])}" formatCode="#{xml_escape(nf_h[:format_code])}"/>)
           end
           parts << emit_fill_xml(dxf[:fill]) if dxf[:fill]
           parts << emit_alignment_xml(dxf[:alignment]) if dxf[:alignment]

@@ -1304,7 +1304,7 @@ module Xlsxrb
                     buf << "<u/>"
                   else
                     mapped_u = StyleBuilder::UNDERLINE_MAP[font[:underline].to_sym] || font[:underline]
-                    buf << '<u val="' << mapped_u.to_s << '"/>'
+                    buf << '<u val="' << escape_xml(mapped_u) << '"/>'
                   end
                 end
                 va_val = font[:vert_align] || font[:vertical_align]
@@ -1312,18 +1312,18 @@ module Xlsxrb
                 va_val ||= "subscript" if font[:subscript]
                 if va_val
                   mapped_va = StyleBuilder::VERT_ALIGN_MAP[va_val.to_sym] || va_val.to_s
-                  buf << '<vertAlign val="' << mapped_va << '"/>'
+                  buf << '<vertAlign val="' << escape_xml(mapped_va) << '"/>'
                 end
                 font_sz = font[:sz] || font[:size]
-                buf << '<sz val="' << font_sz.to_s << '"/>' if font_sz
+                buf << '<sz val="' << escape_xml(font_sz) << '"/>' if font_sz
                 color_attrs = color_tag_attrs(font[:color] || font)
                 if color_attrs
-                  attrs_str = color_attrs.map { |k, v| %(#{k}="#{v}") }.join(" ")
+                  attrs_str = color_attrs.map { |k, v| %(#{k}="#{escape_xml(v)}") }.join(" ")
                   buf << "<color #{attrs_str}/>"
                 end
                 buf << '<rFont val="' << escape_xml(font[:name]) << '"/>' if font[:name]
-                buf << '<family val="' << font[:family].to_s << '"/>' if font[:family]
-                buf << '<scheme val="' << font[:scheme].to_s << '"/>' if font[:scheme]
+                buf << '<family val="' << escape_xml(font[:family]) << '"/>' if font[:family]
+                buf << '<scheme val="' << escape_xml(font[:scheme]) << '"/>' if font[:scheme]
                 buf << "</rPr><t>"
               else
                 buf << "<r><t>"

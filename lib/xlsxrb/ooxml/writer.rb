@@ -2246,8 +2246,8 @@ module Xlsxrb
         overrides.merge!(@extra_ct_overrides) { |_k, generated, _extra| generated }
 
         parts = [XML_HEADER, %(<Types xmlns="#{CT_NS}">)]
-        defaults.each { |ext, ct| parts << %(<Default Extension="#{ext}" ContentType="#{ct}"/>) }
-        overrides.each { |pn, ct| parts << %(<Override PartName="#{pn}" ContentType="#{ct}"/>) }
+        defaults.each { |ext, ct| parts << %(<Default Extension="#{xml_escape(ext)}" ContentType="#{xml_escape(ct)}"/>) }
+        overrides.each { |pn, ct| parts << %(<Override PartName="#{xml_escape(pn)}" ContentType="#{xml_escape(ct)}"/>) }
         parts << "</Types>"
         parts.join
       end
@@ -2258,19 +2258,19 @@ module Xlsxrb
         parts = [
           XML_HEADER,
           %(<Relationships xmlns="#{REL_NS}">),
-          %(<Relationship Id="rId#{rid_counter}" Type="#{DOC_REL_NS}/officeDocument" Target="xl/workbook.xml"/>)
+          %(<Relationship Id="rId#{xml_escape(rid_counter)}" Type="#{DOC_REL_NS}/officeDocument" Target="xl/workbook.xml"/>)
         ]
         unless @core_properties.empty?
           rid_counter += 1
-          parts << %(<Relationship Id="rId#{rid_counter}" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/>)
+          parts << %(<Relationship Id="rId#{xml_escape(rid_counter)}" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/>)
         end
         if @app_properties.any?
           rid_counter += 1
-          parts << %(<Relationship Id="rId#{rid_counter}" Type="#{DOC_REL_NS}/extended-properties" Target="docProps/app.xml"/>)
+          parts << %(<Relationship Id="rId#{xml_escape(rid_counter)}" Type="#{DOC_REL_NS}/extended-properties" Target="docProps/app.xml"/>)
         end
         unless @custom_properties.empty?
           rid_counter += 1
-          parts << %(<Relationship Id="rId#{rid_counter}" Type="#{DOC_REL_NS}/custom-properties" Target="docProps/custom.xml"/>)
+          parts << %(<Relationship Id="rId#{xml_escape(rid_counter)}" Type="#{DOC_REL_NS}/custom-properties" Target="docProps/custom.xml"/>)
         end
         parts << "</Relationships>"
         parts.join
@@ -2279,7 +2279,7 @@ module Xlsxrb
       # : (?::Integer pivot_cache_count) -> untyped
       def generate_workbook_xml(pivot_cache_count = 0)
         wb_attrs = %(xmlns="#{SSML_NS}" xmlns:r="#{DOC_REL_NS}")
-        wb_attrs << %( conformance="#{@workbook_properties[:conformance]}") if @workbook_properties[:conformance]
+        wb_attrs << %( conformance="#{xml_escape(@workbook_properties[:conformance])}") if @workbook_properties[:conformance]
         parts = [
           XML_HEADER,
           "<workbook #{wb_attrs}>"
@@ -2289,9 +2289,9 @@ module Xlsxrb
         unless @file_version.empty?
           fv_attrs = []
           fv_attrs << %(appName="#{xml_escape(@file_version[:app_name])}") if @file_version[:app_name]
-          fv_attrs << %(lastEdited="#{@file_version[:last_edited]}") if @file_version[:last_edited]
-          fv_attrs << %(lowestEdited="#{@file_version[:lowest_edited]}") if @file_version[:lowest_edited]
-          fv_attrs << %(rupBuild="#{@file_version[:rup_build]}") if @file_version[:rup_build]
+          fv_attrs << %(lastEdited="#{xml_escape(@file_version[:last_edited])}") if @file_version[:last_edited]
+          fv_attrs << %(lowestEdited="#{xml_escape(@file_version[:lowest_edited])}") if @file_version[:lowest_edited]
+          fv_attrs << %(rupBuild="#{xml_escape(@file_version[:rup_build])}") if @file_version[:rup_build]
           fv_attrs << %(codeName="#{xml_escape(@file_version[:code_name])}") if @file_version[:code_name]
           parts << "<fileVersion #{fv_attrs.join(" ")}/>" unless fv_attrs.empty?
         end
@@ -2302,9 +2302,9 @@ module Xlsxrb
           fs_attrs << 'readOnlyRecommended="1"' if @file_sharing[:read_only_recommended]
           fs_attrs << %(userName="#{xml_escape(@file_sharing[:user_name])}") if @file_sharing[:user_name]
           fs_attrs << %(algorithmName="#{xml_escape(@file_sharing[:algorithm_name])}") if @file_sharing[:algorithm_name]
-          fs_attrs << %(hashValue="#{@file_sharing[:hash_value]}") if @file_sharing[:hash_value]
-          fs_attrs << %(saltValue="#{@file_sharing[:salt_value]}") if @file_sharing[:salt_value]
-          fs_attrs << %(spinCount="#{@file_sharing[:spin_count]}") if @file_sharing[:spin_count]
+          fs_attrs << %(hashValue="#{xml_escape(@file_sharing[:hash_value])}") if @file_sharing[:hash_value]
+          fs_attrs << %(saltValue="#{xml_escape(@file_sharing[:salt_value])}") if @file_sharing[:salt_value]
+          fs_attrs << %(spinCount="#{xml_escape(@file_sharing[:spin_count])}") if @file_sharing[:spin_count]
           parts << "<fileSharing #{fs_attrs.join(" ")}/>" unless fs_attrs.empty?
         end
 
@@ -2313,7 +2313,7 @@ module Xlsxrb
           attrs = []
           attrs << %(date1904="#{@workbook_properties[:date1904] ? 1 : 0}") unless @workbook_properties[:date1904].nil?
           attrs << %(dateCompatibility="0") if @workbook_properties[:date_compatibility] == false
-          attrs << %(defaultThemeVersion="#{@workbook_properties[:default_theme_version]}") if @workbook_properties[:default_theme_version]
+          attrs << %(defaultThemeVersion="#{xml_escape(@workbook_properties[:default_theme_version])}") if @workbook_properties[:default_theme_version]
           attrs << %(codeName="#{xml_escape(@workbook_properties[:code_name])}") if @workbook_properties[:code_name]
           attrs << %(filterPrivacy="1") if @workbook_properties[:filter_privacy]
           attrs << %(autoCompressPictures="0") if @workbook_properties[:auto_compress_pictures] == false
@@ -2336,7 +2336,7 @@ module Xlsxrb
         # bookViews/workbookView
         unless @workbook_views.empty?
           attrs = []
-          attrs << %(visibility="#{@workbook_views[:visibility]}") if @workbook_views[:visibility]
+          attrs << %(visibility="#{xml_escape(@workbook_views[:visibility])}") if @workbook_views[:visibility]
           attrs << 'minimized="1"' if @workbook_views[:minimized]
           shs = @workbook_views[:show_horizontal_scroll]
           attrs << %(showHorizontalScroll="#{shs ? 1 : 0}") unless shs.nil?
@@ -2344,14 +2344,14 @@ module Xlsxrb
           attrs << %(showVerticalScroll="#{svs ? 1 : 0}") unless svs.nil?
           sst = @workbook_views[:show_sheet_tabs]
           attrs << %(showSheetTabs="#{sst ? 1 : 0}") unless sst.nil?
-          attrs << %(xWindow="#{@workbook_views[:x_window]}") if @workbook_views[:x_window]
-          attrs << %(yWindow="#{@workbook_views[:y_window]}") if @workbook_views[:y_window]
-          attrs << %(windowWidth="#{@workbook_views[:window_width]}") if @workbook_views[:window_width]
-          attrs << %(windowHeight="#{@workbook_views[:window_height]}") if @workbook_views[:window_height]
-          attrs << %(tabRatio="#{@workbook_views[:tab_ratio]}") if @workbook_views[:tab_ratio]
-          attrs << %(firstSheet="#{@workbook_views[:first_sheet]}") if @workbook_views[:first_sheet]
+          attrs << %(xWindow="#{xml_escape(@workbook_views[:x_window])}") if @workbook_views[:x_window]
+          attrs << %(yWindow="#{xml_escape(@workbook_views[:y_window])}") if @workbook_views[:y_window]
+          attrs << %(windowWidth="#{xml_escape(@workbook_views[:window_width])}") if @workbook_views[:window_width]
+          attrs << %(windowHeight="#{xml_escape(@workbook_views[:window_height])}") if @workbook_views[:window_height]
+          attrs << %(tabRatio="#{xml_escape(@workbook_views[:tab_ratio])}") if @workbook_views[:tab_ratio]
+          attrs << %(firstSheet="#{xml_escape(@workbook_views[:first_sheet])}") if @workbook_views[:first_sheet]
           at = @workbook_views[:active_sheet_index] || @workbook_views[:active_tab]
-          attrs << %(activeTab="#{at}") if at
+          attrs << %(activeTab="#{xml_escape(at)}") if at
           afdg = @workbook_views[:auto_filter_date_grouping]
           attrs << %(autoFilterDateGrouping="#{afdg ? 1 : 0}") unless afdg.nil?
           parts << "<bookViews>"
@@ -2381,7 +2381,7 @@ module Xlsxrb
             wp_attrs << %(workbookAlgorithmName="#{xml_escape(@workbook_protection[:algorithm_name])}")
             wp_attrs << %(workbookHashValue="#{xml_escape(@workbook_protection[:hash_value])}") if @workbook_protection[:hash_value]
             wp_attrs << %(workbookSaltValue="#{xml_escape(@workbook_protection[:salt_value])}") if @workbook_protection[:salt_value]
-            wp_attrs << %(workbookSpinCount="#{@workbook_protection[:spin_count]}") if @workbook_protection[:spin_count]
+            wp_attrs << %(workbookSpinCount="#{xml_escape(@workbook_protection[:spin_count])}") if @workbook_protection[:spin_count]
           elsif @workbook_protection[:password]
             wp_attrs << %(workbookPassword="#{xml_escape(@workbook_protection[:password])}")
           end
@@ -2389,7 +2389,7 @@ module Xlsxrb
             wp_attrs << %(revisionsAlgorithmName="#{xml_escape(@workbook_protection[:revisions_algorithm_name])}")
             wp_attrs << %(revisionsHashValue="#{xml_escape(@workbook_protection[:revisions_hash_value])}") if @workbook_protection[:revisions_hash_value]
             wp_attrs << %(revisionsSaltValue="#{xml_escape(@workbook_protection[:revisions_salt_value])}") if @workbook_protection[:revisions_salt_value]
-            wp_attrs << %(revisionsSpinCount="#{@workbook_protection[:revisions_spin_count]}") if @workbook_protection[:revisions_spin_count]
+            wp_attrs << %(revisionsSpinCount="#{xml_escape(@workbook_protection[:revisions_spin_count])}") if @workbook_protection[:revisions_spin_count]
           elsif @workbook_protection[:revisions_password]
             wp_attrs << %(revisionsPassword="#{xml_escape(@workbook_protection[:revisions_password])}")
           end
@@ -2402,7 +2402,7 @@ module Xlsxrb
           el_rid_base = @sheet_order.size + 1 + (@use_shared_strings ? 1 : 0) + 1 + pivot_cache_count
           parts << "<externalReferences>"
           @external_links.each_with_index do |_, idx|
-            parts << %(<externalReference r:id="rId#{el_rid_base + idx}"/>)
+            parts << %(<externalReference r:id="rId#{xml_escape(el_rid_base + idx)}"/>)
           end
           parts << "</externalReferences>"
         end
@@ -2412,7 +2412,7 @@ module Xlsxrb
           parts << "<definedNames>"
           @defined_names.each do |dn|
             attrs = %(name="#{xml_escape(dn[:name])}")
-            attrs << %( localSheetId="#{dn[:local_sheet_id]}") if dn[:local_sheet_id]
+            attrs << %( localSheetId="#{xml_escape(dn[:local_sheet_id])}") if dn[:local_sheet_id]
             attrs << ' hidden="1"' if dn[:hidden]
             attrs << %( comment="#{xml_escape(dn[:comment])}") if dn[:comment]
             attrs << %( description="#{xml_escape(dn[:description])}") if dn[:description]
@@ -2422,7 +2422,7 @@ module Xlsxrb
             attrs << %( shortcutKey="#{xml_escape(dn[:shortcut_key])}") if dn[:shortcut_key]
             attrs << ' publishToServer="1"' if dn[:publish_to_server]
             attrs << ' workbookParameter="1"' if dn[:workbook_parameter]
-            attrs << %( functionGroupId="#{dn[:function_group_id]}") if dn[:function_group_id]
+            attrs << %( functionGroupId="#{xml_escape(dn[:function_group_id])}") if dn[:function_group_id]
             attrs << %( customMenu="#{xml_escape(dn[:custom_menu])}") if dn[:custom_menu]
             attrs << %( help="#{xml_escape(dn[:help])}") if dn[:help]
             attrs << %( statusBar="#{xml_escape(dn[:status_bar])}") if dn[:status_bar]
@@ -2434,20 +2434,20 @@ module Xlsxrb
         # calcPr
         unless @calc_properties.empty?
           attrs = []
-          attrs << %(calcId="#{@calc_properties[:calc_id]}") if @calc_properties[:calc_id]
-          attrs << %(calcMode="#{@calc_properties[:calc_mode]}") if @calc_properties[:calc_mode]
+          attrs << %(calcId="#{xml_escape(@calc_properties[:calc_id])}") if @calc_properties[:calc_id]
+          attrs << %(calcMode="#{xml_escape(@calc_properties[:calc_mode])}") if @calc_properties[:calc_mode]
           attrs << %(fullCalcOnLoad="#{@calc_properties[:full_calc_on_load] ? 1 : 0}") unless @calc_properties[:full_calc_on_load].nil?
           attrs << %(iterate="#{@calc_properties[:iterate] ? 1 : 0}") unless @calc_properties[:iterate].nil?
-          attrs << %(iterateCount="#{@calc_properties[:iterate_count]}") if @calc_properties[:iterate_count]
-          attrs << %(iterateDelta="#{@calc_properties[:iterate_delta]}") if @calc_properties[:iterate_delta]
-          attrs << %(refMode="#{@calc_properties[:ref_mode]}") if @calc_properties[:ref_mode]
+          attrs << %(iterateCount="#{xml_escape(@calc_properties[:iterate_count])}") if @calc_properties[:iterate_count]
+          attrs << %(iterateDelta="#{xml_escape(@calc_properties[:iterate_delta])}") if @calc_properties[:iterate_delta]
+          attrs << %(refMode="#{xml_escape(@calc_properties[:ref_mode])}") if @calc_properties[:ref_mode]
           attrs << %(calcCompleted="#{@calc_properties[:calc_completed] ? 1 : 0}") unless @calc_properties[:calc_completed].nil?
           attrs << %(calcOnSave="#{@calc_properties[:calc_on_save] ? 1 : 0}") unless @calc_properties[:calc_on_save].nil?
           fp = @calc_properties[:full_precision]
           attrs << %(fullPrecision="#{fp ? 1 : 0}") unless fp.nil?
           conc = @calc_properties[:concurrent_calc]
           attrs << %(concurrentCalc="#{conc ? 1 : 0}") unless conc.nil?
-          attrs << %(concurrentManualCount="#{@calc_properties[:concurrent_manual_count]}") if @calc_properties[:concurrent_manual_count]
+          attrs << %(concurrentManualCount="#{xml_escape(@calc_properties[:concurrent_manual_count])}") if @calc_properties[:concurrent_manual_count]
           ffc = @calc_properties[:force_full_calc]
           attrs << %(forceFullCalc="#{ffc ? 1 : 0}") unless ffc.nil?
           parts << "<calcPr #{attrs.join(" ")}/>" unless attrs.empty?
@@ -2459,7 +2459,7 @@ module Xlsxrb
           pivot_rid_base = @sheet_order.size + 1 + (@use_shared_strings ? 1 : 0) + 1
           parts << "<pivotCaches>"
           pivot_cache_count.times do |ci|
-            parts << %(<pivotCache cacheId="#{ci + 1}" r:id="rId#{pivot_rid_base + ci}"/>)
+            parts << %(<pivotCache cacheId="#{xml_escape(ci + 1)}" r:id="rId#{xml_escape(pivot_rid_base + ci)}"/>)
           end
           parts << "</pivotCaches>"
         end
@@ -2492,26 +2492,26 @@ module Xlsxrb
           parts << %(<Relationship Id="rId#{i + 1}" Type="#{DOC_REL_NS}/worksheet" Target="worksheets/sheet#{i + 1}.xml"/>)
         end
         next_rid = @sheet_order.size + 1
-        parts << %(<Relationship Id="rId#{next_rid}" Type="#{DOC_REL_NS}/styles" Target="styles.xml"/>)
+        parts << %(<Relationship Id="rId#{xml_escape(next_rid)}" Type="#{DOC_REL_NS}/styles" Target="styles.xml"/>)
         next_rid += 1
         if @use_shared_strings
-          parts << %(<Relationship Id="rId#{next_rid}" Type="#{DOC_REL_NS}/sharedStrings" Target="sharedStrings.xml"/>)
+          parts << %(<Relationship Id="rId#{xml_escape(next_rid)}" Type="#{DOC_REL_NS}/sharedStrings" Target="sharedStrings.xml"/>)
           next_rid += 1
         end
         (1..@pivot_cache_count.to_i).each do |c|
-          parts << %(<Relationship Id="rId#{next_rid}" Type="#{DOC_REL_NS}/pivotCacheDefinition" Target="pivotCache/pivotCacheDefinition#{c}.xml"/>)
+          parts << %(<Relationship Id="rId#{xml_escape(next_rid)}" Type="#{DOC_REL_NS}/pivotCacheDefinition" Target="pivotCache/pivotCacheDefinition#{xml_escape(c)}.xml"/>)
           next_rid += 1
         end
         @external_links.each_with_index do |_, idx|
-          parts << %(<Relationship Id="rId#{next_rid}" Type="#{DOC_REL_NS}/externalLink" Target="externalLinks/externalLink#{idx + 1}.xml"/>)
+          parts << %(<Relationship Id="rId#{xml_escape(next_rid)}" Type="#{DOC_REL_NS}/externalLink" Target="externalLinks/externalLink#{xml_escape(idx + 1)}.xml"/>)
           next_rid += 1
         end
         if has_calc_chain
-          parts << %(<Relationship Id="rId#{next_rid}" Type="#{DOC_REL_NS}/calcChain" Target="calcChain.xml"/>)
+          parts << %(<Relationship Id="rId#{xml_escape(next_rid)}" Type="#{DOC_REL_NS}/calcChain" Target="calcChain.xml"/>)
           next_rid += 1
         end
         if @persons_data.any?
-          parts << %(<Relationship Id="rId#{next_rid}" Type="http://schemas.microsoft.com/office/2017/10/relationships/person" Target="persons/person.xml"/>)
+          parts << %(<Relationship Id="rId#{xml_escape(next_rid)}" Type="http://schemas.microsoft.com/office/2017/10/relationships/person" Target="persons/person.xml"/>)
           next_rid += 1
         end
         parts << "</Relationships>"
@@ -2530,7 +2530,7 @@ module Xlsxrb
 
         parts = [XML_HEADER, %(<calcChain xmlns="#{SSML_NS}">)]
         chain_entries.each do |entry|
-          parts << %(<c r="#{entry[:ref]}" i="#{entry[:sheet_id]}"/>)
+          parts << %(<c r="#{xml_escape(entry[:ref])}" i="#{xml_escape(entry[:sheet_id])}"/>)
         end
         parts << "</calcChain>"
         parts.join
@@ -2551,7 +2551,7 @@ module Xlsxrb
           sp_attrs = []
           sp_attrs << 'syncHorizontal="1"' if sheet_props[:sync_horizontal]
           sp_attrs << 'syncVertical="1"' if sheet_props[:sync_vertical]
-          sp_attrs << %(syncRef="#{sheet_props[:sync_ref]}") if sheet_props[:sync_ref]
+          sp_attrs << %(syncRef="#{xml_escape(sheet_props[:sync_ref])}") if sheet_props[:sync_ref]
           sp_attrs << 'transitionEvaluation="1"' if sheet_props[:transition_evaluation]
           sp_attrs << 'transitionEntry="1"' if sheet_props[:transition_entry]
           sp_attrs << %(codeName="#{xml_escape(sheet_props[:code_name])}") if sheet_props[:code_name]
@@ -2563,19 +2563,19 @@ module Xlsxrb
           if tc.is_a?(Hash)
             tc_attrs = []
             tc_attrs << 'auto="1"' if tc[:auto]
-            tc_attrs << %(indexed="#{tc[:indexed]}") if tc[:indexed]
-            tc_attrs << %(rgb="#{tc[:rgb].to_s.delete_prefix("#")}") if tc[:rgb]
-            tc_attrs << %(theme="#{tc[:theme]}") if tc[:theme]
-            tc_attrs << %(tint="#{tc[:tint]}") if tc[:tint]
+            tc_attrs << %(indexed="#{xml_escape(tc[:indexed])}") if tc[:indexed]
+            tc_attrs << %(rgb="#{xml_escape(tc[:rgb].to_s.delete_prefix("#"))}") if tc[:rgb]
+            tc_attrs << %(theme="#{xml_escape(tc[:theme])}") if tc[:theme]
+            tc_attrs << %(tint="#{xml_escape(tc[:tint])}") if tc[:tint]
             sp_children << "<tabColor #{tc_attrs.join(" ")}/>" unless tc_attrs.empty?
           elsif tc
-            sp_children << %(<tabColor rgb="#{tc.to_s.delete_prefix("#")}"/>)
+            sp_children << %(<tabColor rgb="#{xml_escape(tc.to_s.delete_prefix("#"))}"/>)
           elsif sheet_props[:tab_color_theme]
-            tc_attrs = [%(theme="#{sheet_props[:tab_color_theme]}")]
-            tc_attrs << %(tint="#{sheet_props[:tab_color_tint]}") if sheet_props[:tab_color_tint]
+            tc_attrs = [%(theme="#{xml_escape(sheet_props[:tab_color_theme])}")]
+            tc_attrs << %(tint="#{xml_escape(sheet_props[:tab_color_tint])}") if sheet_props[:tab_color_tint]
             sp_children << "<tabColor #{tc_attrs.join(" ")}/>"
           elsif sheet_props[:tab_color_indexed]
-            sp_children << %(<tabColor indexed="#{sheet_props[:tab_color_indexed]}"/>)
+            sp_children << %(<tabColor indexed="#{xml_escape(sheet_props[:tab_color_indexed])}"/>)
           elsif sheet_props[:tab_color_auto]
             sp_children << '<tabColor auto="1"/>'
           end
@@ -2611,7 +2611,7 @@ module Xlsxrb
         end
 
         # Emit <dimension> computed from cell addresses.
-        parts << %(<dimension ref="#{compute_dimension(sheet_cells)}"/>) unless sheet_cells.empty?
+        parts << %(<dimension ref="#{xml_escape(compute_dimension(sheet_cells))}"/>) unless sheet_cells.empty?
 
         # Emit <sheetViews> if sheet view properties, freeze pane, or selection are defined.
         if !sheet_sv.empty? || sheet_fp || sheet_sel
@@ -2638,22 +2638,22 @@ module Xlsxrb
           sv_attrs << %(defaultGridColor="#{dgc ? 1 : 0}") unless dgc.nil?
           sws = sheet_sv[:show_white_space]
           sv_attrs << %(showWhiteSpace="#{sws ? 1 : 0}") unless sws.nil?
-          sv_attrs << %(view="#{sheet_sv[:view]}") if sheet_sv[:view]
-          sv_attrs << %(topLeftCell="#{sheet_sv[:top_left_cell]}") if sheet_sv[:top_left_cell]
-          sv_attrs << %(colorId="#{sheet_sv[:color_id]}") if sheet_sv[:color_id]
+          sv_attrs << %(view="#{xml_escape(sheet_sv[:view])}") if sheet_sv[:view]
+          sv_attrs << %(topLeftCell="#{xml_escape(sheet_sv[:top_left_cell])}") if sheet_sv[:top_left_cell]
+          sv_attrs << %(colorId="#{xml_escape(sheet_sv[:color_id])}") if sheet_sv[:color_id]
           zs = sheet_sv[:zoom_scale]
-          sv_attrs << %(zoomScale="#{zs}") if zs
-          sv_attrs << %(zoomScaleNormal="#{sheet_sv[:zoom_scale_normal]}") if sheet_sv[:zoom_scale_normal]
-          sv_attrs << %(zoomScaleSheetLayoutView="#{sheet_sv[:zoom_scale_sheet_layout_view]}") if sheet_sv[:zoom_scale_sheet_layout_view]
-          sv_attrs << %(zoomScalePageLayoutView="#{sheet_sv[:zoom_scale_page_layout_view]}") if sheet_sv[:zoom_scale_page_layout_view]
+          sv_attrs << %(zoomScale="#{xml_escape(zs)}") if zs
+          sv_attrs << %(zoomScaleNormal="#{xml_escape(sheet_sv[:zoom_scale_normal])}") if sheet_sv[:zoom_scale_normal]
+          sv_attrs << %(zoomScaleSheetLayoutView="#{xml_escape(sheet_sv[:zoom_scale_sheet_layout_view])}") if sheet_sv[:zoom_scale_sheet_layout_view]
+          sv_attrs << %(zoomScalePageLayoutView="#{xml_escape(sheet_sv[:zoom_scale_page_layout_view])}") if sheet_sv[:zoom_scale_page_layout_view]
           sv_attrs << 'workbookViewId="0"'
           parts << "<sheetView #{sv_attrs.join(" ")}>"
 
           if sheet_fp && sheet_fp[:state] == :split
             pane_attrs = []
-            pane_attrs << %(xSplit="#{sheet_fp[:x_split]}") if sheet_fp[:x_split].to_i.positive?
-            pane_attrs << %(ySplit="#{sheet_fp[:y_split]}") if sheet_fp[:y_split].to_i.positive?
-            pane_attrs << %(topLeftCell="#{sheet_fp[:top_left_cell]}") if sheet_fp[:top_left_cell]
+            pane_attrs << %(xSplit="#{xml_escape(sheet_fp[:x_split])}") if sheet_fp[:x_split].to_i.positive?
+            pane_attrs << %(ySplit="#{xml_escape(sheet_fp[:y_split])}") if sheet_fp[:y_split].to_i.positive?
+            pane_attrs << %(topLeftCell="#{xml_escape(sheet_fp[:top_left_cell])}") if sheet_fp[:top_left_cell]
             has_x = sheet_fp[:x_split].to_i.positive?
             has_y = sheet_fp[:y_split].to_i.positive?
             active_pane = if has_y && has_x
@@ -2663,16 +2663,16 @@ module Xlsxrb
                           else
                             "topRight"
                           end
-            pane_attrs << %(activePane="#{active_pane}")
+            pane_attrs << %(activePane="#{xml_escape(active_pane)}")
             parts << "<pane #{pane_attrs.join(" ")}/>"
           elsif sheet_fp
             fp_col = sheet_fp[:column] || sheet_fp[:col] || 0
             if sheet_fp[:row].to_i.positive? || fp_col.to_i.positive?
               top_left = "#{index_to_column_letter(fp_col.to_i + 1)}#{sheet_fp[:row].to_i + 1}"
               pane_attrs = []
-              pane_attrs << %(ySplit="#{sheet_fp[:row]}") if sheet_fp[:row].to_i.positive?
-              pane_attrs << %(xSplit="#{fp_col}") if fp_col.to_i.positive?
-              pane_attrs << %(topLeftCell="#{top_left}")
+              pane_attrs << %(ySplit="#{xml_escape(sheet_fp[:row])}") if sheet_fp[:row].to_i.positive?
+              pane_attrs << %(xSplit="#{xml_escape(fp_col)}") if fp_col.to_i.positive?
+              pane_attrs << %(topLeftCell="#{xml_escape(top_left)}")
               active_pane = if sheet_fp[:row].to_i.positive? && fp_col.to_i.positive?
                               "bottomRight"
                             elsif sheet_fp[:row].to_i.positive?
@@ -2680,7 +2680,7 @@ module Xlsxrb
                             else
                               "topRight"
                             end
-              pane_attrs << %(activePane="#{active_pane}")
+              pane_attrs << %(activePane="#{xml_escape(active_pane)}")
               pane_attrs << 'state="frozen"'
               parts << "<pane #{pane_attrs.join(" ")}/>"
             end
@@ -2688,10 +2688,10 @@ module Xlsxrb
 
           if sheet_sel
             sel_attrs = []
-            sel_attrs << %(pane="#{sheet_sel[:pane]}") if sheet_sel[:pane]
-            sel_attrs << %(activeCell="#{sheet_sel[:active_cell]}") if sheet_sel[:active_cell]
-            sel_attrs << %(activeCellId="#{sheet_sel[:active_cell_id]}") if sheet_sel[:active_cell_id]
-            sel_attrs << %(sqref="#{sheet_sel[:sqref]}") if sheet_sel[:sqref]
+            sel_attrs << %(pane="#{xml_escape(sheet_sel[:pane])}") if sheet_sel[:pane]
+            sel_attrs << %(activeCell="#{xml_escape(sheet_sel[:active_cell])}") if sheet_sel[:active_cell]
+            sel_attrs << %(activeCellId="#{xml_escape(sheet_sel[:active_cell_id])}") if sheet_sel[:active_cell_id]
+            sel_attrs << %(sqref="#{xml_escape(sheet_sel[:sqref])}") if sheet_sel[:sqref]
             parts << "<selection #{sel_attrs.join(" ")}/>"
           end
 
@@ -2702,11 +2702,11 @@ module Xlsxrb
         # Emit <sheetFormatPr> if sheet format properties are defined.
         unless sheet_fmt.empty?
           fmt_attrs = []
-          fmt_attrs << %(defaultRowHeight="#{sheet_fmt[:default_row_height]}") if sheet_fmt[:default_row_height]
-          fmt_attrs << %(defaultColWidth="#{sheet_fmt[:default_col_width]}") if sheet_fmt[:default_col_width]
-          fmt_attrs << %(baseColWidth="#{sheet_fmt[:base_col_width]}") if sheet_fmt[:base_col_width]
-          fmt_attrs << %(outlineLevelRow="#{sheet_fmt[:outline_level_row]}") if sheet_fmt[:outline_level_row]
-          fmt_attrs << %(outlineLevelCol="#{sheet_fmt[:outline_level_col]}") if sheet_fmt[:outline_level_col]
+          fmt_attrs << %(defaultRowHeight="#{xml_escape(sheet_fmt[:default_row_height])}") if sheet_fmt[:default_row_height]
+          fmt_attrs << %(defaultColWidth="#{xml_escape(sheet_fmt[:default_col_width])}") if sheet_fmt[:default_col_width]
+          fmt_attrs << %(baseColWidth="#{xml_escape(sheet_fmt[:base_col_width])}") if sheet_fmt[:base_col_width]
+          fmt_attrs << %(outlineLevelRow="#{xml_escape(sheet_fmt[:outline_level_row])}") if sheet_fmt[:outline_level_row]
+          fmt_attrs << %(outlineLevelCol="#{xml_escape(sheet_fmt[:outline_level_col])}") if sheet_fmt[:outline_level_col]
           fmt_attrs << 'customHeight="1"' if sheet_fmt[:custom_height]
           fmt_attrs << 'zeroHeight="1"' if sheet_fmt[:zero_height]
           fmt_attrs << 'thickTop="1"' if sheet_fmt[:thick_top]
@@ -2722,13 +2722,13 @@ module Xlsxrb
             idx = column_letter_to_index(col_letter)
             width = sheet_col_widths[col_letter]
             ca = sheet_col_attrs[col_letter] || {}
-            col_attrs = %(min="#{idx}" max="#{idx}")
-            col_attrs << %( width="#{width}" customWidth="1") if width
+            col_attrs = %(min="#{xml_escape(idx)}" max="#{xml_escape(idx)}")
+            col_attrs << %( width="#{xml_escape(width)}" customWidth="1") if width
             col_attrs << ' hidden="1"' if ca[:hidden]
             col_attrs << ' bestFit="1"' if ca[:best_fit]
-            col_attrs << %( outlineLevel="#{ca[:outline_level]}") if ca[:outline_level]
+            col_attrs << %( outlineLevel="#{xml_escape(ca[:outline_level])}") if ca[:outline_level]
             col_attrs << ' collapsed="1"' if ca[:collapsed]
-            col_attrs << %( style="#{ca[:style]}") if ca[:style]
+            col_attrs << %( style="#{xml_escape(ca[:style])}") if ca[:style]
             col_attrs << ' phonetic="1"' if ca[:phonetic]
             parts << "<col #{col_attrs}/>"
           end
@@ -2751,14 +2751,14 @@ module Xlsxrb
 
         # Emit rows in ascending order.
         cells_by_row.sort.each do |row_num, row_cells|
-          attrs = %(r="#{row_num}")
+          attrs = %(r="#{xml_escape(row_num)}")
           ra = sheet_row_attrs[row_num]
           if ra
-            attrs << %( ht="#{ra[:height]}" customHeight="1") if ra[:height]
+            attrs << %( ht="#{xml_escape(ra[:height])}" customHeight="1") if ra[:height]
             attrs << ' hidden="1"' if ra[:hidden]
-            attrs << %( outlineLevel="#{ra[:outline_level]}") if ra[:outline_level]
+            attrs << %( outlineLevel="#{xml_escape(ra[:outline_level])}") if ra[:outline_level]
             attrs << ' collapsed="1"' if ra[:collapsed]
-            attrs << %( s="#{ra[:style]}" customFormat="1") if ra.key?(:style)
+            attrs << %( s="#{xml_escape(ra[:style])}" customFormat="1") if ra.key?(:style)
             attrs << ' thickTop="1"' if ra[:thick_top]
             attrs << ' thickBot="1"' if ra[:thick_bot]
             attrs << ' ph="1"' if ra[:ph]
@@ -2800,7 +2800,7 @@ module Xlsxrb
             sp_attrs << %(algorithmName="#{xml_escape(sheet_prot[:algorithm_name])}")
             sp_attrs << %(hashValue="#{xml_escape(sheet_prot[:hash_value])}") if sheet_prot[:hash_value]
             sp_attrs << %(saltValue="#{xml_escape(sheet_prot[:salt_value])}") if sheet_prot[:salt_value]
-            sp_attrs << %(spinCount="#{sheet_prot[:spin_count]}") if sheet_prot[:spin_count]
+            sp_attrs << %(spinCount="#{xml_escape(sheet_prot[:spin_count])}") if sheet_prot[:spin_count]
           elsif sheet_prot[:password]
             sp_attrs << %(password="#{xml_escape(sheet_prot[:password])}")
           end
@@ -2811,12 +2811,12 @@ module Xlsxrb
         unless prot_ranges.empty?
           parts << "<protectedRanges>"
           prot_ranges.each do |pr|
-            pr_attrs = [%(sqref="#{pr[:sqref]}"), %(name="#{xml_escape(pr[:name])}")]
+            pr_attrs = [%(sqref="#{xml_escape(pr[:sqref])}"), %(name="#{xml_escape(pr[:name])}")]
             if pr[:algorithm_name]
               pr_attrs << %(algorithmName="#{xml_escape(pr[:algorithm_name])}")
               pr_attrs << %(hashValue="#{xml_escape(pr[:hash_value])}") if pr[:hash_value]
               pr_attrs << %(saltValue="#{xml_escape(pr[:salt_value])}") if pr[:salt_value]
-              pr_attrs << %(spinCount="#{pr[:spin_count]}") if pr[:spin_count]
+              pr_attrs << %(spinCount="#{xml_escape(pr[:spin_count])}") if pr[:spin_count]
             end
             sds = pr[:security_descriptors] || []
             if sds.empty?
@@ -2833,9 +2833,9 @@ module Xlsxrb
         # Emit <scenarios> if defined.
         if sheet_scenarios
           sc_attrs = []
-          sc_attrs << %(current="#{sheet_scenarios[:current]}") if sheet_scenarios[:current]
-          sc_attrs << %(show="#{sheet_scenarios[:show]}") if sheet_scenarios[:show]
-          sc_attrs << %(sqref="#{sheet_scenarios[:sqref]}") if sheet_scenarios[:sqref]
+          sc_attrs << %(current="#{xml_escape(sheet_scenarios[:current])}") if sheet_scenarios[:current]
+          sc_attrs << %(show="#{xml_escape(sheet_scenarios[:show])}") if sheet_scenarios[:show]
+          sc_attrs << %(sqref="#{xml_escape(sheet_scenarios[:sqref])}") if sheet_scenarios[:sqref]
           items = sheet_scenarios[:scenarios] || []
           sc_attr_str = sc_attrs.empty? ? "" : " #{sc_attrs.join(" ")}"
           parts << "<scenarios#{sc_attr_str}>"
@@ -2848,10 +2848,10 @@ module Xlsxrb
             s_attrs << %(comment="#{xml_escape(sc[:comment])}") if sc[:comment]
             parts << "<scenario #{s_attrs.join(" ")}>"
             (sc[:input_cells] || []).each do |ic|
-              ic_attrs = [%(r="#{ic[:r]}"), %(val="#{xml_escape(ic[:val].to_s)}")]
+              ic_attrs = [%(r="#{xml_escape(ic[:r])}"), %(val="#{xml_escape(ic[:val].to_s)}")]
               ic_attrs << 'deleted="1"' if ic[:deleted]
               ic_attrs << 'undone="1"' if ic[:undone]
-              ic_attrs << %(numFmtId="#{ic[:num_fmt_id]}") if ic[:num_fmt_id]
+              ic_attrs << %(numFmtId="#{xml_escape(ic[:num_fmt_id])}") if ic[:num_fmt_id]
               parts << "<inputCells #{ic_attrs.join(" ")}/>"
             end
             parts << "</scenario>"
@@ -2862,11 +2862,11 @@ module Xlsxrb
         # Emit <autoFilter> with optional filterColumns.
         if sheet_auto_filter
           if sheet_filter_cols.empty?
-            parts << %(<autoFilter ref="#{sheet_auto_filter}"/>)
+            parts << %(<autoFilter ref="#{xml_escape(sheet_auto_filter)}"/>)
           else
-            parts << %(<autoFilter ref="#{sheet_auto_filter}">)
+            parts << %(<autoFilter ref="#{xml_escape(sheet_auto_filter)}">)
             sheet_filter_cols.sort.each do |col_id, filter|
-              fc_attrs = %( colId="#{col_id}")
+              fc_attrs = %( colId="#{xml_escape(col_id)}")
               fc_attrs << ' hiddenButton="1"' if filter[:hidden_button]
               fc_attrs << ' showButton="0"' if filter[:show_button] == false
               parts << "<filterColumn#{fc_attrs}>"
@@ -2879,19 +2879,19 @@ module Xlsxrb
 
         # Emit <sortState> if defined.
         if sheet_sort
-          ss_attrs = %( ref="#{sheet_sort[:ref]}")
+          ss_attrs = %( ref="#{xml_escape(sheet_sort[:ref])}")
           ss_attrs << ' columnSort="1"' if sheet_sort[:column_sort]
           ss_attrs << ' caseSensitive="1"' if sheet_sort[:case_sensitive]
-          ss_attrs << %( sortMethod="#{sheet_sort[:sort_method]}") if sheet_sort[:sort_method]
+          ss_attrs << %( sortMethod="#{xml_escape(sheet_sort[:sort_method])}") if sheet_sort[:sort_method]
           parts << "<sortState#{ss_attrs}>"
           sheet_sort[:sort_conditions].each do |sc|
-            sc_attrs = %(ref="#{sc[:ref]}")
+            sc_attrs = %(ref="#{xml_escape(sc[:ref])}")
             sc_attrs << ' descending="1"' if sc[:descending]
-            sc_attrs << %( sortBy="#{sc[:sort_by]}") if sc[:sort_by]
+            sc_attrs << %( sortBy="#{xml_escape(sc[:sort_by])}") if sc[:sort_by]
             sc_attrs << %( customList="#{xml_escape(sc[:custom_list])}") if sc[:custom_list]
-            sc_attrs << %( dxfId="#{sc[:dxf_id]}") if sc[:dxf_id]
-            sc_attrs << %( iconSet="#{sc[:icon_set]}") if sc[:icon_set]
-            sc_attrs << %( iconId="#{sc[:icon_id]}") if sc[:icon_id]
+            sc_attrs << %( dxfId="#{xml_escape(sc[:dxf_id])}") if sc[:dxf_id]
+            sc_attrs << %( iconSet="#{xml_escape(sc[:icon_set])}") if sc[:icon_set]
+            sc_attrs << %( iconId="#{xml_escape(sc[:icon_id])}") if sc[:icon_id]
             parts << "<sortCondition #{sc_attrs}/>"
           end
           parts << "</sortState>"
@@ -2900,7 +2900,7 @@ module Xlsxrb
         # Emit <dataConsolidate> if defined.
         if data_consol
           dc_attrs = []
-          dc_attrs << %(function="#{data_consol[:function]}") if data_consol[:function] && data_consol[:function] != "sum"
+          dc_attrs << %(function="#{xml_escape(data_consol[:function])}") if data_consol[:function] && data_consol[:function] != "sum"
           dc_attrs << 'startLabels="1"' if data_consol[:start_labels]
           dc_attrs << 'leftLabels="1"' if data_consol[:left_labels]
           dc_attrs << 'topLabels="1"' if data_consol[:top_labels]
@@ -2914,7 +2914,7 @@ module Xlsxrb
             parts << %(<dataRefs count="#{refs.size}">)
             refs.each do |r|
               ref_attrs = []
-              ref_attrs << %(ref="#{r[:ref]}") if r[:ref]
+              ref_attrs << %(ref="#{xml_escape(r[:ref])}") if r[:ref]
               ref_attrs << %(name="#{xml_escape(r[:name])}") if r[:name]
               ref_attrs << %(sheet="#{xml_escape(r[:sheet])}") if r[:sheet]
               parts << "<dataRef #{ref_attrs.join(" ")}/>"
@@ -2927,16 +2927,16 @@ module Xlsxrb
         # Emit <mergeCells> if merge ranges are defined.
         unless sheet_merge_cells.empty?
           parts << %(<mergeCells count="#{sheet_merge_cells.size}">)
-          sheet_merge_cells.each { |ref| parts << %(<mergeCell ref="#{ref}"/>) }
+          sheet_merge_cells.each { |ref| parts << %(<mergeCell ref="#{xml_escape(ref)}"/>) }
           parts << "</mergeCells>"
         end
 
         # Emit <phoneticPr> if defined.
         if phonetic_pr
           pp_attrs = []
-          pp_attrs << %(fontId="#{phonetic_pr[:font_id]}") if phonetic_pr[:font_id]
-          pp_attrs << %(type="#{phonetic_pr[:type]}") if phonetic_pr[:type]
-          pp_attrs << %(alignment="#{phonetic_pr[:alignment]}") if phonetic_pr[:alignment]
+          pp_attrs << %(fontId="#{xml_escape(phonetic_pr[:font_id])}") if phonetic_pr[:font_id]
+          pp_attrs << %(type="#{xml_escape(phonetic_pr[:type])}") if phonetic_pr[:type]
+          pp_attrs << %(alignment="#{xml_escape(phonetic_pr[:alignment])}") if phonetic_pr[:alignment]
           parts << "<phoneticPr #{pp_attrs.join(" ")}/>"
         end
 
@@ -2945,10 +2945,10 @@ module Xlsxrb
           parts << "<hyperlinks>"
           ext_rid = 0
           sheet_hyperlinks.each do |(cell_ref, link)|
-            attrs = %(ref="#{cell_ref}")
+            attrs = %(ref="#{xml_escape(cell_ref)}")
             if link[:url]
               ext_rid += 1
-              attrs << %( r:id="rId#{ext_rid}")
+              attrs << %( r:id="rId#{xml_escape(ext_rid)}")
             end
             attrs << %( display="#{xml_escape(link[:display])}") if link[:display]
             attrs << %( tooltip="#{xml_escape(link[:tooltip])}") if link[:tooltip]
@@ -2961,7 +2961,7 @@ module Xlsxrb
         # Emit <conditionalFormatting> if defined.
         unless sheet_cf.empty?
           sheet_cf.group_by { |cf| cf[:sqref] }.each do |sqref, rules|
-            cf_attrs = %( sqref="#{sqref}")
+            cf_attrs = %( sqref="#{xml_escape(sqref)}")
             cf_attrs << ' pivot="1"' if rules.any? { |r| r[:pivot] }
             parts << "<conditionalFormatting#{cf_attrs}>"
             rules.each do |cf|
@@ -2977,14 +2977,14 @@ module Xlsxrb
           unless valid_dv.empty?
             dv_container_attrs = %( count="#{valid_dv.size}")
             dv_container_attrs << ' disablePrompts="1"' if dv_options[:disable_prompts]
-            dv_container_attrs << %( xWindow="#{dv_options[:x_window]}") if dv_options[:x_window]
-            dv_container_attrs << %( yWindow="#{dv_options[:y_window]}") if dv_options[:y_window]
+            dv_container_attrs << %( xWindow="#{xml_escape(dv_options[:x_window])}") if dv_options[:x_window]
+            dv_container_attrs << %( yWindow="#{xml_escape(dv_options[:y_window])}") if dv_options[:y_window]
             parts << "<dataValidations#{dv_container_attrs}>"
             valid_dv.each do |dv|
-              dv_attrs = %(sqref="#{dv[:sqref]}")
-              dv_attrs << %( type="#{dv[:type]}") if dv[:type]
-              dv_attrs << %( operator="#{dv[:operator]}") if dv[:operator]
-              dv_attrs << %( errorStyle="#{dv[:error_style]}") if dv[:error_style]
+              dv_attrs = %(sqref="#{xml_escape(dv[:sqref])}")
+              dv_attrs << %( type="#{xml_escape(dv[:type])}") if dv[:type]
+              dv_attrs << %( operator="#{xml_escape(dv[:operator])}") if dv[:operator]
+              dv_attrs << %( errorStyle="#{xml_escape(dv[:error_style])}") if dv[:error_style]
               dv_attrs << ' allowBlank="1"' if dv[:allow_blank]
               dv_attrs << ' showInputMessage="1"' if dv[:show_input_message]
               dv_attrs << ' showErrorMessage="1"' if dv[:show_error_message]
@@ -2993,7 +2993,7 @@ module Xlsxrb
               dv_attrs << %( promptTitle="#{xml_escape(dv[:prompt_title])}") if dv[:prompt_title]
               dv_attrs << %( prompt="#{xml_escape(dv[:prompt])}") if dv[:prompt]
               dv_attrs << ' showDropDown="1"' if dv[:show_drop_down]
-              dv_attrs << %( imeMode="#{dv[:ime_mode]}") if dv[:ime_mode]
+              dv_attrs << %( imeMode="#{xml_escape(dv[:ime_mode])}") if dv[:ime_mode]
               if dv[:formula1] || dv[:formula2]
                 parts << "<dataValidation #{dv_attrs}>"
                 parts << "<formula1>#{xml_escape(dv[:formula1])}</formula1>" if dv[:formula1]
@@ -3022,7 +3022,7 @@ module Xlsxrb
         if sheet_pm
           pm_attrs = %w[left right top bottom header footer].filter_map do |k|
             v = sheet_pm[k.to_sym]
-            %(#{k}="#{v}") if v
+            %(#{k}="#{xml_escape(v)}") if v
           end
           parts << "<pageMargins #{pm_attrs.join(" ")}/>" unless pm_attrs.empty?
         end
@@ -3030,23 +3030,23 @@ module Xlsxrb
         # Emit <pageSetup> if defined.
         unless sheet_ps.empty?
           ps_attrs = []
-          ps_attrs << %(orientation="#{sheet_ps[:orientation]}") if sheet_ps[:orientation]
-          ps_attrs << %(paperSize="#{sheet_ps[:paper_size]}") if sheet_ps[:paper_size]
-          ps_attrs << %(scale="#{sheet_ps[:scale]}") if sheet_ps[:scale]
-          ps_attrs << %(fitToWidth="#{sheet_ps[:fit_to_width]}") if sheet_ps[:fit_to_width]
-          ps_attrs << %(fitToHeight="#{sheet_ps[:fit_to_height]}") if sheet_ps[:fit_to_height]
-          ps_attrs << %(pageOrder="#{sheet_ps[:page_order]}") if sheet_ps[:page_order]
+          ps_attrs << %(orientation="#{xml_escape(sheet_ps[:orientation])}") if sheet_ps[:orientation]
+          ps_attrs << %(paperSize="#{xml_escape(sheet_ps[:paper_size])}") if sheet_ps[:paper_size]
+          ps_attrs << %(scale="#{xml_escape(sheet_ps[:scale])}") if sheet_ps[:scale]
+          ps_attrs << %(fitToWidth="#{xml_escape(sheet_ps[:fit_to_width])}") if sheet_ps[:fit_to_width]
+          ps_attrs << %(fitToHeight="#{xml_escape(sheet_ps[:fit_to_height])}") if sheet_ps[:fit_to_height]
+          ps_attrs << %(pageOrder="#{xml_escape(sheet_ps[:page_order])}") if sheet_ps[:page_order]
           ps_attrs << 'blackAndWhite="1"' if sheet_ps[:black_and_white]
           ps_attrs << 'draft="1"' if sheet_ps[:draft]
-          ps_attrs << %(cellComments="#{sheet_ps[:cell_comments]}") if sheet_ps[:cell_comments]
-          ps_attrs << %(firstPageNumber="#{sheet_ps[:first_page_number]}") if sheet_ps[:first_page_number] && sheet_ps[:first_page_number].to_i >= 0
+          ps_attrs << %(cellComments="#{xml_escape(sheet_ps[:cell_comments])}") if sheet_ps[:cell_comments]
+          ps_attrs << %(firstPageNumber="#{xml_escape(sheet_ps[:first_page_number])}") if sheet_ps[:first_page_number] && sheet_ps[:first_page_number].to_i >= 0
           ps_attrs << 'useFirstPageNumber="1"' if sheet_ps[:use_first_page_number]
-          ps_attrs << %(horizontalDpi="#{sheet_ps[:horizontal_dpi]}") if sheet_ps[:horizontal_dpi].to_i.positive?
-          ps_attrs << %(verticalDpi="#{sheet_ps[:vertical_dpi]}") if sheet_ps[:vertical_dpi].to_i.positive?
-          ps_attrs << %(copies="#{sheet_ps[:copies]}") if sheet_ps[:copies]
-          ps_attrs << %(paperHeight="#{sheet_ps[:paper_height]}") if sheet_ps[:paper_height]
-          ps_attrs << %(paperWidth="#{sheet_ps[:paper_width]}") if sheet_ps[:paper_width]
-          ps_attrs << %(errors="#{sheet_ps[:errors]}") if sheet_ps[:errors]
+          ps_attrs << %(horizontalDpi="#{xml_escape(sheet_ps[:horizontal_dpi])}") if sheet_ps[:horizontal_dpi].to_i.positive?
+          ps_attrs << %(verticalDpi="#{xml_escape(sheet_ps[:vertical_dpi])}") if sheet_ps[:vertical_dpi].to_i.positive?
+          ps_attrs << %(copies="#{xml_escape(sheet_ps[:copies])}") if sheet_ps[:copies]
+          ps_attrs << %(paperHeight="#{xml_escape(sheet_ps[:paper_height])}") if sheet_ps[:paper_height]
+          ps_attrs << %(paperWidth="#{xml_escape(sheet_ps[:paper_width])}") if sheet_ps[:paper_width]
+          ps_attrs << %(errors="#{xml_escape(sheet_ps[:errors])}") if sheet_ps[:errors]
           ps_attrs << 'usePrinterDefaults="0"' if sheet_ps[:use_printer_defaults] == false
           parts << "<pageSetup #{ps_attrs.join(" ")}/>" unless ps_attrs.empty?
         end
@@ -3080,7 +3080,7 @@ module Xlsxrb
               true
             end
           end
-          parts << %(<rowBreaks count="#{sheet_rb.size}" manualBreakCount="#{manual_count}">)
+          parts << %(<rowBreaks count="#{sheet_rb.size}" manualBreakCount="#{xml_escape(manual_count)}">)
           sheet_rb.each { |r| parts << emit_brk_xml(r, default_max: 16_383) }
           parts << "</rowBreaks>"
         end
@@ -3096,7 +3096,7 @@ module Xlsxrb
               true
             end
           end
-          parts << %(<colBreaks count="#{sheet_cb.size}" manualBreakCount="#{manual_count}">)
+          parts << %(<colBreaks count="#{sheet_cb.size}" manualBreakCount="#{xml_escape(manual_count)}">)
           sheet_cb.each { |c| parts << emit_brk_xml(c, default_max: 1_048_575) }
           parts << "</colBreaks>"
         end
@@ -3104,7 +3104,7 @@ module Xlsxrb
         # Emit <cellWatches> if defined.
         unless cell_watches.empty?
           parts << "<cellWatches>"
-          cell_watches.each { |r| parts << %(<cellWatch r="#{r}"/>) }
+          cell_watches.each { |r| parts << %(<cellWatch r="#{xml_escape(r)}"/>) }
           parts << "</cellWatches>"
         end
 
@@ -3112,7 +3112,7 @@ module Xlsxrb
         unless ignored_errors.empty?
           parts << "<ignoredErrors>"
           ignored_errors.each do |ie|
-            ie_attrs = %( sqref="#{ie[:sqref]}")
+            ie_attrs = %( sqref="#{xml_escape(ie[:sqref])}")
             ie_attrs << ' evalError="1"' if ie[:eval_error]
             ie_attrs << ' twoDigitTextYear="1"' if ie[:two_digit_text_year]
             ie_attrs << ' numberStoredAsText="1"' if ie[:number_stored_as_text]
@@ -3132,7 +3132,7 @@ module Xlsxrb
           parts << %(<tableParts count="#{sheet_tables.size}">)
           sheet_tables.each_with_index do |_tbl, i|
             rid = hyperlink_count + i + 1
-            parts << %(<tablePart r:id="rId#{rid}"/>)
+            parts << %(<tablePart r:id="rId#{xml_escape(rid)}"/>)
           end
           parts << "</tableParts>"
         end
@@ -3141,11 +3141,11 @@ module Xlsxrb
         if has_drawing
           # The drawing rId is after hyperlinks + tables + comments + vml
           drawing_rid = hyperlink_count + sheet_tables.size + (has_comments ? 2 : 0) + 1
-          parts << %(<drawing r:id="rId#{drawing_rid}"/>)
+          parts << %(<drawing r:id="rId#{xml_escape(drawing_rid)}"/>)
         end
 
         # Emit <legacyDrawing> reference if comments exist (VML shapes).
-        parts << %(<legacyDrawing r:id="rId#{vml_rid}"/>) if vml_rid
+        parts << %(<legacyDrawing r:id="rId#{xml_escape(vml_rid)}"/>) if vml_rid
 
         parts << "</worksheet>"
         parts.join
@@ -3182,7 +3182,7 @@ module Xlsxrb
         rt_sst.each { |rt, idx| entries[idx] = { type: :rt, value: rt } }
         str_sst.each { |str, idx| entries[idx] = { type: :str, value: str } }
 
-        parts = [XML_HEADER, %(<sst xmlns="#{SSML_NS}" count="#{total}" uniqueCount="#{total}">)]
+        parts = [XML_HEADER, %(<sst xmlns="#{SSML_NS}" count="#{xml_escape(total)}" uniqueCount="#{xml_escape(total)}">)]
         entries.each do |entry|
           parts << if entry[:type] == :rt
                      "<si>#{rich_text_xml(entry[:value])}</si>"
@@ -3197,30 +3197,30 @@ module Xlsxrb
       # : (untyped tbl) -> untyped
       def generate_table_xml(tbl)
         trc = tbl[:totals_row_count].to_i
-        table_attrs = %(xmlns="#{SSML_NS}" id="#{tbl[:id]}" name="#{xml_escape(tbl[:name])}" displayName="#{xml_escape(tbl[:display_name])}" ref="#{tbl[:ref]}")
+        table_attrs = %(xmlns="#{SSML_NS}" id="#{xml_escape(tbl[:id])}" name="#{xml_escape(tbl[:name])}" displayName="#{xml_escape(tbl[:display_name])}" ref="#{xml_escape(tbl[:ref])}")
         table_attrs << %( comment="#{xml_escape(tbl[:comment])}") if tbl[:comment]
         hrc = tbl[:header_row_count]
-        table_attrs << %( headerRowCount="#{hrc}") if hrc && hrc != 1
+        table_attrs << %( headerRowCount="#{xml_escape(hrc)}") if hrc && hrc != 1
         table_attrs << ' insertRow="1"' if tbl[:insert_row]
         table_attrs << ' insertRowShift="1"' if tbl[:insert_row_shift]
-        table_attrs << %( totalsRowCount="#{trc}") if trc.positive?
+        table_attrs << %( totalsRowCount="#{xml_escape(trc)}") if trc.positive?
         table_attrs << ' totalsRowShown="0"' if trc.zero?
         table_attrs << ' published="1"' if tbl[:published]
-        table_attrs << %( headerRowDxfId="#{tbl[:header_row_dxf_id]}") if tbl[:header_row_dxf_id]
-        table_attrs << %( dataDxfId="#{tbl[:data_dxf_id]}") if tbl[:data_dxf_id]
-        table_attrs << %( totalsRowDxfId="#{tbl[:totals_row_dxf_id]}") if tbl[:totals_row_dxf_id]
-        table_attrs << %( headerRowBorderDxfId="#{tbl[:header_row_border_dxf_id]}") if tbl[:header_row_border_dxf_id]
-        table_attrs << %( tableBorderDxfId="#{tbl[:table_border_dxf_id]}") if tbl[:table_border_dxf_id]
-        table_attrs << %( totalsRowBorderDxfId="#{tbl[:totals_row_border_dxf_id]}") if tbl[:totals_row_border_dxf_id]
+        table_attrs << %( headerRowDxfId="#{xml_escape(tbl[:header_row_dxf_id])}") if tbl[:header_row_dxf_id]
+        table_attrs << %( dataDxfId="#{xml_escape(tbl[:data_dxf_id])}") if tbl[:data_dxf_id]
+        table_attrs << %( totalsRowDxfId="#{xml_escape(tbl[:totals_row_dxf_id])}") if tbl[:totals_row_dxf_id]
+        table_attrs << %( headerRowBorderDxfId="#{xml_escape(tbl[:header_row_border_dxf_id])}") if tbl[:header_row_border_dxf_id]
+        table_attrs << %( tableBorderDxfId="#{xml_escape(tbl[:table_border_dxf_id])}") if tbl[:table_border_dxf_id]
+        table_attrs << %( totalsRowBorderDxfId="#{xml_escape(tbl[:totals_row_border_dxf_id])}") if tbl[:totals_row_border_dxf_id]
         table_attrs << %( headerRowCellStyle="#{xml_escape(tbl[:header_row_cell_style])}") if tbl[:header_row_cell_style]
         table_attrs << %( totalsRowCellStyle="#{xml_escape(tbl[:totals_row_cell_style])}") if tbl[:totals_row_cell_style]
-        table_attrs << %( connectionId="#{tbl[:connection_id]}") if tbl[:connection_id]
+        table_attrs << %( connectionId="#{xml_escape(tbl[:connection_id])}") if tbl[:connection_id]
         table_attrs << %( tableType="#{xml_escape(tbl[:table_type])}") if tbl[:table_type]
         parts = [
           XML_HEADER,
           "<table #{table_attrs}>"
         ]
-        parts << %(<autoFilter ref="#{tbl[:ref]}"/>) unless tbl[:auto_filter] == false
+        parts << %(<autoFilter ref="#{xml_escape(tbl[:ref])}"/>) unless tbl[:auto_filter] == false
         parts << %(<tableColumns count="#{tbl[:columns].size}">)
         tbl[:columns].each_with_index do |col, i|
           col = col.to_h if col.is_a?(Elements::MetadataRecord)
@@ -3236,11 +3236,11 @@ module Xlsxrb
             calc_formula = col[:calculated_column_formula] || col[:data_formula] || col[:formula]
             tot_formula = col[:totals_row_formula]
             trf = col[:totals_row_function] || ("custom" if tot_formula)
-            col_attrs << %( totalsRowFunction="#{trf}") if trf
+            col_attrs << %( totalsRowFunction="#{xml_escape(trf)}") if trf
             col_attrs << %( totalsRowLabel="#{xml_escape(col[:totals_row_label])}") if col[:totals_row_label]
-            col_attrs << %( dataDxfId="#{col[:data_dxf_id]}") if col[:data_dxf_id]
-            col_attrs << %( totalsRowDxfId="#{col[:totals_row_dxf_id]}") if col[:totals_row_dxf_id]
-            col_attrs << %( headerRowDxfId="#{col[:header_row_dxf_id]}") if col[:header_row_dxf_id]
+            col_attrs << %( dataDxfId="#{xml_escape(col[:data_dxf_id])}") if col[:data_dxf_id]
+            col_attrs << %( totalsRowDxfId="#{xml_escape(col[:totals_row_dxf_id])}") if col[:totals_row_dxf_id]
+            col_attrs << %( headerRowDxfId="#{xml_escape(col[:header_row_dxf_id])}") if col[:header_row_dxf_id]
             col_attrs << %( dataCellStyle="#{xml_escape(col[:data_cell_style])}") if col[:data_cell_style]
             if calc_formula || tot_formula
               parts << "<tableColumn #{col_attrs}>"
@@ -3280,7 +3280,7 @@ module Xlsxrb
         slc = show_last_column ? "1" : "0"
         srs = show_row_stripes ? "1" : "0"
         scs = show_column_stripes ? "1" : "0"
-        parts << %(<tableStyleInfo name="#{xml_escape(style_name)}" showFirstColumn="#{sfc}" showLastColumn="#{slc}" showRowStripes="#{srs}" showColumnStripes="#{scs}"/>)
+        parts << %(<tableStyleInfo name="#{xml_escape(style_name)}" showFirstColumn="#{xml_escape(sfc)}" showLastColumn="#{xml_escape(slc)}" showRowStripes="#{xml_escape(srs)}" showColumnStripes="#{xml_escape(scs)}"/>)
         parts << "</table>"
         parts.join
       end
@@ -3296,11 +3296,11 @@ module Xlsxrb
           next unless link[:url]
 
           rid += 1
-          parts << %(<Relationship Id="rId#{rid}" Type="#{DOC_REL_NS}/hyperlink" Target="#{xml_escape(link[:url])}" TargetMode="External"/>)
+          parts << %(<Relationship Id="rId#{xml_escape(rid)}" Type="#{DOC_REL_NS}/hyperlink" Target="#{xml_escape(link[:url])}" TargetMode="External"/>)
         end
         sheet_tables.each_with_index do |_tbl, i|
           rid += 1
-          parts << %(<Relationship Id="rId#{rid}" Type="#{DOC_REL_NS}/table" Target="../tables/table#{table_start_index + i + 1}.xml"/>)
+          parts << %(<Relationship Id="rId#{xml_escape(rid)}" Type="#{DOC_REL_NS}/table" Target="../tables/table#{xml_escape(table_start_index + i + 1)}.xml"/>)
         end
         parts << "</Relationships>"
         parts.join
@@ -3335,7 +3335,7 @@ module Xlsxrb
         parts = [XML_HEADER, %(<Relationships xmlns="#{REL_NS}">)]
         rels_data.each_with_index do |rel, i|
           ext_attr = rel[:external] ? ' TargetMode="External"' : ""
-          parts << %(<Relationship Id="rId#{i + 1}" Type="#{rel[:type]}" Target="#{xml_escape(rel[:target])}"#{ext_attr}/>)
+          parts << %(<Relationship Id="rId#{i + 1}" Type="#{xml_escape(rel[:type])}" Target="#{xml_escape(rel[:target])}"#{ext_attr}/>)
         end
         parts << "</Relationships>"
         parts.join

@@ -10,7 +10,7 @@ module Xlsxrb
         # : (untyped pivot_table, untyped cache_id) -> untyped
         def generate_pivot_table_xml(pivot_table, cache_id)
           data_caption = pivot_table[:data_caption] || (pivot_table[:data_fields].first ? pivot_table[:data_fields].first[:name] : "Values")
-          pt_attrs = %( xmlns="#{SSML_NS}" name="#{xml_escape(pivot_table[:name])}" cacheId="#{cache_id}" dataCaption="#{xml_escape(data_caption)}")
+          pt_attrs = %( xmlns="#{SSML_NS}" name="#{xml_escape(pivot_table[:name])}" cacheId="#{xml_escape(cache_id)}" dataCaption="#{xml_escape(data_caption)}")
           pt_attrs << %( grandTotalCaption="#{xml_escape(pivot_table[:grand_total_caption])}") if pivot_table[:grand_total_caption]
           pt_attrs << %( errorCaption="#{xml_escape(pivot_table[:error_caption])}") if pivot_table[:error_caption]
           pt_attrs << ' showError="1"' if pivot_table[:show_error]
@@ -28,15 +28,15 @@ module Xlsxrb
           pt_attrs << %( showHeaders="0") if pivot_table[:show_headers] == false
           pt_attrs << %( showMultipleLabel="0") if pivot_table[:show_multiple_label] == false
           pt_attrs << %( showDataDropDown="0") if pivot_table[:show_data_drop_down] == false
-          pt_attrs << %( indent="#{pivot_table[:indent]}") if pivot_table[:indent]
+          pt_attrs << %( indent="#{xml_escape(pivot_table[:indent])}") if pivot_table[:indent]
           pt_attrs << ' published="1"' if pivot_table[:published]
           pt_attrs << ' editData="1"' if pivot_table[:edit_data]
           pt_attrs << ' disableFieldList="1"' if pivot_table[:disable_field_list]
           pt_attrs << ' visualTotals="0"' if pivot_table[:visual_totals] == false
           pt_attrs << ' printDrill="1"' if pivot_table[:print_drill]
-          pt_attrs << %( createdVersion="#{pivot_table[:created_version]}") if pivot_table[:created_version]
-          pt_attrs << %( updatedVersion="#{pivot_table[:updated_version]}") if pivot_table[:updated_version]
-          pt_attrs << %( minRefreshableVersion="#{pivot_table[:min_refreshable_version]}") if pivot_table[:min_refreshable_version]
+          pt_attrs << %( createdVersion="#{xml_escape(pivot_table[:created_version])}") if pivot_table[:created_version]
+          pt_attrs << %( updatedVersion="#{xml_escape(pivot_table[:updated_version])}") if pivot_table[:updated_version]
+          pt_attrs << %( minRefreshableVersion="#{xml_escape(pivot_table[:min_refreshable_version])}") if pivot_table[:min_refreshable_version]
           anf = pivot_table.fetch(:apply_number_formats, false)
           abf = pivot_table.fetch(:apply_border_formats, false)
           aff = pivot_table.fetch(:apply_font_formats, false)
@@ -58,7 +58,7 @@ module Xlsxrb
           pt_attrs << ' fieldPrintTitles="1"' if pivot_table[:field_print_titles]
           pt_attrs << ' preserveFormatting="0"' if pivot_table[:preserve_formatting] == false
           pt_attrs << ' pageOverThenDown="1"' if pivot_table[:page_over_then_down]
-          pt_attrs << %( pageWrap="#{pivot_table[:page_wrap]}") if pivot_table[:page_wrap]
+          pt_attrs << %( pageWrap="#{xml_escape(pivot_table[:page_wrap])}") if pivot_table[:page_wrap]
           parts = [
             XML_HEADER,
             "<pivotTableDefinition#{pt_attrs}>"
@@ -70,13 +70,13 @@ module Xlsxrb
                         else
                           (pivot_table[:row_fields].size + pivot_table[:col_fields].size + pivot_table[:data_fields].size).clamp(1, 100)
                         end
-          loc_attrs = %(<location ref="#{pivot_table[:dest_ref]}" firstHeaderRow="#{pivot_table[:first_header_row] || 1}" ) +
-                      %(firstDataRow="#{pivot_table[:first_data_row] || 1}" firstDataCol="#{pivot_table[:first_data_col] || 1}")
-          loc_attrs << %( rowPageCount="#{pivot_table[:row_page_count]}") if pivot_table[:row_page_count]
-          loc_attrs << %( colPageCount="#{pivot_table[:col_page_count]}") if pivot_table[:col_page_count]
+          loc_attrs = %(<location ref="#{xml_escape(pivot_table[:dest_ref])}" firstHeaderRow="#{xml_escape(pivot_table[:first_header_row] || 1)}" ) +
+                      %(firstDataRow="#{xml_escape(pivot_table[:first_data_row] || 1)}" firstDataCol="#{xml_escape(pivot_table[:first_data_col] || 1)}")
+          loc_attrs << %( rowPageCount="#{xml_escape(pivot_table[:row_page_count])}") if pivot_table[:row_page_count]
+          loc_attrs << %( colPageCount="#{xml_escape(pivot_table[:col_page_count])}") if pivot_table[:col_page_count]
           loc_attrs << "/>"
           parts << loc_attrs
-          parts << %(<pivotFields count="#{field_count}">)
+          parts << %(<pivotFields count="#{xml_escape(field_count)}">)
           field_count.times do |fi|
             attrs = +""
             if pivot_table[:row_fields].include?(fi)
@@ -90,7 +90,7 @@ module Xlsxrb
             attrs << %( outline="#{fa[:outline] ? "1" : "0"}") if fa && !fa[:outline].nil?
             attrs << %( subtotalTop="#{fa[:subtotal_top] ? "1" : "0"}") if fa && !fa[:subtotal_top].nil?
             attrs << %( showAll="#{fa && fa[:show_all] == true ? "1" : "0"}")
-            attrs << %( numFmtId="#{fa[:num_fmt_id]}") if fa && fa[:num_fmt_id]
+            attrs << %( numFmtId="#{xml_escape(fa[:num_fmt_id])}") if fa && fa[:num_fmt_id]
             attrs << %( sortType="#{xml_escape(fa[:sort_type])}") if fa && fa[:sort_type]
             attrs << ' defaultSubtotal="0"' if fa && fa[:default_subtotal] == false
             attrs << ' insertBlankRow="1"' if fa && fa[:insert_blank_row]
@@ -107,8 +107,8 @@ module Xlsxrb
               # default subtotal, which Excel fills in when it refreshes the cache on open.
               field_items ||= []
               parts << "<pivotField#{attrs}>"
-              parts << %(<items count="#{field_items.size + (default_subtotal ? 1 : 0)}">)
-              field_items.size.times { |ix| parts << %(<item x="#{ix}"/>) }
+              parts << %(<items count="#{xml_escape(field_items.size + (default_subtotal ? 1 : 0))}">)
+              field_items.size.times { |ix| parts << %(<item x="#{xml_escape(ix)}"/>) }
               parts << '<item t="default"/>' if default_subtotal
               parts << "</items>"
               parts << "</pivotField>"
@@ -120,24 +120,24 @@ module Xlsxrb
 
           unless pivot_table[:row_fields].empty?
             parts << %(<rowFields count="#{pivot_table[:row_fields].size}">)
-            pivot_table[:row_fields].each { |f| parts << %(<field x="#{f}"/>) }
+            pivot_table[:row_fields].each { |f| parts << %(<field x="#{xml_escape(f)}"/>) }
             parts << "</rowFields>"
           end
 
           unless pivot_table[:col_fields].empty?
             parts << %(<colFields count="#{pivot_table[:col_fields].size}">)
-            pivot_table[:col_fields].each { |f| parts << %(<field x="#{f}"/>) }
+            pivot_table[:col_fields].each { |f| parts << %(<field x="#{xml_escape(f)}"/>) }
             parts << "</colFields>"
           end
 
           unless pivot_table[:data_fields].empty?
             parts << %(<dataFields count="#{pivot_table[:data_fields].size}">)
             pivot_table[:data_fields].each do |df|
-              df_attrs = %( name="#{xml_escape(df[:name])}" fld="#{df[:fld]}" subtotal="#{df[:subtotal] || "sum"}")
+              df_attrs = %( name="#{xml_escape(df[:name])}" fld="#{xml_escape(df[:fld])}" subtotal="#{xml_escape(df[:subtotal] || "sum")}")
               df_attrs << %( showDataAs="#{xml_escape(df[:show_data_as])}") if df[:show_data_as]
-              df_attrs << %( baseField="#{df[:base_field]}") if df[:base_field]
-              df_attrs << %( baseItem="#{df[:base_item]}") if df[:base_item]
-              df_attrs << %( numFmtId="#{df[:num_fmt_id]}") if df[:num_fmt_id]
+              df_attrs << %( baseField="#{xml_escape(df[:base_field])}") if df[:base_field]
+              df_attrs << %( baseItem="#{xml_escape(df[:base_item])}") if df[:base_item]
+              df_attrs << %( numFmtId="#{xml_escape(df[:num_fmt_id])}") if df[:num_fmt_id]
               parts << "<dataField#{df_attrs}/>"
             end
             parts << "</dataFields>"
@@ -165,9 +165,9 @@ module Xlsxrb
           pcd_attrs << ' saveData="0"' if pivot_table[:cache_save_data] == false
           pcd_attrs << ' enableRefresh="0"' if pivot_table[:cache_enable_refresh] == false
           pcd_attrs << %( refreshedBy="#{xml_escape(pivot_table[:cache_refreshed_by])}") if pivot_table[:cache_refreshed_by]
-          pcd_attrs << %( refreshedVersion="#{pivot_table[:cache_refreshed_version]}") if pivot_table[:cache_refreshed_version]
-          pcd_attrs << %( createdVersion="#{pivot_table[:cache_created_version]}") if pivot_table[:cache_created_version]
-          pcd_attrs << %( recordCount="#{pivot_table[:cache_record_count]}") if pivot_table[:cache_record_count]
+          pcd_attrs << %( refreshedVersion="#{xml_escape(pivot_table[:cache_refreshed_version])}") if pivot_table[:cache_refreshed_version]
+          pcd_attrs << %( createdVersion="#{xml_escape(pivot_table[:cache_created_version])}") if pivot_table[:cache_created_version]
+          pcd_attrs << %( recordCount="#{xml_escape(pivot_table[:cache_record_count])}") if pivot_table[:cache_record_count]
           pcd_attrs << ' optimizeMemory="1"' if pivot_table[:cache_optimize_memory]
           parts = [
             XML_HEADER,
@@ -182,13 +182,13 @@ module Xlsxrb
           elsif source.include?("!")
             sname, srange = source.split("!", 2)
             sname = sname.delete("'")
-            parts << %(<cacheSource type="worksheet"><worksheetSource ref="#{srange}" sheet="#{xml_escape(sname)}"#{ws_name_attr}/></cacheSource>)
+            parts << %(<cacheSource type="worksheet"><worksheetSource ref="#{xml_escape(srange)}" sheet="#{xml_escape(sname)}"#{ws_name_attr}/></cacheSource>)
           else
-            parts << %(<cacheSource type="worksheet"><worksheetSource ref="#{source}"#{ws_name_attr}/></cacheSource>)
+            parts << %(<cacheSource type="worksheet"><worksheetSource ref="#{xml_escape(source)}"#{ws_name_attr}/></cacheSource>)
           end
 
           field_count = pivot_table[:field_names] ? pivot_table[:field_names].size : (pivot_table[:row_fields].size + pivot_table[:col_fields].size + pivot_table[:data_fields].size)
-          parts << %(<cacheFields count="#{field_count}">)
+          parts << %(<cacheFields count="#{xml_escape(field_count)}">)
           field_count.times do |fi|
             fname = if pivot_table[:field_names] && pivot_table[:field_names][fi]
                       pivot_table[:field_names][fi]
@@ -198,7 +198,7 @@ module Xlsxrb
                     end
             fa = pivot_table[:field_attrs] && pivot_table[:field_attrs][fi]
             cf_num_fmt = (fa && fa[:cache_num_fmt_id]) || 0
-            cf_attrs = %( name="#{xml_escape(fname)}" numFmtId="#{cf_num_fmt}")
+            cf_attrs = %( name="#{xml_escape(fname)}" numFmtId="#{xml_escape(cf_num_fmt)}")
             cf_attrs << %( caption="#{xml_escape(fa[:cache_caption])}") if fa && fa[:cache_caption]
             cf_attrs << %( formula="#{xml_escape(fa[:cache_formula])}") if fa && fa[:cache_formula]
             field_items = pivot_table[:items] && pivot_table[:items][fi]
@@ -229,7 +229,7 @@ module Xlsxrb
           unless numbers.empty?
             attrs << ' containsNumber="1"'
             attrs << ' containsInteger="1"' if numbers.all? { |n| n.is_a?(Integer) || n == n.to_i }
-            attrs << %( minValue="#{numbers.min}" maxValue="#{numbers.max}")
+            attrs << %( minValue="#{xml_escape(numbers.min)}" maxValue="#{xml_escape(numbers.max)}")
           end
           attrs
         end
@@ -239,7 +239,7 @@ module Xlsxrb
           case value
           when nil then "<m/>"
           when true, false then %(<b v="#{value ? 1 : 0}"/>)
-          when Numeric then %(<n v="#{value}"/>)
+          when Numeric then %(<n v="#{xml_escape(value)}"/>)
           else %(<s v="#{xml_escape(value.to_s)}"/>)
           end
         end
@@ -249,14 +249,14 @@ module Xlsxrb
           items = pivot_table[:items]
           if items&.values&.any? { |v| v && !v.empty? }
             max_len = items.values.map { |v| v ? v.size : 0 }.max
-            parts = [XML_HEADER, %(<pivotCacheRecords xmlns="#{SSML_NS}" count="#{max_len}">)]
+            parts = [XML_HEADER, %(<pivotCacheRecords xmlns="#{SSML_NS}" count="#{xml_escape(max_len)}">)]
             max_len.times do |ri|
               parts << "<r>"
               field_count = pivot_table[:field_names] ? pivot_table[:field_names].size : (pivot_table[:row_fields].size + pivot_table[:col_fields].size + pivot_table[:data_fields].size)
               field_count.times do |fi|
                 field_items = items[fi]
                 parts << if field_items
-                           %(<x v="#{ri < field_items.size ? ri : 0}"/>)
+                           %(<x v="#{xml_escape(ri < field_items.size ? ri : 0)}"/>)
                          else
                            %(<n v="0"/>)
                          end
@@ -275,7 +275,7 @@ module Xlsxrb
           [
             XML_HEADER,
             %(<Relationships xmlns="#{REL_NS}">),
-            %(<Relationship Id="rId1" Type="#{DOC_REL_NS}/pivotCacheRecords" Target="pivotCacheRecords#{cache_id}.xml"/>),
+            %(<Relationship Id="rId1" Type="#{DOC_REL_NS}/pivotCacheRecords" Target="pivotCacheRecords#{xml_escape(cache_id)}.xml"/>),
             "</Relationships>"
           ].join
         end
@@ -285,7 +285,7 @@ module Xlsxrb
           [
             XML_HEADER,
             %(<Relationships xmlns="#{REL_NS}">),
-            %(<Relationship Id="rId1" Type="#{DOC_REL_NS}/pivotCacheDefinition" Target="../pivotCache/pivotCacheDefinition#{cache_id}.xml"/>),
+            %(<Relationship Id="rId1" Type="#{DOC_REL_NS}/pivotCacheDefinition" Target="../pivotCache/pivotCacheDefinition#{xml_escape(cache_id)}.xml"/>),
             "</Relationships>"
           ].join
         end
@@ -372,7 +372,7 @@ module Xlsxrb
                   rpr << "<u/>"
                 else
                   mapped_u = StyleBuilder::UNDERLINE_MAP[u_val.to_sym] || u_val
-                  rpr << %(<u val="#{mapped_u}"/>)
+                  rpr << %(<u val="#{xml_escape(mapped_u)}"/>)
                 end
               end
               va_val = font[:vert_align] || font[:vertical_align]
@@ -380,14 +380,14 @@ module Xlsxrb
               va_val ||= "subscript" if font[:subscript]
               if va_val
                 mapped_va = StyleBuilder::VERT_ALIGN_MAP[va_val.to_sym] || va_val
-                rpr << %(<vertAlign val="#{mapped_va}"/>)
+                rpr << %(<vertAlign val="#{xml_escape(mapped_va)}"/>)
               end
               font_sz = font[:size] || font[:sz]
-              rpr << %(<sz val="#{font_sz}"/>) if font_sz
+              rpr << %(<sz val="#{xml_escape(font_sz)}"/>) if font_sz
               rpr << emit_color_xml(font)
               rpr << %(<rFont val="#{xml_escape(font[:name])}"/>) if font[:name]
-              rpr << %(<family val="#{font[:family]}"/>) if font[:family]
-              rpr << %(<scheme val="#{font[:scheme]}"/>) if font[:scheme]
+              rpr << %(<family val="#{xml_escape(font[:family])}"/>) if font[:family]
+              rpr << %(<scheme val="#{xml_escape(font[:scheme])}"/>) if font[:scheme]
               "<r><rPr>#{rpr}</rPr><t>#{xml_escape_text(text)}</t></r>"
             else
               "<r><t>#{xml_escape_text(text)}</t></r>"
@@ -397,25 +397,25 @@ module Xlsxrb
 
         # : (untyped cell_ref, untyped value, untyped style_idx, ?untyped? sst, ?ph: untyped?) -> untyped
         def cell_xml(cell_ref, value, style_idx, sst = nil, ph: nil) # rubocop:disable Naming/MethodParameterName
-          s_attr = style_idx ? %( s="#{style_idx}") : ""
+          s_attr = style_idx ? %( s="#{xml_escape(style_idx)}") : ""
           ph_attr = ph ? ' ph="1"' : ""
           case value
           when Xlsxrb::Elements::CellError
-            %(<c r="#{cell_ref}" t="e"#{s_attr}#{ph_attr}><v>#{xml_escape(value.code)}</v></c>)
+            %(<c r="#{xml_escape(cell_ref)}" t="e"#{s_attr}#{ph_attr}><v>#{xml_escape(value.code)}</v></c>)
           when Xlsxrb::Elements::Formula
             f_attrs = +""
             case value.type
             when :shared
-              f_attrs << %( t="shared" si="#{value.shared_index}")
-              f_attrs << %( ref="#{value.ref}") if value.ref
+              f_attrs << %( t="shared" si="#{xml_escape(value.shared_index)}")
+              f_attrs << %( ref="#{xml_escape(value.ref)}") if value.ref
             when :array
-              f_attrs << %( t="array" ref="#{value.ref}") if value.ref
+              f_attrs << %( t="array" ref="#{xml_escape(value.ref)}") if value.ref
             when :data_table
               f_attrs << ' t="dataTable"'
               f_attrs << ' dt2D="1"' if value.dt2d
               f_attrs << ' dtr="1"' if value.dtr
-              f_attrs << %( r1="#{value.r1}") if value.r1
-              f_attrs << %( r2="#{value.r2}") if value.r2
+              f_attrs << %( r1="#{xml_escape(value.r1)}") if value.r1
+              f_attrs << %( r2="#{xml_escape(value.r2)}") if value.r2
             end
             f_attrs << ' ca="1"' if value.calculate_always?
             f_attrs << ' aca="1"' if value.aca
@@ -437,7 +437,7 @@ module Xlsxrb
                     else
                       "<f#{f_attrs}/>"
                     end
-            parts = %(<c r="#{cell_ref}"#{t_attr}#{s_attr}#{ph_attr}>#{f_tag})
+            parts = %(<c r="#{xml_escape(cell_ref)}"#{t_attr}#{s_attr}#{ph_attr}>#{f_tag})
             parts << "<v>#{xml_escape_text(cached_val_str)}</v>" unless value.cached_value.nil?
             parts << "</c>"
             parts
@@ -445,31 +445,31 @@ module Xlsxrb
             if sst
               rt_sst, = sst
               idx = rt_sst[value]
-              %(<c r="#{cell_ref}" t="s"#{s_attr}#{ph_attr}><v>#{idx}</v></c>)
+              %(<c r="#{xml_escape(cell_ref)}" t="s"#{s_attr}#{ph_attr}><v>#{idx}</v></c>)
             else
-              %(<c r="#{cell_ref}" t="inlineStr"#{s_attr}#{ph_attr}><is>#{rich_text_xml(value)}</is></c>)
+              %(<c r="#{xml_escape(cell_ref)}" t="inlineStr"#{s_attr}#{ph_attr}><is>#{rich_text_xml(value)}</is></c>)
             end
           when true, false
-            %(<c r="#{cell_ref}" t="b"#{s_attr}#{ph_attr}><v>#{value ? 1 : 0}</v></c>)
+            %(<c r="#{xml_escape(cell_ref)}" t="b"#{s_attr}#{ph_attr}><v>#{value ? 1 : 0}</v></c>)
           when Time
             date1904 = @workbook_properties&.[](:date1904) ? true : false
             serial = Xlsxrb::Ooxml::Utils.datetime_to_serial(value, date1904: date1904)
-            dt_attr = s_attr.empty? && (dt_style = resolve_style_index(datetime_num_fmt_id)) ? %( s="#{dt_style}") : s_attr
-            %(<c r="#{cell_ref}"#{dt_attr}#{ph_attr}><v>#{serial}</v></c>)
+            dt_attr = s_attr.empty? && (dt_style = resolve_style_index(datetime_num_fmt_id)) ? %( s="#{xml_escape(dt_style)}") : s_attr
+            %(<c r="#{xml_escape(cell_ref)}"#{dt_attr}#{ph_attr}><v>#{serial}</v></c>)
           when Date
             date1904 = @workbook_properties&.[](:date1904) ? true : false
             serial = Xlsxrb::Ooxml::Utils.date_to_serial(value, date1904: date1904)
-            ds_attr = s_attr.empty? && (date_style = resolve_style_index(date_num_fmt_id)) ? %( s="#{date_style}") : s_attr
-            %(<c r="#{cell_ref}"#{ds_attr}#{ph_attr}><v>#{serial}</v></c>)
+            ds_attr = s_attr.empty? && (date_style = resolve_style_index(date_num_fmt_id)) ? %( s="#{xml_escape(date_style)}") : s_attr
+            %(<c r="#{xml_escape(cell_ref)}"#{ds_attr}#{ph_attr}><v>#{serial}</v></c>)
           when Numeric
-            %(<c r="#{cell_ref}"#{s_attr}#{ph_attr}><v>#{value}</v></c>)
+            %(<c r="#{xml_escape(cell_ref)}"#{s_attr}#{ph_attr}><v>#{value}</v></c>)
           else
             if sst
               _, str_sst = sst
               idx = str_sst[value.to_s]
-              %(<c r="#{cell_ref}" t="s"#{s_attr}#{ph_attr}><v>#{idx}</v></c>)
+              %(<c r="#{xml_escape(cell_ref)}" t="s"#{s_attr}#{ph_attr}><v>#{idx}</v></c>)
             else
-              %(<c r="#{cell_ref}" t="inlineStr"#{s_attr}#{ph_attr}><is><t>#{xml_escape_text(value)}</t></is></c>)
+              %(<c r="#{xml_escape(cell_ref)}" t="inlineStr"#{s_attr}#{ph_attr}><is><t>#{xml_escape_text(value)}</t></is></c>)
             end
           end
         end
@@ -517,20 +517,20 @@ module Xlsxrb
           case filter[:type]
           when :filters
             attrs = filter[:blank] ? +' blank="1"' : +""
-            attrs << %( calendarType="#{filter[:calendar_type]}") if filter[:calendar_type]
+            attrs << %( calendarType="#{xml_escape(filter[:calendar_type])}") if filter[:calendar_type]
             has_values = filter[:values]&.any?
             has_date_groups = filter[:date_group_items]&.any?
             if has_values || has_date_groups
               parts = ["<filters#{attrs}>"]
               filter[:values]&.each { |v| parts << %(<filter val="#{xml_escape(v)}"/>) }
               filter[:date_group_items]&.each do |dg|
-                dg_attrs = %(dateTimeGrouping="#{dg[:date_time_grouping]}")
-                dg_attrs << %( year="#{dg[:year]}") if dg[:year]
-                dg_attrs << %( month="#{dg[:month]}") if dg[:month]
-                dg_attrs << %( day="#{dg[:day]}") if dg[:day]
-                dg_attrs << %( hour="#{dg[:hour]}") if dg[:hour]
-                dg_attrs << %( minute="#{dg[:minute]}") if dg[:minute]
-                dg_attrs << %( second="#{dg[:second]}") if dg[:second]
+                dg_attrs = %(dateTimeGrouping="#{xml_escape(dg[:date_time_grouping])}")
+                dg_attrs << %( year="#{xml_escape(dg[:year])}") if dg[:year]
+                dg_attrs << %( month="#{xml_escape(dg[:month])}") if dg[:month]
+                dg_attrs << %( day="#{xml_escape(dg[:day])}") if dg[:day]
+                dg_attrs << %( hour="#{xml_escape(dg[:hour])}") if dg[:hour]
+                dg_attrs << %( minute="#{xml_escape(dg[:minute])}") if dg[:minute]
+                dg_attrs << %( second="#{xml_escape(dg[:second])}") if dg[:second]
                 parts << "<dateGroupItem #{dg_attrs}/>"
               end
               parts << "</filters>"
@@ -543,32 +543,32 @@ module Xlsxrb
               and_attr = filter[:and] ? ' and="1"' : ""
               parts = ["<customFilters#{and_attr}>"]
               filter[:filters].each do |cf|
-                parts << %(<customFilter operator="#{cf[:operator]}" val="#{xml_escape(cf[:val])}"/>)
+                parts << %(<customFilter operator="#{xml_escape(cf[:operator])}" val="#{xml_escape(cf[:val])}"/>)
               end
               parts << "</customFilters>"
               parts.join
             else
-              %(<customFilters><customFilter operator="#{filter[:operator]}" val="#{xml_escape(filter[:val])}"/></customFilters>)
+              %(<customFilters><customFilter operator="#{xml_escape(filter[:operator])}" val="#{xml_escape(filter[:val])}"/></customFilters>)
             end
           when :dynamic
-            dyn_attrs = %( type="#{filter[:dynamic_type]}")
-            dyn_attrs << %( val="#{filter[:val]}") if filter[:val]
-            dyn_attrs << %( valIso="#{filter[:val_iso]}") if filter[:val_iso]
-            dyn_attrs << %( maxVal="#{filter[:max_val]}") if filter[:max_val]
-            dyn_attrs << %( maxValIso="#{filter[:max_val_iso]}") if filter[:max_val_iso]
+            dyn_attrs = %( type="#{xml_escape(filter[:dynamic_type])}")
+            dyn_attrs << %( val="#{xml_escape(filter[:val])}") if filter[:val]
+            dyn_attrs << %( valIso="#{xml_escape(filter[:val_iso])}") if filter[:val_iso]
+            dyn_attrs << %( maxVal="#{xml_escape(filter[:max_val])}") if filter[:max_val]
+            dyn_attrs << %( maxValIso="#{xml_escape(filter[:max_val_iso])}") if filter[:max_val_iso]
             "<dynamicFilter#{dyn_attrs}/>"
           when :top10
             top_attr = filter[:top] ? ' top="1"' : ""
             pct_attr = filter[:percent] ? ' percent="1"' : ""
-            fv_attr = filter[:filter_val] ? %( filterVal="#{filter[:filter_val]}") : ""
-            %(<top10#{top_attr}#{pct_attr} val="#{filter[:val]}"#{fv_attr}/>)
+            fv_attr = filter[:filter_val] ? %( filterVal="#{xml_escape(filter[:filter_val])}") : ""
+            %(<top10#{top_attr}#{pct_attr} val="#{xml_escape(filter[:val])}"#{fv_attr}/>)
           when :color_filter
-            cf_attrs = %(dxfId="#{filter[:dxf_id]}")
+            cf_attrs = %(dxfId="#{xml_escape(filter[:dxf_id])}")
             cf_attrs << ' cellColor="0"' if filter[:cell_color] == false
             %(<colorFilter #{cf_attrs}/>)
           when :icon_filter
-            if_attrs = %(iconSet="#{filter[:icon_set]}")
-            if_attrs << %( iconId="#{filter[:icon_id]}") if filter[:icon_id]
+            if_attrs = %(iconSet="#{xml_escape(filter[:icon_set])}")
+            if_attrs << %( iconId="#{xml_escape(filter[:icon_id])}") if filter[:icon_id]
             %(<iconFilter #{if_attrs}/>)
           else
             ""
@@ -586,24 +586,24 @@ module Xlsxrb
             type = snake if CF_TYPE_MAP.key?(snake)
           end
           rule_type = CF_TYPE_MAP[type] || type.to_s
-          rule_attrs = %(type="#{rule_type}")
-          rule_attrs << %( priority="#{rule[:priority]}") if rule[:priority]
-          rule_attrs << %( operator="#{rule[:operator]}") if rule[:operator]
+          rule_attrs = %(type="#{xml_escape(rule_type)}")
+          rule_attrs << %( priority="#{xml_escape(rule[:priority])}") if rule[:priority]
+          rule_attrs << %( operator="#{xml_escape(rule[:operator])}") if rule[:operator]
           did = rule[:dxf_id] || rule[:format_id]
-          rule_attrs << %( dxfId="#{did}") if did
+          rule_attrs << %( dxfId="#{xml_escape(did)}") if did
           rule_attrs << %( stopIfTrue="1") if rule[:stop_if_true]
           rule_attrs << %( aboveAverage="0") if rule[:above_average] == false
           rule_attrs << %( equalAverage="1") if rule[:equal_average]
-          rule_attrs << %( rank="#{rule[:rank]}") if rule[:rank]
+          rule_attrs << %( rank="#{xml_escape(rule[:rank])}") if rule[:rank]
           rule_attrs << %( percent="1") if rule[:percent]
           rule_attrs << %( bottom="1") if rule[:bottom]
           rule_attrs << %( text="#{xml_escape(rule[:text])}") if rule[:text]
           if rule[:time_period]
             tp = rule[:time_period]
             tp_str = DslHelpers::CF_TIME_PERIODS[tp.to_sym] || tp.to_s
-            rule_attrs << %( timePeriod="#{tp_str}")
+            rule_attrs << %( timePeriod="#{xml_escape(tp_str)}")
           end
-          rule_attrs << %( stdDev="#{rule[:std_dev]}") if rule[:std_dev]
+          rule_attrs << %( stdDev="#{xml_escape(rule[:std_dev])}") if rule[:std_dev]
 
           case type
           when :cell_is, :expression, :above_average, :top10, :duplicate_values, :unique_values,
@@ -622,8 +622,8 @@ module Xlsxrb
             parts << "<cfRule #{rule_attrs}>"
             parts << "<colorScale>"
             cs[:cfvo]&.each do |cfvo|
-              cfvo_attrs = %(type="#{cfvo[:type]}")
-              cfvo_attrs << %( val="#{cfvo[:val]}") if cfvo[:val]
+              cfvo_attrs = %(type="#{xml_escape(cfvo[:type])}")
+              cfvo_attrs << %( val="#{xml_escape(cfvo[:val])}") if cfvo[:val]
               cfvo_attrs << ' gte="0"' if cfvo[:gte] == false
               parts << "<cfvo #{cfvo_attrs}/>"
             end
@@ -634,13 +634,13 @@ module Xlsxrb
             db = rule[:data_bar]
             parts << "<cfRule #{rule_attrs}>"
             db_attrs = +""
-            db_attrs << %( minLength="#{db[:min_length]}") if db[:min_length]
-            db_attrs << %( maxLength="#{db[:max_length]}") if db[:max_length]
+            db_attrs << %( minLength="#{xml_escape(db[:min_length])}") if db[:min_length]
+            db_attrs << %( maxLength="#{xml_escape(db[:max_length])}") if db[:max_length]
             db_attrs << %( showValue="#{db[:show_value] ? 1 : 0}") unless db[:show_value].nil?
             parts << "<dataBar#{db_attrs}>"
             db[:cfvo]&.each do |cfvo|
-              cfvo_attrs = %(type="#{cfvo[:type]}")
-              cfvo_attrs << %( val="#{cfvo[:val]}") if cfvo[:val]
+              cfvo_attrs = %(type="#{xml_escape(cfvo[:type])}")
+              cfvo_attrs << %( val="#{xml_escape(cfvo[:val])}") if cfvo[:val]
               cfvo_attrs << ' gte="0"' if cfvo[:gte] == false
               parts << "<cfvo #{cfvo_attrs}/>"
             end
@@ -651,14 +651,14 @@ module Xlsxrb
             is = rule[:icon_set]
             parts << "<cfRule #{rule_attrs}>"
             is_attrs = +""
-            is_attrs << %( iconSet="#{is[:icon_set]}") if is[:icon_set]
+            is_attrs << %( iconSet="#{xml_escape(is[:icon_set])}") if is[:icon_set]
             is_attrs << %( reverse="#{is[:reverse] ? 1 : 0}") unless is[:reverse].nil?
             is_attrs << %( percent="#{is[:percent] ? 1 : 0}") unless is[:percent].nil?
             is_attrs << %( showValue="#{is[:show_value] ? 1 : 0}") unless is[:show_value].nil?
             parts << "<iconSet#{is_attrs}>"
             is[:cfvo]&.each do |cfvo|
-              cfvo_attrs = %(type="#{cfvo[:type]}")
-              cfvo_attrs << %( val="#{cfvo[:val]}") if cfvo[:val]
+              cfvo_attrs = %(type="#{xml_escape(cfvo[:type])}")
+              cfvo_attrs << %( val="#{xml_escape(cfvo[:val])}") if cfvo[:val]
               cfvo_attrs << ' gte="0"' if cfvo[:gte] == false
               parts << "<cfvo #{cfvo_attrs}/>"
             end
@@ -675,7 +675,7 @@ module Xlsxrb
           if color.is_a?(Hash)
             emit_color_xml(color)
           else
-            %(<color rgb="#{color}"/>)
+            %(<color rgb="#{xml_escape(color)}"/>)
           end
         end
 
@@ -747,7 +747,7 @@ module Xlsxrb
             hp = @app_properties[:heading_pairs]
             tp = @app_properties[:titles_of_parts]
             parts << "<HeadingPairs>"
-            parts << %(<vt:vector size="#{hp.size * 2}" baseType="variant">)
+            parts << %(<vt:vector size="#{xml_escape(hp.size * 2)}" baseType="variant">)
             hp.each do |label, count|
               parts << "<vt:variant><vt:lpstr>#{xml_escape(label)}</vt:lpstr></vt:variant>"
               parts << "<vt:variant><vt:i4>#{count}</vt:i4></vt:variant>"
@@ -769,7 +769,7 @@ module Xlsxrb
           custom_ns = "http://schemas.openxmlformats.org/officeDocument/2006/custom-properties"
           parts = [
             XML_HEADER,
-            %(<Properties xmlns="#{custom_ns}" xmlns:vt="#{VT_NS}">)
+            %(<Properties xmlns="#{xml_escape(custom_ns)}" xmlns:vt="#{VT_NS}">)
           ]
           list = if @custom_properties.is_a?(Hash)
                    @custom_properties.map do |name, val|
@@ -793,16 +793,16 @@ module Xlsxrb
           list.each_with_index do |prop, idx|
             fmtid = "{D5CDD505-2E9C-101B-9397-08002B2CF9AE}"
             pid = idx + 2 # pids start at 2
-            parts << %(<property fmtid="#{fmtid}" pid="#{pid}" name="#{xml_escape(prop[:name])}">)
+            parts << %(<property fmtid="#{xml_escape(fmtid)}" pid="#{xml_escape(pid)}" name="#{xml_escape(prop[:name])}">)
             parts << case prop[:type]
                      when :number, :int, :i4
-                       "<vt:i4>#{prop[:value]}</vt:i4>"
+                       "<vt:i4>#{xml_escape(prop[:value])}</vt:i4>"
                      when :float, :r8
-                       "<vt:r8>#{prop[:value]}</vt:r8>"
+                       "<vt:r8>#{xml_escape(prop[:value])}</vt:r8>"
                      when :bool, :boolean
                        "<vt:bool>#{prop[:value] ? "true" : "false"}</vt:bool>"
                      when :date, :filetime
-                       "<vt:filetime>#{prop[:value]}</vt:filetime>"
+                       "<vt:filetime>#{xml_escape(prop[:value])}</vt:filetime>"
                      else
                        "<vt:lpwstr>#{xml_escape(prop[:value].to_s)}</vt:lpwstr>"
                      end

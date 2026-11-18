@@ -33,22 +33,22 @@ module Xlsxrb
               pic_lock_attrs << ' noChangeAspect="1"' if img[:no_change_aspect]
               pic_lock_attrs << ' noCrop="1"' if img[:no_crop]
               pic_locks = pic_lock_attrs.empty? ? "<a:picLocks/>" : "<a:picLocks#{pic_lock_attrs}/>"
-              parts << %(<xdr:nvPicPr><xdr:cNvPr id="#{dp[:rid_index] + 1}" name="#{xml_escape(img[:name])}"#{descr_attr}#{title_attr}#{hidden_attr}/><xdr:cNvPicPr>#{pic_locks}</xdr:cNvPicPr></xdr:nvPicPr>)
+              parts << %(<xdr:nvPicPr><xdr:cNvPr id="#{xml_escape(dp[:rid_index] + 1)}" name="#{xml_escape(img[:name])}"#{descr_attr}#{title_attr}#{hidden_attr}/><xdr:cNvPicPr>#{pic_locks}</xdr:cNvPicPr></xdr:nvPicPr>)
               src_rect_xml = if img[:src_rect]
                                sr = img[:src_rect]
                                sr_attrs = +""
-                               sr_attrs << %( t="#{sr[:top]}") if sr[:top]
-                               sr_attrs << %( b="#{sr[:bottom]}") if sr[:bottom]
-                               sr_attrs << %( l="#{sr[:left]}") if sr[:left]
-                               sr_attrs << %( r="#{sr[:right]}") if sr[:right]
+                               sr_attrs << %( t="#{xml_escape(sr[:top])}") if sr[:top]
+                               sr_attrs << %( b="#{xml_escape(sr[:bottom])}") if sr[:bottom]
+                               sr_attrs << %( l="#{xml_escape(sr[:left])}") if sr[:left]
+                               sr_attrs << %( r="#{xml_escape(sr[:right])}") if sr[:right]
                                "<a:srcRect#{sr_attrs}/>"
                              else
                                ""
                              end
               blip_xml = if img[:alpha_mod_fix]
-                           %(<a:blip r:embed="#{rid}"><a:alphaModFix amt="#{img[:alpha_mod_fix]}"/></a:blip>)
+                           %(<a:blip r:embed="#{xml_escape(rid)}"><a:alphaModFix amt="#{xml_escape(img[:alpha_mod_fix])}"/></a:blip>)
                          else
-                           %(<a:blip r:embed="#{rid}"/>)
+                           %(<a:blip r:embed="#{xml_escape(rid)}"/>)
                          end
               parts << %(<xdr:blipFill>#{blip_xml}#{src_rect_xml}<a:stretch><a:fillRect/></a:stretch></xdr:blipFill>)
               img_line_xml = if img[:line_color]
@@ -71,7 +71,7 @@ module Xlsxrb
               parts << anchor_xml("from", chart[:from_column] || chart[:from_col], chart[:from_row], col_off: chart[:from_col_off] || 0, row_off: chart[:from_row_off] || 0)
               parts << anchor_xml("to", chart[:to_column] || chart[:to_col], chart[:to_row], col_off: chart[:to_col_off] || 0, row_off: chart[:to_row_off] || 0)
               gf_macro = chart[:frame_macro] ? xml_escape(chart[:frame_macro]) : ""
-              parts << %(<xdr:graphicFrame macro="#{gf_macro}">)
+              parts << %(<xdr:graphicFrame macro="#{xml_escape(gf_macro)}">)
               chart_frame_name = chart[:name] || chart[:title] || "Chart"
               chart_descr_attr = chart[:description] ? %( descr="#{xml_escape(chart[:description])}") : ""
               chart_title_attr = chart[:frame_title] ? %( title="#{xml_escape(chart[:frame_title])}") : ""
@@ -81,9 +81,9 @@ module Xlsxrb
                           else
                             "<xdr:cNvGraphicFramePr/>"
                           end
-              parts << %(<xdr:nvGraphicFramePr><xdr:cNvPr id="#{dp[:rid_index] + 1}" name="#{xml_escape(chart_frame_name)}"#{chart_descr_attr}#{chart_title_attr}#{chart_hidden_attr}/>#{cnv_gf_pr}</xdr:nvGraphicFramePr>)
+              parts << %(<xdr:nvGraphicFramePr><xdr:cNvPr id="#{xml_escape(dp[:rid_index] + 1)}" name="#{xml_escape(chart_frame_name)}"#{chart_descr_attr}#{chart_title_attr}#{chart_hidden_attr}/>#{cnv_gf_pr}</xdr:nvGraphicFramePr>)
               parts << '<xdr:xfrm><a:off x="0" y="0"/><a:ext cx="5000000" cy="3000000"/></xdr:xfrm>'
-              parts << %(<a:graphic><a:graphicData uri="#{C_NS}"><c:chart xmlns:c="#{C_NS}" xmlns:r="#{DOC_REL_NS}" r:id="#{rid}"/></a:graphicData></a:graphic>)
+              parts << %(<a:graphic><a:graphicData uri="#{C_NS}"><c:chart xmlns:c="#{C_NS}" xmlns:r="#{DOC_REL_NS}" r:id="#{xml_escape(rid)}"/></a:graphicData></a:graphic>)
               parts << "</xdr:graphicFrame>"
               parts << client_data_xml(chart)
               parts << "</xdr:twoCellAnchor>"
@@ -110,7 +110,7 @@ module Xlsxrb
                           else
                             "<xdr:cNvSpPr><a:spLocks#{sp_lock_attrs}/></xdr:cNvSpPr>"
                           end
-              parts << %(<xdr:nvSpPr><xdr:cNvPr id="#{dp[:id]}" name="#{xml_escape(shape[:name])}"#{shape_descr_attr}#{shape_title_attr}#{shape_hidden_attr}/>#{cnv_sp_pr}</xdr:nvSpPr>)
+              parts << %(<xdr:nvSpPr><xdr:cNvPr id="#{xml_escape(dp[:id])}" name="#{xml_escape(shape[:name])}"#{shape_descr_attr}#{shape_title_attr}#{shape_hidden_attr}/>#{cnv_sp_pr}</xdr:nvSpPr>)
               shape_fill_xml = if shape[:no_fill]
                                  "<a:noFill/>"
                                elsif shape[:fill_color]
@@ -120,16 +120,16 @@ module Xlsxrb
                                  gf_attrs = +""
                                  gf_attrs << %( rotWithShape="#{gf[:rot_with_shape] ? 1 : 0}") unless gf[:rot_with_shape].nil?
                                  gf_attrs << %( flip="#{xml_escape(gf[:flip])}") if gf[:flip]
-                                 gs_xml = (gf[:stops] || []).map { |gs| %(<a:gs pos="#{gs[:pos]}">#{color_xml(gs[:color])}</a:gs>) }.join
+                                 gs_xml = (gf[:stops] || []).map { |gs| %(<a:gs pos="#{xml_escape(gs[:pos])}">#{color_xml(gs[:color])}</a:gs>) }.join
                                  type_xml = if gf[:path]
                                               %(<a:path path="#{xml_escape(gf[:path])}"/>)
                                             elsif gf[:angle]
                                               scaled_attr = gf[:scaled] ? %( scaled="1") : %( scaled="0")
-                                              %(<a:lin ang="#{gf[:angle]}"#{scaled_attr}/>)
+                                              %(<a:lin ang="#{xml_escape(gf[:angle])}"#{scaled_attr}/>)
                                             else
                                               ""
                                             end
-                                 tile_xml = gf[:tile_rect] ? %(<a:tileRect#{gf[:tile_rect].map { |k, v| %( #{k}="#{v}") }.join}/>) : ""
+                                 tile_xml = gf[:tile_rect] ? %(<a:tileRect#{gf[:tile_rect].map { |k, v| %( #{k}="#{xml_escape(v)}") }.join}/>) : ""
                                  "<a:gradFill#{gf_attrs}><a:gsLst>#{gs_xml}</a:gsLst>#{type_xml}#{tile_xml}</a:gradFill>"
                                elsif shape[:pattern_fill]
                                  pf = shape[:pattern_fill]
@@ -153,7 +153,7 @@ module Xlsxrb
                                                ""
                                              end
                                  dash_part = if shape[:line_custom_dash]
-                                               ds_xml = shape[:line_custom_dash].map { |ds| %(<a:ds d="#{ds[:d]}" sp="#{ds[:sp]}"/>) }.join
+                                               ds_xml = shape[:line_custom_dash].map { |ds| %(<a:ds d="#{xml_escape(ds[:d])}" sp="#{xml_escape(ds[:sp])}"/>) }.join
                                                "<a:custDash>#{ds_xml}</a:custDash>"
                                              elsif shape[:line_dash]
                                                %(<a:prstDash val="#{xml_escape(shape[:line_dash])}"/>)
@@ -185,9 +185,9 @@ module Xlsxrb
                                  if shape[:outer_shadow]
                                    os = shape[:outer_shadow]
                                    os_attrs = +""
-                                   os_attrs << %( blurRad="#{os[:blur_rad]}") if os[:blur_rad]
-                                   os_attrs << %( dist="#{os[:dist]}") if os[:dist]
-                                   os_attrs << %( dir="#{os[:dir]}") if os[:dir]
+                                   os_attrs << %( blurRad="#{xml_escape(os[:blur_rad])}") if os[:blur_rad]
+                                   os_attrs << %( dist="#{xml_escape(os[:dist])}") if os[:dist]
+                                   os_attrs << %( dir="#{xml_escape(os[:dir])}") if os[:dir]
                                    os_attrs << %( algn="#{xml_escape(os[:algn])}") if os[:algn]
                                    os_attrs << %( rotWithShape="#{os[:rot_with_shape] ? 1 : 0}") unless os[:rot_with_shape].nil?
                                    os_color = os[:color] ? srgb_clr_xml(os[:color], alpha: os[:alpha]) : ""
@@ -196,44 +196,44 @@ module Xlsxrb
                                  if shape[:glow]
                                    gl = shape[:glow]
                                    gl_attrs = +""
-                                   gl_attrs << %( rad="#{gl[:rad]}") if gl[:rad]
+                                   gl_attrs << %( rad="#{xml_escape(gl[:rad])}") if gl[:rad]
                                    gl_color = gl[:color] ? srgb_clr_xml(gl[:color], alpha: gl[:alpha]) : ""
                                    effect_children << "<a:glow#{gl_attrs}>#{gl_color}</a:glow>"
                                  end
                                  if shape[:inner_shadow]
                                    is = shape[:inner_shadow]
                                    is_attrs = +""
-                                   is_attrs << %( blurRad="#{is[:blur_rad]}") if is[:blur_rad]
-                                   is_attrs << %( dist="#{is[:dist]}") if is[:dist]
-                                   is_attrs << %( dir="#{is[:dir]}") if is[:dir]
+                                   is_attrs << %( blurRad="#{xml_escape(is[:blur_rad])}") if is[:blur_rad]
+                                   is_attrs << %( dist="#{xml_escape(is[:dist])}") if is[:dist]
+                                   is_attrs << %( dir="#{xml_escape(is[:dir])}") if is[:dir]
                                    is_color = is[:color] ? srgb_clr_xml(is[:color], alpha: is[:alpha]) : ""
                                    effect_children << "<a:innerShdw#{is_attrs}>#{is_color}</a:innerShdw>"
                                  end
                                  if shape[:reflection]
                                    rf = shape[:reflection]
                                    rf_attrs = +""
-                                   rf_attrs << %( blurRad="#{rf[:blur_rad]}") if rf[:blur_rad]
-                                   rf_attrs << %( stA="#{rf[:st_a]}") if rf[:st_a]
-                                   rf_attrs << %( endA="#{rf[:end_a]}") if rf[:end_a]
-                                   rf_attrs << %( dist="#{rf[:dist]}") unless rf[:dist].nil?
-                                   rf_attrs << %( dir="#{rf[:dir]}") if rf[:dir]
-                                   rf_attrs << %( fadeDir="#{rf[:fade_dir]}") if rf[:fade_dir]
-                                   rf_attrs << %( sx="#{rf[:sx]}") if rf[:sx]
-                                   rf_attrs << %( sy="#{rf[:sy]}") if rf[:sy]
-                                   rf_attrs << %( kx="#{rf[:kx]}") if rf[:kx]
-                                   rf_attrs << %( ky="#{rf[:ky]}") if rf[:ky]
+                                   rf_attrs << %( blurRad="#{xml_escape(rf[:blur_rad])}") if rf[:blur_rad]
+                                   rf_attrs << %( stA="#{xml_escape(rf[:st_a])}") if rf[:st_a]
+                                   rf_attrs << %( endA="#{xml_escape(rf[:end_a])}") if rf[:end_a]
+                                   rf_attrs << %( dist="#{xml_escape(rf[:dist])}") unless rf[:dist].nil?
+                                   rf_attrs << %( dir="#{xml_escape(rf[:dir])}") if rf[:dir]
+                                   rf_attrs << %( fadeDir="#{xml_escape(rf[:fade_dir])}") if rf[:fade_dir]
+                                   rf_attrs << %( sx="#{xml_escape(rf[:sx])}") if rf[:sx]
+                                   rf_attrs << %( sy="#{xml_escape(rf[:sy])}") if rf[:sy]
+                                   rf_attrs << %( kx="#{xml_escape(rf[:kx])}") if rf[:kx]
+                                   rf_attrs << %( ky="#{xml_escape(rf[:ky])}") if rf[:ky]
                                    rf_attrs << %( algn="#{xml_escape(rf[:algn])}") if rf[:algn]
                                    rf_attrs << %( rotWithShape="#{rf[:rot_with_shape] ? 1 : 0}") unless rf[:rot_with_shape].nil?
                                    effect_children << "<a:reflection#{rf_attrs}/>"
                                  end
                                  if shape[:soft_edge]
                                    se = shape[:soft_edge]
-                                   effect_children << %(<a:softEdge rad="#{se[:rad]}"/>)
+                                   effect_children << %(<a:softEdge rad="#{xml_escape(se[:rad])}"/>)
                                  end
                                  if shape[:blur]
                                    bl = shape[:blur]
                                    bl_attrs = +""
-                                   bl_attrs << %( rad="#{bl[:rad]}") if bl[:rad]
+                                   bl_attrs << %( rad="#{xml_escape(bl[:rad])}") if bl[:rad]
                                    bl_attrs << %( grow="#{bl[:grow] ? 1 : 0}") unless bl[:grow].nil?
                                    effect_children << "<a:blur#{bl_attrs}/>"
                                  end
@@ -244,15 +244,15 @@ module Xlsxrb
               parts << %(<xdr:spPr>#{shape_xfrm_xml}<a:prstGeom prst="#{xml_escape(shape[:preset])}">#{av_lst_xml}</a:prstGeom>#{shape_fill_xml}#{shape_line_xml}#{effect_lst_xml}</xdr:spPr>)
               if shape[:text] || shape[:text_paragraphs]
                 body_pr_attrs = +""
-                body_pr_attrs << %( rot="#{shape[:text_rot]}") if shape[:text_rot]
+                body_pr_attrs << %( rot="#{xml_escape(shape[:text_rot])}") if shape[:text_rot]
                 body_pr_attrs << %( spcFirstLastPara="1") if shape[:text_spc_first_last_para]
                 body_pr_attrs << %( wrap="#{xml_escape(shape[:text_wrap])}") if shape[:text_wrap]
                 body_pr_attrs << %( anchor="#{xml_escape(shape[:text_anchor])}") if shape[:text_anchor]
                 body_pr_attrs << %( anchorCtr="1") if shape[:text_anchor_ctr]
                 body_pr_attrs << %( vertOverflow="#{xml_escape(shape[:text_vert_overflow])}") if shape[:text_vert_overflow]
                 body_pr_attrs << %( horzOverflow="#{xml_escape(shape[:text_horz_overflow])}") if shape[:text_horz_overflow]
-                body_pr_attrs << %( numCol="#{shape[:text_num_col]}") if shape[:text_num_col]
-                body_pr_attrs << %( spcCol="#{shape[:text_spc_col]}") if shape[:text_spc_col]
+                body_pr_attrs << %( numCol="#{xml_escape(shape[:text_num_col])}") if shape[:text_num_col]
+                body_pr_attrs << %( spcCol="#{xml_escape(shape[:text_spc_col])}") if shape[:text_spc_col]
                 body_pr_attrs << %( rtlCol="1") if shape[:text_rtl_col]
                 body_pr_attrs << %( fromWordArt="1") if shape[:text_from_word_art]
                 body_pr_attrs << %( upright="1") if shape[:text_upright]
@@ -261,10 +261,10 @@ module Xlsxrb
                 body_pr_attrs << %( vert="#{xml_escape(shape[:text_vertical])}") if shape[:text_vertical]
                 if shape[:text_insets]
                   ins = shape[:text_insets]
-                  body_pr_attrs << %( lIns="#{ins[:left]}") if ins[:left]
-                  body_pr_attrs << %( tIns="#{ins[:top]}") if ins[:top]
-                  body_pr_attrs << %( rIns="#{ins[:right]}") if ins[:right]
-                  body_pr_attrs << %( bIns="#{ins[:bottom]}") if ins[:bottom]
+                  body_pr_attrs << %( lIns="#{xml_escape(ins[:left])}") if ins[:left]
+                  body_pr_attrs << %( tIns="#{xml_escape(ins[:top])}") if ins[:top]
+                  body_pr_attrs << %( rIns="#{xml_escape(ins[:right])}") if ins[:right]
+                  body_pr_attrs << %( bIns="#{xml_escape(ins[:bottom])}") if ins[:bottom]
                 end
                 body_pr_children = +""
                 if shape[:text_warp]
@@ -280,8 +280,8 @@ module Xlsxrb
                                 case af[:type]
                                 when "normal"
                                   na_attrs = +""
-                                  na_attrs << %( fontScale="#{af[:font_scale]}") if af[:font_scale]
-                                  na_attrs << %( lnSpcReduction="#{af[:ln_spc_reduction]}") if af[:ln_spc_reduction]
+                                  na_attrs << %( fontScale="#{xml_escape(af[:font_scale])}") if af[:font_scale]
+                                  na_attrs << %( lnSpcReduction="#{xml_escape(af[:ln_spc_reduction])}") if af[:ln_spc_reduction]
                                   "<a:normAutofit#{na_attrs}/>"
                                 when "none" then "<a:noAutofit/>"
                                 when "shape" then "<a:spAutoFit/>"
@@ -327,40 +327,40 @@ module Xlsxrb
           ppr_attrs = +""
           ppr_attrs << %( algn="#{xml_escape(para[:align])}") if para[:align]
           ppr_attrs << %( fontAlgn="#{xml_escape(para[:font_align])}") if para[:font_align]
-          ppr_attrs << %( defTabSz="#{para[:def_tab_sz]}") if para[:def_tab_sz]
+          ppr_attrs << %( defTabSz="#{xml_escape(para[:def_tab_sz])}") if para[:def_tab_sz]
           ppr_attrs << %( rtl="1") if para[:rtl]
           ppr_attrs << %( eaLnBrk="1") if para[:ea_ln_brk]
           ppr_attrs << %( latinLnBrk="1") if para[:latin_ln_brk]
           ppr_attrs << %( hangingPunct="1") if para[:hanging_punct]
-          ppr_attrs << %( lvl="#{para[:level]}") if para[:level]
+          ppr_attrs << %( lvl="#{xml_escape(para[:level])}") if para[:level]
           if para[:indent]
             ti = para[:indent]
-            ppr_attrs << %( marL="#{ti[:left]}") if ti[:left]
-            ppr_attrs << %( marR="#{ti[:right]}") if ti[:right]
-            ppr_attrs << %( indent="#{ti[:indent]}") if ti[:indent]
+            ppr_attrs << %( marL="#{xml_escape(ti[:left])}") if ti[:left]
+            ppr_attrs << %( marR="#{xml_escape(ti[:right])}") if ti[:right]
+            ppr_attrs << %( indent="#{xml_escape(ti[:indent])}") if ti[:indent]
           end
           ppr_children = +""
           if para[:spacing]
             ts = para[:spacing]
             if ts[:line]
-              ppr_children << %(<a:lnSpc><a:spcPts val="#{ts[:line]}"/></a:lnSpc>)
+              ppr_children << %(<a:lnSpc><a:spcPts val="#{xml_escape(ts[:line])}"/></a:lnSpc>)
             elsif ts[:line_pct]
-              ppr_children << %(<a:lnSpc><a:spcPct val="#{ts[:line_pct]}"/></a:lnSpc>)
+              ppr_children << %(<a:lnSpc><a:spcPct val="#{xml_escape(ts[:line_pct])}"/></a:lnSpc>)
             end
             if ts[:before]
-              ppr_children << %(<a:spcBef><a:spcPts val="#{ts[:before]}"/></a:spcBef>)
+              ppr_children << %(<a:spcBef><a:spcPts val="#{xml_escape(ts[:before])}"/></a:spcBef>)
             elsif ts[:before_pct]
-              ppr_children << %(<a:spcBef><a:spcPct val="#{ts[:before_pct]}"/></a:spcBef>)
+              ppr_children << %(<a:spcBef><a:spcPct val="#{xml_escape(ts[:before_pct])}"/></a:spcBef>)
             end
             if ts[:after]
-              ppr_children << %(<a:spcAft><a:spcPts val="#{ts[:after]}"/></a:spcAft>)
+              ppr_children << %(<a:spcAft><a:spcPts val="#{xml_escape(ts[:after])}"/></a:spcAft>)
             elsif ts[:after_pct]
-              ppr_children << %(<a:spcAft><a:spcPct val="#{ts[:after_pct]}"/></a:spcAft>)
+              ppr_children << %(<a:spcAft><a:spcPct val="#{xml_escape(ts[:after_pct])}"/></a:spcAft>)
             end
           end
           if para[:tab_stops]&.any?
             tabs = para[:tab_stops].map do |tab|
-              tab_attrs = %( pos="#{tab[:pos]}")
+              tab_attrs = %( pos="#{xml_escape(tab[:pos])}")
               tab_attrs << %( algn="#{xml_escape(tab[:align])}") if tab[:align]
               "<a:tab#{tab_attrs}/>"
             end
@@ -369,8 +369,8 @@ module Xlsxrb
           if para[:bullet]
             bu = para[:bullet]
             ppr_children << %(<a:buClr>#{color_xml(bu[:color])}</a:buClr>) if bu[:color]
-            ppr_children << %(<a:buSzPts val="#{bu[:size_pts]}"/>) if bu[:size_pts]
-            ppr_children << %(<a:buSzPct val="#{bu[:size_pct]}"/>) if bu[:size_pct]
+            ppr_children << %(<a:buSzPts val="#{xml_escape(bu[:size_pts])}"/>) if bu[:size_pts]
+            ppr_children << %(<a:buSzPct val="#{xml_escape(bu[:size_pct])}"/>) if bu[:size_pct]
             ppr_children << %(<a:buFont typeface="#{xml_escape(bu[:font])}"/>) if bu[:font]
             case bu[:type]
             when "none"
@@ -379,7 +379,7 @@ module Xlsxrb
               ppr_children << %(<a:buChar char="#{xml_escape(bu[:char])}"/>)
             when "auto"
               auto_attrs = %( type="#{xml_escape(bu[:auto_type])}")
-              auto_attrs << %( startAt="#{bu[:start_at]}") if bu[:start_at]
+              auto_attrs << %( startAt="#{xml_escape(bu[:start_at])}") if bu[:start_at]
               ppr_children << "<a:buAutoNum#{auto_attrs}/>"
             end
           end
@@ -414,12 +414,12 @@ module Xlsxrb
           attrs << %( noProof="1") if font[:no_proof]
           attrs << %( normalizeH="1") if font[:normalize_h]
           attrs << %( kumimoji="1") if font[:kumimoji]
-          attrs << %( sz="#{font[:size]}") if font[:size]
+          attrs << %( sz="#{xml_escape(font[:size])}") if font[:size]
           attrs << %( strike="#{xml_escape(font[:strike])}") if font[:strike]
           attrs << %( u="#{xml_escape(font[:underline])}") if font[:underline]
-          attrs << %( baseline="#{font[:baseline]}") if font[:baseline]
-          attrs << %( spc="#{font[:spacing]}") if font[:spacing]
-          attrs << %( kern="#{font[:kern]}") if font[:kern]
+          attrs << %( baseline="#{xml_escape(font[:baseline])}") if font[:baseline]
+          attrs << %( spc="#{xml_escape(font[:spacing])}") if font[:spacing]
+          attrs << %( kern="#{xml_escape(font[:kern])}") if font[:kern]
           attrs << %( cap="#{xml_escape(font[:cap])}") if font[:cap]
           attrs << %( lang="#{xml_escape(font[:lang])}") if font[:lang]
           attrs << %( altLang="#{xml_escape(font[:alt_lang])}") if font[:alt_lang]
@@ -448,9 +448,9 @@ module Xlsxrb
             if font[:outer_shadow]
               os = font[:outer_shadow]
               oa = +""
-              oa << %( blurRad="#{os[:blur_rad]}") if os[:blur_rad]
-              oa << %( dist="#{os[:dist]}") if os[:dist]
-              oa << %( dir="#{os[:dir]}") if os[:dir]
+              oa << %( blurRad="#{xml_escape(os[:blur_rad])}") if os[:blur_rad]
+              oa << %( dist="#{xml_escape(os[:dist])}") if os[:dist]
+              oa << %( dir="#{xml_escape(os[:dir])}") if os[:dir]
               oa << %( algn="#{xml_escape(os[:algn])}") if os[:algn]
               oa << %( rotWithShape="#{os[:rot_with_shape] ? 1 : 0}") unless os[:rot_with_shape].nil?
               oc = os[:color] ? srgb_clr_xml(os[:color], alpha: os[:alpha]) : ""
@@ -458,43 +458,43 @@ module Xlsxrb
             end
             if font[:glow]
               gl = font[:glow]
-              ga = +(gl[:rad] ? %( rad="#{gl[:rad]}") : "")
+              ga = +(gl[:rad] ? %( rad="#{xml_escape(gl[:rad])}") : "")
               gc = gl[:color] ? srgb_clr_xml(gl[:color], alpha: gl[:alpha]) : ""
               eff << "<a:glow#{ga}>#{gc}</a:glow>"
             end
             if font[:inner_shadow]
               is = font[:inner_shadow]
               ia = +""
-              ia << %( blurRad="#{is[:blur_rad]}") if is[:blur_rad]
-              ia << %( dist="#{is[:dist]}") if is[:dist]
-              ia << %( dir="#{is[:dir]}") if is[:dir]
+              ia << %( blurRad="#{xml_escape(is[:blur_rad])}") if is[:blur_rad]
+              ia << %( dist="#{xml_escape(is[:dist])}") if is[:dist]
+              ia << %( dir="#{xml_escape(is[:dir])}") if is[:dir]
               ic = is[:color] ? srgb_clr_xml(is[:color], alpha: is[:alpha]) : ""
               eff << "<a:innerShdw#{ia}>#{ic}</a:innerShdw>"
             end
             if font[:reflection]
               rf = font[:reflection]
               ra = +""
-              ra << %( blurRad="#{rf[:blur_rad]}") if rf[:blur_rad]
-              ra << %( stA="#{rf[:st_a]}") if rf[:st_a]
-              ra << %( endA="#{rf[:end_a]}") if rf[:end_a]
-              ra << %( dist="#{rf[:dist]}") unless rf[:dist].nil?
-              ra << %( dir="#{rf[:dir]}") if rf[:dir]
-              ra << %( fadeDir="#{rf[:fade_dir]}") if rf[:fade_dir]
-              ra << %( sx="#{rf[:sx]}") if rf[:sx]
-              ra << %( sy="#{rf[:sy]}") if rf[:sy]
-              ra << %( kx="#{rf[:kx]}") if rf[:kx]
-              ra << %( ky="#{rf[:ky]}") if rf[:ky]
+              ra << %( blurRad="#{xml_escape(rf[:blur_rad])}") if rf[:blur_rad]
+              ra << %( stA="#{xml_escape(rf[:st_a])}") if rf[:st_a]
+              ra << %( endA="#{xml_escape(rf[:end_a])}") if rf[:end_a]
+              ra << %( dist="#{xml_escape(rf[:dist])}") unless rf[:dist].nil?
+              ra << %( dir="#{xml_escape(rf[:dir])}") if rf[:dir]
+              ra << %( fadeDir="#{xml_escape(rf[:fade_dir])}") if rf[:fade_dir]
+              ra << %( sx="#{xml_escape(rf[:sx])}") if rf[:sx]
+              ra << %( sy="#{xml_escape(rf[:sy])}") if rf[:sy]
+              ra << %( kx="#{xml_escape(rf[:kx])}") if rf[:kx]
+              ra << %( ky="#{xml_escape(rf[:ky])}") if rf[:ky]
               ra << %( algn="#{xml_escape(rf[:algn])}") if rf[:algn]
               ra << %( rotWithShape="#{rf[:rot_with_shape] ? 1 : 0}") unless rf[:rot_with_shape].nil?
               eff << "<a:reflection#{ra}/>"
             end
             if font[:soft_edge]
               se = font[:soft_edge]
-              eff << %(<a:softEdge rad="#{se[:rad]}"/>)
+              eff << %(<a:softEdge rad="#{xml_escape(se[:rad])}"/>)
             end
             if font[:blur]
               bl = font[:blur]
-              ba = +(bl[:rad] ? %( rad="#{bl[:rad]}") : "")
+              ba = +(bl[:rad] ? %( rad="#{xml_escape(bl[:rad])}") : "")
               ba << %( grow="#{bl[:grow] ? 1 : 0}") unless bl[:grow].nil?
               eff << "<a:blur#{ba}/>"
             end
@@ -541,7 +541,7 @@ module Xlsxrb
                        when :image then "#{DOC_REL_NS}/image"
                        when :chart then "#{DOC_REL_NS}/chart"
                        end
-            parts << %(<Relationship Id="rId#{i + 1}" Type="#{rel_type}" Target="#{xml_escape(rel[:target])}"/>)
+            parts << %(<Relationship Id="rId#{i + 1}" Type="#{xml_escape(rel_type)}" Target="#{xml_escape(rel[:target])}"/>)
           end
           parts << "</Relationships>"
           parts.join
@@ -553,12 +553,12 @@ module Xlsxrb
           if title_spec.is_a?(Hash)
             text = xml_escape(title_spec[:text].to_s)
             rotation = title_spec[:rotation]
-            body_pr = rotation ? %(<a:bodyPr rot="#{rotation}"/>) : "<a:bodyPr/>"
+            body_pr = rotation ? %(<a:bodyPr rot="#{xml_escape(rotation)}"/>) : "<a:bodyPr/>"
             font = title_spec[:font] || {}
             rpr_attrs = +""
             rpr_attrs << %( b="1") if font[:bold]
             rpr_attrs << %( i="1") if font[:italic]
-            rpr_attrs << %( sz="#{font[:size]}") if font[:size]
+            rpr_attrs << %( sz="#{xml_escape(font[:size])}") if font[:size]
             rpr_children = +""
             rpr_children << %(<a:solidFill>#{color_xml(font[:color])}</a:solidFill>) if font[:color]
             rpr_children << %(<a:latin typeface="#{xml_escape(font[:name])}"/>) if font[:name]
@@ -569,9 +569,9 @@ module Xlsxrb
                       end
             layout_xml = build_title_layout_xml(title_spec[:layout])
             sp_xml = build_title_sp_pr(title_spec)
-            "<c:title><c:tx><c:rich>#{body_pr}<a:lstStyle/><a:p><a:r>#{rpr_xml}<a:t>#{text}</a:t></a:r></a:p></c:rich></c:tx>#{layout_xml}<c:overlay val=\"#{overlay_val}\"/>#{sp_xml}</c:title>"
+            "<c:title><c:tx><c:rich>#{body_pr}<a:lstStyle/><a:p><a:r>#{rpr_xml}<a:t>#{text}</a:t></a:r></a:p></c:rich></c:tx>#{layout_xml}<c:overlay val=\"#{xml_escape(overlay_val)}\"/>#{sp_xml}</c:title>"
           else
-            "<c:title><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>#{xml_escape(title_spec)}</a:t></a:r></a:p></c:rich></c:tx><c:overlay val=\"#{overlay_val}\"/></c:title>"
+            "<c:title><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>#{xml_escape(title_spec)}</a:t></a:r></a:p></c:rich></c:tx><c:overlay val=\"#{xml_escape(overlay_val)}\"/></c:title>"
           end
         end
 
@@ -617,10 +617,10 @@ module Xlsxrb
           return "" unless layout.is_a?(Hash)
 
           ml = +""
-          ml << %(<c:x val="#{layout[:x]}"/>) if layout[:x]
-          ml << %(<c:y val="#{layout[:y]}"/>) if layout[:y]
-          ml << %(<c:w val="#{layout[:w]}"/>) if layout[:w]
-          ml << %(<c:h val="#{layout[:h]}"/>) if layout[:h]
+          ml << %(<c:x val="#{xml_escape(layout[:x])}"/>) if layout[:x]
+          ml << %(<c:y val="#{xml_escape(layout[:y])}"/>) if layout[:y]
+          ml << %(<c:w val="#{xml_escape(layout[:w])}"/>) if layout[:w]
+          ml << %(<c:h val="#{xml_escape(layout[:h])}"/>) if layout[:h]
           ml.empty? ? "" : "<c:layout><c:manualLayout>#{ml}</c:manualLayout></c:layout>"
         end
 
@@ -734,9 +734,9 @@ module Xlsxrb
             children << %(<a:#{type} val="#{xml_escape(t[:val])}"/>)
           end
           if children.empty?
-            %(<a:#{tag} val="#{val}"/>)
+            %(<a:#{tag} val="#{xml_escape(val)}"/>)
           else
-            %(<a:#{tag} val="#{val}">#{children}</a:#{tag}>)
+            %(<a:#{tag} val="#{xml_escape(val)}">#{children}</a:#{tag}>)
           end
         end
 
@@ -762,7 +762,7 @@ module Xlsxrb
         def build_axis_txpr(rotation, font)
           return "" unless rotation || font
 
-          body_attrs = rotation ? %( rot="#{rotation}") : ""
+          body_attrs = rotation ? %( rot="#{xml_escape(rotation)}") : ""
           rpr_attrs = +""
           rpr_children = +""
           if font
@@ -811,12 +811,12 @@ module Xlsxrb
           parts = +""
           val_del = chart[del_key] ? 1 : 0
           val_orient = chart[orient_key] || "minMax"
-          parts << %(<c:valAx><c:axId val="#{ax_id}"/><c:scaling>)
-          parts << %(<c:logBase val="#{chart[log_key]}"/>) if chart[log_key]
-          parts << %(<c:orientation val="#{val_orient}"/>)
-          parts << %(<c:max val="#{chart[max_key]}"/>) if chart[max_key]
-          parts << %(<c:min val="#{chart[min_key]}"/>) if chart[min_key]
-          parts << %(</c:scaling><c:delete val="#{val_del}"/><c:axPos val="#{chart[pos_key] || default_pos}"/>)
+          parts << %(<c:valAx><c:axId val="#{xml_escape(ax_id)}"/><c:scaling>)
+          parts << %(<c:logBase val="#{xml_escape(chart[log_key])}"/>) if chart[log_key]
+          parts << %(<c:orientation val="#{xml_escape(val_orient)}"/>)
+          parts << %(<c:max val="#{xml_escape(chart[max_key])}"/>) if chart[max_key]
+          parts << %(<c:min val="#{xml_escape(chart[min_key])}"/>) if chart[min_key]
+          parts << %(</c:scaling><c:delete val="#{xml_escape(val_del)}"/><c:axPos val="#{xml_escape(chart[pos_key] || default_pos)}"/>)
           parts << gridlines_xml("majorGridlines", chart[major_grid_key])
           parts << gridlines_xml("minorGridlines", chart[minor_grid_key])
           if chart[title_key]
@@ -826,17 +826,17 @@ module Xlsxrb
           if (vnf = chart[num_fmt_key])
             vnf_hash = vnf.is_a?(Hash) ? vnf : { format_code: vnf }
             sl = vnf_hash[:source_linked] ? 1 : 0
-            parts << %(<c:numFmt formatCode="#{xml_escape(vnf_hash[:format_code])}" sourceLinked="#{sl}"/>)
+            parts << %(<c:numFmt formatCode="#{xml_escape(vnf_hash[:format_code])}" sourceLinked="#{xml_escape(sl)}"/>)
           end
-          parts << %(<c:majorTickMark val="#{chart[major_tick_key]}"/>) if chart[major_tick_key]
-          parts << %(<c:minorTickMark val="#{chart[minor_tick_key]}"/>) if chart[minor_tick_key]
-          parts << %(<c:tickLblPos val="#{chart[tick_lbl_pos_key]}"/>) if chart[tick_lbl_pos_key]
+          parts << %(<c:majorTickMark val="#{xml_escape(chart[major_tick_key])}"/>) if chart[major_tick_key]
+          parts << %(<c:minorTickMark val="#{xml_escape(chart[minor_tick_key])}"/>) if chart[minor_tick_key]
+          parts << %(<c:tickLblPos val="#{xml_escape(chart[tick_lbl_pos_key])}"/>) if chart[tick_lbl_pos_key]
           if chart[line_color_key] || chart[fill_key] || chart[no_fill_key] || chart[line_dash_key]
             parts << "<c:spPr>"
             parts << "<a:noFill/>" if chart[no_fill_key]
             parts << %(<a:solidFill>#{color_xml(chart[fill_key])}</a:solidFill>) if chart[fill_key]
             if chart[line_color_key] || chart[line_dash_key]
-              w_attr = chart[line_width_key] ? %( w="#{chart[line_width_key]}") : ""
+              w_attr = chart[line_width_key] ? %( w="#{xml_escape(chart[line_width_key])}") : ""
               va_ln_f = chart[line_color_key] ? %(<a:solidFill>#{srgb_clr_xml(chart[line_color_key])}</a:solidFill>) : ""
               va_ln_d = chart[line_dash_key] ? %(<a:prstDash val="#{xml_escape(chart[line_dash_key])}"/>) : ""
               parts << "<a:ln#{w_attr}>#{va_ln_f}#{va_ln_d}</a:ln>"
@@ -846,17 +846,17 @@ module Xlsxrb
           parts << build_axis_txpr(chart[rotation_key], chart[font_key])
           parts << '<c:crossAx val="1"/>'
           crosses_val = chart[crosses_key] || default_crosses
-          parts << %(<c:crosses val="#{crosses_val}"/>) if crosses_val
-          parts << %(<c:crossesAt val="#{chart[crosses_at_key]}"/>) if !crosses_val && chart[crosses_at_key]
-          parts << %(<c:crossBetween val="#{chart[cross_between_key]}"/>) if chart[cross_between_key]
-          parts << %(<c:majorUnit val="#{chart[major_unit_key]}"/>) if chart[major_unit_key]
-          parts << %(<c:minorUnit val="#{chart[minor_unit_key]}"/>) if chart[minor_unit_key]
+          parts << %(<c:crosses val="#{xml_escape(crosses_val)}"/>) if crosses_val
+          parts << %(<c:crossesAt val="#{xml_escape(chart[crosses_at_key])}"/>) if !crosses_val && chart[crosses_at_key]
+          parts << %(<c:crossBetween val="#{xml_escape(chart[cross_between_key])}"/>) if chart[cross_between_key]
+          parts << %(<c:majorUnit val="#{xml_escape(chart[major_unit_key])}"/>) if chart[major_unit_key]
+          parts << %(<c:minorUnit val="#{xml_escape(chart[minor_unit_key])}"/>) if chart[minor_unit_key]
           if chart[disp_units_key]
             du = chart[disp_units_key]
             if du.is_a?(Hash)
               parts << "<c:dispUnits>"
               parts << %(<c:builtInUnit val="#{xml_escape(du[:built_in_unit])}"/>) if du[:built_in_unit]
-              parts << %(<c:custUnit val="#{du[:cust_unit]}"/>) if du[:cust_unit]
+              parts << %(<c:custUnit val="#{xml_escape(du[:cust_unit])}"/>) if du[:cust_unit]
               if du[:label]
                 dul = du[:label]
                 parts << "<c:dispUnitsLbl>"
@@ -868,7 +868,7 @@ module Xlsxrb
                               else
                                 0
                               end
-                  parts << %(<c:numFmt formatCode="#{xml_escape(nf_src[:format_code])}" sourceLinked="#{nf_linked}"/>)
+                  parts << %(<c:numFmt formatCode="#{xml_escape(nf_src[:format_code])}" sourceLinked="#{xml_escape(nf_linked)}"/>)
                 end
                 dul_sp = +""
                 dul_sp << %(<a:solidFill>#{color_xml(dul[:fill_color])}</a:solidFill>) if dul[:fill_color]
@@ -902,7 +902,7 @@ module Xlsxrb
           ]
           rc = chart[:rounded_corners]
           parts << %(<c:roundedCorners val="#{rc ? 1 : 0}"/>) unless rc.nil?
-          parts << %(<c:style val="#{chart[:style]}"/>) if chart[:style]
+          parts << %(<c:style val="#{xml_escape(chart[:style])}"/>) if chart[:style]
           if (prot = chart[:protection])
             parts << "<c:protection>"
             parts << %(<c:chartObject val="#{prot[:chart_object] ? 1 : 0}"/>) unless prot[:chart_object].nil?
@@ -935,13 +935,13 @@ module Xlsxrb
 
           if (v3d = chart[:view_3d])
             parts << "<c:view3D>"
-            parts << %(<c:rotX val="#{v3d[:rot_x]}"/>) if v3d[:rot_x]
-            parts << %(<c:hPercent val="#{v3d[:h_percent]}"/>) if v3d[:h_percent]
-            parts << %(<c:rotY val="#{v3d[:rot_y]}"/>) if v3d[:rot_y]
-            parts << %(<c:depthPercent val="#{v3d[:depth_percent]}"/>) if v3d[:depth_percent]
+            parts << %(<c:rotX val="#{xml_escape(v3d[:rot_x])}"/>) if v3d[:rot_x]
+            parts << %(<c:hPercent val="#{xml_escape(v3d[:h_percent])}"/>) if v3d[:h_percent]
+            parts << %(<c:rotY val="#{xml_escape(v3d[:rot_y])}"/>) if v3d[:rot_y]
+            parts << %(<c:depthPercent val="#{xml_escape(v3d[:depth_percent])}"/>) if v3d[:depth_percent]
             r_ang = v3d[:r_ang_ax]
             parts << %(<c:rAngAx val="#{r_ang ? 1 : 0}"/>) unless r_ang.nil?
-            parts << %(<c:perspective val="#{v3d[:perspective]}"/>) if v3d[:perspective]
+            parts << %(<c:perspective val="#{xml_escape(v3d[:perspective])}"/>) if v3d[:perspective]
             parts << "</c:view3D>"
           end
 
@@ -953,7 +953,7 @@ module Xlsxrb
             parts << "<a:solidFill>#{srgb_clr_xml(wall[:fill_color])}</a:solidFill>" if wall[:fill_color]
             parts << "<a:noFill/>" if wall[:no_fill]
             if wall[:line_color] || wall[:line_dash]
-              w_attr = wall[:line_width] ? %( w="#{wall[:line_width]}") : ""
+              w_attr = wall[:line_width] ? %( w="#{xml_escape(wall[:line_width])}") : ""
               w_fill = wall[:line_color] ? %(<a:solidFill>#{srgb_clr_xml(wall[:line_color])}</a:solidFill>) : ""
               w_dash = wall[:line_dash] ? %(<a:prstDash val="#{xml_escape(wall[:line_dash])}"/>) : ""
               parts << "<a:ln#{w_attr}>#{w_fill}#{w_dash}</a:ln>"
@@ -970,10 +970,10 @@ module Xlsxrb
             ml_parts << %(<c:yMode val="#{xml_escape(pa_layout[:y_mode])}"/>) if pa_layout[:y_mode]
             ml_parts << %(<c:wMode val="#{xml_escape(pa_layout[:w_mode])}"/>) if pa_layout[:w_mode]
             ml_parts << %(<c:hMode val="#{xml_escape(pa_layout[:h_mode])}"/>) if pa_layout[:h_mode]
-            ml_parts << %(<c:x val="#{pa_layout[:x]}"/>) if pa_layout[:x]
-            ml_parts << %(<c:y val="#{pa_layout[:y]}"/>) if pa_layout[:y]
-            ml_parts << %(<c:w val="#{pa_layout[:w]}"/>) if pa_layout[:w]
-            ml_parts << %(<c:h val="#{pa_layout[:h]}"/>) if pa_layout[:h]
+            ml_parts << %(<c:x val="#{xml_escape(pa_layout[:x])}"/>) if pa_layout[:x]
+            ml_parts << %(<c:y val="#{xml_escape(pa_layout[:y])}"/>) if pa_layout[:y]
+            ml_parts << %(<c:w val="#{xml_escape(pa_layout[:w])}"/>) if pa_layout[:w]
+            ml_parts << %(<c:h val="#{xml_escape(pa_layout[:h])}"/>) if pa_layout[:h]
             parts << if ml_parts.empty?
                        "<c:layout/>"
                      else
@@ -1028,12 +1028,12 @@ module Xlsxrb
             if %w[barChart bar3DChart].include?(g_type)
               bd = chart[:bar_dir] || "col"
               gr = chart[:grouping] || "clustered"
-              parts << %(<c:barDir val="#{bd}"/><c:grouping val="#{gr}"/>)
+              parts << %(<c:barDir val="#{xml_escape(bd)}"/><c:grouping val="#{xml_escape(gr)}"/>)
             elsif GROUPING_CHARTS.include?(g_type)
-              parts << %(<c:grouping val="#{chart[:grouping] || "standard"}"/>)
+              parts << %(<c:grouping val="#{xml_escape(chart[:grouping] || "standard")}"/>)
             end
-            parts << %(<c:scatterStyle val="#{chart[:scatter_style] || "lineMarker"}"/>) if g_type == "scatterChart"
-            parts << %(<c:radarStyle val="#{chart[:radar_style] || "standard"}"/>) if g_type == "radarChart"
+            parts << %(<c:scatterStyle val="#{xml_escape(chart[:scatter_style] || "lineMarker")}"/>) if g_type == "scatterChart"
+            parts << %(<c:radarStyle val="#{xml_escape(chart[:radar_style] || "standard")}"/>) if g_type == "radarChart"
             vc = chart[:vary_colors]
             parts << %(<c:varyColors val="#{vc ? 1 : 0}"/>) unless vc.nil?
             wf = chart[:wireframe]
@@ -1041,21 +1041,21 @@ module Xlsxrb
 
             grp[:series].each do |ser, idx|
               ser_order = ser[:order] || idx
-              parts << "<c:ser><c:idx val=\"#{idx}\"/><c:order val=\"#{ser_order}\"/>"
+              parts << "<c:ser><c:idx val=\"#{xml_escape(idx)}\"/><c:order val=\"#{xml_escape(ser_order)}\"/>"
               parts << "<c:tx><c:strRef><c:f>#{xml_escape(ser[:name])}</c:f>#{str_cache_xml(ser[:name])}</c:strRef></c:tx>" if ser[:name]
               head_end = parts.size
               iin = ser[:invert_if_negative]
               parts << %(<c:invertIfNegative val="#{iin ? 1 : 0}"/>) unless iin.nil?
-              parts << %(<c:explosion val="#{ser[:explosion]}"/>) if ser[:explosion]
+              parts << %(<c:explosion val="#{xml_escape(ser[:explosion])}"/>) if ser[:explosion]
               options_end = parts.size
               ser[:data_points]&.each do |dp|
-                parts << "<c:dPt><c:idx val=\"#{dp[:idx]}\"/>"
+                parts << "<c:dPt><c:idx val=\"#{xml_escape(dp[:idx])}\"/>"
                 dp_iin = dp[:invert_if_negative]
                 parts << %(<c:invertIfNegative val="#{dp_iin ? 1 : 0}"/>) unless dp_iin.nil?
                 if dp[:marker_symbol] || dp[:marker_size] || dp[:marker_fill] || dp[:marker_no_fill] || dp[:marker_line_color] || dp[:marker_line_dash] || dp[:marker_no_line]
                   parts << "<c:marker>"
                   parts << %(<c:symbol val="#{xml_escape(dp[:marker_symbol])}"/>) if dp[:marker_symbol]
-                  parts << %(<c:size val="#{dp[:marker_size]}"/>) if dp[:marker_size]
+                  parts << %(<c:size val="#{xml_escape(dp[:marker_size])}"/>) if dp[:marker_size]
                   if dp[:marker_fill] || dp[:marker_no_fill] || dp[:marker_line_color] || dp[:marker_line_dash] || dp[:marker_no_line]
                     mk_sp = +""
                     mk_sp << "<a:noFill/>" if dp[:marker_no_fill]
@@ -1074,7 +1074,7 @@ module Xlsxrb
                 end
                 dp_b3d = dp[:bubble_3d]
                 parts << %(<c:bubble3D val="#{dp_b3d ? 1 : 0}"/>) unless dp_b3d.nil?
-                parts << %(<c:explosion val="#{dp[:explosion]}"/>) if dp[:explosion]
+                parts << %(<c:explosion val="#{xml_escape(dp[:explosion])}"/>) if dp[:explosion]
                 dp_sp_children = +""
                 dp_sp_children << %(<a:solidFill>#{color_xml(dp[:fill_color])}</a:solidFill>) if dp[:fill_color]
                 dp_sp_children << "<a:noFill/>" if dp[:no_fill]
@@ -1115,7 +1115,7 @@ module Xlsxrb
               if ser[:marker_symbol] || ser[:marker_size] || ser[:marker_fill] || ser[:marker_no_fill] || ser[:marker_line_color] || ser[:marker_line_dash] || ser[:marker_no_line]
                 parts << "<c:marker>"
                 parts << %(<c:symbol val="#{xml_escape(ser[:marker_symbol])}"/>) if ser[:marker_symbol]
-                parts << %(<c:size val="#{ser[:marker_size]}"/>) if ser[:marker_size]
+                parts << %(<c:size val="#{xml_escape(ser[:marker_size])}"/>) if ser[:marker_size]
                 if ser[:marker_fill] || ser[:marker_no_fill] || ser[:marker_line_color] || ser[:marker_line_dash] || ser[:marker_no_line]
                   parts << "<c:spPr>"
                   parts << "<a:noFill/>" if ser[:marker_no_fill]
@@ -1143,14 +1143,14 @@ module Xlsxrb
                 parts << "<c:dLbls>"
                 dl[:labels]&.each do |lbl|
                   parts << "<c:dLbl>"
-                  parts << %(<c:idx val="#{lbl[:idx]}"/>)
+                  parts << %(<c:idx val="#{xml_escape(lbl[:idx])}"/>)
                   if lbl[:delete]
                     parts << '<c:delete val="1"/>'
                   else
                     if (lbl_layout = lbl[:layout])
                       ml = +""
-                      ml << %(<c:x val="#{lbl_layout[:x]}"/>) if lbl_layout[:x]
-                      ml << %(<c:y val="#{lbl_layout[:y]}"/>) if lbl_layout[:y]
+                      ml << %(<c:x val="#{xml_escape(lbl_layout[:x])}"/>) if lbl_layout[:x]
+                      ml << %(<c:y val="#{xml_escape(lbl_layout[:y])}"/>) if lbl_layout[:y]
                       parts << (ml.empty? ? "<c:layout/>" : "<c:layout><c:manualLayout>#{ml}</c:manualLayout></c:layout>")
                     end
                     parts << "<c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>#{xml_escape(lbl[:text])}</a:t></a:r></a:p></c:rich></c:tx>" if lbl[:text]
@@ -1170,7 +1170,7 @@ module Xlsxrb
                     end
                     parts << "<c:spPr>#{lbl_sp}</c:spPr>" unless lbl_sp.empty?
                     parts << build_axis_txpr(nil, lbl[:font]) if lbl[:font]
-                    parts << %(<c:dLblPos val="#{lbl[:position]}"/>) if lbl[:position]
+                    parts << %(<c:dLblPos val="#{xml_escape(lbl[:position])}"/>) if lbl[:position]
                     parts << "<c:showLegendKey val=\"#{lbl[:show_legend_key] ? 1 : 0}\"/>" unless lbl[:show_legend_key].nil?
                     parts << "<c:showVal val=\"#{lbl[:show_val] ? 1 : 0}\"/>" unless lbl[:show_val].nil?
                     parts << "<c:showCatName val=\"#{lbl[:show_cat_name] ? 1 : 0}\"/>" unless lbl[:show_cat_name].nil?
@@ -1197,7 +1197,7 @@ module Xlsxrb
                 end
                 parts << "<c:spPr>#{dl_sp_children}</c:spPr>" unless dl_sp_children.empty?
                 parts << build_axis_txpr(nil, dl[:font]) if dl[:font]
-                parts << %(<c:dLblPos val="#{dl[:position]}"/>) if dl[:position]
+                parts << %(<c:dLblPos val="#{xml_escape(dl[:position])}"/>) if dl[:position]
                 parts << "<c:showLegendKey val=\"#{dl[:show_legend_key] ? 1 : 0}\"/>" unless dl[:show_legend_key].nil?
                 parts << "<c:showVal val=\"#{dl[:show_val] ? 1 : 0}\"/>" unless dl[:show_val].nil?
                 parts << "<c:showCatName val=\"#{dl[:show_cat_name] ? 1 : 0}\"/>" unless dl[:show_cat_name].nil?
@@ -1237,11 +1237,11 @@ module Xlsxrb
                 end
                 parts << "<c:spPr>#{tl_sp_children}</c:spPr>" unless tl_sp_children.empty?
                 parts << %(<c:trendlineType val="#{xml_escape(tl[:type] || "linear")}"/>)
-                parts << %(<c:order val="#{tl[:order]}"/>) if tl[:order]
-                parts << %(<c:period val="#{tl[:period]}"/>) if tl[:period]
-                parts << %(<c:forward val="#{tl[:forward]}"/>) if tl[:forward]
-                parts << %(<c:backward val="#{tl[:backward]}"/>) if tl[:backward]
-                parts << %(<c:intercept val="#{tl[:intercept]}"/>) if tl[:intercept]
+                parts << %(<c:order val="#{xml_escape(tl[:order])}"/>) if tl[:order]
+                parts << %(<c:period val="#{xml_escape(tl[:period])}"/>) if tl[:period]
+                parts << %(<c:forward val="#{xml_escape(tl[:forward])}"/>) if tl[:forward]
+                parts << %(<c:backward val="#{xml_escape(tl[:backward])}"/>) if tl[:backward]
+                parts << %(<c:intercept val="#{xml_escape(tl[:intercept])}"/>) if tl[:intercept]
                 parts << %(<c:dispRSqr val="#{tl[:disp_r_sqr] ? 1 : 0}"/>) unless tl[:disp_r_sqr].nil?
                 parts << %(<c:dispEq val="#{tl[:disp_eq] ? 1 : 0}"/>) unless tl[:disp_eq].nil?
                 if tl[:label]
@@ -1257,7 +1257,7 @@ module Xlsxrb
                                 else
                                   0
                                 end
-                    parts << %(<c:numFmt formatCode="#{xml_escape(nf_src[:format_code])}" sourceLinked="#{nf_linked}"/>)
+                    parts << %(<c:numFmt formatCode="#{xml_escape(nf_src[:format_code])}" sourceLinked="#{xml_escape(nf_linked)}"/>)
                   end
                   tll_sp = +""
                   tll_sp << %(<a:solidFill>#{color_xml(lbl[:fill_color])}</a:solidFill>) if lbl[:fill_color]
@@ -1283,7 +1283,7 @@ module Xlsxrb
                 parts << %(<c:noEndCap val="#{eb[:no_end_cap] ? 1 : 0}"/>) unless eb[:no_end_cap].nil?
                 parts << "<c:plus><c:numRef><c:f>#{xml_escape(eb[:plus])}</c:f></c:numRef></c:plus>" if eb[:plus]
                 parts << "<c:minus><c:numRef><c:f>#{xml_escape(eb[:minus])}</c:f></c:numRef></c:minus>" if eb[:minus]
-                parts << %(<c:val val="#{eb[:val]}"/>) if eb[:val]
+                parts << %(<c:val val="#{xml_escape(eb[:val])}"/>) if eb[:val]
                 eb_sp_children = +""
                 eb_sp_children << %(<a:solidFill>#{color_xml(eb[:fill_color])}</a:solidFill>) if eb[:fill_color]
                 eb_sp_children << "<a:noFill/>" if eb[:no_fill]
@@ -1316,7 +1316,7 @@ module Xlsxrb
             if chart[:band_fmts]
               parts << "<c:bandFmts>"
               chart[:band_fmts].each do |bf|
-                parts << "<c:bandFmt><c:idx val=\"#{bf[:idx]}\"/>"
+                parts << "<c:bandFmt><c:idx val=\"#{xml_escape(bf[:idx])}\"/>"
                 bf_sp = +""
                 bf_sp << %(<a:solidFill>#{color_xml(bf[:fill_color])}</a:solidFill>) if bf[:fill_color]
                 bf_sp << "<a:noFill/>" if bf[:no_fill]
@@ -1332,29 +1332,29 @@ module Xlsxrb
               parts << "</c:bandFmts>"
             end
 
-            parts << %(<c:gapWidth val="#{chart[:gap_width]}"/>) if chart[:gap_width]
+            parts << %(<c:gapWidth val="#{xml_escape(chart[:gap_width])}"/>) if chart[:gap_width]
             parts << %(<c:splitType val="#{xml_escape(chart[:split_type])}"/>) if chart[:split_type]
-            parts << %(<c:splitPos val="#{chart[:split_pos]}"/>) if chart[:split_pos]
+            parts << %(<c:splitPos val="#{xml_escape(chart[:split_pos])}"/>) if chart[:split_pos]
             if chart[:cust_split]&.any?
               parts << "<c:custSplit>"
-              chart[:cust_split].each { |idx| parts << %(<c:secondPiePt val="#{idx}"/>) }
+              chart[:cust_split].each { |idx| parts << %(<c:secondPiePt val="#{xml_escape(idx)}"/>) }
               parts << "</c:custSplit>"
             end
-            parts << %(<c:secondPieSize val="#{chart[:second_pie_size]}"/>) if chart[:second_pie_size]
-            parts << %(<c:gapDepth val="#{chart[:gap_depth]}"/>) if chart[:gap_depth]
-            parts << %(<c:overlap val="#{chart[:overlap]}"/>) if chart[:overlap]
-            parts << %(<c:shape val="#{chart[:bar_shape]}"/>) if chart[:bar_shape]
+            parts << %(<c:secondPieSize val="#{xml_escape(chart[:second_pie_size])}"/>) if chart[:second_pie_size]
+            parts << %(<c:gapDepth val="#{xml_escape(chart[:gap_depth])}"/>) if chart[:gap_depth]
+            parts << %(<c:overlap val="#{xml_escape(chart[:overlap])}"/>) if chart[:overlap]
+            parts << %(<c:shape val="#{xml_escape(chart[:bar_shape])}"/>) if chart[:bar_shape]
             b3d = chart[:bubble_3d]
             parts << %(<c:bubble3D val="#{b3d ? 1 : 0}"/>) unless b3d.nil?
-            parts << %(<c:bubbleScale val="#{chart[:bubble_scale]}"/>) if chart[:bubble_scale]
+            parts << %(<c:bubbleScale val="#{xml_escape(chart[:bubble_scale])}"/>) if chart[:bubble_scale]
             snb = chart[:show_neg_bubbles]
             parts << %(<c:showNegBubbles val="#{snb ? 1 : 0}"/>) unless snb.nil?
-            parts << %(<c:sizeRepresents val="#{chart[:size_represents]}"/>) if chart[:size_represents]
+            parts << %(<c:sizeRepresents val="#{xml_escape(chart[:size_represents])}"/>) if chart[:size_represents]
             # Doughnut charts carry both; Excel's defaults are 0 and 50.
             first_slice_ang = chart[:first_slice_ang] || (0 if g_type == "doughnutChart")
             hole_size = chart[:hole_size] || (50 if g_type == "doughnutChart")
-            parts << %(<c:firstSliceAng val="#{first_slice_ang}"/>) if first_slice_ang
-            parts << %(<c:holeSize val="#{hole_size}"/>) if hole_size
+            parts << %(<c:firstSliceAng val="#{xml_escape(first_slice_ang)}"/>) if first_slice_ang
+            parts << %(<c:holeSize val="#{xml_escape(hole_size)}"/>) if hole_size
             if chart[:ser_lines]
               sl_spec = chart[:ser_lines]
               if sl_spec.is_a?(Hash)
@@ -1403,7 +1403,7 @@ module Xlsxrb
             if chart[:up_down_bars]
               udb = chart[:up_down_bars]
               parts << "<c:upDownBars>"
-              parts << %(<c:gapWidth val="#{udb[:gap_width]}"/>) if udb.is_a?(Hash) && udb[:gap_width]
+              parts << %(<c:gapWidth val="#{xml_escape(udb[:gap_width])}"/>) if udb.is_a?(Hash) && udb[:gap_width]
               %i[up_bars down_bars].each do |bar_key|
                 tag = bar_key == :up_bars ? "upBars" : "downBars"
                 bar = udb.is_a?(Hash) ? udb[bar_key] : nil
@@ -1430,7 +1430,7 @@ module Xlsxrb
             parts << %(<c:smooth val="#{sm ? 1 : 0}"/>) unless sm.nil?
             three_axes = THREE_AXIS_CHARTS.include?(g_type)
             unless g_no_axes
-              parts << %(<c:axId val="1"/><c:axId val="#{g_val_ax}"/>)
+              parts << %(<c:axId val="1"/><c:axId val="#{xml_escape(g_val_ax)}"/>)
               parts << '<c:axId val="3"/>' if three_axes
             end
             parts << "</c:#{g_type}>"
@@ -1442,11 +1442,11 @@ module Xlsxrb
             cat_orient = chart[:cat_axis_orientation] || "minMax"
             cat_ax_tag = chart[:cat_axis_type] == :date ? "dateAx" : "catAx"
             parts << %(<c:#{cat_ax_tag}><c:axId val="1"/><c:scaling>)
-            parts << %(<c:logBase val="#{chart[:cat_axis_log_base]}"/>) if chart[:cat_axis_log_base]
-            parts << %(<c:orientation val="#{cat_orient}"/>)
-            parts << %(<c:max val="#{chart[:cat_axis_scaling_max]}"/>) if chart[:cat_axis_scaling_max]
-            parts << %(<c:min val="#{chart[:cat_axis_scaling_min]}"/>) if chart[:cat_axis_scaling_min]
-            parts << %(</c:scaling><c:delete val="#{cat_del}"/><c:axPos val="#{chart[:cat_axis_pos] || "b"}"/>)
+            parts << %(<c:logBase val="#{xml_escape(chart[:cat_axis_log_base])}"/>) if chart[:cat_axis_log_base]
+            parts << %(<c:orientation val="#{xml_escape(cat_orient)}"/>)
+            parts << %(<c:max val="#{xml_escape(chart[:cat_axis_scaling_max])}"/>) if chart[:cat_axis_scaling_max]
+            parts << %(<c:min val="#{xml_escape(chart[:cat_axis_scaling_min])}"/>) if chart[:cat_axis_scaling_min]
+            parts << %(</c:scaling><c:delete val="#{xml_escape(cat_del)}"/><c:axPos val="#{xml_escape(chart[:cat_axis_pos] || "b")}"/>)
             parts << gridlines_xml("majorGridlines", chart[:cat_axis_major_gridlines])
             parts << gridlines_xml("minorGridlines", chart[:cat_axis_minor_gridlines])
             if chart[:cat_axis_title]
@@ -1455,17 +1455,17 @@ module Xlsxrb
             end
             if (cnf = chart[:cat_axis_num_fmt])
               sl = cnf[:source_linked] ? 1 : 0
-              parts << %(<c:numFmt formatCode="#{xml_escape(cnf[:format_code])}" sourceLinked="#{sl}"/>)
+              parts << %(<c:numFmt formatCode="#{xml_escape(cnf[:format_code])}" sourceLinked="#{xml_escape(sl)}"/>)
             end
-            parts << %(<c:majorTickMark val="#{chart[:cat_axis_major_tick_mark]}"/>) if chart[:cat_axis_major_tick_mark]
-            parts << %(<c:minorTickMark val="#{chart[:cat_axis_minor_tick_mark]}"/>) if chart[:cat_axis_minor_tick_mark]
-            parts << %(<c:tickLblPos val="#{chart[:cat_axis_tick_lbl_pos]}"/>) if chart[:cat_axis_tick_lbl_pos]
+            parts << %(<c:majorTickMark val="#{xml_escape(chart[:cat_axis_major_tick_mark])}"/>) if chart[:cat_axis_major_tick_mark]
+            parts << %(<c:minorTickMark val="#{xml_escape(chart[:cat_axis_minor_tick_mark])}"/>) if chart[:cat_axis_minor_tick_mark]
+            parts << %(<c:tickLblPos val="#{xml_escape(chart[:cat_axis_tick_lbl_pos])}"/>) if chart[:cat_axis_tick_lbl_pos]
             if chart[:cat_axis_line_color] || chart[:cat_axis_fill] || chart[:cat_axis_no_fill] || chart[:cat_axis_line_dash]
               parts << "<c:spPr>"
               parts << "<a:noFill/>" if chart[:cat_axis_no_fill]
               parts << %(<a:solidFill>#{color_xml(chart[:cat_axis_fill])}</a:solidFill>) if chart[:cat_axis_fill]
               if chart[:cat_axis_line_color] || chart[:cat_axis_line_dash]
-                w_attr = chart[:cat_axis_line_width] ? %( w="#{chart[:cat_axis_line_width]}") : ""
+                w_attr = chart[:cat_axis_line_width] ? %( w="#{xml_escape(chart[:cat_axis_line_width])}") : ""
                 ca_ln_f = chart[:cat_axis_line_color] ? %(<a:solidFill>#{srgb_clr_xml(chart[:cat_axis_line_color])}</a:solidFill>) : ""
                 ca_ln_d = chart[:cat_axis_line_dash] ? %(<a:prstDash val="#{xml_escape(chart[:cat_axis_line_dash])}"/>) : ""
                 parts << "<a:ln#{w_attr}>#{ca_ln_f}#{ca_ln_d}</a:ln>"
@@ -1474,22 +1474,22 @@ module Xlsxrb
             end
             parts << build_axis_txpr(chart[:cat_axis_label_rotation], chart[:cat_axis_font])
             parts << '<c:crossAx val="2"/>'
-            parts << %(<c:crosses val="#{chart[:cat_axis_crosses]}"/>) if chart[:cat_axis_crosses]
-            parts << %(<c:crossesAt val="#{chart[:cat_axis_crosses_at]}"/>) if !chart[:cat_axis_crosses] && chart[:cat_axis_crosses_at]
+            parts << %(<c:crosses val="#{xml_escape(chart[:cat_axis_crosses])}"/>) if chart[:cat_axis_crosses]
+            parts << %(<c:crossesAt val="#{xml_escape(chart[:cat_axis_crosses_at])}"/>) if !chart[:cat_axis_crosses] && chart[:cat_axis_crosses_at]
             ca_auto = chart[:cat_axis_auto]
             parts << %(<c:auto val="#{ca_auto ? 1 : 0}"/>) unless ca_auto.nil?
             parts << %(<c:lblAlgn val="#{xml_escape(chart[:cat_axis_lbl_algn])}"/>) if chart[:cat_axis_lbl_algn]
-            parts << %(<c:lblOffset val="#{chart[:cat_axis_lbl_offset]}"/>) if chart[:cat_axis_lbl_offset]
-            parts << %(<c:tickLblSkip val="#{chart[:cat_axis_tick_lbl_skip]}"/>) if chart[:cat_axis_tick_lbl_skip]
-            parts << %(<c:tickMarkSkip val="#{chart[:cat_axis_tick_mark_skip]}"/>) if chart[:cat_axis_tick_mark_skip]
+            parts << %(<c:lblOffset val="#{xml_escape(chart[:cat_axis_lbl_offset])}"/>) if chart[:cat_axis_lbl_offset]
+            parts << %(<c:tickLblSkip val="#{xml_escape(chart[:cat_axis_tick_lbl_skip])}"/>) if chart[:cat_axis_tick_lbl_skip]
+            parts << %(<c:tickMarkSkip val="#{xml_escape(chart[:cat_axis_tick_mark_skip])}"/>) if chart[:cat_axis_tick_mark_skip]
             nml = chart[:cat_axis_no_multi_lvl_lbl]
             parts << %(<c:noMultiLvlLbl val="#{nml ? 1 : 0}"/>) unless nml.nil?
             if cat_ax_tag == "dateAx"
-              parts << %(<c:baseTimeUnit val="#{chart[:cat_axis_base_time_unit]}"/>) if chart[:cat_axis_base_time_unit]
-              parts << %(<c:majorUnit val="#{chart[:cat_axis_major_unit]}"/>) if chart[:cat_axis_major_unit]
-              parts << %(<c:majorTimeUnit val="#{chart[:cat_axis_major_time_unit]}"/>) if chart[:cat_axis_major_time_unit]
-              parts << %(<c:minorUnit val="#{chart[:cat_axis_minor_unit]}"/>) if chart[:cat_axis_minor_unit]
-              parts << %(<c:minorTimeUnit val="#{chart[:cat_axis_minor_time_unit]}"/>) if chart[:cat_axis_minor_time_unit]
+              parts << %(<c:baseTimeUnit val="#{xml_escape(chart[:cat_axis_base_time_unit])}"/>) if chart[:cat_axis_base_time_unit]
+              parts << %(<c:majorUnit val="#{xml_escape(chart[:cat_axis_major_unit])}"/>) if chart[:cat_axis_major_unit]
+              parts << %(<c:majorTimeUnit val="#{xml_escape(chart[:cat_axis_major_time_unit])}"/>) if chart[:cat_axis_major_time_unit]
+              parts << %(<c:minorUnit val="#{xml_escape(chart[:cat_axis_minor_unit])}"/>) if chart[:cat_axis_minor_unit]
+              parts << %(<c:minorTimeUnit val="#{xml_escape(chart[:cat_axis_minor_time_unit])}"/>) if chart[:cat_axis_minor_time_unit]
             end
             parts << "</c:#{cat_ax_tag}>"
 
@@ -1539,10 +1539,10 @@ module Xlsxrb
           parts << "</c:plotArea>"
           legend_pos = chart.dig(:legend, :position) || "r"
           legend_overlay = chart.dig(:legend, :overlay)
-          parts << %(<c:legend><c:legendPos val="#{legend_pos}"/>)
+          parts << %(<c:legend><c:legendPos val="#{xml_escape(legend_pos)}"/>)
           legend_entries = chart.dig(:legend, :entries)
           legend_entries&.each do |entry|
-            parts << %(<c:legendEntry><c:idx val="#{entry[:idx]}"/>)
+            parts << %(<c:legendEntry><c:idx val="#{xml_escape(entry[:idx])}"/>)
             if !entry[:delete].nil?
               parts << %(<c:delete val="#{entry[:delete] ? 1 : 0}"/>)
             elsif entry[:font]
@@ -1558,10 +1558,10 @@ module Xlsxrb
             ml_parts << %(<c:yMode val="#{xml_escape(legend_layout[:y_mode])}"/>) if legend_layout[:y_mode]
             ml_parts << %(<c:wMode val="#{xml_escape(legend_layout[:w_mode])}"/>) if legend_layout[:w_mode]
             ml_parts << %(<c:hMode val="#{xml_escape(legend_layout[:h_mode])}"/>) if legend_layout[:h_mode]
-            ml_parts << %(<c:x val="#{legend_layout[:x]}"/>) if legend_layout[:x]
-            ml_parts << %(<c:y val="#{legend_layout[:y]}"/>) if legend_layout[:y]
-            ml_parts << %(<c:w val="#{legend_layout[:w]}"/>) if legend_layout[:w]
-            ml_parts << %(<c:h val="#{legend_layout[:h]}"/>) if legend_layout[:h]
+            ml_parts << %(<c:x val="#{xml_escape(legend_layout[:x])}"/>) if legend_layout[:x]
+            ml_parts << %(<c:y val="#{xml_escape(legend_layout[:y])}"/>) if legend_layout[:y]
+            ml_parts << %(<c:w val="#{xml_escape(legend_layout[:w])}"/>) if legend_layout[:w]
+            ml_parts << %(<c:h val="#{xml_escape(legend_layout[:h])}"/>) if legend_layout[:h]
             parts << "<c:layout><c:manualLayout>#{ml_parts}</c:manualLayout></c:layout>" unless ml_parts.empty?
           end
           parts << %(<c:overlay val="#{legend_overlay ? 1 : 0}"/>) unless legend_overlay.nil?
@@ -1586,7 +1586,7 @@ module Xlsxrb
           parts << %(</c:legend>)
           pvo = chart[:plot_vis_only]
           parts << %(<c:plotVisOnly val="#{pvo ? 1 : 0}"/>) unless pvo.nil?
-          parts << %(<c:dispBlanksAs val="#{chart[:disp_blanks_as]}"/>) if chart[:disp_blanks_as]
+          parts << %(<c:dispBlanksAs val="#{xml_escape(chart[:disp_blanks_as])}"/>) if chart[:disp_blanks_as]
           sdom = chart[:show_d_lbls_over_max]
           parts << %(<c:showDLblsOverMax val="#{sdom ? 1 : 0}"/>) unless sdom.nil?
           parts << "</c:chart>"
@@ -1616,17 +1616,17 @@ module Xlsxrb
               parts << "</c:headerFooter>"
             end
             if (pm = ps[:page_margins])
-              pm_attrs = %w[b l r t header footer].filter_map { |a| pm[a.to_sym] ? %( #{a}="#{pm[a.to_sym]}") : nil }.join
+              pm_attrs = %w[b l r t header footer].filter_map { |a| pm[a.to_sym] ? %( #{a}="#{xml_escape(pm[a.to_sym])}") : nil }.join
               parts << "<c:pageMargins#{pm_attrs}/>"
             end
             if (psu = ps[:page_setup])
               psu_parts = +""
-              psu_parts << %( paperSize="#{psu[:paper_size]}") if psu[:paper_size]
-              psu_parts << %( firstPageNumber="#{psu[:first_page_number]}") if psu[:first_page_number]
+              psu_parts << %( paperSize="#{xml_escape(psu[:paper_size])}") if psu[:paper_size]
+              psu_parts << %( firstPageNumber="#{xml_escape(psu[:first_page_number])}") if psu[:first_page_number]
               psu_parts << %( orientation="#{xml_escape(psu[:orientation])}") if psu[:orientation]
-              psu_parts << %( horizontalDpi="#{psu[:horizontal_dpi]}") if psu[:horizontal_dpi]
-              psu_parts << %( verticalDpi="#{psu[:vertical_dpi]}") if psu[:vertical_dpi]
-              psu_parts << %( copies="#{psu[:copies]}") if psu[:copies]
+              psu_parts << %( horizontalDpi="#{xml_escape(psu[:horizontal_dpi])}") if psu[:horizontal_dpi]
+              psu_parts << %( verticalDpi="#{xml_escape(psu[:vertical_dpi])}") if psu[:vertical_dpi]
+              psu_parts << %( copies="#{xml_escape(psu[:copies])}") if psu[:copies]
               parts << "<c:pageSetup#{psu_parts}/>"
             end
             parts << "</c:printSettings>"
@@ -1652,9 +1652,9 @@ module Xlsxrb
                        else
                          "<r><t>#{xml_escape(c[:text])}</t></r>"
                        end
-            comment_attrs = %(ref="#{c[:ref]}" authorId="#{aid}")
-            comment_attrs << %( guid="#{c[:guid]}") if c[:guid]
-            comment_attrs << %( shapeId="#{c[:shape_id]}") if c[:shape_id]
+            comment_attrs = %(ref="#{xml_escape(c[:ref])}" authorId="#{xml_escape(aid)}")
+            comment_attrs << %( guid="#{xml_escape(c[:guid])}") if c[:guid]
+            comment_attrs << %( shapeId="#{xml_escape(c[:shape_id])}") if c[:shape_id]
             parts << "<comment #{comment_attrs}><text>#{text_xml}</text></comment>"
           end
           parts << "</commentList></comments>"
@@ -1673,7 +1673,7 @@ module Xlsxrb
           sheet_comments.each_with_index do |c, idx|
             col, row = cell_to_col_row(c[:ref])
             shape_id = 1025 + idx
-            parts << %(<v:shape id="_x0000_s#{shape_id}" type="#_x0000_t202" style="position:absolute;margin-left:59.25pt;margin-top:1.5pt;width:108pt;height:59.25pt;z-index:#{idx + 1};visibility:#{c[:visible] ? "visible" : "hidden"}" fillcolor="#ffffe1" o:insetmode="auto">)
+            parts << %(<v:shape id="_x0000_s#{xml_escape(shape_id)}" type="#_x0000_t202" style="position:absolute;margin-left:59.25pt;margin-top:1.5pt;width:108pt;height:59.25pt;z-index:#{xml_escape(idx + 1)};visibility:#{c[:visible] ? "visible" : "hidden"}" fillcolor="#ffffe1" o:insetmode="auto">)
             parts << '<v:fill color2="#ffffe1"/>'
             parts << '<v:shadow on="t" color="black" obscured="t"/>'
             parts << '<v:path o:connecttype="none"/>'
@@ -1758,7 +1758,7 @@ module Xlsxrb
             name = xml_escape(p[:display_name] || p[:name] || "Author")
             user_id = xml_escape(p[:user_id] || "AD:#{p[:display_name] || p[:name] || "Author"}")
             provider_id = xml_escape(p[:provider_id] || "AD")
-            parts << %(<person displayName="#{name}" id="#{p_id}" userId="#{user_id}" providerId="#{provider_id}"/>)
+            parts << %(<person displayName="#{xml_escape(name)}" id="#{xml_escape(p_id)}" userId="#{xml_escape(user_id)}" providerId="#{xml_escape(provider_id)}"/>)
           end
           parts << "</personList>"
           parts.join

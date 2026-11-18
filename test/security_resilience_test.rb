@@ -246,6 +246,42 @@ class SecurityResilienceTest < Test::Unit::TestCase
     end
   end
 
+  def test_option_values_cannot_add_attributes_or_elements
+    attack = ATTRIBUTE_BREAKOUT
+    font = { size: attack, underline: attack, vert_align: attack, family: attack, scheme: attack }
+    writers = {
+      "streamed" => ->(io, &block) { Xlsxrb.write(io, &block) },
+      "built" => ->(io, &block) { Xlsxrb.write(io, Xlsxrb.build(&block)) }
+    }
+    writers.each do |label, write|
+      io = StringIO.new
+      write.call(io) do |w|
+        w.custom_property("Count", attack, type: :number)
+        w.custom_property("Ratio", attack, type: :float)
+        w.custom_property("When", attack, type: :date)
+        w.sheet("S") do |s|
+          s.row(%w[Region Sales])
+          s.row(["East", 1])
+          s.row([Xlsxrb.rich_text({ text: "a", font: font }, { text: "b", font: { color: { theme: attack } } }, { text: "c", font: { color: { indexed: attack } } })])
+          s.chart(type: :pie, from_column: 3, from_row: 0, to_column: 8, to_row: 12,
+                  series: [{ cat_ref: "S!$A$2:$A$2", val_ref: "S!$B$2:$B$2", data_points: [{ idx: attack, fill_color: "4F81BD" }] }])
+          s.pivot_table(attack, field_names: %w[Region Sales], row_fields: ["Region"],
+                                data_fields: [{ field: "Sales", name: "Sum", subtotal: attack }], ref: attack, name: "P")
+        end
+      end
+      xml_parts = entry_names(io.string).grep(/\.(xml|rels|vml)\z/)
+
+      assert_include xml_parts, "docProps/custom.xml", label
+      assert_include xml_parts, "xl/charts/chart1.xml", label
+      assert_include xml_parts, "xl/pivotTables/pivotTable1.xml", label
+      xml_parts.each do |name|
+        doc = REXML::Document.new(read_part(io.string, name))
+
+        assert_empty REXML::XPath.match(doc, "//*[local-name()='injected'] | //@injected"), "#{label}: #{name}"
+      end
+    end
+  end
+
   def test_values_written_as_element_names_are_checked
     series = { cat_ref: "S!$A$1:$B$1", val_ref: "S!$A$2:$B$2" }
     injected = "barChart><injected/></c:barChart><c:barChart"
