@@ -129,15 +129,13 @@ module Xlsxrb
               encrypted_package_stream << aes_encrypt_block(cipher_name, package_key, iv, chunk)
             end
 
-            # Data integrity HMAC
-            hmac_key = SecureRandom.random_bytes(64)
-            hmac_value = OpenSSL::HMAC.digest(hash_algorithm, hmac_key, plain_bytes)
-
-            k_integ_key = derive_key(digest, h_final, BLOCK_KEY_INTEGRITY_KEY, key_bytes)
-            encrypted_hmac_key = aes_encrypt(cipher_name, k_integ_key, encryptor_salt, hmac_key)
-
-            k_integ_val = derive_key(digest, h_final, BLOCK_KEY_INTEGRITY_VALUE, key_bytes)
-            encrypted_hmac_val = aes_encrypt(cipher_name, k_integ_val, encryptor_salt, hmac_value)
+            # Data integrity ([MS-OFFCRYPTO] 2.3.4.14): an HMAC of the whole EncryptedPackage
+            # stream, its size prefix included. The HMAC key and value are encrypted with the
+            # package key, each with an IV derived from the keyData salt.
+            hmac_key = SecureRandom.random_bytes(hash_size)
+            hmac_value = OpenSSL::HMAC.digest(hash_algorithm, hmac_key, encrypted_package_stream)
+            encrypted_hmac_key = aes_encrypt(cipher_name, package_key, digest.digest(key_data_salt + BLOCK_KEY_INTEGRITY_KEY), hmac_key)
+            encrypted_hmac_val = aes_encrypt(cipher_name, package_key, digest.digest(key_data_salt + BLOCK_KEY_INTEGRITY_VALUE), hmac_value)
 
             # Build EncryptionInfo XML
             xml = <<~XML

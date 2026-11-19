@@ -60,6 +60,36 @@ module Xlsxrb
         assert_equal plain_payload, decrypted
       end
 
+      # Checks the HMAC as [MS-OFFCRYPTO] 2.3.4.14 describes it.
+      # A round trip cannot tell it from the HMAC xlsxrb 0.2.1 and earlier wrote.
+      def test_agile_writes_the_hmac_of_the_encrypted_package
+        password = "agile_secret_456"
+        streams = Crypto::Agile.encrypt("PK\x03\x04#{"B" * 5000}".b, password)
+        package = streams["EncryptedPackage"]
+        doc = REXML::Document.new(streams["EncryptionInfo"][8..])
+        key_data = doc.root.elements["keyData"].attributes
+        encryptor = doc.root.elements["keyEncryptors/keyEncryptor/*"].attributes
+        integrity = doc.root.elements["dataIntegrity"].attributes
+        decrypt = lambda do |key, init_vector, data|
+          cipher = OpenSSL::Cipher.new("aes-256-cbc").decrypt
+          cipher.key = key
+          cipher.iv = init_vector[0, 16]
+          cipher.padding = 0
+          cipher.update(data) + cipher.final
+        end
+
+        hash = OpenSSL::Digest::SHA512.digest(encryptor["saltValue"].unpack1("m0") + password.encode("UTF-16LE").b)
+        encryptor["spinCount"].to_i.times { |i| hash = OpenSSL::Digest::SHA512.digest([i].pack("V") + hash) }
+        key_key = OpenSSL::Digest::SHA512.digest(hash + Crypto::Agile::BLOCK_KEY_KEY)[0, 32]
+        package_key = decrypt.call(key_key, encryptor["saltValue"].unpack1("m0"), encryptor["encryptedKeyValue"].unpack1("m0"))[0, 32]
+        salt = key_data["saltValue"].unpack1("m0")
+        hmac_key = decrypt.call(package_key, OpenSSL::Digest::SHA512.digest(salt + Crypto::Agile::BLOCK_KEY_INTEGRITY_KEY), integrity["encryptedHmacKey"].unpack1("m0"))
+        hmac_value = decrypt.call(package_key, OpenSSL::Digest::SHA512.digest(salt + Crypto::Agile::BLOCK_KEY_INTEGRITY_VALUE), integrity["encryptedHmacValue"].unpack1("m0"))
+
+        assert_equal 64, hmac_key.bytesize
+        assert_equal OpenSSL::HMAC.digest("SHA512", hmac_key, package), hmac_value
+      end
+
       def test_encrypt_with_nil_or_empty_password_returns_plain
         plain = "PK\x03\x04plain".b
         assert_equal plain, Crypto.encrypt(plain, nil)
