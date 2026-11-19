@@ -343,6 +343,89 @@ class SecurityResilienceTest < Test::Unit::TestCase
     end
   end
 
+  # Values a writer puts in an attribute without escaping them, by file, each with the
+  # reason it cannot hold a character that needs escaping. The check below cannot see
+  # that reason; it only matches the expression as written. A value that is not listed
+  # here must be escaped, converted to an Integer, or be a constant.
+  UNESCAPED_ATTRIBUTE_VALUES = {
+    "lib/xlsxrb/ooxml/worksheet_writer.rb" => {
+      "col_ref" => "column letters and a row number computed here, or the ref of a Hash cell, escaped where it is taken",
+      "row_num_str" => "Integer#to_s",
+      "type" => "a literal, or the type of a Hash cell, escaped where it is taken",
+      "attrs[:style_index]" => "written only if it is an Integer",
+      "style_id" => "an Integer, or an id from the style map the library builds",
+      "cell_style_id" => "an Integer, or an id from the style map the library builds",
+      "row_style_id" => "written only if it is an Integer",
+      "time_style_id" => "an id from the style map the library builds",
+      "date_style_id" => "an id from the style map the library builds"
+    },
+    "lib/xlsxrb/ooxml/workbook_writer.rb" => {
+      "count_str" => "Integer#to_s"
+    },
+    "lib/xlsxrb/ooxml/writer.rb" => {
+      "i + 1" => "loop index"
+    },
+    "lib/xlsxrb/ooxml/writer/drawing_xml.rb" => {
+      "i" => "loop index",
+      "i + 1" => "loop index"
+    },
+    "lib/xlsxrb/ooxml/crypto/agile.rb" => {
+      "spin_count" => "Integer literal",
+      "block_size" => "Integer literal",
+      "key_bits" => "Integer literal",
+      "hash_size" => "Integer literal",
+      "cipher_algorithm" => "String literal",
+      "cipher_chaining" => "String literal",
+      "hash_algorithm" => "String literal"
+    }
+  }.freeze
+
+  ESCAPE_CALL = /\A(?:xml_escape|xml_escape_text|escape_xml|escape|XmlBuilder\.escape|Xlsxrb::Ooxml::XmlBuilder\.escape)\(.*\)\z/
+  # Forms that cannot produce a character that needs escaping: an Integer, a constant,
+  # a choice between two literals, and Base64.
+  SAFE_ATTRIBUTE_VALUES = [
+    /\.to_i\z/, /\AInteger\(.*\)\z/, /\.(?:size|length|count|bytesize)\z/, /\A\d+\z/,
+    /\A[A-Z][A-Z0-9_]*\z/,
+    /\?\s*(?:"[^"#]*"|\d+|:\w+)\s*:\s*(?:"[^"#]*"|\d+|:\w+)\z/,
+    /\.pack\("m0"\)\z/
+  ].freeze
+  # An interpolation in an attribute value: ="...#{ , and a concatenation: ="' << value
+  ATTRIBUTE_INTERPOLATION = /=\\?["'](?:[^"'#]|#(?!\{))*#\{/
+  ATTRIBUTE_CONCATENATION = /="' *<< *([^<\n]+?) *(?=<<|$)/
+
+  # The writers build XML as strings, so nothing but the author stops a value from being
+  # written into an attribute as given. This reads the source of every writer and fails
+  # for a value that is neither escaped, nor of a form that needs no escaping, nor listed
+  # above. It matches the two ways the writers write an attribute today and does not see
+  # an attribute built in another way.
+  def test_writers_escape_every_attribute_value
+    root = File.expand_path("..", __dir__)
+    seen = 0
+    unused = UNESCAPED_ATTRIBUTE_VALUES.to_h { |file, values| [file, values.keys] }
+    offenses = []
+    Dir[File.join(root, "lib/**/*.rb")].each do |path|
+      file = path.delete_prefix("#{root}/")
+      listed = UNESCAPED_ATTRIBUTE_VALUES.fetch(file, {})
+      File.foreach(path, encoding: Encoding::UTF_8).with_index(1) do |line, number|
+        attribute_values(line).each do |expression|
+          seen += 1
+          value = expression.delete_suffix(".to_s")
+          next if value.match?(ESCAPE_CALL) || SAFE_ATTRIBUTE_VALUES.any? { |form| value.match?(form) }
+
+          if listed.key?(value)
+            unused[file].delete(value)
+          else
+            offenses << "#{file}:#{number}: #{expression}"
+          end
+        end
+      end
+    end
+
+    assert_operator seen, :>, 900, "the patterns no longer match the attributes the writers write"
+    assert_empty offenses, "written into an attribute as given; escape each one, or list it in UNESCAPED_ATTRIBUTE_VALUES with the reason it needs no escaping"
+    assert_empty unused.reject { |_file, values| values.empty? }, "listed in UNESCAPED_ATTRIBUTE_VALUES but not found"
+  end
+
   private
 
   # Writes one sheet with Xlsxrb.build and with the streaming writer; returns both files.
@@ -360,5 +443,24 @@ class SecurityResilienceTest < Test::Unit::TestCase
 
   def read_part(bytes, name)
     Xlsxrb::Ooxml::ZipReader.open(bytes) { |zip| zip.read_entry(name) }
+  end
+
+  # The expressions a line of source writes into attribute values.
+  def attribute_values(line)
+    values = line.scan(ATTRIBUTE_CONCATENATION).flatten
+    position = 0
+    while (match = line.match(ATTRIBUTE_INTERPOLATION, position))
+      first = match.end(0)
+      depth = 1
+      last = first
+      while last < line.size && depth.positive?
+        depth += 1 if line[last] == "{"
+        depth -= 1 if line[last] == "}"
+        last += 1
+      end
+      values << line[first...(last - 1)].strip if depth.zero?
+      position = last
+    end
+    values
   end
 end
