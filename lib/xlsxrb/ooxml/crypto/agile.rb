@@ -63,6 +63,9 @@ module Xlsxrb
             pkg_digest = digest_for(info[:key_data_hash_algorithm])
             pkg_salt = info[:key_data_salt]
 
+            # 5. Check the HMAC of the stream before decrypting it
+            intact = integrity_verified?(info, pkg_cipher_name, pkg_digest, package_key, encrypted_package_bytes)
+
             decrypted = +""
             num_blocks = (encrypted_data.bytesize + SEGMENT_SIZE - 1) / SEGMENT_SIZE
             num_blocks.times do |i|
@@ -73,7 +76,10 @@ module Xlsxrb
               decrypted << aes_decrypt_block(pkg_cipher_name, package_key, iv, chunk)
             end
 
-            decrypted[0, total_size] || "".b
+            plain = decrypted[0, total_size] || "".b
+            raise Xlsxrb::DecryptionError, "Data integrity check failed: the encrypted package does not match its HMAC" unless intact || legacy_integrity_verified?(info, cipher_name, digest, h_final, plain)
+
+            plain
           end
 
           # Encrypts a plain zip payload with the given password into EncryptionInfo and EncryptedPackage streams.
@@ -186,12 +192,15 @@ module Xlsxrb
             raise Xlsxrb::DecryptionError, "spinCount out of allowed bounds: #{spin_count}" if spin_count.negative? || spin_count > 10_000_000
 
             key_attrs = key_data&.attributes
+            integrity_attrs = root.elements["dataIntegrity"]&.attributes
             {
               key_data_salt: key_attrs&.[]("saltValue").to_s.unpack1("m0") || "".b,
               key_data_hash_algorithm: key_attrs&.[]("hashAlgorithm") || "SHA512",
               key_data_cipher_algorithm: key_attrs&.[]("cipherAlgorithm") || "AES",
               key_data_key_bits: key_attrs&.[]("keyBits")&.to_i || 256,
               key_data_block_size: key_attrs&.[]("blockSize")&.to_i || 16,
+              encrypted_hmac_key: integrity_attrs&.[]("encryptedHmacKey")&.unpack1("m0"),
+              encrypted_hmac_value: integrity_attrs&.[]("encryptedHmacValue")&.unpack1("m0"),
 
               spin_count: spin_count,
               encryptor_salt: key_encryptor.attributes["saltValue"].to_s.unpack1("m0") || "".b,
@@ -203,6 +212,32 @@ module Xlsxrb
               encrypted_verifier_hash_value: key_encryptor.attributes["encryptedVerifierHashValue"].to_s.unpack1("m0") || "".b,
               encrypted_key_value: key_encryptor.attributes["encryptedKeyValue"].to_s.unpack1("m0") || "".b
             }
+          end
+
+          # Data integrity ([MS-OFFCRYPTO] 2.3.4.14): the HMAC of the whole EncryptedPackage
+          # stream. The HMAC key and value are encrypted with the package key, each with an
+          # IV derived from the keyData salt.
+          def integrity_verified?(info, cipher_name, digest, package_key, encrypted_package_bytes)
+            encrypted_key = info[:encrypted_hmac_key]
+            encrypted_value = info[:encrypted_hmac_value]
+            raise Xlsxrb::DecryptionError, "Missing dataIntegrity in EncryptionInfo" if encrypted_key.nil? || encrypted_value.nil?
+
+            salt = info[:key_data_salt]
+            size = digest.digest_length
+            hmac_key = aes_decrypt(cipher_name, package_key, digest.digest(salt + BLOCK_KEY_INTEGRITY_KEY), encrypted_key)[0, size]
+            hmac_value = aes_decrypt(cipher_name, package_key, digest.digest(salt + BLOCK_KEY_INTEGRITY_VALUE), encrypted_value)[0, size]
+            OpenSSL.secure_compare(OpenSSL::HMAC.digest(digest.name, hmac_key, encrypted_package_bytes), hmac_value)
+          end
+
+          # xlsxrb 0.2.1 and earlier wrote an HMAC of the package before encryption, with the HMAC
+          # key and value encrypted under keys derived from the password. Files it wrote are
+          # still read; this HMAC also fails for a package that was changed.
+          def legacy_integrity_verified?(info, cipher_name, digest, h_final, plain)
+            key_bytes = info[:key_bits] / 8
+            salt = info[:encryptor_salt]
+            hmac_key = aes_decrypt(cipher_name, derive_key(digest, h_final, BLOCK_KEY_INTEGRITY_KEY, key_bytes), salt, info[:encrypted_hmac_key])
+            hmac_value = aes_decrypt(cipher_name, derive_key(digest, h_final, BLOCK_KEY_INTEGRITY_VALUE, key_bytes), salt, info[:encrypted_hmac_value])
+            OpenSSL.secure_compare(OpenSSL::HMAC.digest(digest.name, hmac_key, plain), hmac_value)
           end
 
           def digest_for(name)

@@ -60,8 +60,8 @@ module Xlsxrb
         assert_equal plain_payload, decrypted
       end
 
-      # Checks the HMAC as [MS-OFFCRYPTO] 2.3.4.14 describes it.
-      # A round trip cannot tell it from the HMAC xlsxrb 0.2.1 and earlier wrote.
+      # Checks the HMAC as [MS-OFFCRYPTO] 2.3.4.14 describes it, apart from the reader, which
+      # also accepts the HMAC that xlsxrb 0.2.1 and earlier wrote.
       def test_agile_writes_the_hmac_of_the_encrypted_package
         password = "agile_secret_456"
         streams = Crypto::Agile.encrypt("PK\x03\x04#{"B" * 5000}".b, password)
@@ -88,6 +88,58 @@ module Xlsxrb
 
         assert_equal 64, hmac_key.bytesize
         assert_equal OpenSSL::HMAC.digest("SHA512", hmac_key, package), hmac_value
+      end
+
+      def test_reads_files_encrypted_by_apache_poi
+        { "poi_agile.xlsx" => "Poi-Passw0rd-agile", "poi_standard.xlsx" => "Poi-Passw0rd-standard" }.each do |name, password|
+          path = encryption_fixture(name)
+          workbook = Xlsxrb.load(path, password: password)
+
+          assert_equal "plain", workbook.sheets[0]["A1"].value, name
+          assert_equal "y", workbook.sheets[0]["B2"].value, name
+          assert_raise(Xlsxrb::InvalidPasswordError, name) { Xlsxrb.load(path, password: "wrong") }
+        end
+      end
+
+      def test_agile_rejects_a_changed_package
+        info, package = encryption_streams("poi_agile.xlsx")
+
+        [0, 8, package.bytesize / 2, package.bytesize - 1].each do |position|
+          changed = package.dup
+          changed.setbyte(position, changed.getbyte(position) ^ 1)
+
+          assert_raise_with_message(Xlsxrb::DecryptionError, /Data integrity check failed/, "byte #{position}") do
+            Crypto::Agile.decrypt(info, changed, "Poi-Passw0rd-agile")
+          end
+        end
+        assert_raise_with_message(Xlsxrb::DecryptionError, /Data integrity check failed/) do
+          Crypto::Agile.decrypt(info, "#{package}#{"\0" * 16}", "Poi-Passw0rd-agile")
+        end
+      end
+
+      def test_agile_rejects_encryption_info_without_data_integrity
+        info, package = encryption_streams("poi_agile.xlsx")
+        stripped = info.sub(%r{<dataIntegrity[^>]*/>}, "")
+
+        assert_not_equal info, stripped
+        assert_raise_with_message(Xlsxrb::DecryptionError, /Missing dataIntegrity/) do
+          Crypto::Agile.decrypt(stripped, package, "Poi-Passw0rd-agile")
+        end
+      end
+
+      # xlsxrb 0.2.1 wrote this file. Its HMAC is not the one the specification describes.
+      def test_agile_reads_and_checks_files_written_before_the_hmac_fix
+        workbook = Xlsxrb.load(encryption_fixture("xlsxrb_agile_legacy_hmac.xlsx"), password: "legacy-password")
+
+        assert_equal "written before the HMAC fix", workbook.sheets[0]["A1"].value
+
+        info, package = encryption_streams("xlsxrb_agile_legacy_hmac.xlsx")
+        changed = package.dup
+        changed.setbyte(package.bytesize / 2, changed.getbyte(package.bytesize / 2) ^ 1)
+
+        assert_raise_with_message(Xlsxrb::DecryptionError, /Data integrity check failed/) do
+          Crypto::Agile.decrypt(info, changed, "legacy-password")
+        end
       end
 
       def test_encrypt_with_nil_or_empty_password_returns_plain
@@ -194,6 +246,17 @@ module Xlsxrb
         assert_raise_with_message(Xlsxrb::DecryptionError, /Invalid salt size in Standard encryption/) do
           Crypto.decrypt(cfb_salt_overflow, "password")
         end
+      end
+
+      private
+
+      def encryption_fixture(name)
+        File.expand_path("../../fixtures/encryption/#{name}", __dir__)
+      end
+
+      def encryption_streams(name)
+        reader = Cfb::Reader.new(File.binread(encryption_fixture(name)))
+        [reader.read_stream("EncryptionInfo"), reader.read_stream("EncryptedPackage")]
       end
     end
   end
