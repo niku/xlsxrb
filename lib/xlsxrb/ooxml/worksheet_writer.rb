@@ -169,10 +169,14 @@ module Xlsxrb
             value = cell[:value]
             cell_style_id = cell[:style_index]
             col_idx = cell[:column_index]
-            col_ref = cell[:ref] || (col_idx ? "#{column_letter(col_idx)}#{row_num_str}" : nil)
+            col_ref = if cell[:ref]
+                        escape_xml(cell[:ref])
+                      elsif col_idx
+                        "#{column_letter(col_idx)}#{row_num_str}"
+                      end
             formula = cell[:formula]
             formula_ca = cell[:formula_ca]
-            cell_type_val = cell[:type]
+            cell_type_val = cell[:type] && escape_xml(cell[:type])
           else
             value = cell
             cell_style_id = nil

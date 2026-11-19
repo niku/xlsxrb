@@ -217,6 +217,21 @@ class SecurityResilienceTest < Test::Unit::TestCase
     end
   end
 
+  def test_hash_cell_ref_and_type_are_escaped
+    io = StringIO.new
+    writer = Xlsxrb::Ooxml::WorksheetWriter.new(io)
+    writer.write_row(0, [{ value: 1, column_index: 0, ref: ATTRIBUTE_BREAKOUT }])
+    writer.write_row(1, [{ value: 1, column_index: 0, type: ATTRIBUTE_BREAKOUT }])
+    writer.finish
+    doc = REXML::Document.new(io.string)
+    cells = REXML::XPath.match(doc, "//*[local-name()='c']")
+
+    assert_equal 2, cells.size
+    assert_equal ATTRIBUTE_BREAKOUT, cells[0].attributes["r"]
+    assert_equal ATTRIBUTE_BREAKOUT, cells[1].attributes["t"]
+    assert_empty REXML::XPath.match(doc, "//*[local-name()='injected'] | //@injected")
+  end
+
   def test_row_outline_level_is_escaped
     omit "Passes values the signatures do not allow, which RBS runtime checks reject first" if defined?(RBS::Test)
 
