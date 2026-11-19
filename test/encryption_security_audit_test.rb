@@ -55,7 +55,7 @@ class EncryptionSecurityAuditTest < Test::Unit::TestCase
       Dir.mktmpdir do |dir|
         # Test Standard Mode verification invokes secure_compare
         std_path = File.join(dir, "std.xlsx")
-        Xlsxrb.write(std_path, password: "Pass", encryption_mode: :standard) do |wb|
+        Xlsxrb.write(std_path, password: "Pass") do |wb|
           wb.sheet("S") { |s| s.row([1]) }
         end
         Xlsxrb.load(std_path, password: "Pass")

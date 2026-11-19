@@ -4,6 +4,7 @@
 - Add `Xlsxrb.truncate_cell_text`, which cuts text to what a cell holds: 32,767 characters counted in UTF-16 code units, as Excel counts them ([ADR 0011](docs/adr/0011-count-excel-text-limits-as-excel-does.md)). A character is never split, so 20,000 emoji become 16,383. `strict_excel_mode` raises `ArgumentError` for longer text; callers that want to keep the start of the text instead can call this for every cell. Text of 32,767 bytes or fewer is returned as is without being counted.
 
 ### Deprecated
+- `encryption_mode: :standard` in `Xlsxrb.write` is deprecated and warns; pass `encryption_mode: :agile` ([ADR 0013](docs/adr/0013-write-agile-encryption-read-both.md)). Standard encryption is AES-128 in ECB mode with no check that the file is unchanged, and Agile encryption, which Excel 2010 and later open, is AES-256 with one. In version 0.3.0 `:standard` raises `ArgumentError`, and a password without `encryption_mode:` writes Agile encryption instead of Standard; that change of default gives no warning. Files with either scheme are still read.
 - Passing xlsx data as a String to `Xlsxrb.load` and `Xlsxrb.read` is deprecated and warns; pass a stream, as in `Xlsxrb.load(StringIO.new(data))` ([ADR 0012](docs/adr/0012-the-argument-fixes-what-a-string-means.md)). A String is read as data when it looks like xlsx data and as a file path otherwise, so a program that passes on an uploaded workbook as a String can be made to open a file on the server. In version 0.3.0 a String is always a file path.
 
 ### Security

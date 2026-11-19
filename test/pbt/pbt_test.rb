@@ -682,7 +682,7 @@ class PbtTest < Test::Unit::TestCase
         Pbt.array(Pbt.tuple(Pbt.alphanumeric_string(min: 1, max: 15), Pbt.integer(min: -10_000, max: 10_000), Pbt.boolean), min: 1, max: 4)
       ) do |pw_tuple, mode_idx, rows|
         password = resolve_password(pw_tuple)
-        mode = mode_idx.zero? ? :standard : :agile
+        mode = mode_idx.zero? ? nil : :agile # nil is the default, Standard
 
         Dir.mktmpdir do |dir|
           xlsx_path = File.join(dir, "pbt_encrypted.xlsx")

@@ -3802,6 +3802,32 @@ class PublicApiTest < Test::Unit::TestCase
     assert_equal("#GETTING_DATA", Xlsxrb::Elements::CellError::GETTING_DATA.code)
   end
 
+  test "encryption_mode: :standard warns once at the caller, and the default and :agile do not" do
+    message = /\[Xlsxrb DEPRECATION\] encryption_mode: :standard is deprecated; pass encryption_mode: :agile, which Excel 2010 and later open\. In version 0\.3\.0 a password always writes Agile encryption and :standard raises ArgumentError\./
+    workbook = Xlsxrb.build { |b| b.sheet("S") { |s| s.row([1]) } }
+    writers = {
+      "streamed" => ->(**options) { Xlsxrb.write(**options) { |w| w.sheet("S") { |s| s.row([1]) } } },
+      "built" => ->(**options) { Xlsxrb.write(workbook, **options) }
+    }
+    # The version of the EncryptionInfo stream: 3.2 is Standard and 4.4 is Agile.
+    version = ->(data) { Xlsxrb::Ooxml::Cfb::Reader.new(data).read_stream("EncryptionInfo")[0, 4].unpack("vv") }
+
+    writers.each do |label, writer|
+      data = nil
+      err = capture_stderr { data = writer.call(password: "secret", encryption_mode: :standard) }
+      assert_match(message, err, label)
+      assert_equal(1, err.scan("[Xlsxrb DEPRECATION]").size, label)
+      # RBS runtime checks wrap each method, so the first caller outside the library is the wrapper.
+      assert_match(/#{Regexp.escape(File.basename(__FILE__))}:\d+: warning:/, err, label) unless defined?(RBS::Test)
+      assert_equal([3, 2], version.call(data), label)
+
+      assert_equal("", capture_stderr { data = writer.call(password: "secret") }, label)
+      assert_equal([3, 2], version.call(data), label)
+      assert_equal("", capture_stderr { data = writer.call(password: "secret", encryption_mode: :agile) }, label)
+      assert_equal([4, 4], version.call(data), label)
+    end
+  end
+
   test "xlsx data passed as a String to load and read warns, and a stream or a path does not" do
     io = StringIO.new
     Xlsxrb.write(io) { |w| w.sheet("S") { |s| s.row([1]) } }

@@ -970,30 +970,36 @@ module Xlsxrb
 
   # Writes an XLSX file or IO stream (streaming or in-memory), or returns a binary string.
   #
-  # @overload write(?target, password: nil, encryption_mode: :standard, strict_excel_mode: true, &block)
+  # @overload write(?target, password: nil, encryption_mode: nil, strict_excel_mode: true, &block)
   #   Streaming write: yields a {StreamWriter} context for high-speed, zero-allocation XLSX generation.
   #   If target is omitted, returns the generated XLSX as an in-memory binary String.
   #   @param target [String, IO, StringIO, nil] Optional destination file path or writable IO object.
   #   @param password [String, nil] Optional password to encrypt the generated XLSX file.
-  #   @param encryption_mode [Symbol] Encryption algorithm (:standard or :agile).
+  #   @param encryption_mode [Symbol, nil] Encryption scheme used with a password: `:agile` (AES-256, with a check
+  #     that the file is unchanged) or `:standard` (AES-128; deprecated, and an error from 0.3.0). When omitted,
+  #     Standard is written in 0.2 and Agile from 0.3.0. See docs/adr/0013-write-agile-encryption-read-both.md.
   #   @param strict_excel_mode [Boolean] Whether to enforce Microsoft Excel specification limits.
   #   @yield [stream_writer]
   #   @yieldparam stream_writer [Xlsxrb::StreamWriter]
   #   @return [String, void] Binary data if target is omitted, or void if written to target.
   #
-  # @overload write(workbook, password: nil, encryption_mode: :standard)
+  # @overload write(workbook, password: nil, encryption_mode: nil)
   #   In-memory write: exports the workbook to an in-memory binary String.
   #   @param workbook [Elements::Workbook] The workbook to write.
   #   @param password [String, nil] Optional password to encrypt the binary string.
-  #   @param encryption_mode [Symbol] Encryption algorithm (:standard or :agile).
+  #   @param encryption_mode [Symbol, nil] Encryption scheme used with a password: `:agile` (AES-256, with a check
+  #     that the file is unchanged) or `:standard` (AES-128; deprecated, and an error from 0.3.0). When omitted,
+  #     Standard is written in 0.2 and Agile from 0.3.0. See docs/adr/0013-write-agile-encryption-read-both.md.
   #   @return [String] Binary data representing the XLSX file.
   #
-  # @overload write(target, workbook, password: nil, encryption_mode: :standard)
+  # @overload write(target, workbook, password: nil, encryption_mode: nil)
   #   In-memory write: writes the workbook to a file path or IO stream.
   #   @param target [String, IO, StringIO] Destination file path or writable IO object.
   #   @param workbook [Elements::Workbook] The workbook to write.
   #   @param password [String, nil] Optional password to encrypt the output file.
-  #   @param encryption_mode [Symbol] Encryption algorithm (:standard or :agile).
+  #   @param encryption_mode [Symbol, nil] Encryption scheme used with a password: `:agile` (AES-256, with a check
+  #     that the file is unchanged) or `:standard` (AES-128; deprecated, and an error from 0.3.0). When omitted,
+  #     Standard is written in 0.2 and Agile from 0.3.0. See docs/adr/0013-write-agile-encryption-read-both.md.
   #   @return [void]
   #
   # @example Streaming write to file
@@ -1022,8 +1028,8 @@ module Xlsxrb
   # @param compression_level [Integer, nil] ZIP deflate compression level (0..9, or Zlib::DEFAULT_COMPRESSION
   #   for zlib's level 6). Defaults to {DEFAULT_COMPRESSION_LEVEL}. Higher levels write smaller files more slowly;
   #   level 0 stores entries without compression. See docs/adr/0009-default-zip-compression-level.md.
-  #: (?untyped target_or_workbook, ?Elements::Workbook | untyped workbook_or_nil, ?password: String?, ?encryption_mode: Symbol, ?strict_excel_mode: bool, ?default_font: untyped?, ?shared_strings: bool, ?compression_level: Integer | nil) ?{ (StreamWriter) -> void } -> untyped
-  def self.write(target_or_workbook = OMITTED_TARGET, workbook_or_nil = nil, password: nil, encryption_mode: :standard, strict_excel_mode: true, default_font: nil, shared_strings: true, compression_level: DEFAULT_COMPRESSION_LEVEL, &)
+  #: (?untyped target_or_workbook, ?Elements::Workbook | untyped workbook_or_nil, ?password: String?, ?encryption_mode: Symbol?, ?strict_excel_mode: bool, ?default_font: untyped?, ?shared_strings: bool, ?compression_level: Integer | nil) ?{ (StreamWriter) -> void } -> untyped
+  def self.write(target_or_workbook = OMITTED_TARGET, workbook_or_nil = nil, password: nil, encryption_mode: nil, strict_excel_mode: true, default_font: nil, shared_strings: true, compression_level: DEFAULT_COMPRESSION_LEVEL, &)
     if block_given?
       if target_or_workbook.equal?(OMITTED_TARGET)
         io = StringIO.new
@@ -1043,7 +1049,7 @@ module Xlsxrb
           yield stream_writer
           stream_writer.close
           plain_bytes = buf.string.b
-          encrypted_bytes = Ooxml::Crypto.encrypt(plain_bytes, password, mode: encryption_mode)
+          encrypted_bytes = Ooxml::Crypto.encrypt(plain_bytes, password, mode: write_encryption_mode(encryption_mode))
           if target.is_a?(String)
             File.binwrite(target, encrypted_bytes)
           elsif target.respond_to?(:write)
@@ -1262,7 +1268,7 @@ module Xlsxrb
         workbook_properties: wb_properties,
         compression_level: compression_level
       )
-      encrypted_bytes = Ooxml::Crypto.encrypt(buf.string.b, password, mode: encryption_mode)
+      encrypted_bytes = Ooxml::Crypto.encrypt(buf.string.b, password, mode: write_encryption_mode(encryption_mode))
       if target.is_a?(String)
         File.binwrite(target, encrypted_bytes)
       elsif target.respond_to?(:write)
@@ -2620,6 +2626,17 @@ module Xlsxrb
         unmapped_data: Elements::EMPTY_HASH,
         errors: row_errors
       )
+    end
+
+    STANDARD_ENCRYPTION_MESSAGE = "encryption_mode: :standard is deprecated; pass encryption_mode: :agile, which Excel 2010 and later open. " \
+                                  "In version 0.3.0 a password always writes Agile encryption and :standard raises ArgumentError."
+    private_constant :STANDARD_ENCRYPTION_MESSAGE
+
+    # The scheme to encrypt with. Standard stays the default in 0.2; asking for it by name warns.
+    #: (Symbol? encryption_mode) -> Symbol
+    def write_encryption_mode(encryption_mode)
+      Deprecation.warn(STANDARD_ENCRYPTION_MESSAGE, uplevel: nil) if encryption_mode == :standard
+      encryption_mode || :standard
     end
 
     STRING_SOURCE_AS_DATA_MESSAGE = "Passing xlsx data as a String to Xlsxrb.load and Xlsxrb.read is deprecated; " \

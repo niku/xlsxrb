@@ -212,13 +212,13 @@ puts "Formulas: #{sheet.rows.flat_map(&:cells).select(&:formula?).map { |c| [c.r
 
 ### Password Protection & Encryption ([MS-OFFCRYPTO])
 
-Natively supports reading and writing encrypted XLSX files (Standard & Agile Encryption) with zero external C-extensions:
+Reads files encrypted with Standard or Agile encryption and writes encrypted files, without external C extensions:
 
 ```ruby
 require "xlsxrb"
 
 # Write password-protected file
-Xlsxrb.write("confidential.xlsx", password: "SecretPassword123") do |writer|
+Xlsxrb.write("confidential.xlsx", password: "SecretPassword123", encryption_mode: :agile) do |writer|
   writer.sheet("Financials") { |sheet| sheet.row(["Assets", 5_000_000]) }
 end
 
@@ -227,6 +227,8 @@ Xlsxrb.read("confidential.xlsx", password: "SecretPassword123") do |sheet|
   sheet.each_row { |row| puts row.cells.map(&:value) }
 end
 ```
+
+`encryption_mode: :agile` writes AES-256 with a check that the file is unchanged, which Excel 2010 and later open. Without it, 0.2 writes Standard encryption (AES-128, no such check); from 0.3.0 a password always writes Agile encryption, and `encryption_mode: :standard` warns in 0.2 and is an error from 0.3.0 ([ADR 0013](docs/adr/0013-write-agile-encryption-read-both.md)). Files with either scheme are read.
 
 ### Date and Time Handling
 
