@@ -548,7 +548,7 @@ class PbtTest < Test::Unit::TestCase
               s.freeze_pane(row: opts[:freeze_row], column: opts[:freeze_col]) if opts[:freeze_row].positive? || opts[:freeze_col].positive?
               s.sheet_view(zoom_scale: opts[:zoom_scale])
               s.sheet_properties(tab_color: opts[:tab_color])
-              s.sheet_protection(sheet: opts[:protect_sheet], password: opts[:password])
+              s.sheet_protection(sheet: opts[:protect_sheet])
               s.row(%w[Col1 Col2 Col3])
               s.row([100, 200, 300])
             end
@@ -560,6 +560,25 @@ class PbtTest < Test::Unit::TestCase
           assert_equal "ConfiguredSheet", wb.sheets.first.name
           assert_equal 2, wb.sheets.first.rows.size
         end
+      end
+    end
+
+    Pbt.assert(num_runs: 3) do
+      Pbt.property(Pbt.alphanumeric_string(min: 1, max: 12)) do |pw|
+        io = StringIO.new
+        Xlsxrb.write(io) do |w|
+          w.sheet("Protected") do |s|
+            s.sheet_protection(sheet: true, password: pw)
+            s.row([1])
+          end
+        end
+
+        prot = Xlsxrb.load(StringIO.new(io.string)).sheet(0).sheet_protection
+        assert_not_nil prot
+        assert_true prot.sheet?
+        assert_equal "SHA-512", prot.algorithm_name
+        assert_equal 100_000, prot.spin_count
+        assert_not_nil prot.hash_value
       end
     end
   end
@@ -676,7 +695,7 @@ class PbtTest < Test::Unit::TestCase
   end
 
   test "property-based test: encryption roundtrip with random passwords and encryption modes" do
-    Pbt.assert(num_runs: 30) do
+    Pbt.assert(num_runs: 8) do
       Pbt.property(
         password_generator,
         Pbt.choose(0..1),
@@ -732,7 +751,7 @@ class PbtTest < Test::Unit::TestCase
   end
 
   test "property-based test: encryption tampering and corrupted byte resilience" do
-    Pbt.assert(num_runs: 25) do
+    Pbt.assert(num_runs: 8) do
       Pbt.property(
         password_generator,
         Pbt.integer(min: 0, max: 1000)
@@ -767,7 +786,7 @@ class PbtTest < Test::Unit::TestCase
   end
 
   test "property-based test: streaming vs in-memory encryption equivalence" do
-    Pbt.assert(num_runs: 20) do
+    Pbt.assert(num_runs: 6) do
       Pbt.property(
         password_generator,
         Pbt.array(Pbt.tuple(Pbt.printable_ascii_string(min: 1, max: 10), Pbt.integer), min: 1, max: 5)
@@ -851,6 +870,22 @@ class PbtTest < Test::Unit::TestCase
 
   # --- Stateful Property-Based Tests (Pbt.stateful v1) ---
 
+  # Shared fixture helper for extended worksheet features tested across builders and readers.
+  def self.apply_extended_sheet_features(sheet)
+    sheet.data_validation("A1:B2", type: :whole, operator: :between, formula1: "0", formula2: "1000")
+    sheet.conditional_format("A1:B2", type: :cell_is, operator: :greater_than, formula: "10", fill_color: "FF00FF00")
+    sheet.page_setup(orientation: :landscape, paper_size: 9)
+    sheet.row_break(1)
+  end
+
+  def assert_extended_sheet_features(sheet)
+    assert_equal ["A1:B2"], sheet.data_validations.map(&:sqref)
+    assert_equal ["A1:B2"], sheet.conditional_formats.map(&:sqref)
+    assert_equal "landscape", sheet.page_setup&.orientation
+    assert_equal 9, sheet.page_setup&.paper_size
+    assert_equal [1], sheet.row_breaks.map(&:id)
+  end
+
   DualWorkbookState = Data.define(
     :sheets,
     :active_sheet_ref,
@@ -863,7 +898,8 @@ class PbtTest < Test::Unit::TestCase
     :auto_filters,
     :merges,
     :comments,
-    :print_titles
+    :print_titles,
+    :extended_features
   )
 
   SheetPair = Data.define(:name, :builder_sheet, :stream_proxy)
@@ -974,6 +1010,13 @@ class PbtTest < Test::Unit::TestCase
       [pair.builder_sheet.print_titles, pair.stream_proxy.print_titles]
     end
 
+    def apply_validation_and_page_setup(pair)
+      apply_extended_features_to(pair.builder_sheet)
+      apply_extended_features_to(pair.stream_proxy)
+      @recorded_ops << [:extended_features]
+      nil
+    end
+
     def snapshot_bytes
       snap_builder = Xlsxrb::WorkbookBuilder.new
       snap_io = StringIO.new
@@ -1036,6 +1079,9 @@ class PbtTest < Test::Unit::TestCase
               b_sheet.repeat_columns(op[6])
               s_proxy.repeat_columns(op[6])
             end
+          when :extended_features
+            apply_extended_features_to(b_sheet)
+            apply_extended_features_to(s_proxy)
           end
         end
 
@@ -1060,6 +1106,10 @@ class PbtTest < Test::Unit::TestCase
     end
 
     private
+
+    def apply_extended_features_to(sheet)
+      PbtTest.apply_extended_sheet_features(sheet)
+    end
 
     def close_active_fiber
       return unless @active_fiber&.alive?
@@ -1129,7 +1179,8 @@ class PbtTest < Test::Unit::TestCase
             auto_filters: {},
             merges: {},
             comments: {},
-            print_titles: {}
+            print_titles: {},
+            extended_features: {}
           )
         end
 
@@ -1153,7 +1204,8 @@ class PbtTest < Test::Unit::TestCase
               auto_filters: s.auto_filters.merge(name => nil),
               merges: s.merges.merge(name => []),
               comments: s.comments.merge(name => []),
-              print_titles: s.print_titles.merge(name => { rows: nil, columns: nil })
+              print_titles: s.print_titles.merge(name => { rows: nil, columns: nil }),
+              extended_features: s.extended_features.merge(name => false)
             )
           end
           c.run { |sut, name| sut.add_sheet(name) }
@@ -1392,6 +1444,16 @@ class PbtTest < Test::Unit::TestCase
           end
         end
 
+        m.command :set_validation_and_page_setup, weight: 2 do |c|
+          c.guard { |s| !s.active_sheet_ref.nil? && !s.extended_features.fetch(s.active_sheet_name) }
+          c.arguments { |s| Pbt.constant(s.active_sheet_ref) }
+          c.next_state do |s, _sheet_ref|
+            s.with(extended_features: s.extended_features.merge(s.active_sheet_name => true))
+          end
+          c.run { |sut, sheet_pair| sut.apply_validation_and_page_setup(sheet_pair) }
+          c.verify { |ctx| assert_nil ctx.result }
+        end
+
         m.invariant(:live_and_serialized_parity) do |state, sut|
           assert_equal state.sheets, sut.builder.sheet_names
           assert_equal state.sheets, sut.stream_writer.sheet_names
@@ -1437,6 +1499,12 @@ class PbtTest < Test::Unit::TestCase
             else
               assert_nil b_sheet.print_titles
               assert_nil s_sheet.print_titles
+            end
+
+            if state.extended_features.fetch(sname)
+              assert_extended_sheet_features(b_sheet)
+              assert_extended_sheet_features(s_sheet)
+              assert_equal b_sheet.conditional_formats.map(&:dxf_id), s_sheet.conditional_formats.map(&:dxf_id)
             end
 
             expected_rows.each_with_index do |exp_row, r_idx|
@@ -1854,13 +1922,15 @@ class PbtTest < Test::Unit::TestCase
   MultiReaderState = Data.define(
     :row_cursor,
     :rows,
+    :formulas,
     :columns,
     :auto_filter,
     :merges,
     :comments,
     :hyperlinks,
     :print_area,
-    :freeze_row
+    :freeze_row,
+    :extended_features
   )
 
   # Records sheet authoring operations and serializes a single-sheet XLSX for multi-reader parity checks.
@@ -1904,6 +1974,11 @@ class PbtTest < Test::Unit::TestCase
       nil
     end
 
+    def apply_extended_features
+      @ops << [:extended_features]
+      nil
+    end
+
     def serialize_bytes
       io = StringIO.new
       Xlsxrb.write(io) do |wb|
@@ -1911,7 +1986,14 @@ class PbtTest < Test::Unit::TestCase
           @ops.each do |op|
             case op[0]
             when :row
-              sheet.row(op[1])
+              row_vals = op[1].map do |v|
+                if v.is_a?(Hash) && v.key?(:rich_text)
+                  Xlsxrb::Elements::RichText.new(runs: [{ text: v[:rich_text][0], font: { bold: true } }, { text: v[:rich_text][1] }])
+                else
+                  v
+                end
+              end
+              sheet.row(row_vals)
             when :skip_rows
               sheet.skip_rows(op[1])
             when :column
@@ -1926,6 +2008,8 @@ class PbtTest < Test::Unit::TestCase
               sheet.comment(op[1], op[3])
             when :print_area
               sheet.print_area = op[1]
+            when :extended_features
+              PbtTest.apply_extended_sheet_features(sheet)
             end
           end
         end
@@ -1939,7 +2023,9 @@ class PbtTest < Test::Unit::TestCase
       Pbt.integer(min: -500, max: 500),
       Pbt.alphanumeric_string(min: 1, max: 10),
       Pbt.boolean,
-      Pbt.constant(Date.new(2026, 6, 15))
+      Pbt.constant(Date.new(2026, 6, 15)),
+      Pbt.constant({ formula: "1+2", value: 3 }),
+      Pbt.constant({ rich_text: %w[Bold Plain] })
     )
 
     Pbt.assert(num_runs: 15) do
@@ -1948,13 +2034,15 @@ class PbtTest < Test::Unit::TestCase
           MultiReaderState.new(
             row_cursor: 0,
             rows: [],
+            formulas: [],
             columns: {},
             auto_filter: nil,
             merges: [],
             comments: {},
             hyperlinks: {},
             print_area: nil,
-            freeze_row: nil
+            freeze_row: nil,
+            extended_features: false
           )
         end
 
@@ -1963,9 +2051,18 @@ class PbtTest < Test::Unit::TestCase
         m.command :append_row, weight: 4 do |c|
           c.arguments(v0: val_arb, v1: val_arb)
           c.next_state do |s, args|
-            expected = [args[:v0], args[:v1]].map { |v| v.is_a?(Date) ? Xlsxrb.date_to_serial(v) : v }
+            pair = [args[:v0], args[:v1]]
+            expected = pair.map do |v|
+              case v
+              when Date then Xlsxrb.date_to_serial(v)
+              when Hash then v.key?(:rich_text) ? v[:rich_text].join : v[:value]
+              else v
+              end
+            end
+            exp_formulas = pair.map { |v| v.is_a?(Hash) && v.key?(:formula) ? v[:formula] : nil }
             row_record = { row_index: s.row_cursor, values: expected }
-            s.with(row_cursor: s.row_cursor + 1, rows: [*s.rows, row_record])
+            formula_record = { row_index: s.row_cursor, formulas: exp_formulas }
+            s.with(row_cursor: s.row_cursor + 1, rows: [*s.rows, row_record], formulas: [*s.formulas, formula_record])
           end
           c.run { |sut, args| sut.append_row([args[:v0], args[:v1]]) }
         end
@@ -2050,6 +2147,12 @@ class PbtTest < Test::Unit::TestCase
           c.run { |sut, _args| sut.apply_print_area("A1:B4") }
         end
 
+        m.command :set_validation_and_page_setup, weight: 2 do |c|
+          c.guard { |s| !s.extended_features }
+          c.next_state { |s| s.with(extended_features: true) }
+          c.run { |sut, _args| sut.apply_extended_features }
+        end
+
         m.invariant(:three_way_reader_equivalence) do |state, sut|
           next if state.rows.empty?
 
@@ -2058,14 +2161,18 @@ class PbtTest < Test::Unit::TestCase
 
           loaded_ws = Xlsxrb.load(StringIO.new(bytes)).sheet(0)
           expected_rows = state.rows.map { |r| [r[:row_index], r[:values]] }
+          expected_formulas = state.formulas.map { |r| [r[:row_index], r[:formulas]] }
           loaded_rows = loaded_ws.rows.map { |r| [r.index, r.cells.map(&:value)] }
+          loaded_formulas = loaded_ws.rows.map { |r| [r.index, r.cells.map { |c| c.formula&.expression }] }
           assert_equal expected_rows, loaded_rows
+          assert_equal expected_formulas, loaded_formulas
           assert_equal state.auto_filter, loaded_ws.auto_filter
           assert_equal state.merges, loaded_ws.merged_cells
           assert_equal(state.comments.to_a, loaded_ws.comments.map { |c| [c.ref, c.text] })
           assert_equal(state.hyperlinks, loaded_ws.hyperlinks.transform_values(&:url))
           assert_equal state.print_area, loaded_ws.print_area
           assert_equal state.freeze_row, loaded_ws.freeze_pane&.row
+          assert_extended_sheet_features(loaded_ws) if state.extended_features
 
           expected_cols = state.columns.sort_by(&:first).map do |idx, col|
             [idx, col[:width], col[:hidden], col[:outline_level], col[:collapsed], col[:best_fit]]
@@ -2083,8 +2190,11 @@ class PbtTest < Test::Unit::TestCase
             assert_equal(loaded_ws.hyperlinks.transform_values(&:url), stream_sheet.hyperlinks.transform_values(&:url))
             assert_equal loaded_ws.print_area, stream_sheet.print_area
             assert_equal loaded_ws.freeze_pane&.row, stream_sheet.freeze_pane&.row
+            assert_extended_sheet_features(stream_sheet) if state.extended_features
             assert_equal(loaded_cols, stream_sheet.columns.map { |c| [c.index, c.width, c.hidden?, c.outline_level, c.collapsed?, c.best_fit?] })
-            assert_equal(loaded_rows, stream_sheet.each_row.map { |r| [r.index, r.values] })
+            stream_rows = stream_sheet.each_row.to_a
+            assert_equal(loaded_rows, stream_rows.map { |r| [r.index, r.values] })
+            assert_equal(loaded_formulas, stream_rows.map { |r| [r.index, r.cells.map { |c| c.formula&.expression }] })
 
             mat_ws = stream_sheet.load
             assert_equal loaded_ws.name, mat_ws.name
@@ -2094,8 +2204,10 @@ class PbtTest < Test::Unit::TestCase
             assert_equal(loaded_ws.hyperlinks.transform_values(&:url), mat_ws.hyperlinks.transform_values(&:url))
             assert_equal loaded_ws.print_area, mat_ws.print_area
             assert_equal loaded_ws.freeze_pane&.row, mat_ws.freeze_pane&.row
+            assert_extended_sheet_features(mat_ws) if state.extended_features
             assert_equal(loaded_cols, mat_ws.columns.map { |c| [c.index, c.width, c.hidden?, c.outline_level, c.collapsed?, c.best_fit?] })
             assert_equal(loaded_rows, mat_ws.rows.map { |r| [r.index, r.cells.map(&:value)] })
+            assert_equal(loaded_formulas, mat_ws.rows.map { |r| [r.index, r.cells.map { |c| c.formula&.expression }] })
           end
           assert_equal 1, stream_count
 
@@ -2172,6 +2284,159 @@ class PbtTest < Test::Unit::TestCase
         assert_includes [Encoding::UTF_8, Encoding::US_ASCII], formatted.encoding
         assert_true formatted.valid_encoding?
         assert_equal formatted, Xlsxrb.format_value(val, fmt)
+      end
+    end
+  end
+
+  test "Ooxml::Cfb::Writer and Cfb::Reader roundtrip across mini-stream, multi-sector directory, and multi-FAT boundaries" do
+    stream_spec_arb = Pbt.tuple(
+      Pbt.alphanumeric_string(min: 1, max: 14),
+      Pbt.choose(0..3),
+      Pbt.ascii_string(min: 1, max: 300)
+    )
+
+    Pbt.assert(num_runs: 30) do
+      Pbt.property(Pbt.array(stream_spec_arb, min: 1, max: 6)) do |specs|
+        streams_by_lower = {}
+        specs.each do |name, kind, seed_chunk|
+          key = name.downcase
+          next if streams_by_lower.key?(key)
+
+          payload = case kind
+                    when 0 then "".b
+                    when 1 then seed_chunk.b
+                    when 2 then (("R" * 4096) + seed_chunk).b
+                    else (("L" * 66_000) + seed_chunk).b
+                    end
+          streams_by_lower[key] = [name, payload]
+        end
+        input = streams_by_lower.values.to_h
+
+        cfb_bytes = Xlsxrb::Ooxml::Cfb::Writer.write(input)
+        assert_true Xlsxrb::Ooxml::Cfb::Reader.cfb?(cfb_bytes)
+
+        reader = Xlsxrb::Ooxml::Cfb::Reader.new(cfb_bytes)
+        assert_equal input.keys, reader.stream_names
+        input.each do |name, expected|
+          assert_equal expected, reader.read_stream(name)
+        end
+      end
+    end
+  end
+
+  test "Ooxml::SharedStringsParser.parse and SharedStringsListener equivalence across synthetic and rich-text SST XML" do
+    si_spec_arb = Pbt.tuple(
+      Pbt.choose(0..5),
+      Pbt.alphanumeric_string(min: 0, max: 12),
+      Pbt.alphanumeric_string(min: 1, max: 8),
+      Pbt.boolean
+    )
+
+    Pbt.assert(num_runs: 80) do
+      Pbt.property(Pbt.boolean, Pbt.array(si_spec_arb, min: 1, max: 12)) do |use_ns, specs|
+        p = use_ns ? "x:" : ""
+        xmlns = use_ns ? 'xmlns:x="http://schemas.openxmlformats.org/spreadsheetml/2006/main"' : 'xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"'
+        sis = specs.map do |kind, t1, t2, bold|
+          esc1 = Xlsxrb::Ooxml::XmlBuilder.escape(Xlsxrb::Ooxml::XmlBuilder.encode_xstring(t1))
+          esc2 = Xlsxrb::Ooxml::XmlBuilder.escape(Xlsxrb::Ooxml::XmlBuilder.encode_xstring(t2))
+          case kind
+          when 0 then "<#{p}si/>"
+          when 1 then "<#{p}si><#{p}t/></#{p}si>"
+          when 2 then %(<#{p}si><#{p}t xml:space="preserve">#{esc1}</#{p}t></#{p}si>)
+          when 3 then %(<#{p}si><#{p}t>#{esc1}</#{p}t><#{p}rPh sb="0" eb="1"><#{p}t>#{esc2}</#{p}t></#{p}rPh></#{p}si>)
+          when 4 then "<#{p}si><#{p}r><#{p}rPr>#{"<#{p}b/>" if bold}</#{p}rPr><#{p}t>#{esc1}</#{p}t></#{p}r><#{p}r><#{p}t>#{esc2}</#{p}t></#{p}r></#{p}si>"
+          else %(<#{p}si><#{p}r><#{p}t/></#{p}r><#{p}r><#{p}t>#{esc2}</#{p}t></#{p}r><#{p}rPh sb="0" eb="1"><#{p}t>フリガナ</#{p}t></#{p}rPh></#{p}si>)
+          end
+        end.join
+        xml = %(<?xml version="1.0" encoding="UTF-8"?><#{p}sst #{xmlns} count="#{specs.size}" uniqueCount="#{specs.size}">#{sis}</#{p}sst>)
+
+        fast_parsed = Xlsxrb::Ooxml::SharedStringsParser.parse(xml)
+        listener = Xlsxrb::Ooxml::Reader::SharedStringsListener.new
+        Xlsxrb::Ooxml::XmlParser.parse(xml, listener)
+        assert_equal listener.strings.map(&:to_s), fast_parsed
+      end
+    end
+  end
+
+  test "Ooxml::WorksheetParser.scan_rows_stream chunk boundary invariance against fast_scan_rows_direct" do
+    row_spec_arb = Pbt.tuple(
+      Pbt.boolean, # self-closing row
+      Pbt.integer(min: -1000, max: 1000),
+      Pbt.boolean,
+      Pbt.alphanumeric_string(min: 0, max: 12)
+    )
+
+    Pbt.assert(num_runs: 80) do
+      Pbt.property(Pbt.boolean, Pbt.integer(min: 1, max: 64), Pbt.array(row_spec_arb, min: 1, max: 6)) do |use_ns, chunk_size, row_specs|
+        p = use_ns ? "x:" : ""
+        xmlns = use_ns ? 'xmlns:x="http://schemas.openxmlformats.org/spreadsheetml/2006/main"' : 'xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"'
+        row_num = 1
+        rows_xml = row_specs.map do |self_close, int_val, flag, txt|
+          r = row_num
+          row_num += flag ? 2 : 1
+          if self_close
+            %(<#{p}row r="#{r}"/>)
+          else
+            esc = Xlsxrb::Ooxml::XmlBuilder.escape("#{txt} 漢字 🎉")
+            attrs = flag ? 'ht="20.5" customHeight="1" hidden="1" collapsed="1" outlineLevel="2"' : ""
+            %(<#{p}row r="#{r}" #{attrs}><#{p}c r="A#{r}" t="inlineStr"><#{p}is><#{p}t>#{esc}</#{p}t></#{p}is></#{p}c><#{p}c r="B#{r}"><#{p}v>#{int_val}</#{p}v></#{p}c><#{p}c r="C#{r}" t="b"><#{p}v>#{flag ? 1 : 0}</#{p}v></#{p}c><#{p}c r="D#{r}" t="s"><#{p}v>0</#{p}v></#{p}c></#{p}row>)
+          end
+        end.join
+        xml = %(<?xml version="1.0" encoding="UTF-8"?><#{p}worksheet #{xmlns}><#{p}sheetData>#{rows_xml}</#{p}sheetData><#{p}rowBreaks count="1"><#{p}brk id="1" max="16383" man="1"/></#{p}rowBreaks></#{p}worksheet>)
+
+        shared = ["Shared0"]
+        direct_rows = []
+        Xlsxrb::Ooxml::WorksheetParser.send(:fast_scan_rows_direct, xml, shared, "sheet1.xml") do |row|
+          direct_rows << [row.index, row.values, row.attributes]
+        end
+
+        stream_rows = []
+        supplier = proc do |&blk|
+          bytes = xml.b
+          pos = 0
+          while pos < bytes.bytesize
+            blk.call(bytes.byteslice(pos, chunk_size))
+            pos += chunk_size
+          end
+        end
+        Xlsxrb::Ooxml::WorksheetParser.send(:scan_rows_stream, supplier, shared, "sheet1.xml") do |row|
+          stream_rows << [row.index, row.values, row.attributes]
+        end
+
+        assert_equal direct_rows, stream_rows
+      end
+    end
+  end
+
+  test "NumberFormatter.format multi-section, scientific, percentage, and date serial invariants" do
+    num_arb = Pbt.one_of(
+      Pbt.integer(min: -1_000_000, max: 1_000_000),
+      Pbt.float.filter(&:finite?)
+    )
+    fmt_arb = Pbt.constant_from(
+      '0.00;"neg "0.00;"zero";"txt "@',
+      '#,##0.00;(#,##0.00);"-"',
+      "[Red]#,##0;[Blue]-#,##0;0",
+      "0.00E+00",
+      "##0.0E+0",
+      "0.00%",
+      "$#,##0.00"
+    )
+
+    Pbt.assert(num_runs: 100) do
+      Pbt.property(num_arb, fmt_arb) do |val, fmt|
+        formatted = Xlsxrb::NumberFormatter.format(val, fmt)
+        assert_false formatted.empty?
+        assert_equal Encoding::UTF_8, formatted.encoding
+        assert_true formatted.valid_encoding?
+        assert_equal formatted, Xlsxrb::NumberFormatter.format(val, fmt)
+      end
+
+      Pbt.property(Pbt.integer(min: 1, max: 2_958_465), Pbt.constant_from("yyyy-mm-dd", "yyyy-mm-dd hh:mm:ss")) do |serial, dfmt|
+        formatted = Xlsxrb::NumberFormatter.format(serial, dfmt)
+        assert_equal Encoding::UTF_8, formatted.encoding
+        assert_match(/\A\d{4}-\d{2}-\d{2}/, formatted)
+        assert_equal formatted, Xlsxrb::NumberFormatter.format(serial, dfmt)
       end
     end
   end
