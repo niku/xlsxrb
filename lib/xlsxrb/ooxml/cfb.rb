@@ -132,7 +132,9 @@ module Xlsxrb
         end
 
         def read_sector(sector_id)
-          max_sectors = (@data.bytesize / @sector_size) - 1
+          # The last sector may be shorter than a sector: Excel 2007 ends some files where
+          # the last stream ends, without padding.
+          max_sectors = ((@data.bytesize + @sector_size - 1) / @sector_size) - 1
           return "".b if sector_id.negative? || sector_id >= max_sectors
 
           offset = sector_offset(sector_id)

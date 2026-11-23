@@ -96,9 +96,14 @@ module Xlsxrb
         assert_equal ["Data"], reader.stream_names
         assert_equal payload, reader.read_stream("Data")
 
-        # A file cut short inside the last sector still has the sectors before it.
-        cut = Cfb::Reader.new(file[0, file.bytesize - 1])
-        assert_equal payload[0, sector_size], cut.read_stream("Data")
+        # The file may end where the last stream ends, without padding the sector, as some
+        # files written by Excel 2007 do.
+        unpadded = Cfb::Reader.new(file[0, (sector_size * 3) + payload.bytesize])
+        assert_equal payload, unpadded.read_stream("Data")
+
+        # A file cut short inside the stream has the bytes before the cut.
+        cut = Cfb::Reader.new(file[0, (sector_size * 4) + 100])
+        assert_equal payload[0, sector_size + 100], cut.read_stream("Data")
       end
 
       def test_cfb_dir_entry_predicates
