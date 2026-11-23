@@ -424,21 +424,21 @@ module Xlsxrb
               buf << '<c r="' << col_ref << row_num_str << '" t="b"><v>0</v></c>'
             when Time, DateTime
               time_style_id = style_map ? style_map["__xlsxrb_time"] : nil
-              buf << if time_style_id
+              buf << if time_style_id.is_a?(Integer)
                        "<c r=\"#{col_ref}#{row_num_str}\" s=\"#{time_style_id}\"><v>#{Xlsxrb::Ooxml::Utils.datetime_to_serial(value, date1904: @date1904)}</v></c>"
                      else
                        "<c r=\"#{col_ref}#{row_num_str}\"><v>#{Xlsxrb::Ooxml::Utils.datetime_to_serial(value, date1904: @date1904)}</v></c>"
                      end
             when Date
               date_style_id = style_map ? style_map["__xlsxrb_date"] : nil
-              buf << if date_style_id
+              buf << if date_style_id.is_a?(Integer)
                        "<c r=\"#{col_ref}#{row_num_str}\" s=\"#{date_style_id}\"><v>#{Xlsxrb::Ooxml::Utils.date_to_serial(value, date1904: @date1904)}</v></c>"
                      else
                        "<c r=\"#{col_ref}#{row_num_str}\"><v>#{Xlsxrb::Ooxml::Utils.date_to_serial(value, date1904: @date1904)}</v></c>"
                      end
             when TimeLike # after Date, so Date values skip TimeLike.===
               time_style_id = style_map ? style_map["__xlsxrb_time"] : nil
-              buf << if time_style_id
+              buf << if time_style_id.is_a?(Integer)
                        "<c r=\"#{col_ref}#{row_num_str}\" s=\"#{time_style_id}\"><v>#{Xlsxrb::Ooxml::Utils.datetime_to_serial(TimeLike.to_time(value), date1904: @date1904)}</v></c>"
                      else
                        "<c r=\"#{col_ref}#{row_num_str}\"><v>#{Xlsxrb::Ooxml::Utils.datetime_to_serial(TimeLike.to_time(value), date1904: @date1904)}</v></c>"
@@ -700,12 +700,12 @@ module Xlsxrb
           when false
             buf << '<c r="' << col_ref << row_num_str << s_attr << '" t="b"><v>0</v></c>'
           when Time, DateTime
-            if style_id.nil? && style_map && (time_style_id = style_map["__xlsxrb_time"])
+            if style_id.nil? && style_map && (time_style_id = style_map["__xlsxrb_time"]).is_a?(Integer)
               s_attr = style_attrs[time_style_id] ||= -%(" s="#{time_style_id})
             end
             buf << '<c r="' << col_ref << row_num_str << s_attr << '"><v>' << Xlsxrb::Ooxml::Utils.datetime_to_serial(value, date1904: @date1904).to_s << "</v></c>"
           when Date
-            if style_id.nil? && style_map && (date_style_id = style_map["__xlsxrb_date"])
+            if style_id.nil? && style_map && (date_style_id = style_map["__xlsxrb_date"]).is_a?(Integer)
               s_attr = style_attrs[date_style_id] ||= -%(" s="#{date_style_id})
             end
             buf << '<c r="' << col_ref << row_num_str << s_attr << '"><v>' << Xlsxrb::Ooxml::Utils.date_to_serial(value, date1904: @date1904).to_s << "</v></c>"
@@ -715,7 +715,7 @@ module Xlsxrb
             elsif @time_like_style_resolver
               time_style_id = @time_like_style_resolver.call(style_id)
             end
-            s_attr = style_attrs[time_style_id] ||= -%(" s="#{time_style_id}) if time_style_id
+            s_attr = style_attrs[time_style_id] ||= -%(" s="#{time_style_id}) if time_style_id.is_a?(Integer)
             buf << '<c r="' << col_ref << row_num_str << s_attr << '"><v>' << Xlsxrb::Ooxml::Utils.datetime_to_serial(TimeLike.to_time(value), date1904: @date1904).to_s << "</v></c>"
           else
             write_complex_cell(buf, col_ref, row_num_str, value, style_id, sst, sst_index)
@@ -867,7 +867,8 @@ module Xlsxrb
 
         if style_map
           mapped = style_map[style] || style_map[style.to_s]
-          return mapped if mapped
+          # A style id is written into an attribute as it is, so only an Integer is one.
+          return mapped if mapped.is_a?(Integer)
         end
 
         return 0 if [:default, :none, "default", "none"].include?(style)

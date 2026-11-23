@@ -232,6 +232,24 @@ class SecurityResilienceTest < Test::Unit::TestCase
     assert_empty REXML::XPath.match(doc, "//*[local-name()='injected'] | //@injected")
   end
 
+  def test_style_ids_from_a_style_map_are_written_only_as_integers
+    style_map = { "bold" => ATTRIBUTE_BREAKOUT, "__xlsxrb_time" => ATTRIBUTE_BREAKOUT, "__xlsxrb_date" => ATTRIBUTE_BREAKOUT }
+    time = Time.utc(2026, 1, 2, 3, 4, 5)
+    date = Date.new(2026, 1, 2)
+    io = StringIO.new
+    writer = Xlsxrb::Ooxml::WorksheetWriter.new(io)
+    writer.write_row_values(0, [time, date, 1], style_map: style_map)
+    writer.write_row_values(1, [time, date, 1, "x", nil], styles: "bold", style_map: style_map)
+    writer.write_row_values(2, [time, date, 1], styles: [nil, nil, "bold"], style_map: style_map, attrs: { style_index: "bold" })
+    writer.write_row(3, [{ value: 1, column_index: 0, style_index: ATTRIBUTE_BREAKOUT }], attrs: { style_index: ATTRIBUTE_BREAKOUT })
+    writer.finish
+    doc = REXML::Document.new(io.string)
+
+    assert_equal 4, REXML::XPath.match(doc, "//*[local-name()='row']").size
+    assert_empty REXML::XPath.match(doc, "//@s")
+    assert_empty REXML::XPath.match(doc, "//*[local-name()='injected'] | //@injected")
+  end
+
   def test_row_outline_level_is_escaped
     omit "Passes values the signatures do not allow, which RBS runtime checks reject first" if defined?(RBS::Test)
 
@@ -353,11 +371,11 @@ class SecurityResilienceTest < Test::Unit::TestCase
       "row_num_str" => "Integer#to_s",
       "type" => "a literal, or the type of a Hash cell, escaped where it is taken",
       "attrs[:style_index]" => "written only if it is an Integer",
-      "style_id" => "an Integer, or an id from the style map the library builds",
-      "cell_style_id" => "an Integer, or an id from the style map the library builds",
+      "style_id" => "an Integer: resolve_style_id returns nothing else",
+      "cell_style_id" => "an Integer: resolve_style_id returns nothing else",
       "row_style_id" => "written only if it is an Integer",
-      "time_style_id" => "an id from the style map the library builds",
-      "date_style_id" => "an id from the style map the library builds"
+      "time_style_id" => "written only if it is an Integer",
+      "date_style_id" => "written only if it is an Integer"
     },
     "lib/xlsxrb/ooxml/workbook_writer.rb" => {
       "count_str" => "Integer#to_s"
