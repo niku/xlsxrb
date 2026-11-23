@@ -913,11 +913,14 @@ class PbtTest < Test::Unit::TestCase
       nil
     end
 
-    def set_column_style(pair, col_idx, width:, style:)
-      pair.builder_sheet.column(col_idx, width: width, style: style)
-      pair.stream_proxy.column(col_idx, width: width, style: style)
-      @recorded_ops << [:set_column_style, col_idx, width, style]
-      nil
+    def set_column_style(pair, col_idx, width:, style:, collapsed: false, best_fit: false)
+      pair.builder_sheet.column(col_idx, width: width, style: style, collapsed: collapsed, best_fit: best_fit)
+      pair.stream_proxy.column(col_idx, width: width, style: style, collapsed: collapsed, best_fit: best_fit)
+      @recorded_ops << [:set_column_style, col_idx, width, style, collapsed, best_fit]
+      [
+        pair.builder_sheet.columns.map { |c| [c.index, c.collapsed?, c.best_fit?] },
+        pair.stream_proxy.columns.map { |c| [c.index, c.collapsed?, c.best_fit?] }
+      ]
     end
 
     def append_row(pair, values, cell_styles:, row_style:)
@@ -1000,8 +1003,8 @@ class PbtTest < Test::Unit::TestCase
             b_sheet.style(op[1], **op[2])
             s_proxy.style(op[1], **op[2])
           when :set_column_style
-            b_sheet.column(op[1], width: op[2], style: op[3])
-            s_proxy.column(op[1], width: op[2], style: op[3])
+            b_sheet.column(op[1], width: op[2], style: op[3], collapsed: op[4], best_fit: op[5])
+            s_proxy.column(op[1], width: op[2], style: op[3], collapsed: op[4], best_fit: op[5])
           when :append_row
             b_sheet.row(op[1], cell_styles: op[2], row_style: op[3])
             s_proxy.row(op[1], cell_styles: op[2], row_style: op[3])
@@ -1194,18 +1197,34 @@ class PbtTest < Test::Unit::TestCase
               sheet: Pbt.constant(s.active_sheet_ref),
               col_idx: Pbt.constant_from(0, 1),
               width: Pbt.integer(min: 10, max: 30),
-              style: Pbt.constant_from(*s.styles.keys)
+              style: Pbt.constant_from(*s.styles.keys),
+              collapsed: Pbt.boolean,
+              best_fit: Pbt.boolean
             )
           end
           c.next_state do |s, args|
             sname = s.active_sheet_name
-            col_entry = { style_name: args[:style], style_def: s.styles.fetch(args[:style]) }
+            prev_col = s.sheet_columns.fetch(sname)[args[:col_idx]]
+            col_entry = {
+              style_name: args[:style],
+              style_def: s.styles.fetch(args[:style]),
+              collapsed: args[:collapsed] || prev_col&.dig(:collapsed) || false,
+              best_fit: args[:best_fit] || prev_col&.dig(:best_fit) || false
+            }
             updated_cols = s.sheet_columns.fetch(sname).merge(args[:col_idx] => col_entry)
             s.with(sheet_columns: s.sheet_columns.merge(sname => updated_cols))
           end
           c.run do |sut, args|
-            sut.set_column_style(args[:sheet], args[:col_idx], width: args[:width], style: args[:style])
+            sut.set_column_style(
+              args[:sheet],
+              args[:col_idx],
+              width: args[:width],
+              style: args[:style],
+              collapsed: args[:collapsed],
+              best_fit: args[:best_fit]
+            )
           end
+          c.verify { |ctx| assert_equal ctx.result[0], ctx.result[1] }
         end
 
         m.command :append_row, weight: 5 do |c|
@@ -1404,6 +1423,11 @@ class PbtTest < Test::Unit::TestCase
             assert_equal(state.comments.fetch(sname).map { |c| [c[:ref], c[:text]] },
                          s_sheet.comments.map { |c| [c.ref, c.text] })
 
+            exp_cols = state.sheet_columns.fetch(sname).sort_by(&:first).map do |idx, col|
+              [idx, col[:collapsed], col[:best_fit]]
+            end
+            assert_equal(exp_cols, b_sheet.columns.map { |c| [c.index, c.collapsed?, c.best_fit?] })
+            assert_equal(exp_cols, s_sheet.columns.map { |c| [c.index, c.collapsed?, c.best_fit?] })
             exp_pt = state.print_titles.fetch(sname)
             if exp_pt[:rows] || exp_pt[:columns]
               assert_equal exp_pt[:rows], b_sheet.print_titles&.rows
@@ -1855,8 +1879,8 @@ class PbtTest < Test::Unit::TestCase
       nil
     end
 
-    def set_column(col_idx, width:, hidden:, outline_level:)
-      @ops << [:column, col_idx, width, hidden, outline_level]
+    def set_column(col_idx, width:, hidden:, outline_level:, collapsed: false, best_fit: false)
+      @ops << [:column, col_idx, width, hidden, outline_level, collapsed, best_fit]
       nil
     end
 
@@ -1891,7 +1915,7 @@ class PbtTest < Test::Unit::TestCase
             when :skip_rows
               sheet.skip_rows(op[1])
             when :column
-              sheet.column(op[1], width: op[2], hidden: op[3], outline_level: op[4])
+              sheet.column(op[1], width: op[2], hidden: op[3], outline_level: op[4], collapsed: op[5], best_fit: op[6])
             when :freeze_pane
               sheet.freeze_pane(row: op[1], column: 0)
             when :merge_filter
@@ -1958,14 +1982,30 @@ class PbtTest < Test::Unit::TestCase
             col_idx: Pbt.constant_from(0, 1),
             width: Pbt.integer(min: 10, max: 30),
             hidden: Pbt.boolean,
-            outline_level: Pbt.constant_from(nil, 1, 2)
+            outline_level: Pbt.constant_from(nil, 1, 2),
+            collapsed: Pbt.boolean,
+            best_fit: Pbt.boolean
           )
           c.next_state do |s, args|
-            col_spec = { width: args[:width].to_f, hidden: args[:hidden], outline_level: args[:outline_level] }
+            prev_col = s.columns[args[:col_idx]]
+            col_spec = {
+              width: args[:width].to_f,
+              hidden: args[:hidden] || prev_col&.dig(:hidden) || false,
+              outline_level: args[:outline_level],
+              collapsed: args[:collapsed] || prev_col&.dig(:collapsed) || false,
+              best_fit: args[:best_fit] || prev_col&.dig(:best_fit) || false
+            }
             s.with(columns: s.columns.merge(args[:col_idx] => col_spec))
           end
           c.run do |sut, args|
-            sut.set_column(args[:col_idx], width: args[:width], hidden: args[:hidden], outline_level: args[:outline_level])
+            sut.set_column(
+              args[:col_idx],
+              width: args[:width],
+              hidden: args[:hidden],
+              outline_level: args[:outline_level],
+              collapsed: args[:collapsed],
+              best_fit: args[:best_fit]
+            )
           end
         end
 
@@ -2028,9 +2068,9 @@ class PbtTest < Test::Unit::TestCase
           assert_equal state.freeze_row, loaded_ws.freeze_pane&.row
 
           expected_cols = state.columns.sort_by(&:first).map do |idx, col|
-            [idx, col[:width], col[:hidden], col[:outline_level]]
+            [idx, col[:width], col[:hidden], col[:outline_level], col[:collapsed], col[:best_fit]]
           end
-          loaded_cols = loaded_ws.columns.map { |c| [c.index, c.width, c.hidden?, c.outline_level] }
+          loaded_cols = loaded_ws.columns.map { |c| [c.index, c.width, c.hidden?, c.outline_level, c.collapsed?, c.best_fit?] }
           assert_equal expected_cols, loaded_cols
 
           stream_count = 0
@@ -2043,7 +2083,7 @@ class PbtTest < Test::Unit::TestCase
             assert_equal(loaded_ws.hyperlinks.transform_values(&:url), stream_sheet.hyperlinks.transform_values(&:url))
             assert_equal loaded_ws.print_area, stream_sheet.print_area
             assert_equal loaded_ws.freeze_pane&.row, stream_sheet.freeze_pane&.row
-            assert_equal(loaded_cols, stream_sheet.columns.map { |c| [c.index, c.width, c.hidden?, c.outline_level] })
+            assert_equal(loaded_cols, stream_sheet.columns.map { |c| [c.index, c.width, c.hidden?, c.outline_level, c.collapsed?, c.best_fit?] })
             assert_equal(loaded_rows, stream_sheet.each_row.map { |r| [r.index, r.values] })
 
             mat_ws = stream_sheet.load
@@ -2054,7 +2094,7 @@ class PbtTest < Test::Unit::TestCase
             assert_equal(loaded_ws.hyperlinks.transform_values(&:url), mat_ws.hyperlinks.transform_values(&:url))
             assert_equal loaded_ws.print_area, mat_ws.print_area
             assert_equal loaded_ws.freeze_pane&.row, mat_ws.freeze_pane&.row
-            assert_equal(loaded_cols, mat_ws.columns.map { |c| [c.index, c.width, c.hidden?, c.outline_level] })
+            assert_equal(loaded_cols, mat_ws.columns.map { |c| [c.index, c.width, c.hidden?, c.outline_level, c.collapsed?, c.best_fit?] })
             assert_equal(loaded_rows, mat_ws.rows.map { |r| [r.index, r.cells.map(&:value)] })
           end
           assert_equal 1, stream_count

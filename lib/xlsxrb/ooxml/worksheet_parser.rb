@@ -666,6 +666,8 @@ module Xlsxrb
               width: attrs["width"]&.to_f,
               hidden: attrs["hidden"] == "1" || (attrs["hidden"]&.casecmp?("true") || false),
               custom_width: attrs["customWidth"] == "1" || (attrs["customWidth"]&.casecmp?("true") || false),
+              best_fit: attrs["bestFit"] == "1" || (attrs["bestFit"]&.casecmp?("true") || false),
+              collapsed: attrs["collapsed"] == "1" || (attrs["collapsed"]&.casecmp?("true") || false),
               outline_level: attrs["outlineLevel"]&.to_i,
               style_index: attrs["style"]&.to_i
             }

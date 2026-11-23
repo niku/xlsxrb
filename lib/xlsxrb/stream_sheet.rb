@@ -1075,6 +1075,8 @@ module Xlsxrb
             width: rc[:width],
             hidden: rc[:hidden] || false,
             custom_width: rc[:custom_width] || false,
+            best_fit: rc[:best_fit] || false,
+            collapsed: rc[:collapsed] || false,
             outline_level: rc[:outline_level],
             style_index: rc[:style_index],
             unmapped_data: col_unmapped

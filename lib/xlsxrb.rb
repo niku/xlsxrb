@@ -1111,7 +1111,7 @@ module Xlsxrb
         style_idx = col.unmapped_data&.[](:style_index) || col.unmapped_data&.[](:style) || (col.respond_to?(:style_index) && col.style_index)
         min = col.unmapped_data&.[](:min)
         max = col.unmapped_data&.[](:max)
-        { index: col.index, width: col.width, hidden: col.hidden?, custom_width: col.custom_width?, outline_level: col.outline_level, style_index: style_idx, min: min, max: max }
+        { index: col.index, width: col.width, hidden: col.hidden?, custom_width: col.custom_width?, best_fit: col.best_fit?, collapsed: col.collapsed?, outline_level: col.outline_level, style_index: style_idx, min: min, max: max }
         # simplecov:enable
       end
       sd = { name: ws.name, rows: ws.rows, columns: columns }
@@ -1672,6 +1672,8 @@ module Xlsxrb
           width: rc[:width],
           hidden: rc[:hidden] || false,
           custom_width: rc[:custom_width] || false,
+          best_fit: rc[:best_fit] || false,
+          collapsed: rc[:collapsed] || false,
           outline_level: rc[:outline_level],
           style_index: rc[:style_index],
           unmapped_data: col_unmapped

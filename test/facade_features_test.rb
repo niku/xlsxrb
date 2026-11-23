@@ -1889,4 +1889,50 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     assert_equal(["on a styled cell"], cells[0].threaded_comments.map(&:text))
     assert_equal(["on a plain cell"], cells[1].threaded_comments.map(&:text))
   end
+
+  test "column best_fit and collapsed flags are preserved across builders and readers" do
+    live_build_cols = nil
+    wb = Xlsxrb.build do |w|
+      w.sheet("Cols") do |s|
+        s.column(0, width: 15, best_fit: true, collapsed: true)
+        s.column(1, width: 20, best_fit: false, collapsed: false)
+        live_build_cols = s.columns.map { |c| [c.index, c.best_fit?, c.collapsed?] }
+        s.row(%w[A B])
+      end
+    end
+    assert_equal([[0, true, true], [1, false, false]], live_build_cols)
+
+    tmp_build = Tempfile.new(["col_flags_build", ".xlsx"])
+    tmp_stream = Tempfile.new(["col_flags_stream", ".xlsx"])
+    begin
+      Xlsxrb.write(tmp_build.path, wb)
+
+      live_stream_cols = nil
+      Xlsxrb.write(tmp_stream.path) do |w|
+        w.sheet("Cols") do |s|
+          s.column(0, width: 15, best_fit: true, collapsed: true)
+          s.column(1, width: 20, best_fit: false, collapsed: false)
+          live_stream_cols = s.columns.map { |c| [c.index, c.best_fit?, c.collapsed?] }
+          s.row(%w[A B])
+        end
+      end
+      assert_equal([[0, true, true], [1, false, false]], live_stream_cols)
+
+      [tmp_build.path, tmp_stream.path].each do |path|
+        loaded_cols = Xlsxrb.load(path).sheet(0).columns.map { |c| [c.index, c.best_fit?, c.collapsed?] }
+        assert_equal([[0, true, true], [1, false, false]], loaded_cols)
+
+        Xlsxrb.read(path) do |stream_sheet|
+          stream_cols = stream_sheet.columns.map { |c| [c.index, c.best_fit?, c.collapsed?] }
+          assert_equal([[0, true, true], [1, false, false]], stream_cols)
+
+          mat_cols = stream_sheet.load.columns.map { |c| [c.index, c.best_fit?, c.collapsed?] }
+          assert_equal([[0, true, true], [1, false, false]], mat_cols)
+        end
+      end
+    ensure
+      tmp_build&.close!
+      tmp_stream&.close!
+    end
+  end
 end

@@ -343,8 +343,10 @@ module Xlsxrb
           new_style = style.nil? ? prev.style_index : style
           unmapped = prev.unmapped_data ? prev.unmapped_data.dup : {}
           unmapped[:style_index] = new_style if new_style
-          unmapped[:collapsed] = true if collapsed || prev.unmapped_data&.[](:collapsed)
-          unmapped[:best_fit] = true if best_fit || prev.unmapped_data&.[](:best_fit)
+          new_collapsed = collapsed || prev.collapsed? || (prev.unmapped_data&.[](:collapsed) ? true : false)
+          new_best_fit = best_fit || prev.best_fit? || (prev.unmapped_data&.[](:best_fit) ? true : false)
+          unmapped[:collapsed] = true if new_collapsed
+          unmapped[:best_fit] = true if new_best_fit
           @columns[existing_idx] = Elements::Column.new(
             index: idx,
             width: new_width,
@@ -352,6 +354,8 @@ module Xlsxrb
             custom_width: new_custom_width,
             outline_level: new_outline,
             style_index: new_style,
+            best_fit: new_best_fit,
+            collapsed: new_collapsed,
             unmapped_data: unmapped
           )
         else
@@ -365,6 +369,8 @@ module Xlsxrb
             custom_width: custom_width || !width.nil?,
             outline_level: outline_level,
             style_index: style,
+            best_fit: best_fit ? true : false,
+            collapsed: collapsed ? true : false,
             unmapped_data: unmapped
           )
         end
