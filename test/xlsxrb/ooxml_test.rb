@@ -717,6 +717,53 @@ class OoxmlTest < Test::Unit::TestCase
     assert_equal("Feature Value", grandchild[:text])
   end
 
+  test "xml_parser parse_listeners broadcasts one pass and enforces element depth limit" do
+    listener_class = Class.new do
+      attr_reader :events
+
+      def initialize(stop_tag)
+        @stop_tag = stop_tag
+        @events = []
+      end
+
+      def start_element(_uri, localname, _qname, attrs)
+        @events << [:start, localname, attrs.dup]
+      end
+
+      def characters(text)
+        @events << [:chars, text] unless text.strip.empty?
+      end
+
+      def end_element(_uri, localname, _qname)
+        @events << [:end, localname] if localname == @stop_tag
+      end
+    end
+
+    xml = %(<root><item label="A &amp; B">hello</item></root>)
+    l1 = listener_class.new("item")
+    l2 = listener_class.new("root")
+
+    Xlsxrb::Ooxml::XmlParser.parse_listeners(xml, [l1, l2])
+
+    expected_shared = [
+      [:start, "root", {}],
+      [:start, "item", { "label" => "A & B" }],
+      [:chars, "hello"]
+    ]
+    assert_equal(expected_shared + [[:end, "item"]], l1.events)
+    assert_equal(expected_shared + [[:end, "root"]], l2.events)
+
+    assert_nothing_raised do
+      Xlsxrb::Ooxml::XmlParser.parse_listeners(xml, [])
+    end
+
+    deep_xml = +"<a>" * 300
+    deep_xml << ("</a>" * 300)
+    assert_raise(Xlsxrb::ParseError) do
+      Xlsxrb::Ooxml::XmlParser.parse_listeners(deep_xml, [l1, l2])
+    end
+  end
+
   # --- SharedStringsParser ---
 
   test "shared_strings_parser parses shared strings" do
@@ -982,6 +1029,50 @@ class OoxmlTest < Test::Unit::TestCase
     assert_equal([], Xlsxrb::Ooxml::WorkbookParser.parse(nil))
   end
 
+  test "workbook_parser parse_with_properties captures workbook_protection attributes" do
+    self_closing_xml = <<~XML
+      <workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+        <workbookProtection lockStructure="1" lockWindows="true" lockRevision="0" workbookPassword="ABCD" workbookAlgorithmName="SHA-512" workbookSaltValue="c2FsdA==" workbookSpinCount="100000" unknownAttr="ignored"/>
+        <sheets><sheet name="S1" sheetId="1" r:id="rId1" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"/></sheets>
+      </workbook>
+    XML
+    parsed = Xlsxrb::Ooxml::WorkbookParser.parse_with_properties(self_closing_xml)
+    assert_equal(
+      {
+        lock_structure: true,
+        lock_windows: true,
+        lock_revision: false,
+        workbook_password: "ABCD",
+        algorithm_name: "SHA-512",
+        salt_value: "c2FsdA==",
+        spin_count: 100_000
+      },
+      parsed[:workbook_protection]
+    )
+
+    wrapped_xml = <<~XML
+      <workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+        <workbookProtection lockStructure="0" revisionsAlgorithmName="SHA-256" revisionsSpinCount="50000"></workbookProtection>
+        <sheets/>
+      </workbook>
+    XML
+    wrapped = Xlsxrb::Ooxml::WorkbookParser.parse_with_properties(wrapped_xml)
+    assert_equal(
+      {
+        lock_structure: false,
+        revisions_algorithm_name: "SHA-256",
+        revisions_spin_count: 50_000
+      },
+      wrapped[:workbook_protection]
+    )
+
+    empty_prot_xml = %(<workbook><workbookProtection/><sheets/></workbook>)
+    assert_nil(Xlsxrb::Ooxml::WorkbookParser.parse_with_properties(empty_prot_xml)[:workbook_protection])
+
+    no_prot_xml = %(<workbook><sheets/></workbook>)
+    assert_nil(Xlsxrb::Ooxml::WorkbookParser.parse_with_properties(no_prot_xml)[:workbook_protection])
+  end
+
   # --- RelationshipsParser ---
 
   test "relationships_parser parses relationships" do
@@ -1018,6 +1109,41 @@ class OoxmlTest < Test::Unit::TestCase
 
     malformed_xml = %(<Relationships><Relationship Target="worksheets/sheet2.xml" Type="http://..." Id="rId2"><broken xml>)
     assert_equal({ "rId2" => "worksheets/sheet2.xml" }, Xlsxrb::Ooxml::RelationshipsParser.parse(malformed_xml))
+  end
+
+  test "relationships_parser parse_all returns entries, targets, and types across valid, malformed, and empty inputs" do
+    valid_xml = <<~XML
+      <?xml version="1.0" encoding="UTF-8"?>
+      <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+        <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+        <Relationship Id="rId2" Target="https://example.com" TargetMode="External"/>
+        <Relationship Id="rId3"/>
+        <Relationship Target="missing-id.xml"/>
+      </Relationships>
+    XML
+    parsed = Xlsxrb::Ooxml::RelationshipsParser.parse_all(valid_xml)
+    expected_entries = [
+      { id: "rId1", type: "http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet", target: "worksheets/sheet1.xml" },
+      { id: "rId2", type: nil, target: "https://example.com" }
+    ]
+    assert_equal(expected_entries, parsed[:entries])
+    assert_equal({ "rId1" => "worksheets/sheet1.xml", "rId2" => "https://example.com" }, parsed[:targets])
+    assert_equal({ "rId1" => "http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" }, parsed[:types])
+
+    dup_xml = %(  <?xml version="1.0"?><?xml version="1.0"?><Relationships><Relationship Id="rId4" Type="urn:t" Target="a.xml"/></Relationships>)
+    dup_parsed = Xlsxrb::Ooxml::RelationshipsParser.parse_all(dup_xml)
+    assert_equal({ "rId4" => "a.xml" }, dup_parsed[:targets])
+    assert_equal({ "rId4" => "urn:t" }, dup_parsed[:types])
+
+    malformed_xml = %(<Relationships><Relationship Id="rId5" Type="urn:m" Target="m.xml"><broken xml>)
+    malformed_parsed = Xlsxrb::Ooxml::RelationshipsParser.parse_all(malformed_xml)
+    assert_equal([{ id: "rId5", type: "urn:m", target: "m.xml" }], malformed_parsed[:entries])
+    assert_equal({ "rId5" => "m.xml" }, malformed_parsed[:targets])
+    assert_equal({ "rId5" => "urn:m" }, malformed_parsed[:types])
+    assert_equal(malformed_parsed[:entries], Xlsxrb::Ooxml::RelationshipsParser.parse_entries(malformed_xml))
+
+    assert_equal({ entries: [], targets: {}, types: {} }, Xlsxrb::Ooxml::RelationshipsParser.parse_all(""))
+    assert_equal({ entries: [], targets: {}, types: {} }, Xlsxrb::Ooxml::RelationshipsParser.parse_all(nil))
   end
 
   # --- WorksheetParser ---

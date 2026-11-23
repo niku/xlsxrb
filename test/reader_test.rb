@@ -11464,4 +11464,95 @@ class ReaderTest < Test::Unit::TestCase
       assert_equal("LH", mat.header_footer_images.first.position)
     end
   end
+
+  test "Xlsxrb.load strips sheetData safely around non-tag text, namespaced tags, and unclosed tags" do
+    bytes = Xlsxrb.write do |w|
+      w.sheet("Edge") do |s|
+        s.header_footer(odd_header: "prefix sheetData suffix")
+        s.row(%w[sheetData ok])
+        s.merge("A1:B1")
+      end
+    end
+    wb = Xlsxrb.load(StringIO.new(bytes))
+    sheet = wb.sheet("Edge")
+    assert_equal("sheetData", sheet["A1"].value)
+    assert_equal(["A1:B1"], sheet.merged_cells)
+    assert_equal("prefix sheetData suffix", sheet.header_footer.odd_header)
+
+    plain = %(<worksheet><sheetData><row r="1"/></sheetData><mergeCells/></worksheet>)
+    assert_equal(%(<worksheet><sheetData/><mergeCells/></worksheet>), Xlsxrb.send(:strip_sheet_data, plain))
+
+    ns_xml = %(<x:worksheet><x:headerFooter><x:oddHeader>sheetData</x:oddHeader></x:headerFooter><x:sheetData r="1"><x:row/></x:sheetData><x:mergeCells/></x:worksheet>)
+    assert_equal(
+      %(<x:worksheet><x:headerFooter><x:oddHeader>sheetData</x:oddHeader></x:headerFooter><x:sheetData/><x:mergeCells/></x:worksheet>),
+      Xlsxrb.send(:strip_sheet_data, ns_xml)
+    )
+
+    self_closing = %(<worksheet><sheetData/><mergeCells/></worksheet>)
+    assert_equal(self_closing, Xlsxrb.send(:strip_sheet_data, self_closing))
+
+    unclosed = %(<worksheet><mergeCells count="1"><mergeCell ref="A1:B1"/></mergeCells><sheetData><row r="1"/></worksheet>)
+    assert_equal(unclosed, Xlsxrb.send(:strip_sheet_data, unclosed))
+
+    io = StringIO.new
+    Xlsxrb::Ooxml::ZipWriter.open(io) do |z|
+      z.add_entry("[Content_Types].xml", %(<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/></Types>))
+      z.add_entry("_rels/.rels", %(<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>))
+      z.add_entry("xl/workbook.xml", %(<?xml version="1.0" encoding="UTF-8"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Broken" sheetId="1" r:id="rId1"/></sheets></workbook>))
+      z.add_entry("xl/_rels/workbook.xml.rels", %(<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/></Relationships>))
+      z.add_entry("xl/worksheets/sheet1.xml", %(<?xml version="1.0" encoding="UTF-8"?>#{unclosed}))
+    end
+    assert_raise(Xlsxrb::ParseError) { Xlsxrb.load(StringIO.new(io.string)) }
+  end
+
+  test "Xlsxrb.load reads workbook rels, sheet rels, drawing parts, and person.xml once per load" do
+    png = "\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\b\x06\x00\x00\x00\x1f\x15c4\x00\x00\x00\nIDATx\x9cc`\x00\x00\x00\x02\x00\x01H\xaf\xa4q\x00\x00\x00\x00IEND\xaeB`\x82".b
+    bytes = Xlsxrb.write do |w|
+      w.sheet("First") do |s|
+        s.row(%w[Label Val])
+        s.row(["A", 10])
+        s.row(["B", 20])
+        s.hyperlink("A1", "https://example.com")
+        s.comment("A1", "legacy note")
+        s.threaded_comment("B1", "thread 1", author: "Alice")
+        s.image(png, ext: "png", from_row: 0, from_col: 2)
+        s.chart(type: :line, series: [{ cat_ref: "First!$A$2:$A$3", val_ref: "First!$B$2:$B$3" }])
+      end
+      w.sheet("Second") do |s|
+        s.row(["S2"])
+        s.threaded_comment("A1", "thread 2", author: "Alice")
+      end
+    end
+
+    read_counts = Hash.new(0)
+    owner_thread = Thread.current
+    trace = TracePoint.new(:call) do |tp|
+      # Guard inside the callback because TracePoint#enable ignores target_thread when target is given on Ruby 4.0.
+      next unless Thread.current.equal?(owner_thread)
+
+      read_counts[tp.binding.local_variable_get(:name)] += 1
+    end
+    wb = trace.enable(
+      target: Xlsxrb::Ooxml::ZipReader.instance_method(:read_entry),
+      target_thread: owner_thread
+    ) do
+      Xlsxrb.load(StringIO.new(bytes))
+    end
+
+    assert_equal(1, read_counts["xl/_rels/workbook.xml.rels"])
+    assert_equal(1, read_counts["xl/worksheets/_rels/sheet1.xml.rels"])
+    assert_equal(1, read_counts["xl/drawings/drawing1.xml"])
+    assert_equal(1, read_counts["xl/drawings/_rels/drawing1.xml.rels"])
+    assert_equal(1, read_counts["xl/persons/person.xml"])
+
+    s1 = wb.sheet("First")
+    s2 = wb.sheet("Second")
+    assert_equal("https://example.com", s1.hyperlinks["A1"].url)
+    assert_equal(["legacy note"], s1.comments.map(&:text))
+    assert_equal(["thread 1"], s1.threaded_comments.map(&:text))
+    assert_equal(["Alice"], s1.threaded_comments.map(&:author))
+    assert_equal(["thread 2"], s2.threaded_comments.map(&:text))
+    assert_equal(1, s1.images.size)
+    assert_equal(1, s1.charts.size)
+  end
 end

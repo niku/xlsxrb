@@ -14,7 +14,13 @@ module Xlsxrb
       end
 
       def self.parse_with_properties(xml_string)
-        return { sheets: [], date1904: false, defined_names: [], active_tab: nil, full_calc_on_load: nil, first_sheet: nil, show_sheet_tabs: nil, tab_ratio: nil, code_name: nil } if xml_string.nil? || xml_string.empty?
+        if xml_string.nil? || xml_string.empty?
+          return {
+            sheets: [], date1904: false, defined_names: [], active_tab: nil,
+            full_calc_on_load: nil, first_sheet: nil, show_sheet_tabs: nil,
+            tab_ratio: nil, code_name: nil, workbook_protection: nil
+          }
+        end
 
         listener = Listener.new
         XmlParser.parse(xml_string, listener)
@@ -27,7 +33,8 @@ module Xlsxrb
           first_sheet: listener.first_sheet,
           show_sheet_tabs: listener.show_sheet_tabs,
           tab_ratio: listener.tab_ratio,
-          code_name: listener.code_name
+          code_name: listener.code_name,
+          workbook_protection: listener.workbook_protection
         }
       end
 
@@ -35,7 +42,24 @@ module Xlsxrb
       class Listener
         include REXML::SAX2Listener
 
-        attr_reader :sheets, :date1904, :defined_names, :active_tab, :full_calc_on_load, :first_sheet, :show_sheet_tabs, :tab_ratio, :code_name
+        WORKBOOK_PROTECTION_ATTRIBUTES = {
+          "workbookPassword" => %i[workbook_password string],
+          "lockStructure" => %i[lock_structure bool],
+          "lockWindows" => %i[lock_windows bool],
+          "lockRevision" => %i[lock_revision bool],
+          "revisionsPassword" => %i[revisions_password string],
+          "workbookAlgorithmName" => %i[algorithm_name string],
+          "workbookHashValue" => %i[hash_value string],
+          "workbookSaltValue" => %i[salt_value string],
+          "workbookSpinCount" => %i[spin_count int],
+          "revisionsAlgorithmName" => %i[revisions_algorithm_name string],
+          "revisionsHashValue" => %i[revisions_hash_value string],
+          "revisionsSaltValue" => %i[revisions_salt_value string],
+          "revisionsSpinCount" => %i[revisions_spin_count int]
+        }.transform_values(&:freeze).freeze
+        private_constant :WORKBOOK_PROTECTION_ATTRIBUTES
+
+        attr_reader :sheets, :date1904, :defined_names, :active_tab, :full_calc_on_load, :first_sheet, :show_sheet_tabs, :tab_ratio, :code_name, :workbook_protection
 
         def initialize
           @sheets = []
@@ -47,6 +71,7 @@ module Xlsxrb
           @show_sheet_tabs = nil
           @tab_ratio = nil
           @code_name = nil
+          @workbook_protection = nil
           @in_defined_name = false
           @current_dn = nil
           @dn_text = +""
@@ -85,6 +110,19 @@ module Xlsxrb
           when "calcPr"
             fcol = attrs["fullCalcOnLoad"]
             @full_calc_on_load = %w[1 true].include?(fcol) unless fcol.nil?
+          when "workbookProtection"
+            prot = {}
+            attrs.each do |attr, value|
+              key, kind = WORKBOOK_PROTECTION_ATTRIBUTES[attr]
+              next unless key
+
+              prot[key] = case kind
+                          when :bool then %w[1 true].include?(value)
+                          when :int then value.to_i
+                          else value
+                          end
+            end
+            @workbook_protection = prot unless prot.empty?
           when "definedName"
             @in_defined_name = true
             @current_dn = {
@@ -112,77 +150,85 @@ module Xlsxrb
       end
     end
 
-    # Parses .rels files to build rId -> target mapping.
+    # Parses .rels files to build rId -> target, type, and entry mappings.
     class RelationshipsParser
-      def self.parse(xml_string)
-        return {} if xml_string.nil? || xml_string.empty?
+      EMPTY_PARSED_RELS = { entries: [].freeze, targets: {}.freeze, types: {}.freeze }.freeze
+      private_constant :EMPTY_PARSED_RELS
 
-        sanitized = xml_string.lstrip
-        if sanitized.start_with?("<?xml")
-          first_decl_end = sanitized.index("?>")
-          if first_decl_end
-            decl = sanitized[0..(first_decl_end + 1)]
-            rest = sanitized[(first_decl_end + 2)..].gsub(/<\?xml\b[^>]*\?>/i, "")
-            sanitized = "#{decl}#{rest}".lstrip
-          end
-        end
+      # Parses a .rels XML part in one pass, returning targets, types, and entry hashes.
+      #: (String? xml_string) -> Hash[Symbol, untyped]
+      def self.parse_all(xml_string)
+        return EMPTY_PARSED_RELS if xml_string.nil? || xml_string.empty?
 
+        sanitized = sanitize_xml_declarations(xml_string)
         listener = Listener.new
         begin
           XmlParser.parse(sanitized, listener)
         rescue StandardError
           # Fallback to regex scanning if SAX parser fails on malformed XML
+          listener = Listener.new
           sanitized.scan(%r{<(?:[a-zA-Z0-9_]+:)?Relationship\b([^>]*)/?>}i) do |match|
             attrs_str = match[0]
             id = attrs_str[/\bId=["']([^"']+)["']/i, 1]
+            type = attrs_str[/\bType=["']([^"']+)["']/i, 1]
             target = attrs_str[/\bTarget=["']([^"']+)["']/i, 1]
-            listener.relationships[id] = target if id && target
+            listener.record(id, target, type)
           end
         end
-        listener.relationships
+        { entries: listener.entries, targets: listener.relationships, types: listener.types }
+      end
+
+      def self.parse(xml_string)
+        parse_all(xml_string)[:targets]
       end
 
       # Parses .rels files to return array of relationship hashes with id, type, and target.
       def self.parse_entries(xml_string)
-        return [] if xml_string.nil? || xml_string.empty?
-
-        sanitized = xml_string.lstrip
-        if sanitized.start_with?("<?xml")
-          first_decl_end = sanitized.index("?>")
-          if first_decl_end
-            decl = sanitized[0..(first_decl_end + 1)]
-            rest = sanitized[(first_decl_end + 2)..].gsub(/<\?xml\b[^>]*\?>/i, "")
-            sanitized = "#{decl}#{rest}".lstrip
-          end
-        end
-
-        entries = []
-        sanitized.scan(%r{<(?:[a-zA-Z0-9_]+:)?Relationship\b([^>]*)/?>}i) do |match|
-          attrs_str = match[0]
-          id = attrs_str[/\bId=["']([^"']+)["']/i, 1]
-          type = attrs_str[/\bType=["']([^"']+)["']/i, 1]
-          target = attrs_str[/\bTarget=["']([^"']+)["']/i, 1]
-          entries << { id: id, type: type, target: target } if id && target
-        end
-        entries
+        parse_all(xml_string)[:entries]
       end
+
+      #: (String xml_string) -> String
+      def self.sanitize_xml_declarations(xml_string)
+        sanitized = xml_string.lstrip
+        return sanitized unless sanitized.start_with?("<?xml")
+
+        first_decl_end = sanitized.index("?>")
+        return sanitized unless first_decl_end
+
+        decl = sanitized[0..(first_decl_end + 1)]
+        rest = sanitized[(first_decl_end + 2)..].gsub(/<\?xml\b[^>]*\?>/i, "")
+        "#{decl}#{rest}".lstrip
+      rescue ArgumentError
+        # Keep raw bytes unchanged if invalid byte sequences prevent declaration stripping.
+        xml_string
+      end
+      private_class_method :sanitize_xml_declarations
 
       # SAX listener for .rels relationship files.
       class Listener
         include REXML::SAX2Listener
 
-        attr_reader :relationships
+        attr_reader :relationships, :types, :entries
 
         def initialize
           @relationships = {}
+          @types = {}
+          @entries = []
         end
 
         def start_element(_uri, localname, _qname, attrs)
           return unless localname == "Relationship"
 
-          rid = attrs["Id"]
-          target = attrs["Target"]
-          @relationships[rid] = target if rid && target
+          record(attrs["Id"], attrs["Target"], attrs["Type"])
+        end
+
+        #: (String? rid, String? target, String? rel_type) -> void
+        def record(rid, target, rel_type)
+          return unless rid && target
+
+          @relationships[rid] = target
+          @types[rid] = rel_type if rel_type
+          @entries << { id: rid, type: rel_type, target: target }
         end
 
         def end_element(_uri, _localname, _qname); end

@@ -52,23 +52,14 @@ module Xlsxrb
   # Maximum number of individual cell/range references allowed in a single data validation element by Excel.
   MAX_REFS_PER_VALIDATION = 32_767
 
-  # <workbookProtection> attributes and the Elements::WorkbookProtection members they load into.
-  WORKBOOK_PROTECTION_ATTRIBUTES = {
-    "workbookPassword" => %i[workbook_password string],
-    "lockStructure" => %i[lock_structure bool],
-    "lockWindows" => %i[lock_windows bool],
-    "lockRevision" => %i[lock_revision bool],
-    "revisionsPassword" => %i[revisions_password string],
-    "workbookAlgorithmName" => %i[algorithm_name string],
-    "workbookHashValue" => %i[hash_value string],
-    "workbookSaltValue" => %i[salt_value string],
-    "workbookSpinCount" => %i[spin_count int],
-    "revisionsAlgorithmName" => %i[revisions_algorithm_name string],
-    "revisionsHashValue" => %i[revisions_hash_value string],
-    "revisionsSaltValue" => %i[revisions_salt_value string],
-    "revisionsSpinCount" => %i[revisions_spin_count int]
-  }.transform_values(&:freeze).freeze
-  private_constant :WORKBOOK_PROTECTION_ATTRIBUTES
+  EMPTY_RELS = { entries: [].freeze, targets: {}.freeze, types: {}.freeze }.freeze
+  private_constant :EMPTY_RELS
+
+  SHEET_DATA_DELIMS = [62, 32, 9, 10, 13, 47].freeze # >, space, \t, \n, \r, /
+  private_constant :SHEET_DATA_DELIMS
+
+  PRINT_PAGE_TAG_RE = /<(?:pageSetup|pageMargins|headerFooter|printOptions|rowBreaks|colBreaks)\b/
+  private_constant :PRINT_PAGE_TAG_RE
 
   # ZIP deflate level used when no compression_level is given.
   # See docs/adr/0009-default-zip-compression-level.md.
@@ -850,7 +841,9 @@ module Xlsxrb
       wb_dir = File.dirname(workbook_path)
       wb_rels_name = wb_dir == "." ? "_rels/#{File.basename(workbook_path)}.rels" : "#{wb_dir}/_rels/#{File.basename(workbook_path)}.rels"
       rels_xml = zip_reader.read_entry(wb_rels_name)
-      rels, rel_types = parse_workbook_relationships(rels_xml)
+      wb_rels = rels_xml && !rels_xml.empty? ? Ooxml::RelationshipsParser.parse_all(rels_xml) : EMPTY_RELS
+      rels = wb_rels[:targets]
+      rel_types = wb_rels[:types]
 
       sst_entry = resolve_part_entry(zip_reader, rels, "sharedStrings", "sharedStrings.xml", wb_dir)
       shared_strings_xml = sst_entry ? zip_reader.read_entry(sst_entry) : nil
@@ -865,6 +858,16 @@ module Xlsxrb
       workbook_sheets = wb_parsed[:sheets]
       is_date1904 = wb_parsed[:date1904]
       defined_names = wb_parsed[:defined_names] || []
+
+      persons_loaded = false
+      persons_map_cache = nil
+      persons_resolver = lambda do
+        unless persons_loaded
+          persons_loaded = true
+          persons_map_cache = resolve_persons_map(zip_reader: zip_reader, workbook_rels: wb_rels[:entries])
+        end
+        persons_map_cache
+      end
 
       non_worksheet_sheets = []
       ws_idx = 0
@@ -900,7 +903,8 @@ module Xlsxrb
           pad_empty_rows: pad_empty_rows,
           pad_empty_cells: pad_empty_cells,
           print_area: pa,
-          print_titles: pt
+          print_titles: pt,
+          persons_resolver: persons_resolver
         )
       end
 
@@ -916,24 +920,7 @@ module Xlsxrb
       wb_props[:code_name] = wb_parsed[:code_name] if wb_parsed[:code_name]
       wb_unmapped[:workbook_properties] = wb_props unless wb_props.empty?
       wb_unmapped[:non_worksheet_sheets] = non_worksheet_sheets unless non_worksheet_sheets.empty?
-
-      if workbook_xml&.include?("<workbookProtection")
-        prot_match = workbook_xml.match(%r{<workbookProtection\b([^>]*)/>})
-        if prot_match
-          prot = {}
-          prot_match[1].scan(/([A-Za-z]+)="([^"]*)"/) do |attr, value|
-            key, kind = WORKBOOK_PROTECTION_ATTRIBUTES[attr]
-            next unless key
-
-            prot[key] = case kind
-                        when :bool then %w[1 true].include?(value)
-                        when :int then value.to_i
-                        else value
-                        end
-          end
-          wb_unmapped[:workbook_protection] = prot unless prot.empty?
-        end
-      end
+      wb_unmapped[:workbook_protection] = wb_parsed[:workbook_protection] if wb_parsed[:workbook_protection]
 
       core_xml = zip_reader.read_entry("docProps/core.xml")
       if core_xml && !core_xml.empty?
@@ -1344,12 +1331,8 @@ module Xlsxrb
     def parse_workbook_relationships(rels_xml)
       return [{}, {}] if rels_xml.nil? || rels_xml.empty?
 
-      targets = Ooxml::RelationshipsParser.parse(rels_xml)
-      types = {}
-      Ooxml::RelationshipsParser.parse_entries(rels_xml).each do |entry|
-        types[entry[:id]] = entry[:type] if entry[:id] && entry[:type]
-      end
-      [targets, types]
+      parsed = Ooxml::RelationshipsParser.parse_all(rels_xml)
+      [parsed[:targets], parsed[:types]]
     end
 
     def non_worksheet_relationship?(rel_type, target_path)
@@ -1403,8 +1386,8 @@ module Xlsxrb
       fallbacks.find { |f| zip_reader.entry?(f) }
     end
 
-    #: (String name, String? sheet_xml, Array[String] shared_strings, untyped styles, ?state: Symbol, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?hyperlinks: Hash[String, untyped]?, ?comments: Array[Hash[Symbol, untyped]]?, ?images: Array[Elements::Image]?, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?merged_cells: Array[String]?, ?auto_filter: String?, ?tables: Array[Hash[Symbol, untyped]]?, ?shapes: Array[Hash[Symbol, untyped]]?, ?freeze_pane: Hash[Symbol, untyped]?, ?page_setup: Hash[Symbol, untyped]?, ?page_margins: Hash[Symbol, untyped]?, ?header_footer: Hash[Symbol, untyped]?, ?print_options: Hash[Symbol, untyped]?, ?sheet_protection: Hash[Symbol, untyped]?, ?sheet_view: Hash[Symbol, untyped]?, ?sheet_properties: Hash[Symbol, untyped]?, ?sheet_format: Hash[Symbol, untyped]?, ?row_breaks: Array[untyped]?, ?column_breaks: Array[untyped]?, ?col_breaks: Array[untyped]?, ?protected_ranges: Array[Hash[Symbol, untyped]]?, ?cell_watches: Array[String]?, ?ignored_errors: Array[Hash[Symbol, untyped]]?, ?phonetic_properties: Hash[Symbol, untyped]?, ?selection: (Hash[Symbol, untyped] | Array[Hash[Symbol, untyped]])?, ?sheet_calc_properties: Hash[Symbol, untyped]?, ?background_image: Hash[Symbol, untyped]?, ?threaded_comments: Array[Hash[Symbol, untyped]]?, ?columns: Array[Elements::Column]?, ?pivot_tables: Array[Hash[Symbol, untyped]]?, ?split_pane: Hash[Symbol, untyped]?, ?filter_columns: Hash[Integer, Hash[Symbol, untyped]]?, ?sort_state: Hash[Symbol, untyped]?, ?header_footer_images: (Array[Elements::HeaderFooterImage] | Array[Hash[Symbol, untyped]])?, ?charts: (Array[Elements::Chart] | Array[Hash[Symbol, untyped]])?, ?sparkline_groups: (Array[Elements::SparklineGroup] | Array[Hash[Symbol, untyped]])?, ?print_area: String?, ?print_titles: (Elements::PrintTitles | Hash[Symbol, untyped])?) -> Elements::Worksheet
-    def build_worksheet(name, sheet_xml, shared_strings, styles, state: :visible, zip_reader: nil, entry_name: nil, hyperlinks: nil, comments: nil, images: nil, date1904: false, dimension: nil, trim_empty_rows: false, pad_empty_rows: false, pad_empty_cells: false, merged_cells: nil, auto_filter: nil, tables: nil, shapes: nil, freeze_pane: nil, page_setup: nil, page_margins: nil, header_footer: nil, print_options: nil, sheet_protection: nil, sheet_view: nil, sheet_properties: nil, sheet_format: nil, row_breaks: nil, column_breaks: nil, protected_ranges: nil, cell_watches: nil, ignored_errors: nil, phonetic_properties: nil, selection: nil, sheet_calc_properties: nil, background_image: nil, threaded_comments: nil, columns: nil, pivot_tables: nil, split_pane: nil, filter_columns: nil, sort_state: nil, header_footer_images: nil, charts: nil, sparkline_groups: nil, print_area: nil, print_titles: nil)
+    #: (String name, String? sheet_xml, Array[String] shared_strings, untyped styles, ?state: Symbol, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?hyperlinks: Hash[String, untyped]?, ?comments: Array[Hash[Symbol, untyped]]?, ?images: Array[Elements::Image]?, ?date1904: bool, ?dimension: String?, ?trim_empty_rows: bool, ?pad_empty_rows: bool, ?pad_empty_cells: bool, ?merged_cells: Array[String]?, ?auto_filter: String?, ?tables: Array[Hash[Symbol, untyped]]?, ?shapes: Array[Hash[Symbol, untyped]]?, ?freeze_pane: Hash[Symbol, untyped]?, ?page_setup: Hash[Symbol, untyped]?, ?page_margins: Hash[Symbol, untyped]?, ?header_footer: Hash[Symbol, untyped]?, ?print_options: Hash[Symbol, untyped]?, ?sheet_protection: Hash[Symbol, untyped]?, ?sheet_view: Hash[Symbol, untyped]?, ?sheet_properties: Hash[Symbol, untyped]?, ?sheet_format: Hash[Symbol, untyped]?, ?row_breaks: Array[untyped]?, ?column_breaks: Array[untyped]?, ?col_breaks: Array[untyped]?, ?protected_ranges: Array[Hash[Symbol, untyped]]?, ?cell_watches: Array[String]?, ?ignored_errors: Array[Hash[Symbol, untyped]]?, ?phonetic_properties: Hash[Symbol, untyped]?, ?selection: (Hash[Symbol, untyped] | Array[Hash[Symbol, untyped]])?, ?sheet_calc_properties: Hash[Symbol, untyped]?, ?background_image: Hash[Symbol, untyped]?, ?threaded_comments: Array[Hash[Symbol, untyped]]?, ?columns: Array[Elements::Column]?, ?pivot_tables: Array[Hash[Symbol, untyped]]?, ?split_pane: Hash[Symbol, untyped]?, ?filter_columns: Hash[Integer, Hash[Symbol, untyped]]?, ?sort_state: Hash[Symbol, untyped]?, ?header_footer_images: (Array[Elements::HeaderFooterImage] | Array[Hash[Symbol, untyped]])?, ?charts: (Array[Elements::Chart] | Array[Hash[Symbol, untyped]])?, ?sparkline_groups: (Array[Elements::SparklineGroup] | Array[Hash[Symbol, untyped]])?, ?print_area: String?, ?print_titles: (Elements::PrintTitles | Hash[Symbol, untyped])?, ?persons_resolver: untyped?) -> Elements::Worksheet
+    def build_worksheet(name, sheet_xml, shared_strings, styles, state: :visible, zip_reader: nil, entry_name: nil, hyperlinks: nil, comments: nil, images: nil, date1904: false, dimension: nil, trim_empty_rows: false, pad_empty_rows: false, pad_empty_cells: false, merged_cells: nil, auto_filter: nil, tables: nil, shapes: nil, freeze_pane: nil, page_setup: nil, page_margins: nil, header_footer: nil, print_options: nil, sheet_protection: nil, sheet_view: nil, sheet_properties: nil, sheet_format: nil, row_breaks: nil, column_breaks: nil, protected_ranges: nil, cell_watches: nil, ignored_errors: nil, phonetic_properties: nil, selection: nil, sheet_calc_properties: nil, background_image: nil, threaded_comments: nil, columns: nil, pivot_tables: nil, split_pane: nil, filter_columns: nil, sort_state: nil, header_footer_images: nil, charts: nil, sparkline_groups: nil, print_area: nil, print_titles: nil, persons_resolver: nil)
       sheet_dimension = dimension || sheet_xml&.slice(/<(?:[a-zA-Z0-9_]+:)?dimension\b[^>]*\bref=["']([^"']+)["']/, 1)
       if sheet_xml.nil? || sheet_xml.empty?
         return Elements::Worksheet.new(
@@ -1430,15 +1413,254 @@ module Xlsxrb
         )
       end
 
-      sheet_hyperlinks = hyperlinks || resolve_hyperlinks(sheet_xml, zip_reader: zip_reader, entry_name: entry_name)
-      sheet_comments = comments || resolve_comments(zip_reader: zip_reader, entry_name: entry_name)
-      sheet_threaded_comments = threaded_comments || resolve_threaded_comments(zip_reader: zip_reader, entry_name: entry_name)
-      sheet_images = images || resolve_images(zip_reader: zip_reader, entry_name: entry_name)
+      metadata_xml = strip_sheet_data(sheet_xml)
+      sheet_rels_loaded = false
+      sheet_rels_data = EMPTY_RELS
+      load_sheet_rels = lambda do
+        unless sheet_rels_loaded
+          sheet_rels_loaded = true
+          sheet_rels_data = read_relationships(zip_reader, entry_name) if zip_reader && entry_name
+        end
+        sheet_rels_data
+      end
+
+      sheet_hyperlinks = hyperlinks || resolve_hyperlinks(metadata_xml, zip_reader: zip_reader, entry_name: entry_name, relationships_targets: -> { load_sheet_rels.call[:targets] })
+      sheet_comments = comments || resolve_comments(zip_reader: zip_reader, entry_name: entry_name, relationships: load_sheet_rels.call[:entries])
+      sheet_threaded_comments = threaded_comments || resolve_threaded_comments(
+        zip_reader: zip_reader, entry_name: entry_name,
+        relationships: load_sheet_rels.call[:entries], persons_resolver: persons_resolver
+      )
+
+      drawing_bundle = if images.nil? || shapes.nil? || charts.nil?
+                         resolve_sheet_drawings(
+                           zip_reader, entry_name, load_sheet_rels.call[:entries],
+                           need_images: images.nil?, need_shapes: shapes.nil?, need_charts: charts.nil?
+                         )
+                       else
+                         { images: [], shapes: [], charts: [] }
+                       end
+      sheet_images = images || drawing_bundle[:images]
+      sheet_shapes = shapes || drawing_bundle[:shapes]
+      sheet_charts = charts || drawing_bundle[:charts]
+
       raw_rows = Ooxml::WorksheetParser.parse(sheet_xml, shared_strings: shared_strings, styles: styles)
-      raw_columns = Ooxml::WorksheetParser.parse_columns(sheet_xml)
+      meta = parse_worksheet_metadata(
+        metadata_xml,
+        columns: columns,
+        merged_cells: merged_cells,
+        auto_filter: auto_filter,
+        filter_columns: filter_columns,
+        sort_state: sort_state,
+        freeze_pane: freeze_pane,
+        split_pane: split_pane,
+        sheet_view: sheet_view,
+        selection: selection,
+        sheet_protection: sheet_protection,
+        sheet_properties: sheet_properties,
+        sheet_format: sheet_format,
+        page_setup: page_setup,
+        page_margins: page_margins,
+        header_footer: header_footer,
+        print_options: print_options,
+        row_breaks: row_breaks,
+        column_breaks: column_breaks,
+        protected_ranges: protected_ranges,
+        cell_watches: cell_watches,
+        ignored_errors: ignored_errors,
+        phonetic_properties: phonetic_properties,
+        sparkline_groups: sparkline_groups
+      )
 
       rows = raw_rows.map { |rr| build_row_from_raw(rr, sheet_hyperlinks, sheet_comments, styles, date1904: date1904, threaded_comments: sheet_threaded_comments) }
-      sheet_columns = columns || raw_columns.map do |rc|
+      sheet_tables = tables || resolve_tables(zip_reader: zip_reader, entry_name: entry_name, relationships: load_sheet_rels.call[:entries])
+      sheet_pivot_tables = pivot_tables || resolve_pivot_tables(zip_reader: zip_reader, entry_name: entry_name, relationships: load_sheet_rels.call[:entries])
+      sheet_hf_images = header_footer_images || if metadata_xml.include?("legacyDrawingHF")
+                                                  resolve_header_footer_images(metadata_xml, zip_reader: zip_reader, entry_name: entry_name, relationships: load_sheet_rels.call[:entries])
+                                                else
+                                                  []
+                                                end
+      sheet_bg_image = background_image || (resolve_background_image(metadata_xml, zip_reader: zip_reader, entry_name: entry_name, relationships: load_sheet_rels.call[:entries]) if metadata_xml.include?("<picture"))
+
+      Elements::Worksheet.new(
+        name: name,
+        rows: rows,
+        columns: meta[:columns],
+        charts: sheet_charts,
+        sparkline_groups: meta[:sparkline_groups],
+        print_area: print_area,
+        print_titles: print_titles,
+        conditional_formats: meta[:cfs],
+        data_validations: meta[:dvs],
+        state: state,
+        hyperlinks: sheet_hyperlinks,
+        comments: sheet_comments,
+        images: sheet_images,
+        styles: styles,
+        date1904: date1904,
+        dimension: sheet_dimension,
+        trim_empty_rows: trim_empty_rows,
+        pad_empty_rows: pad_empty_rows,
+        pad_empty_cells: pad_empty_cells,
+        merged_cells: meta[:merged_cells],
+        auto_filter: meta[:auto_filter],
+        tables: sheet_tables,
+        pivot_tables: sheet_pivot_tables,
+        shapes: sheet_shapes,
+        freeze_pane: meta[:freeze_pane],
+        split_pane: meta[:split_pane],
+        filter_columns: meta[:filter_columns],
+        sort_state: meta[:sort_state],
+        header_footer_images: sheet_hf_images,
+        page_setup: meta[:page_setup],
+        page_margins: meta[:page_margins],
+        header_footer: meta[:header_footer],
+        print_options: meta[:print_options],
+        sheet_protection: meta[:sheet_protection],
+        sheet_view: meta[:sheet_view],
+        sheet_properties: meta[:sheet_properties],
+        sheet_format: meta[:sheet_format],
+        row_breaks: meta[:row_breaks],
+        column_breaks: meta[:column_breaks],
+        protected_ranges: meta[:protected_ranges],
+        cell_watches: meta[:cell_watches],
+        ignored_errors: meta[:ignored_errors],
+        phonetic_properties: meta[:phonetic_properties],
+        selection: meta[:selection],
+        sheet_calc_properties: sheet_calc_properties,
+        background_image: sheet_bg_image,
+        threaded_comments: sheet_threaded_comments
+      )
+    end
+
+    #: (String xml_src) -> String
+    def strip_sheet_data(xml_src)
+      xml = xml_src.b
+      pos = 0
+      while (sd_term = xml.index("sheetData".b, pos))
+        sd_start = xml.rindex("<".b, sd_term)
+        unless sd_start
+          pos = sd_term + 9
+          next
+        end
+
+        prefix = xml.byteslice(sd_start + 1, sd_term - (sd_start + 1))
+        delim = xml.getbyte(sd_term + 9)
+        unless (prefix.empty? || prefix.match?(/\A[a-zA-Z0-9_]+:\z/)) && SHEET_DATA_DELIMS.include?(delim)
+          pos = sd_term + 9
+          next
+        end
+
+        sd_open_end = xml.index(">".b, sd_term + 9)
+        return xml_src unless sd_open_end
+        return xml_src if xml.getbyte(sd_open_end - 1) == 47 # already <sheetData/>
+
+        sd_end_tag = "</#{prefix}sheetData>".b
+        sd_end = xml.index(sd_end_tag, sd_open_end + 1)
+        return xml_src unless sd_end
+
+        nested = xml.index("<#{prefix}sheetData".b, sd_open_end + 1)
+        return xml_src if nested && nested < sd_end
+
+        before = xml.byteslice(0, sd_start)
+        after_start = sd_end + sd_end_tag.bytesize
+        after = xml.byteslice(after_start, xml.bytesize - after_start)
+        out = String.new(encoding: Encoding::BINARY)
+        out << before << "<" << prefix << "sheetData/>" << after
+        return out.force_encoding(xml_src.encoding)
+      end
+      xml_src
+    end
+
+    #: (String metadata_xml, columns: Array[Elements::Column]?, merged_cells: Array[String]?, auto_filter: String?, filter_columns: Hash[Integer, Hash[Symbol, untyped]]?, sort_state: Hash[Symbol, untyped]?, freeze_pane: Hash[Symbol, untyped]?, split_pane: Hash[Symbol, untyped]?, sheet_view: Hash[Symbol, untyped]?, selection: untyped?, sheet_protection: Hash[Symbol, untyped]?, sheet_properties: Hash[Symbol, untyped]?, sheet_format: Hash[Symbol, untyped]?, page_setup: Hash[Symbol, untyped]?, page_margins: Hash[Symbol, untyped]?, header_footer: Hash[Symbol, untyped]?, print_options: Hash[Symbol, untyped]?, row_breaks: Array[untyped]?, column_breaks: Array[untyped]?, protected_ranges: Array[Hash[Symbol, untyped]]?, cell_watches: Array[String]?, ignored_errors: Array[Hash[Symbol, untyped]]?, phonetic_properties: Hash[Symbol, untyped]?, sparkline_groups: untyped?) -> Hash[Symbol, untyped]
+    def parse_worksheet_metadata(metadata_xml, columns:, merged_cells:, auto_filter:, filter_columns:, sort_state:, freeze_pane:, split_pane:, sheet_view:, selection:, sheet_protection:, sheet_properties:, sheet_format:, page_setup:, page_margins:, header_footer:, print_options:, row_breaks:, column_breaks:, protected_ranges:, cell_watches:, ignored_errors:, phonetic_properties:, sparkline_groups:)
+      listeners = []
+
+      col_listener = if columns.nil? && metadata_xml.include?("<cols")
+                       l = Ooxml::WorksheetParser::ColumnsListener.new
+                       listeners << l
+                       l
+                     end
+      cf_listener = if metadata_xml.include?("<conditionalFormatting")
+                      l = Ooxml::Reader::ConditionalFormattingListener.new
+                      listeners << l
+                      l
+                    end
+      dv_listener = if metadata_xml.include?("<dataValidation")
+                      l = Ooxml::Reader::DataValidationsListener.new
+                      listeners << l
+                      l
+                    end
+      merge_listener = if merged_cells.nil? && metadata_xml.include?("<mergeCell")
+                         l = Ooxml::Reader::MergeCellsListener.new
+                         listeners << l
+                         l
+                       end
+      af_listener = if auto_filter.nil? && metadata_xml.include?("<autoFilter")
+                      l = Ooxml::Reader::AutoFilterListener.new
+                      listeners << l
+                      l
+                    end
+      ss_listener = if sort_state.nil? && metadata_xml.include?("<sortState")
+                      l = Ooxml::Reader::SortStateListener.new
+                      listeners << l
+                      l
+                    end
+      need_sv = freeze_pane.nil? || split_pane.nil? || sheet_view.nil? || selection.nil?
+      sv_listener = if need_sv && metadata_xml.include?("<sheetView")
+                      l = Ooxml::Reader::SheetViewListener.new
+                      listeners << l
+                      l
+                    end
+      prot_listener = if sheet_protection.nil? && metadata_xml.include?("<sheetProtection")
+                        l = Ooxml::Reader::SheetProtectionListener.new
+                        listeners << l
+                        l
+                      end
+      pr_listener = if sheet_properties.nil? && (metadata_xml.include?("<sheetPr") || metadata_xml.include?("<sheetCalcPr"))
+                      l = Ooxml::Reader::SheetPropertiesListener.new
+                      listeners << l
+                      l
+                    end
+      fmt_listener = if sheet_format.nil? && metadata_xml.include?("<sheetFormatPr")
+                       l = Ooxml::Reader::SheetFormatListener.new
+                       listeners << l
+                       l
+                     end
+      need_print = page_setup.nil? || page_margins.nil? || header_footer.nil? || print_options.nil? || row_breaks.nil? || column_breaks.nil?
+      pg_listener = if need_print && metadata_xml.match?(PRINT_PAGE_TAG_RE)
+                      l = Ooxml::Reader::PrintPageListener.new
+                      listeners << l
+                      l
+                    end
+      pr_ranges_listener = if protected_ranges.nil? && metadata_xml.include?("<protectedRanges")
+                             l = Ooxml::Reader::ProtectedRangesListener.new
+                             listeners << l
+                             l
+                           end
+      cw_listener = if cell_watches.nil? && metadata_xml.include?("<cellWatches")
+                      l = Ooxml::Reader::CellWatchesListener.new
+                      listeners << l
+                      l
+                    end
+      ie_listener = if ignored_errors.nil? && metadata_xml.include?("<ignoredErrors")
+                      l = Ooxml::Reader::IgnoredErrorsListener.new
+                      listeners << l
+                      l
+                    end
+      pp_listener = if phonetic_properties.nil? && metadata_xml.include?("<phoneticPr")
+                      l = Ooxml::Reader::PhoneticPrListener.new
+                      listeners << l
+                      l
+                    end
+      sg_listener = if sparkline_groups.nil? && metadata_xml.include?("sparklineGroup")
+                      l = Ooxml::Reader::SparklineGroupsListener.new
+                      listeners << l
+                      l
+                    end
+
+      Ooxml::XmlParser.parse_listeners(metadata_xml, listeners)
+
+      sheet_columns = columns || (col_listener ? col_listener.columns : []).map do |rc|
         # Columns from OOXML are 1-based min/max ranges; convert to 0-based
         col_unmapped = {}
         col_unmapped[:style_index] = rc[:style_index] if rc[:style_index]
@@ -1455,194 +1677,58 @@ module Xlsxrb
         )
       end
 
-      cfs = if sheet_xml.include?("<conditionalFormatting")
-              listener = Ooxml::Reader::ConditionalFormattingListener.new
-              Ooxml::XmlParser.parse(sheet_xml, listener)
-              listener.rules
-            else
-              []
-            end
-
-      dvs = if sheet_xml.include?("<dataValidation")
-              listener = Ooxml::Reader::DataValidationsListener.new
-              Ooxml::XmlParser.parse(sheet_xml, listener)
-              listener.validations
-            else
-              []
-            end
-
-      sheet_merged_cells = merged_cells || if sheet_xml.include?("<mergeCell")
-                                             listener = Ooxml::Reader::MergeCellsListener.new
-                                             Ooxml::XmlParser.parse(sheet_xml, listener)
-                                             listener.ranges
-                                           else
-                                             []
-                                           end
-
-      sheet_auto_filter = auto_filter
-      sheet_filter_columns = filter_columns
-      if sheet_auto_filter.nil? && sheet_xml.include?("<autoFilter")
-        af_listener = Ooxml::Reader::AutoFilterListener.new
-        Ooxml::XmlParser.parse(sheet_xml, af_listener)
-        sheet_auto_filter = af_listener.ref
-        sheet_filter_columns ||= af_listener.filter_columns
-      end
-      sheet_filter_columns ||= {}
-
-      sheet_sort_state = sort_state || if sheet_xml.include?("<sortState")
-                                         ss_listener = Ooxml::Reader::SortStateListener.new
-                                         Ooxml::XmlParser.parse(sheet_xml, ss_listener)
-                                         ss_listener.sort_state
-                                       end
-
-      sheet_tables = tables || resolve_tables(zip_reader: zip_reader, entry_name: entry_name)
-      sheet_pivot_tables = pivot_tables || resolve_pivot_tables(zip_reader: zip_reader, entry_name: entry_name)
-      sheet_shapes = shapes || resolve_shapes(zip_reader: zip_reader, entry_name: entry_name)
-
-      sheet_view_data = if freeze_pane.nil? || split_pane.nil? || sheet_view.nil? || selection.nil?
-                          if sheet_xml.include?("<sheetView")
-                            v_listener = Ooxml::Reader::SheetViewListener.new
-                            Ooxml::XmlParser.parse(sheet_xml, v_listener)
-                            { view: v_listener.view, pane: v_listener.pane, selection: v_listener.selection }
-                          else
-                            { view: {}, pane: nil, selection: nil }
-                          end
-                        else
+      sheet_view_data = if !need_sv
                           { view: sheet_view, pane: freeze_pane || split_pane, selection: selection }
+                        elsif sv_listener
+                          { view: sv_listener.view, pane: sv_listener.pane, selection: sv_listener.selection }
+                        else
+                          { view: {}, pane: nil, selection: nil }
                         end
-      sheet_freeze_pane = freeze_pane || (sheet_view_data[:pane] if sheet_view_data[:pane] && sheet_view_data[:pane][:state] == :frozen)
-      sheet_split_pane = split_pane || (sheet_view_data[:pane] if sheet_view_data[:pane] && sheet_view_data[:pane][:state] != :frozen)
-      sheet_view_val = sheet_view || sheet_view_data[:view] || {}
-      sheet_selection = selection || sheet_view_data[:selection]
 
-      sheet_prot = sheet_protection || if sheet_xml.include?("<sheetProtection")
-                                         prot_listener = Ooxml::Reader::SheetProtectionListener.new
-                                         Ooxml::XmlParser.parse(sheet_xml, prot_listener)
-                                         prot_listener.protection
-                                       end
+      resolved_sparklines = sparkline_groups || (sg_listener ? sg_listener.groups : []).map do |grp|
+        grp.is_a?(Elements::SparklineGroup) ? grp : Elements::SparklineGroup.new(**grp)
+      end
 
-      sheet_props = sheet_properties || if sheet_xml.include?("<sheetPr") || sheet_xml.include?("<sheetCalcPr")
-                                          pr_listener = Ooxml::Reader::SheetPropertiesListener.new
-                                          Ooxml::XmlParser.parse(sheet_xml, pr_listener)
-                                          pr_listener.properties
-                                        else
-                                          {}
-                                        end
-
-      sheet_fmt = sheet_format || if sheet_xml.include?("<sheetFormatPr")
-                                    fmt_listener = Ooxml::Reader::SheetFormatListener.new
-                                    Ooxml::XmlParser.parse(sheet_xml, fmt_listener)
-                                    fmt_listener.properties
-                                  else
-                                    {}
-                                  end
-
-      print_data = if page_setup.nil? || page_margins.nil? || header_footer.nil? || print_options.nil? || row_breaks.nil? || column_breaks.nil?
-                     if sheet_xml.match?(/<(?:pageSetup|pageMargins|headerFooter|printOptions|rowBreaks|colBreaks)\b/)
-                       pg_listener = Ooxml::Reader::PrintPageListener.new
-                       Ooxml::XmlParser.parse(sheet_xml, pg_listener)
-                       {
-                         page_margins: pg_listener.page_margins,
-                         page_setup: pg_listener.page_setup,
-                         header_footer: pg_listener.header_footer,
-                         print_options: pg_listener.print_options,
-                         row_breaks: pg_listener.row_breaks,
-                         column_breaks: pg_listener.column_breaks
-                       }
-                     else
-                       { page_margins: nil, page_setup: {}, header_footer: {}, print_options: {}, row_breaks: [], column_breaks: [] }
-                     end
-                   else
-                     { page_margins: page_margins, page_setup: page_setup, header_footer: header_footer, print_options: print_options, row_breaks: row_breaks, column_breaks: column_breaks }
-                   end
-
-      sheet_prot_ranges = protected_ranges || if sheet_xml.include?("<protectedRanges")
-                                                pr_listener = Ooxml::Reader::ProtectedRangesListener.new
-                                                Ooxml::XmlParser.parse(sheet_xml, pr_listener)
-                                                pr_listener.ranges
-                                              else
-                                                []
-                                              end
-
-      sheet_watches = cell_watches || if sheet_xml.include?("<cellWatches")
-                                        cw_listener = Ooxml::Reader::CellWatchesListener.new
-                                        Ooxml::XmlParser.parse(sheet_xml, cw_listener)
-                                        cw_listener.watches
-                                      else
-                                        []
-                                      end
-
-      sheet_ignored_errors = ignored_errors || if sheet_xml.include?("<ignoredErrors")
-                                                 ie_listener = Ooxml::Reader::IgnoredErrorsListener.new
-                                                 Ooxml::XmlParser.parse(sheet_xml, ie_listener)
-                                                 ie_listener.errors
-                                               else
-                                                 []
-                                               end
-
-      sheet_phonetic = phonetic_properties || if sheet_xml.include?("<phoneticPr")
-                                                pp_listener = Ooxml::Reader::PhoneticPrListener.new
-                                                Ooxml::XmlParser.parse(sheet_xml, pp_listener)
-                                                pp_listener.phonetic_pr
-                                              end
-
-      sheet_charts = charts || resolve_charts(zip_reader: zip_reader, entry_name: entry_name)
-      sheet_sparkline_groups = sparkline_groups || (sheet_xml.include?("sparklineGroup") ? resolve_sparkline_groups(sheet_xml) : [])
-      sheet_hf_images = header_footer_images || (sheet_xml.include?("legacyDrawingHF") ? resolve_header_footer_images(sheet_xml, zip_reader: zip_reader, entry_name: entry_name) : [])
-
-      Elements::Worksheet.new(
-        name: name,
-        rows: rows,
+      {
         columns: sheet_columns,
-        charts: sheet_charts,
-        sparkline_groups: sheet_sparkline_groups,
-        print_area: print_area,
-        print_titles: print_titles,
-        conditional_formats: cfs,
-        data_validations: dvs,
-        state: state,
-        hyperlinks: sheet_hyperlinks,
-        comments: sheet_comments,
-        images: sheet_images,
-        styles: styles,
-        date1904: date1904,
-        dimension: sheet_dimension,
-        trim_empty_rows: trim_empty_rows,
-        pad_empty_rows: pad_empty_rows,
-        pad_empty_cells: pad_empty_cells,
-        merged_cells: sheet_merged_cells,
-        auto_filter: sheet_auto_filter,
-        tables: sheet_tables,
-        pivot_tables: sheet_pivot_tables,
-        shapes: sheet_shapes,
-        freeze_pane: sheet_freeze_pane,
-        split_pane: sheet_split_pane,
-        filter_columns: sheet_filter_columns,
-        sort_state: sheet_sort_state,
-        header_footer_images: sheet_hf_images,
-        page_setup: page_setup || print_data[:page_setup] || {},
-        page_margins: page_margins || print_data[:page_margins],
-        header_footer: header_footer || print_data[:header_footer] || {},
-        print_options: print_options || print_data[:print_options] || {},
-        sheet_protection: sheet_prot,
-        sheet_view: sheet_view_val,
-        sheet_properties: sheet_props,
-        sheet_format: sheet_fmt,
-        row_breaks: row_breaks || print_data[:row_breaks] || [],
-        column_breaks: column_breaks || print_data[:column_breaks] || [],
-        protected_ranges: sheet_prot_ranges,
-        cell_watches: sheet_watches,
-        ignored_errors: sheet_ignored_errors,
-        phonetic_properties: sheet_phonetic,
-        selection: sheet_selection,
-        sheet_calc_properties: sheet_calc_properties,
-        background_image: background_image || (sheet_xml.include?("<picture") ? resolve_background_image(sheet_xml, zip_reader: zip_reader, entry_name: entry_name) : nil),
-        threaded_comments: sheet_threaded_comments
-      )
+        cfs: cf_listener ? cf_listener.rules : [],
+        dvs: dv_listener ? dv_listener.validations : [],
+        merged_cells: merged_cells || (merge_listener ? merge_listener.ranges : []),
+        auto_filter: auto_filter.nil? ? af_listener&.ref : auto_filter,
+        filter_columns: filter_columns || af_listener&.filter_columns || {},
+        sort_state: sort_state || ss_listener&.sort_state,
+        freeze_pane: freeze_pane || (sheet_view_data[:pane] if sheet_view_data[:pane] && sheet_view_data[:pane][:state] == :frozen),
+        split_pane: split_pane || (sheet_view_data[:pane] if sheet_view_data[:pane] && sheet_view_data[:pane][:state] != :frozen),
+        sheet_view: sheet_view || sheet_view_data[:view] || {},
+        selection: selection || sheet_view_data[:selection],
+        sheet_protection: sheet_protection || prot_listener&.protection,
+        sheet_properties: sheet_properties || pr_listener&.properties || {},
+        sheet_format: sheet_format || fmt_listener&.properties || {},
+        page_setup: page_setup || pg_listener&.page_setup || {},
+        page_margins: page_margins || pg_listener&.page_margins,
+        header_footer: header_footer || pg_listener&.header_footer || {},
+        print_options: print_options || pg_listener&.print_options || {},
+        row_breaks: row_breaks || pg_listener&.row_breaks || [],
+        column_breaks: column_breaks || pg_listener&.column_breaks || [],
+        protected_ranges: protected_ranges || (pr_ranges_listener ? pr_ranges_listener.ranges : []),
+        cell_watches: cell_watches || (cw_listener ? cw_listener.watches : []),
+        ignored_errors: ignored_errors || (ie_listener ? ie_listener.errors : []),
+        phonetic_properties: phonetic_properties || pp_listener&.phonetic_pr,
+        sparkline_groups: resolved_sparklines
+      }
     end
 
-    #: (String? sheet_xml, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?rels_xml: String?) -> Hash[String, Hash[Symbol, untyped]]
-    def resolve_hyperlinks(sheet_xml, zip_reader: nil, entry_name: nil, rels_xml: nil)
+    #: (Ooxml::ZipReader zip_reader, String entry_name) -> Hash[Symbol, untyped]
+    def read_relationships(zip_reader, entry_name)
+      rels_path = entry_name.sub(%r{([^/]+)$}, '_rels/\1.rels')
+      rels_xml = zip_reader.read_entry(rels_path)
+      return EMPTY_RELS if rels_xml.nil? || rels_xml.empty?
+
+      Ooxml::RelationshipsParser.parse_all(rels_xml)
+    end
+
+    #: (String? sheet_xml, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?rels_xml: String?, ?relationships_targets: untyped?) -> Hash[String, Hash[Symbol, untyped]]
+    def resolve_hyperlinks(sheet_xml, zip_reader: nil, entry_name: nil, rels_xml: nil, relationships_targets: nil)
       return {} if sheet_xml.nil? || !sheet_xml.include?("hyperlink")
 
       links = Ooxml::WorksheetParser.parse_hyperlinks(sheet_xml)
@@ -1651,10 +1737,10 @@ module Xlsxrb
       rid_to_url = {}
       if rels_xml && !rels_xml.empty?
         rid_to_url = Ooxml::RelationshipsParser.parse(rels_xml)
+      elsif relationships_targets && links.any? { |link| link[:rid] }
+        rid_to_url = relationships_targets.respond_to?(:call) ? relationships_targets.call : relationships_targets
       elsif zip_reader && entry_name
-        rels_path = entry_name.sub(%r{([^/]+)$}, '_rels/\1.rels')
-        rels_content = zip_reader.read_entry(rels_path)
-        rid_to_url = Ooxml::RelationshipsParser.parse(rels_content) if rels_content && !rels_content.empty?
+        rid_to_url = read_relationships(zip_reader, entry_name)[:targets]
       end
 
       result = {}
@@ -1693,20 +1779,12 @@ module Xlsxrb
       end
     end
 
-    #: (?zip_reader: Ooxml::ZipReader?, ?entry_name: String?) -> Array[Hash[Symbol, untyped]]
-    def resolve_comments(zip_reader: nil, entry_name: nil)
+    #: (?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?relationships: Array[Hash[Symbol, untyped]]?) -> Array[Hash[Symbol, untyped]]
+    def resolve_comments(zip_reader: nil, entry_name: nil, relationships: nil)
       return [] unless zip_reader && entry_name
 
-      rels_path = entry_name.sub(%r{([^/]+)$}, '_rels/\1.rels')
-      rels_xml = zip_reader.read_entry(rels_path)
-      return [] if rels_xml.nil? || rels_xml.empty?
-
-      parser = Ooxml::XmlParser.sax2_parser(rels_xml)
-      listener = Ooxml::Reader::RelsListener.new
-      parser.listen(listener)
-      parser.parse
-
-      rel = listener.relationships.find { |r| r[:type]&.end_with?("/comments") }
+      rels = relationships || read_relationships(zip_reader, entry_name)[:entries]
+      rel = rels.find { |r| r[:type]&.end_with?("/comments") }
       return [] unless rel
 
       base_dir = File.dirname(entry_name)
@@ -1720,7 +1798,7 @@ module Xlsxrb
       c_parser.listen(c_listener)
       c_parser.parse
       comments = c_listener.comments
-      notes = vml_notes(zip_reader, listener.relationships, base_dir)
+      notes = vml_notes(zip_reader, rels, base_dir)
       unless notes.empty?
         comments.each do |c|
           note = notes[c[:ref].to_s.upcase]
@@ -1758,20 +1836,12 @@ module Xlsxrb
       end
     end
 
-    #: (?zip_reader: Ooxml::ZipReader?, ?entry_name: String?) -> Array[Hash[Symbol, untyped]]
-    def resolve_threaded_comments(zip_reader: nil, entry_name: nil)
+    #: (?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?relationships: Array[Hash[Symbol, untyped]]?, ?persons_resolver: untyped?) -> Array[Hash[Symbol, untyped]]
+    def resolve_threaded_comments(zip_reader: nil, entry_name: nil, relationships: nil, persons_resolver: nil)
       return [] unless zip_reader && entry_name
 
-      rels_path = entry_name.sub(%r{([^/]+)$}, '_rels/\1.rels')
-      rels_xml = zip_reader.read_entry(rels_path)
-      return [] if rels_xml.nil? || rels_xml.empty?
-
-      parser = Ooxml::XmlParser.sax2_parser(rels_xml)
-      listener = Ooxml::Reader::RelsListener.new
-      parser.listen(listener)
-      parser.parse
-
-      rel = listener.relationships.find { |r| r[:type]&.end_with?("/threadedComment") }
+      rels = relationships || read_relationships(zip_reader, entry_name)[:entries]
+      rel = rels.find { |r| r[:type]&.end_with?("/threadedComment") }
       return [] unless rel
 
       base_dir = File.dirname(entry_name)
@@ -1785,7 +1855,7 @@ module Xlsxrb
       tc_parser.listen(tc_listener)
       tc_parser.parse
 
-      persons_map = resolve_persons_map(zip_reader: zip_reader)
+      persons_map = persons_resolver ? persons_resolver.call : resolve_persons_map(zip_reader: zip_reader)
       tc_listener.threaded_comments.map do |tc|
         tc_author = persons_map[tc[:person_id]]
         tc[:author] = tc_author if tc_author && !tc[:author]
@@ -1793,23 +1863,21 @@ module Xlsxrb
       end
     end
 
-    #: (?zip_reader: Ooxml::ZipReader?) -> Hash[String, String]
-    def resolve_persons_map(zip_reader: nil)
+    #: (?zip_reader: Ooxml::ZipReader?, ?workbook_rels: Array[Hash[Symbol, untyped]]?) -> Hash[String, String]
+    def resolve_persons_map(zip_reader: nil, workbook_rels: nil)
       return {} unless zip_reader
 
       xml = zip_reader.read_entry("xl/persons/person.xml")
       if xml.nil? || xml.empty?
-        wb_rels_xml = zip_reader.read_entry("xl/_rels/workbook.xml.rels")
-        if wb_rels_xml && !wb_rels_xml.empty?
-          parser = Ooxml::XmlParser.sax2_parser(wb_rels_xml)
-          listener = Ooxml::Reader::RelsListener.new
-          parser.listen(listener)
-          parser.parse
-          p_rel = listener.relationships.find { |r| r[:type]&.end_with?("/person") }
-          if p_rel
-            p_path = resolve_relative_path("xl", p_rel[:target])
-            xml = zip_reader.read_entry(p_path)
-          end
+        wb_entries = workbook_rels
+        if wb_entries.nil?
+          wb_rels_xml = zip_reader.read_entry("xl/_rels/workbook.xml.rels")
+          wb_entries = wb_rels_xml && !wb_rels_xml.empty? ? Ooxml::RelationshipsParser.parse_all(wb_rels_xml)[:entries] : []
+        end
+        p_rel = wb_entries.find { |r| r[:type]&.end_with?("/person") }
+        if p_rel
+          p_path = resolve_relative_path("xl", p_rel[:target])
+          xml = zip_reader.read_entry(p_path)
         end
       end
       return {} if xml.nil? || xml.empty?
@@ -1821,48 +1889,49 @@ module Xlsxrb
       p_listener.persons.to_h { |p| [p[:id], p[:display_name]] }
     end
 
+    #: (Ooxml::ZipReader? zip_reader, String? entry_name, Array[Hash[Symbol, untyped]] relationships, need_images: bool, need_shapes: bool, need_charts: bool) -> Hash[Symbol, untyped]
+    def resolve_sheet_drawings(zip_reader, entry_name, relationships, need_images:, need_shapes:, need_charts:)
+      empty = { images: [], shapes: [], charts: [] }
+      return empty unless zip_reader && entry_name
+
+      drawing_rel = relationships.find { |r| r[:type]&.end_with?("/drawing") }
+      return empty unless drawing_rel
+
+      base_dir = File.dirname(entry_name)
+      drawing_path = resolve_relative_path(base_dir, drawing_rel[:target])
+      drawing_xml = zip_reader.read_entry(drawing_path)
+      return empty if drawing_xml.nil? || drawing_xml.empty?
+
+      listeners = []
+      img_listener = (Ooxml::Reader::DrawingImagesListener.new.tap { |l| listeners << l } if need_images)
+      shape_listener = (Ooxml::Reader::DrawingShapesListener.new.tap { |l| listeners << l } if need_shapes)
+      chart_listener = (Ooxml::Reader::DrawingChartsListener.new.tap { |l| listeners << l } if need_charts)
+      Ooxml::XmlParser.parse_listeners(drawing_xml, listeners)
+
+      need_drawing_rels = (img_listener && !img_listener.images.empty?) || (chart_listener && !chart_listener.charts.empty?)
+      drawing_rels = need_drawing_rels ? read_relationships(zip_reader, drawing_path)[:targets] : {}
+      drawing_dir = File.dirname(drawing_path)
+
+      {
+        images: img_listener ? build_image_elements(zip_reader, drawing_dir, drawing_rels, img_listener.images) : [],
+        shapes: shape_listener ? shape_listener.shapes : [],
+        charts: chart_listener ? build_chart_elements(zip_reader, drawing_dir, drawing_rels, chart_listener.charts) : []
+      }
+    end
+
     #: (?zip_reader: Ooxml::ZipReader?, ?entry_name: String?) -> Array[Elements::Image]
     def resolve_images(zip_reader: nil, entry_name: nil)
       return [] unless zip_reader && entry_name
 
-      rels_path = entry_name.sub(%r{([^/]+)$}, '_rels/\1.rels')
-      rels_xml = zip_reader.read_entry(rels_path)
-      return [] if rels_xml.nil? || rels_xml.empty?
+      resolve_sheet_drawings(
+        zip_reader, entry_name, read_relationships(zip_reader, entry_name)[:entries],
+        need_images: true, need_shapes: false, need_charts: false
+      )[:images]
+    end
 
-      parser = Ooxml::XmlParser.sax2_parser(rels_xml)
-      listener = Ooxml::Reader::RelsListener.new
-      parser.listen(listener)
-      parser.parse
-
-      drawing_rel = listener.relationships.find { |r| r[:type]&.end_with?("/drawing") }
-      return [] unless drawing_rel
-
-      base_dir = File.dirname(entry_name)
-      target = drawing_rel[:target]
-      drawing_path = resolve_relative_path(base_dir, target)
-      drawing_xml = zip_reader.read_entry(drawing_path)
-      return [] if drawing_xml.nil? || drawing_xml.empty?
-
-      drawing_rels_path = drawing_path.sub(%r{([^/]+)$}, '_rels/\1.rels')
-      drawing_rels_xml = zip_reader.read_entry(drawing_rels_path)
-      drawing_rels = {}
-      if drawing_rels_xml && !drawing_rels_xml.empty?
-        d_parser = Ooxml::XmlParser.sax2_parser(drawing_rels_xml)
-        d_listener = Ooxml::Reader::RelsListener.new
-        d_parser.listen(d_listener)
-        d_parser.parse
-        d_listener.relationships.each do |r|
-          drawing_rels[r[:id]] = r[:target]
-        end
-      end
-
-      p_parser = Ooxml::XmlParser.sax2_parser(drawing_xml)
-      img_listener = Ooxml::Reader::DrawingImagesListener.new
-      p_parser.listen(img_listener)
-      p_parser.parse
-
-      drawing_dir = File.dirname(drawing_path)
-      img_listener.images.map do |raw_img|
+    #: (Ooxml::ZipReader zip_reader, String drawing_dir, Hash[String, String] drawing_rels, Array[Hash[Symbol, untyped]] raw_images) -> Array[Elements::Image]
+    def build_image_elements(zip_reader, drawing_dir, drawing_rels, raw_images)
+      raw_images.map do |raw_img|
         rid = raw_img[:embed_rid]
         media_target = drawing_rels[rid]
         img_data = nil
@@ -1896,8 +1965,8 @@ module Xlsxrb
       end
     end
 
-    #: (String? sheet_xml, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?) -> Hash[Symbol, untyped]?
-    def resolve_background_image(sheet_xml, zip_reader: nil, entry_name: nil)
+    #: (String? sheet_xml, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?relationships: Array[Hash[Symbol, untyped]]?) -> Hash[Symbol, untyped]?
+    def resolve_background_image(sheet_xml, zip_reader: nil, entry_name: nil, relationships: nil)
       return nil unless sheet_xml && zip_reader && entry_name
       return nil unless sheet_xml.include?("<picture")
 
@@ -1905,16 +1974,8 @@ module Xlsxrb
       return nil unless m
 
       picture_rid = m[1]
-      rels_path = entry_name.sub(%r{([^/]+)$}, '_rels/\1.rels')
-      rels_xml = zip_reader.read_entry(rels_path)
-      return nil if rels_xml.nil? || rels_xml.empty?
-
-      parser = Ooxml::XmlParser.sax2_parser(rels_xml)
-      listener = Ooxml::Reader::RelsListener.new
-      parser.listen(listener)
-      parser.parse
-
-      pic_rel = listener.relationships.find { |r| r[:id] == picture_rid }
+      rels = relationships || read_relationships(zip_reader, entry_name)[:entries]
+      pic_rel = rels.find { |r| r[:id] == picture_rid }
       return nil unless pic_rel
 
       base_dir = File.dirname(entry_name)
@@ -1942,20 +2003,12 @@ module Xlsxrb
       }.freeze
     end
 
-    #: (?zip_reader: Ooxml::ZipReader?, ?entry_name: String?) -> Array[Hash[Symbol, untyped]]
-    def resolve_tables(zip_reader: nil, entry_name: nil)
+    #: (?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?relationships: Array[Hash[Symbol, untyped]]?) -> Array[Hash[Symbol, untyped]]
+    def resolve_tables(zip_reader: nil, entry_name: nil, relationships: nil)
       return [] unless zip_reader && entry_name
 
-      rels_path = entry_name.sub(%r{([^/]+)$}, '_rels/\1.rels')
-      rels_xml = zip_reader.read_entry(rels_path)
-      return [] if rels_xml.nil? || rels_xml.empty?
-
-      parser = Ooxml::XmlParser.sax2_parser(rels_xml)
-      listener = Ooxml::Reader::RelsListener.new
-      parser.listen(listener)
-      parser.parse
-
-      table_rels = listener.relationships.select { |r| r[:type]&.end_with?("/table") }
+      rels = relationships || read_relationships(zip_reader, entry_name)[:entries]
+      table_rels = rels.select { |r| r[:type]&.end_with?("/table") }
       return [] if table_rels.empty?
 
       base_dir = File.dirname(entry_name)
@@ -1976,44 +2029,18 @@ module Xlsxrb
     def resolve_shapes(zip_reader: nil, entry_name: nil)
       return [] unless zip_reader && entry_name
 
-      rels_path = entry_name.sub(%r{([^/]+)$}, '_rels/\1.rels')
-      rels_xml = zip_reader.read_entry(rels_path)
-      return [] if rels_xml.nil? || rels_xml.empty?
-
-      parser = Ooxml::XmlParser.sax2_parser(rels_xml)
-      listener = Ooxml::Reader::RelsListener.new
-      parser.listen(listener)
-      parser.parse
-
-      drawing_rel = listener.relationships.find { |r| r[:type]&.end_with?("/drawing") }
-      return [] unless drawing_rel
-
-      base_dir = File.dirname(entry_name)
-      drawing_path = resolve_relative_path(base_dir, drawing_rel[:target])
-      drawing_xml = zip_reader.read_entry(drawing_path)
-      return [] if drawing_xml.nil? || drawing_xml.empty?
-
-      d_parser = Ooxml::XmlParser.sax2_parser(drawing_xml)
-      d_listener = Ooxml::Reader::DrawingShapesListener.new
-      d_parser.listen(d_listener)
-      d_parser.parse
-      d_listener.shapes
+      resolve_sheet_drawings(
+        zip_reader, entry_name, read_relationships(zip_reader, entry_name)[:entries],
+        need_images: false, need_shapes: true, need_charts: false
+      )[:shapes]
     end
 
-    #: (?zip_reader: Ooxml::ZipReader?, ?entry_name: String?) -> Array[Hash[Symbol, untyped]]
-    def resolve_pivot_tables(zip_reader: nil, entry_name: nil)
+    #: (?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?relationships: Array[Hash[Symbol, untyped]]?) -> Array[Hash[Symbol, untyped]]
+    def resolve_pivot_tables(zip_reader: nil, entry_name: nil, relationships: nil)
       return [] unless zip_reader && entry_name
 
-      rels_path = entry_name.sub(%r{([^/]+)$}, '_rels/\1.rels')
-      rels_xml = zip_reader.read_entry(rels_path)
-      return [] if rels_xml.nil? || rels_xml.empty?
-
-      parser = Ooxml::XmlParser.sax2_parser(rels_xml)
-      listener = Ooxml::Reader::RelsListener.new
-      parser.listen(listener)
-      parser.parse
-
-      pivot_rels = listener.relationships.select { |r| r[:type]&.end_with?("/pivotTable") }
+      rels = relationships || read_relationships(zip_reader, entry_name)[:entries]
+      pivot_rels = rels.select { |r| r[:type]&.end_with?("/pivotTable") }
       return [] if pivot_rels.empty?
 
       base_dir = File.dirname(entry_name)
@@ -2080,43 +2107,15 @@ module Xlsxrb
     def resolve_charts(zip_reader: nil, entry_name: nil)
       return [] unless zip_reader && entry_name
 
-      rels_path = entry_name.sub(%r{([^/]+)$}, '_rels/\1.rels')
-      rels_xml = zip_reader.read_entry(rels_path)
-      return [] if rels_xml.nil? || rels_xml.empty?
+      resolve_sheet_drawings(
+        zip_reader, entry_name, read_relationships(zip_reader, entry_name)[:entries],
+        need_images: false, need_shapes: false, need_charts: true
+      )[:charts]
+    end
 
-      parser = Ooxml::XmlParser.sax2_parser(rels_xml)
-      listener = Ooxml::Reader::RelsListener.new
-      parser.listen(listener)
-      parser.parse
-
-      drawing_rel = listener.relationships.find { |r| r[:type]&.end_with?("/drawing") }
-      return [] unless drawing_rel
-
-      base_dir = File.dirname(entry_name)
-      drawing_path = resolve_relative_path(base_dir, drawing_rel[:target])
-      drawing_xml = zip_reader.read_entry(drawing_path)
-      return [] if drawing_xml.nil? || drawing_xml.empty?
-
-      drawing_rels_path = drawing_path.sub(%r{([^/]+)$}, '_rels/\1.rels')
-      drawing_rels_xml = zip_reader.read_entry(drawing_rels_path)
-      drawing_rels = {}
-      if drawing_rels_xml && !drawing_rels_xml.empty?
-        d_parser = Ooxml::XmlParser.sax2_parser(drawing_rels_xml)
-        d_listener = Ooxml::Reader::RelsListener.new
-        d_parser.listen(d_listener)
-        d_parser.parse
-        d_listener.relationships.each do |r|
-          drawing_rels[r[:id]] = r[:target]
-        end
-      end
-
-      d_parser = Ooxml::XmlParser.sax2_parser(drawing_xml)
-      dc_listener = Ooxml::Reader::DrawingChartsListener.new
-      d_parser.listen(dc_listener)
-      d_parser.parse
-
-      drawing_dir = File.dirname(drawing_path)
-      dc_listener.charts.map do |raw_chart|
+    #: (Ooxml::ZipReader zip_reader, String drawing_dir, Hash[String, String] drawing_rels, Array[Hash[Symbol, untyped]] raw_charts) -> Array[Elements::Chart]
+    def build_chart_elements(zip_reader, drawing_dir, drawing_rels, raw_charts)
+      raw_charts.map do |raw_chart|
         chart = raw_chart.dup
         target = drawing_rels[chart[:rid]]
         if target
@@ -2355,8 +2354,8 @@ module Xlsxrb
       end
     end
 
-    #: (String? sheet_xml, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?) -> Array[Elements::HeaderFooterImage]
-    def resolve_header_footer_images(sheet_xml, zip_reader: nil, entry_name: nil)
+    #: (String? sheet_xml, ?zip_reader: Ooxml::ZipReader?, ?entry_name: String?, ?relationships: Array[Hash[Symbol, untyped]]?) -> Array[Elements::HeaderFooterImage]
+    def resolve_header_footer_images(sheet_xml, zip_reader: nil, entry_name: nil, relationships: nil)
       return [] unless sheet_xml && zip_reader && entry_name
       return [] unless sheet_xml.include?("legacyDrawingHF")
 
@@ -2364,16 +2363,8 @@ module Xlsxrb
       return [] unless m
 
       hf_rid = m[1]
-      rels_path = entry_name.sub(%r{([^/]+)$}, '_rels/\1.rels')
-      rels_xml = zip_reader.read_entry(rels_path)
-      return [] if rels_xml.nil? || rels_xml.empty?
-
-      parser = Ooxml::XmlParser.sax2_parser(rels_xml)
-      listener = Ooxml::Reader::RelsListener.new
-      parser.listen(listener)
-      parser.parse
-
-      vml_rel = listener.relationships.find { |r| r[:id] == hf_rid }
+      rels = relationships || read_relationships(zip_reader, entry_name)[:entries]
+      vml_rel = rels.find { |r| r[:id] == hf_rid }
       return [] unless vml_rel
 
       base_dir = File.dirname(entry_name)
@@ -2647,9 +2638,10 @@ module Xlsxrb
     def prepare_source_io(source, password)
       if source.is_a?(String)
         bin_source = source.encoding == Encoding::BINARY ? source : source.b
-        if bin_source.start_with?("PK\x03\x04".b) || bin_source.include?("\x00".b) || Ooxml::Cfb::Reader.cfb?(bin_source)
+        is_cfb = Ooxml::Cfb::Reader.cfb?(bin_source)
+        if is_cfb || bin_source.start_with?("PK\x03\x04".b) || bin_source.include?("\x00".b)
           Deprecation.warn(STRING_SOURCE_AS_DATA_MESSAGE, uplevel: nil)
-          if Ooxml::Cfb::Reader.cfb?(bin_source)
+          if is_cfb
             decrypted_zip = Ooxml::Crypto.decrypt(bin_source, password)
             StringIO.new(decrypted_zip)
           else

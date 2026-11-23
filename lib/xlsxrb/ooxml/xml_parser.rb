@@ -67,6 +67,39 @@ module Xlsxrb
         parser.parse
       end
 
+      # Parses XML string once using SAX2, forwarding events to all given listeners.
+      #: (String xml_string, Array[untyped] listeners) -> void
+      def self.parse_listeners(xml_string, listeners)
+        return if listeners.empty?
+
+        parse(xml_string, MultiListener.new(listeners))
+      end
+
+      # Fans out SAX2 callbacks from a single parser pass across multiple listeners.
+      class MultiListener
+        include REXML::SAX2Listener
+
+        #: (Array[untyped] listeners) -> void
+        def initialize(listeners)
+          @listeners = listeners
+        end
+
+        #: (String? uri, String local_name, String qname, Hash[String, String] attributes) -> void
+        def start_element(uri, local_name, qname, attributes)
+          @listeners.each { |listener| listener.start_element(uri, local_name, qname, attributes) }
+        end
+
+        #: (String text) -> void
+        def characters(text)
+          @listeners.each { |listener| listener.characters(text) }
+        end
+
+        #: (String? uri, String local_name, String qname) -> void
+        def end_element(uri, local_name, qname)
+          @listeners.each { |listener| listener.end_element(uri, local_name, qname) }
+        end
+      end
+
       # Returns a SAX2 parser whose listeners receive attribute values with XML entities
       # decoded. REXML's SAX2 parser decodes text but passes attribute values as written, so
       # formatCode="&quot;$&quot;0" would otherwise arrive with the &quot; references.

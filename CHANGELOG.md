@@ -1,6 +1,7 @@
 ## [Unreleased]
 
 ### Changed
+- Parse workbook metadata and protection, worksheet metadata, relationship parts, and worksheet drawings in a single XML pass per part in `Xlsxrb.load`, and reuse parsed workbook relationships, worksheet relationships, and threaded-comment person maps instead of re-reading those ZIP entries.
 - Build XML parts in `Ooxml::Writer`, its `DrawingXml`, `FeaturesXml`, and `StylesXml` mixins, and `Ooxml::Crypto::Agile` through `Ooxml::XmlBuilder` ([ADR 0014](docs/adr/0014-build-xml-through-xml-builder.md)), keeping string concatenation only for cell-loop and shared-string hot paths in `Ooxml::WorksheetWriter` and `Ooxml::WorkbookWriter`.
 
 ### Fixed

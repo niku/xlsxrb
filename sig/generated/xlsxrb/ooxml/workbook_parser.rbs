@@ -13,6 +13,8 @@ module Xlsxrb
       class Listener
         include REXML::SAX2Listener
 
+        WORKBOOK_PROTECTION_ATTRIBUTES: untyped
+
         attr_reader sheets: untyped
 
         attr_reader date1904: untyped
@@ -31,6 +33,8 @@ module Xlsxrb
 
         attr_reader code_name: untyped
 
+        attr_reader workbook_protection: untyped
+
         def initialize: () -> untyped
 
         def start_element: (untyped _uri, untyped localname, untyped _qname, untyped attrs) -> untyped
@@ -41,12 +45,21 @@ module Xlsxrb
       end
     end
 
-    # Parses .rels files to build rId -> target mapping.
+    # Parses .rels files to build rId -> target, type, and entry mappings.
     class RelationshipsParser
+      EMPTY_PARSED_RELS: untyped
+
+      # Parses a .rels XML part in one pass, returning targets, types, and entry hashes.
+      # : (String? xml_string) -> Hash[Symbol, untyped]
+      def self.parse_all: (String? xml_string) -> Hash[Symbol, untyped]
+
       def self.parse: (untyped xml_string) -> untyped
 
       # Parses .rels files to return array of relationship hashes with id, type, and target.
       def self.parse_entries: (untyped xml_string) -> untyped
+
+      # : (String xml_string) -> String
+      def self.sanitize_xml_declarations: (String xml_string) -> String
 
       # SAX listener for .rels relationship files.
       class Listener
@@ -54,9 +67,16 @@ module Xlsxrb
 
         attr_reader relationships: untyped
 
+        attr_reader types: untyped
+
+        attr_reader entries: untyped
+
         def initialize: () -> untyped
 
         def start_element: (untyped _uri, untyped localname, untyped _qname, untyped attrs) -> untyped
+
+        # : (String? rid, String? target, String? rel_type) -> void
+        def record: (String? rid, String? target, String? rel_type) -> void
 
         def end_element: (untyped _uri, untyped _localname, untyped _qname) -> untyped
 
