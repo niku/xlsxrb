@@ -134,7 +134,7 @@ gems:
     remote: https://github.com/ruby/gem_rbs_collection.git
     repo_dir: gems
 - name: pbt
-  version: 0.7.0
+  version: 0.9.0
   source:
     type: rubygems
 - name: pp

@@ -5,6 +5,7 @@ require "pbt"
 require "tempfile"
 require "date"
 require "time"
+require_relative "../support/excel_rules"
 
 class PbtTest < Test::Unit::TestCase
   def setup
@@ -843,6 +844,1182 @@ class PbtTest < Test::Unit::TestCase
         assert_equal expected_size, normalized.size
         h.each do |k, v|
           assert_equal v, normalized[k]
+        end
+      end
+    end
+  end
+
+  # --- Stateful Property-Based Tests (Pbt.stateful v1) ---
+
+  DualWorkbookState = Data.define(
+    :sheets,
+    :active_sheet_ref,
+    :inactive_sheet_refs,
+    :active_sheet_name,
+    :styles,
+    :row_cursors,
+    :sheet_rows,
+    :sheet_columns,
+    :auto_filters,
+    :merges,
+    :comments
+  )
+
+  SheetPair = Data.define(:name, :builder_sheet, :stream_proxy)
+
+  # Drives a live WorkbookBuilder (via Fiber) and StreamWriter in lockstep while
+  # recording committed operations for non-destructive serialized snapshots.
+  class DualWorkbookSut
+    attr_reader :builder, :stream_writer
+
+    def initialize
+      @builder = Xlsxrb::WorkbookBuilder.new
+      @stream_io = StringIO.new
+      @stream_writer = Xlsxrb::StreamWriter.new(@stream_io)
+      @active_fiber = nil
+      @recorded_ops = []
+    end
+
+    def add_sheet(name)
+      close_active_fiber
+      builder_sheet = nil
+      fiber = Fiber.new do
+        @builder.sheet(name) do |sheet|
+          builder_sheet = sheet
+          Fiber.yield
+        end
+      end
+      fiber.resume
+      @active_fiber = fiber
+
+      @stream_writer.sheet(name)
+      stream_proxy = @stream_writer[]
+      @recorded_ops << [:add_sheet, name]
+      SheetPair.new(name: name, builder_sheet: builder_sheet, stream_proxy: stream_proxy)
+    end
+
+    def define_workbook_style(name, **opts)
+      @builder.style(name, **opts)
+      @stream_writer.style(name, **opts)
+      @recorded_ops << [:define_workbook_style, name, opts]
+      nil
+    end
+
+    def define_sheet_style(pair, name, **opts)
+      pair.builder_sheet.style(name, **opts)
+      pair.stream_proxy.style(name, **opts)
+      @recorded_ops << [:define_sheet_style, name, opts]
+      nil
+    end
+
+    def set_column_style(pair, col_idx, width:, style:)
+      pair.builder_sheet.column(col_idx, width: width, style: style)
+      pair.stream_proxy.column(col_idx, width: width, style: style)
+      @recorded_ops << [:set_column_style, col_idx, width, style]
+      nil
+    end
+
+    def append_row(pair, values, cell_styles:, row_style:)
+      b_ret = pair.builder_sheet.row(values, cell_styles: cell_styles, row_style: row_style)
+      s_ret = pair.stream_proxy.row(values, cell_styles: cell_styles, row_style: row_style)
+      @recorded_ops << [:append_row, values, cell_styles, row_style]
+      [b_ret, s_ret]
+    end
+
+    def chain_row(pair, values)
+      b_ret = (pair.builder_sheet << values)
+      s_ret = (pair.stream_proxy << values)
+      @recorded_ops << [:chain_row, values]
+      [b_ret.equal?(pair.builder_sheet), s_ret.equal?(pair.stream_proxy)]
+    end
+
+    def skip_rows(pair, count)
+      b_ret = pair.builder_sheet.skip_rows(count)
+      s_ret = pair.stream_proxy.skip_rows(count)
+      @recorded_ops << [:skip_rows, count]
+      [b_ret, s_ret]
+    end
+
+    def group_rows_block(pair, values)
+      b_ret = pair.builder_sheet.group_rows(level: 1, collapsed: false) { |sh| sh.row(values) }
+      s_ret = pair.stream_proxy.group_rows(level: 1, collapsed: false) { |sh| sh.row(values) }
+      @recorded_ops << [:group_rows_block, values]
+      [b_ret, s_ret]
+    end
+
+    def set_sheet_features(pair, auto_filter:, merge_range:, comment_ref:, comment_text:)
+      pair.builder_sheet.auto_filter = auto_filter
+      pair.stream_proxy.auto_filter = auto_filter
+      if merge_range
+        pair.builder_sheet.merge(merge_range)
+        pair.stream_proxy.merge(merge_range)
+      end
+      if comment_ref
+        pair.builder_sheet.comment(comment_ref, comment_text)
+        pair.stream_proxy.comment(comment_ref, comment_text)
+      end
+      @recorded_ops << [:set_sheet_features, auto_filter, merge_range, comment_ref, comment_text]
+      nil
+    end
+
+    def snapshot_bytes
+      snap_builder = Xlsxrb::WorkbookBuilder.new
+      snap_io = StringIO.new
+      snap_stream = Xlsxrb::StreamWriter.new(snap_io)
+      snap_fiber = nil
+      b_sheet = nil
+      s_proxy = nil
+
+      begin
+        @recorded_ops.each do |op|
+          case op[0]
+          when :add_sheet
+            snap_fiber.resume if snap_fiber&.alive?
+            snap_fiber = Fiber.new do
+              snap_builder.sheet(op[1]) do |sheet|
+                b_sheet = sheet
+                Fiber.yield
+              end
+            end
+            snap_fiber.resume
+            snap_stream.sheet(op[1])
+            s_proxy = snap_stream[]
+          when :define_workbook_style
+            snap_builder.style(op[1], **op[2])
+            snap_stream.style(op[1], **op[2])
+          when :define_sheet_style
+            b_sheet.style(op[1], **op[2])
+            s_proxy.style(op[1], **op[2])
+          when :set_column_style
+            b_sheet.column(op[1], width: op[2], style: op[3])
+            s_proxy.column(op[1], width: op[2], style: op[3])
+          when :append_row
+            b_sheet.row(op[1], cell_styles: op[2], row_style: op[3])
+            s_proxy.row(op[1], cell_styles: op[2], row_style: op[3])
+          when :chain_row
+            b_sheet << op[1]
+            s_proxy << op[1]
+          when :skip_rows
+            b_sheet.skip_rows(op[1])
+            s_proxy.skip_rows(op[1])
+          when :group_rows_block
+            b_sheet.group_rows(level: 1, collapsed: false) { |sh| sh.row(op[1]) }
+            s_proxy.group_rows(level: 1, collapsed: false) { |sh| sh.row(op[1]) }
+          when :set_sheet_features
+            b_sheet.auto_filter = op[1]
+            s_proxy.auto_filter = op[1]
+            if op[2]
+              b_sheet.merge(op[2])
+              s_proxy.merge(op[2])
+            end
+            if op[3]
+              b_sheet.comment(op[3], op[4])
+              s_proxy.comment(op[3], op[4])
+            end
+          end
+        end
+
+        snap_fiber.resume if snap_fiber&.alive?
+        snap_stream.close
+        [Xlsxrb.write(snap_builder.build), snap_io.string.b]
+      ensure
+        if snap_fiber&.alive?
+          begin
+            snap_fiber.resume
+          rescue StandardError
+            nil
+          end
+        end
+        snap_stream.cleanup!
+      end
+    end
+
+    def cleanup!
+      close_active_fiber
+      @stream_writer.cleanup!
+    end
+
+    private
+
+    def close_active_fiber
+      return unless @active_fiber&.alive?
+
+      @active_fiber.resume
+    rescue StandardError
+      nil
+    ensure
+      @active_fiber = nil
+    end
+  end
+
+  def resolve_expected_cell_style(value, cell_style, row_style, col_info, styles_map)
+    date_or_time = value.is_a?(Date) || value.is_a?(Time)
+    style_name = cell_style || row_style
+    style_def = if style_name
+                  styles_map.fetch(style_name)
+                elsif col_info
+                  date_or_time ? styles_map.fetch(col_info[:style_name]) : col_info[:style_def]
+                end
+
+    bold = style_def&.dig(:bold) || false
+    italic = style_def&.dig(:italic) || false
+    fmt = style_def&.dig(:number_format)
+    if fmt.nil?
+      fmt = if value.is_a?(Time)
+              "yyyy-mm-dd hh:mm:ss"
+            elsif value.is_a?(Date)
+              "yyyy-mm-dd"
+            else
+              "General"
+            end
+    end
+    [bold, italic, fmt]
+  end
+
+  def extract_loaded_cell_style(styles, cell)
+    xf = cell.style_index ? styles.cell_xf(cell.style_index) : nil
+    font = xf ? styles.fonts[xf.font_id.to_i] : nil
+    fmt = xf ? (styles.number_format_code(xf.num_fmt_id.to_i) || "General") : "General"
+    [font&.bold? || false, font&.italic? || false, fmt]
+  end
+
+  test "stateful PBT: dual-mode workbook builder and stream writer lockstep equivalence" do
+    style_name_arb = Pbt.constant_from(:s1, :s2, :s3)
+    num_fmt_arb = Pbt.constant_from(nil, "#,##0.00", "0.0%", "yyyy-mm-dd")
+    cell_val_arb = Pbt.one_of(
+      Pbt.integer(min: -1000, max: 1000),
+      Pbt.alphanumeric_string(min: 1, max: 12),
+      Pbt.boolean,
+      Pbt.constant(Date.new(2026, 4, 1)),
+      Pbt.constant(Time.utc(2026, 4, 1, 9, 30, 0))
+    )
+
+    Pbt.assert(num_runs: 15) do
+      Pbt.stateful(max_steps: 12) do |m|
+        m.initial_state do
+          DualWorkbookState.new(
+            sheets: [],
+            active_sheet_ref: nil,
+            inactive_sheet_refs: [],
+            active_sheet_name: nil,
+            styles: {},
+            row_cursors: {},
+            sheet_rows: {},
+            sheet_columns: {},
+            auto_filters: {},
+            merges: {},
+            comments: {}
+          )
+        end
+
+        m.sut { DualWorkbookSut.new }
+        m.teardown(&:cleanup!)
+
+        m.command :add_sheet, weight: 2 do |c|
+          c.guard { |s| s.sheets.size < 3 }
+          c.arguments Pbt.constant_from("Sheet1", "Sheet2", "Sheet3")
+          c.precondition { |s, name| !s.sheets.include?(name) }
+          c.next_state do |s, name, ref|
+            inactive = s.active_sheet_ref ? [*s.inactive_sheet_refs, s.active_sheet_ref] : s.inactive_sheet_refs
+            s.with(
+              sheets: [*s.sheets, name],
+              active_sheet_ref: ref,
+              inactive_sheet_refs: inactive,
+              active_sheet_name: name,
+              row_cursors: s.row_cursors.merge(name => 0),
+              sheet_rows: s.sheet_rows.merge(name => []),
+              sheet_columns: s.sheet_columns.merge(name => {}),
+              auto_filters: s.auto_filters.merge(name => nil),
+              merges: s.merges.merge(name => []),
+              comments: s.comments.merge(name => [])
+            )
+          end
+          c.run { |sut, name| sut.add_sheet(name) }
+        end
+
+        m.command :define_workbook_style, weight: 2 do |c|
+          c.arguments(name: style_name_arb, bold: Pbt.boolean, italic: Pbt.boolean, number_format: num_fmt_arb)
+          c.next_state do |s, args|
+            style_def = { bold: args[:bold], italic: args[:italic], number_format: args[:number_format] }
+            s.with(styles: s.styles.merge(args[:name] => style_def))
+          end
+          c.run do |sut, args|
+            sut.define_workbook_style(args[:name], bold: args[:bold], italic: args[:italic], number_format: args[:number_format])
+          end
+        end
+
+        m.command :define_sheet_style, weight: 2 do |c|
+          c.guard { |s| !s.active_sheet_ref.nil? }
+          c.arguments do |s|
+            Pbt.fixed_hash(
+              sheet: Pbt.constant(s.active_sheet_ref),
+              name: style_name_arb,
+              bold: Pbt.boolean,
+              italic: Pbt.boolean,
+              number_format: num_fmt_arb
+            )
+          end
+          c.next_state do |s, args|
+            style_def = { bold: args[:bold], italic: args[:italic], number_format: args[:number_format] }
+            s.with(styles: s.styles.merge(args[:name] => style_def))
+          end
+          c.run do |sut, args|
+            sut.define_sheet_style(args[:sheet], args[:name], bold: args[:bold], italic: args[:italic], number_format: args[:number_format])
+          end
+        end
+
+        m.command :set_column_style, weight: 2 do |c|
+          c.guard { |s| !s.active_sheet_ref.nil? && !s.styles.empty? && s.row_cursors.fetch(s.active_sheet_name).zero? }
+          c.arguments do |s|
+            Pbt.fixed_hash(
+              sheet: Pbt.constant(s.active_sheet_ref),
+              col_idx: Pbt.constant_from(0, 1),
+              width: Pbt.integer(min: 10, max: 30),
+              style: Pbt.constant_from(*s.styles.keys)
+            )
+          end
+          c.next_state do |s, args|
+            sname = s.active_sheet_name
+            col_entry = { style_name: args[:style], style_def: s.styles.fetch(args[:style]) }
+            updated_cols = s.sheet_columns.fetch(sname).merge(args[:col_idx] => col_entry)
+            s.with(sheet_columns: s.sheet_columns.merge(sname => updated_cols))
+          end
+          c.run do |sut, args|
+            sut.set_column_style(args[:sheet], args[:col_idx], width: args[:width], style: args[:style])
+          end
+        end
+
+        m.command :append_row, weight: 5 do |c|
+          c.guard { |s| !s.active_sheet_ref.nil? }
+          c.arguments do |s|
+            style_choice_arb = Pbt.constant_from(nil, *s.styles.keys)
+            Pbt.fixed_hash(
+              sheet: Pbt.constant(s.active_sheet_ref),
+              v0: cell_val_arb,
+              v1: cell_val_arb,
+              cs0: style_choice_arb,
+              cs1: style_choice_arb,
+              row_style: style_choice_arb
+            )
+          end
+          c.next_state do |s, args|
+            sname = s.active_sheet_name
+            row_idx = s.row_cursors.fetch(sname)
+            cols = s.sheet_columns.fetch(sname)
+            expected_cells = [
+              { value: args[:v0], style: resolve_expected_cell_style(args[:v0], args[:cs0], args[:row_style], cols[0], s.styles) },
+              { value: args[:v1], style: resolve_expected_cell_style(args[:v1], args[:cs1], args[:row_style], cols[1], s.styles) }
+            ]
+            row_record = { row_index: row_idx, cells: expected_cells }
+            s.with(
+              row_cursors: s.row_cursors.merge(sname => row_idx + 1),
+              sheet_rows: s.sheet_rows.merge(sname => [*s.sheet_rows.fetch(sname), row_record])
+            )
+          end
+          c.run do |sut, args|
+            cell_styles = args[:cs0].nil? && args[:cs1].nil? ? nil : [args[:cs0], args[:cs1]]
+            sut.append_row(args[:sheet], [args[:v0], args[:v1]], cell_styles: cell_styles, row_style: args[:row_style])
+          end
+          c.verify { |ctx| assert_equal [nil, nil], ctx.result }
+        end
+
+        m.command :chain_row, weight: 2 do |c|
+          c.guard { |s| !s.active_sheet_ref.nil? }
+          c.arguments do |s|
+            Pbt.fixed_hash(sheet: Pbt.constant(s.active_sheet_ref), v0: cell_val_arb, v1: cell_val_arb)
+          end
+          c.next_state do |s, args|
+            sname = s.active_sheet_name
+            row_idx = s.row_cursors.fetch(sname)
+            cols = s.sheet_columns.fetch(sname)
+            expected_cells = [
+              { value: args[:v0], style: resolve_expected_cell_style(args[:v0], nil, nil, cols[0], s.styles) },
+              { value: args[:v1], style: resolve_expected_cell_style(args[:v1], nil, nil, cols[1], s.styles) }
+            ]
+            row_record = { row_index: row_idx, cells: expected_cells }
+            s.with(
+              row_cursors: s.row_cursors.merge(sname => row_idx + 1),
+              sheet_rows: s.sheet_rows.merge(sname => [*s.sheet_rows.fetch(sname), row_record])
+            )
+          end
+          c.run { |sut, args| sut.chain_row(args[:sheet], [args[:v0], args[:v1]]) }
+          c.verify { |ctx| assert_equal [true, true], ctx.result }
+        end
+
+        m.command :skip_rows, weight: 2 do |c|
+          c.guard { |s| !s.active_sheet_ref.nil? }
+          c.arguments { |s| Pbt.fixed_hash(sheet: Pbt.constant(s.active_sheet_ref), count: Pbt.integer(min: 1, max: 2)) }
+          c.next_state do |s, args|
+            sname = s.active_sheet_name
+            s.with(row_cursors: s.row_cursors.merge(sname => s.row_cursors.fetch(sname) + args[:count]))
+          end
+          c.run { |sut, args| sut.skip_rows(args[:sheet], args[:count]) }
+          c.verify { |ctx| assert_equal [nil, nil], ctx.result }
+        end
+
+        m.command :group_rows_block, weight: 2 do |c|
+          c.guard { |s| !s.active_sheet_ref.nil? }
+          c.arguments { |s| Pbt.fixed_hash(sheet: Pbt.constant(s.active_sheet_ref), v0: cell_val_arb, v1: cell_val_arb) }
+          c.next_state do |s, args|
+            sname = s.active_sheet_name
+            row_idx = s.row_cursors.fetch(sname)
+            cols = s.sheet_columns.fetch(sname)
+            expected_cells = [
+              { value: args[:v0], style: resolve_expected_cell_style(args[:v0], nil, nil, cols[0], s.styles) },
+              { value: args[:v1], style: resolve_expected_cell_style(args[:v1], nil, nil, cols[1], s.styles) }
+            ]
+            row_record = { row_index: row_idx, cells: expected_cells }
+            s.with(
+              row_cursors: s.row_cursors.merge(sname => row_idx + 1),
+              sheet_rows: s.sheet_rows.merge(sname => [*s.sheet_rows.fetch(sname), row_record])
+            )
+          end
+          c.run { |sut, args| sut.group_rows_block(args[:sheet], [args[:v0], args[:v1]]) }
+          c.verify { |ctx| assert_equal [nil, nil], ctx.result }
+        end
+
+        m.command :set_sheet_features, weight: 2 do |c|
+          c.guard { |s| !s.active_sheet_ref.nil? }
+          c.arguments do |s|
+            existing_comments = s.comments.fetch(s.active_sheet_name).map { |entry| entry[:ref] }
+            available_refs = %w[A1 B1 A2 B2] - existing_comments
+            comment_ref_arb = available_refs.empty? ? Pbt.nil : Pbt.constant_from(*available_refs)
+            Pbt.fixed_hash(
+              sheet: Pbt.constant(s.active_sheet_ref),
+              comment_ref: comment_ref_arb,
+              comment_text: Pbt.alphanumeric_string(min: 1, max: 12)
+            )
+          end
+          c.next_state do |s, args|
+            sname = s.active_sheet_name
+            existing_merges = s.merges.fetch(sname)
+            new_merges = existing_merges.include?("A1:B1") ? existing_merges : [*existing_merges, "A1:B1"]
+            new_comments = if args[:comment_ref]
+                             [*s.comments.fetch(sname), { ref: args[:comment_ref], text: args[:comment_text] }]
+                           else
+                             s.comments.fetch(sname)
+                           end
+            s.with(
+              auto_filters: s.auto_filters.merge(sname => "A1:B2"),
+              merges: s.merges.merge(sname => new_merges),
+              comments: s.comments.merge(sname => new_comments)
+            )
+          end
+          c.run do |sut, args|
+            sut.set_sheet_features(
+              args[:sheet],
+              auto_filter: "A1:B2",
+              merge_range: "A1:B1",
+              comment_ref: args[:comment_ref],
+              comment_text: args[:comment_text]
+            )
+          end
+        end
+
+        m.command :write_inactive_sheet, weight: 2 do |c|
+          c.guard { |s| !s.inactive_sheet_refs.empty? }
+          c.arguments { |s| Pbt.constant_from(*s.inactive_sheet_refs) }
+          c.run do |_sut, inactive_pair|
+            b_err = begin
+              inactive_pair.builder_sheet.row([1])
+              nil
+            rescue Xlsxrb::Error => e
+              e
+            end
+            s_err = begin
+              inactive_pair.stream_proxy.row([1])
+              nil
+            rescue Xlsxrb::Error => e
+              e
+            end
+            [b_err, s_err]
+          end
+          c.verify do |ctx|
+            assert_instance_of Xlsxrb::Error, ctx.result[0]
+            assert_instance_of Xlsxrb::Error, ctx.result[1]
+          end
+        end
+
+        m.invariant(:live_and_serialized_parity) do |state, sut|
+          assert_equal state.sheets, sut.builder.sheet_names
+          assert_equal state.sheets, sut.stream_writer.sheet_names
+          next if state.sheets.empty?
+
+          built_bytes, streamed_bytes = sut.snapshot_bytes
+          assert_empty ExcelRules.check(built_bytes).map(&:to_s)
+          assert_empty ExcelRules.check(streamed_bytes).map(&:to_s)
+
+          built_wb = Xlsxrb.load(StringIO.new(built_bytes))
+          streamed_wb = Xlsxrb.load(StringIO.new(streamed_bytes))
+
+          assert_equal state.sheets, built_wb.sheets.map(&:name)
+          assert_equal state.sheets, streamed_wb.sheets.map(&:name)
+
+          state.sheets.each_with_index do |sname, idx|
+            b_sheet = built_wb.sheet(idx)
+            s_sheet = streamed_wb.sheet(idx)
+            expected_rows = state.sheet_rows.fetch(sname)
+
+            assert_equal expected_rows.map { |r| r[:row_index] }, b_sheet.rows.map(&:index)
+            assert_equal expected_rows.map { |r| r[:row_index] }, s_sheet.rows.map(&:index)
+            assert_equal state.auto_filters.fetch(sname), b_sheet.auto_filter
+            assert_equal state.auto_filters.fetch(sname), s_sheet.auto_filter
+            assert_equal state.merges.fetch(sname), b_sheet.merged_cells
+            assert_equal state.merges.fetch(sname), s_sheet.merged_cells
+            assert_equal(state.comments.fetch(sname).map { |c| [c[:ref], c[:text]] },
+                         b_sheet.comments.map { |c| [c.ref, c.text] })
+            assert_equal(state.comments.fetch(sname).map { |c| [c[:ref], c[:text]] },
+                         s_sheet.comments.map { |c| [c.ref, c.text] })
+
+            expected_rows.each_with_index do |exp_row, r_idx|
+              b_row = b_sheet.rows[r_idx]
+              s_row = s_sheet.rows[r_idx]
+              assert_equal exp_row[:cells].size, b_row.cells.size
+              assert_equal exp_row[:cells].size, s_row.cells.size
+
+              exp_row[:cells].each_with_index do |exp_cell, c_idx|
+                b_cell = b_row.cells[c_idx]
+                s_cell = s_row.cells[c_idx]
+                exp_val = exp_cell[:value]
+
+                case exp_val
+                when Date
+                  assert_equal exp_val, b_cell.to_date
+                  assert_equal exp_val, s_cell.to_date
+                when Time
+                  assert_in_delta exp_val.to_i, b_cell.to_time.to_i, 1
+                  assert_in_delta exp_val.to_i, s_cell.to_time.to_i, 1
+                else
+                  assert_equal exp_val, b_cell.value
+                  assert_equal exp_val, s_cell.value
+                end
+
+                b_style = extract_loaded_cell_style(built_wb.styles, b_cell)
+                s_style = extract_loaded_cell_style(streamed_wb.styles, s_cell)
+                assert_equal exp_cell[:style], b_style
+                assert_equal exp_cell[:style], s_style
+              end
+            end
+          end
+        end
+      end
+    end
+  end
+
+  TemporalStyleState = Data.define(:clock, :style_history, :rows)
+
+  # Drives a live WorkbookBuilder sheet via Fiber and replays ops for non-destructive snapshot checks.
+  class TemporalStyleSut
+    def initialize
+      @builder = Xlsxrb::WorkbookBuilder.new
+      @sheet = nil
+      @fiber = Fiber.new do
+        @builder.sheet("S1") do |sheet|
+          @sheet = sheet
+          Fiber.yield
+        end
+      end
+      @fiber.resume
+      @ops = []
+    end
+
+    def write_row(value, style_name)
+      @sheet.row([value], cell_styles: [style_name])
+      @ops << [:row, value, style_name]
+      nil
+    end
+
+    def define_style(name, **opts)
+      @sheet.style(name, **opts)
+      @ops << [:style, name, opts]
+      nil
+    end
+
+    def snapshot_bytes
+      wb = Xlsxrb::WorkbookBuilder.new
+      wb.sheet("S1") do |sheet|
+        @ops.each do |op|
+          if op[0] == :row
+            sheet.row([op[1]], cell_styles: [op[2]])
+          else
+            sheet.style(op[1], **op[2])
+          end
+        end
+      end
+      Xlsxrb.write(wb.build)
+    end
+
+    def cleanup!
+      return unless @fiber&.alive?
+
+      @fiber.resume
+    rescue StandardError
+      nil
+    ensure
+      @fiber = nil
+    end
+  end
+
+  test "stateful PBT: WorkbookBuilder pre-definition style reference and StyleLog temporal resolution" do
+    style_name_arb = Pbt.constant_from(:s1, :s2)
+    num_fmt_arb = Pbt.constant_from(nil, "0.00", "yyyy/mm/dd")
+    val_arb = Pbt.one_of(
+      Pbt.integer(min: -100, max: 100),
+      Pbt.alphanumeric_string(min: 1, max: 8),
+      Pbt.constant(Date.new(2026, 5, 1)),
+      Pbt.constant(Time.utc(2026, 5, 1, 12, 0, 0))
+    )
+
+    Pbt.assert(num_runs: 25) do
+      Pbt.stateful(max_steps: 15) do |m|
+        m.initial_state { TemporalStyleState.new(clock: 0, style_history: {}, rows: []) }
+        m.sut { TemporalStyleSut.new }
+        m.teardown(&:cleanup!)
+
+        m.command :write_row, weight: 4 do |c|
+          c.arguments(value: val_arb, style_name: style_name_arb)
+          c.next_state do |s, args|
+            entry = { row_index: s.rows.size, value: args[:value], style_name: args[:style_name], clock: s.clock }
+            s.with(rows: [*s.rows, entry])
+          end
+          c.run { |sut, args| sut.write_row(args[:value], args[:style_name]) }
+        end
+
+        m.command :define_style, weight: 3 do |c|
+          c.arguments(name: style_name_arb, bold: Pbt.boolean, italic: Pbt.boolean, number_format: num_fmt_arb)
+          c.next_state do |s, args|
+            new_clock = s.clock + 1
+            entry = { clock: new_clock, bold: args[:bold], italic: args[:italic], number_format: args[:number_format] }
+            history = s.style_history[args[:name]] || []
+            s.with(clock: new_clock, style_history: s.style_history.merge(args[:name] => [*history, entry]))
+          end
+          c.run do |sut, args|
+            sut.define_style(args[:name], bold: args[:bold], italic: args[:italic], number_format: args[:number_format])
+          end
+        end
+
+        m.invariant(:temporal_style_resolution) do |state, sut|
+          next if state.rows.empty?
+
+          referenced = state.rows.map { |r| r[:style_name] }.uniq
+          next unless referenced.all? { |name| state.style_history.key?(name) }
+
+          bytes = sut.snapshot_bytes
+          assert_empty ExcelRules.check(bytes).map(&:to_s)
+
+          wb = Xlsxrb.load(StringIO.new(bytes))
+          loaded_rows = wb.sheet(0).rows
+          assert_equal state.rows.size, loaded_rows.size
+
+          state.rows.each_with_index do |exp_row, idx|
+            defs = state.style_history.fetch(exp_row[:style_name])
+            prior_defs = defs.select { |d| d[:clock] <= exp_row[:clock] }
+            resolved_def = prior_defs.empty? ? defs.first : prior_defs.last
+
+            exp_fmt = resolved_def[:number_format]
+            if exp_fmt.nil?
+              exp_fmt = if exp_row[:value].is_a?(Time)
+                          "yyyy-mm-dd hh:mm:ss"
+                        elsif exp_row[:value].is_a?(Date)
+                          "yyyy-mm-dd"
+                        else
+                          "General"
+                        end
+            end
+            expected_style = [resolved_def[:bold] ? true : false, resolved_def[:italic] ? true : false, exp_fmt]
+            actual_style = extract_loaded_cell_style(wb.styles, loaded_rows[idx].cells[0])
+            assert_equal expected_style, actual_style
+          end
+        end
+      end
+    end
+  end
+
+  ZipModelState = Data.define(
+    :seekable,
+    :compression_level,
+    :zip64_limit,
+    :in_stream,
+    :current_entry,
+    :current_chunks,
+    :entries,
+    :next_id
+  )
+
+  # Minimal write-only sink without seek/tell/pos to exercise unseekable ZipWriter paths.
+  class UnseekableZipSink
+    attr_reader :buffer
+
+    def initialize
+      @buffer = +"".b
+    end
+
+    def write(data)
+      @buffer << data.b
+      data.bytesize
+    end
+  end
+
+  # Drives a live Ooxml::ZipWriter while recording operations for non-destructive archive checks.
+  class ZipWriterSut
+    def initialize(initial_state)
+      @seekable = initial_state.seekable
+      @compression_level = initial_state.compression_level
+      @zip64_limit = initial_state.zip64_limit
+      @io = @seekable ? StringIO.new : UnseekableZipSink.new
+      @writer = Xlsxrb::Ooxml::ZipWriter.new(@io, compression_level: @compression_level)
+      @writer.instance_variable_set(:@zip64_limit, @zip64_limit)
+      @next_id = 0
+      @recorded_ops = []
+    end
+
+    def add_entry(payload)
+      name = "entry_#{@next_id}.xml"
+      @next_id += 1
+      @writer.add_entry(name, payload)
+      @recorded_ops << [:add_entry, name, payload]
+      nil
+    end
+
+    def add_binary_entry(payload)
+      name = "bin_#{@next_id}.bin"
+      @next_id += 1
+      @writer.add_binary_entry(name, payload)
+      @recorded_ops << [:add_binary_entry, name, payload]
+      nil
+    end
+
+    def start_stream_entry
+      name = "stream_#{@next_id}.xml"
+      @next_id += 1
+      @writer.start_entry(name)
+      @recorded_ops << [:start_entry, name]
+      nil
+    end
+
+    def write_stream_data(chunk)
+      @writer.write_data(chunk)
+      @recorded_ops << [:write_data, chunk]
+      nil
+    end
+
+    def finish_stream_entry
+      @writer.finish_entry
+      @recorded_ops << [:finish_entry]
+      nil
+    end
+
+    def write_data_without_entry(chunk)
+      @writer.write_data(chunk)
+    end
+
+    def snapshot_bytes
+      snap_io = @seekable ? StringIO.new : UnseekableZipSink.new
+      snap_writer = Xlsxrb::Ooxml::ZipWriter.new(snap_io, compression_level: @compression_level)
+      snap_writer.instance_variable_set(:@zip64_limit, @zip64_limit)
+
+      @recorded_ops.each do |op|
+        case op[0]
+        when :add_entry
+          snap_writer.add_entry(op[1], op[2])
+        when :add_binary_entry
+          snap_writer.add_binary_entry(op[1], op[2])
+        when :start_entry
+          snap_writer.start_entry(op[1])
+        when :write_data
+          snap_writer.write_data(op[1])
+        when :finish_entry
+          snap_writer.finish_entry
+        end
+      end
+
+      snap_writer.close
+      @seekable ? snap_io.string.b : snap_io.buffer
+    end
+
+    def cleanup!
+      @writer.close
+    rescue StandardError
+      nil
+    end
+  end
+
+  test "stateful PBT: Ooxml::ZipWriter streaming, raw entries, and ZIP64 promotion state machine" do
+    initial_arb = Pbt.fixed_hash(
+      seekable: Pbt.boolean,
+      compression_level: Pbt.constant_from(0, 1, 6),
+      zip64_limit: Pbt.integer(min: 64, max: 256)
+    ).map(
+      lambda do |h|
+        ZipModelState.new(
+          seekable: h[:seekable],
+          compression_level: h[:compression_level],
+          zip64_limit: h[:zip64_limit],
+          in_stream: false,
+          current_entry: nil,
+          current_chunks: [],
+          entries: {},
+          next_id: 0
+        )
+      end,
+      lambda do |s|
+        {
+          seekable: s.seekable,
+          compression_level: s.compression_level,
+          zip64_limit: s.zip64_limit
+        }
+      end
+    )
+
+    binary_arb = Pbt.array(Pbt.integer(min: 0, max: 255), min: 0, max: 300).map(
+      ->(bytes) { bytes.pack("C*") },
+      :bytes.to_proc
+    )
+
+    Pbt.assert(num_runs: 30) do
+      Pbt.stateful(max_steps: 15) do |m|
+        m.initial_state initial_arb
+        m.sut { |init| ZipWriterSut.new(init) }
+        m.teardown(&:cleanup!)
+
+        m.command :add_entry, weight: 3 do |c|
+          c.guard { |s| !s.in_stream }
+          c.arguments Pbt.alphanumeric_string(min: 0, max: 300)
+          c.next_state do |s, payload|
+            name = "entry_#{s.next_id}.xml"
+            s.with(entries: s.entries.merge(name => payload.b), next_id: s.next_id + 1)
+          end
+          c.run { |sut, payload| sut.add_entry(payload) }
+        end
+
+        m.command :add_binary_entry, weight: 3 do |c|
+          c.guard { |s| !s.in_stream }
+          c.arguments binary_arb
+          c.next_state do |s, payload|
+            name = "bin_#{s.next_id}.bin"
+            s.with(entries: s.entries.merge(name => payload.b), next_id: s.next_id + 1)
+          end
+          c.run { |sut, payload| sut.add_binary_entry(payload) }
+        end
+
+        m.command :start_stream_entry, weight: 3 do |c|
+          c.guard { |s| !s.in_stream }
+          c.next_state do |s|
+            name = "stream_#{s.next_id}.xml"
+            s.with(in_stream: true, current_entry: name, current_chunks: [], next_id: s.next_id + 1)
+          end
+          c.run { |sut, _args| sut.start_stream_entry }
+        end
+
+        m.command :write_stream_data, weight: 4 do |c|
+          c.guard(&:in_stream)
+          c.arguments Pbt.alphanumeric_string(min: 0, max: 200)
+          c.next_state { |s, chunk| s.with(current_chunks: [*s.current_chunks, chunk.b]) }
+          c.run { |sut, chunk| sut.write_stream_data(chunk) }
+        end
+
+        m.command :finish_stream_entry, weight: 3 do |c|
+          c.guard(&:in_stream)
+          c.next_state do |s|
+            payload = s.current_chunks.join
+            s.with(
+              in_stream: false,
+              current_entry: nil,
+              current_chunks: [],
+              entries: s.entries.merge(s.current_entry => payload)
+            )
+          end
+          c.run { |sut, _args| sut.finish_stream_entry }
+        end
+
+        m.command :write_data_without_entry, weight: 1 do |c|
+          c.guard { |s| !s.in_stream }
+          c.run do |sut|
+            sut.write_data_without_entry("x")
+            nil
+          rescue RuntimeError => e
+            e
+          end
+          c.verify do |ctx|
+            assert_instance_of RuntimeError, ctx.result
+            assert_match(/No entry started/, ctx.result.message)
+          end
+        end
+
+        m.invariant(:zip_archive_integrity) do |state, sut|
+          next if state.in_stream || state.entries.empty?
+
+          bytes = sut.snapshot_bytes
+          assert_empty ExcelRules.duplicate_entries(bytes).map(&:to_s)
+
+          reader = Xlsxrb::Ooxml::ZipReader.new(StringIO.new(bytes))
+          assert_equal state.entries.keys, reader.entry_names
+
+          state.entries.each do |name, expected_bytes|
+            assert_equal expected_bytes, reader.read_entry(name).b
+            assert_equal expected_bytes.bytesize, reader.entry_catalog.fetch(name).uncompressed_size
+          end
+
+          eocd_pos = bytes.rindex("PK\x05\x06".b)
+          assert_not_nil eocd_pos
+          _d, _cdd, _de, _te, eocd_cd_size, eocd_cd_offset, = bytes.byteslice(eocd_pos + 4, 18).unpack("vvvvVVv")
+          zip64_eocd_pos = bytes.index("PK\x06\x06".b)
+          zip64_locator_pos = bytes.index("PK\x06\x07".b)
+
+          if zip64_eocd_pos
+            actual_cd_size, actual_cd_offset = bytes.byteslice(zip64_eocd_pos + 40, 16).unpack("Q<Q<")
+            assert_not_nil zip64_locator_pos
+            assert_true actual_cd_offset >= state.zip64_limit || actual_cd_size >= state.zip64_limit || state.entries.size >= 0xFFFF
+            assert_equal 0xFFFF_FFFF, eocd_cd_size if actual_cd_size >= state.zip64_limit
+            assert_equal 0xFFFF_FFFF, eocd_cd_offset if actual_cd_offset >= state.zip64_limit
+          else
+            assert_nil zip64_locator_pos
+            assert_operator eocd_cd_offset, :<, state.zip64_limit
+            assert_operator eocd_cd_size, :<, state.zip64_limit
+            assert_operator state.entries.size, :<, 0xFFFF
+          end
+        end
+      end
+    end
+  end
+
+  MultiReaderState = Data.define(
+    :row_cursor,
+    :rows,
+    :columns,
+    :auto_filter,
+    :merges,
+    :comments,
+    :hyperlinks,
+    :print_area,
+    :freeze_row
+  )
+
+  # Records sheet authoring operations and serializes a single-sheet XLSX for multi-reader parity checks.
+  class MultiReaderSut
+    def initialize
+      @ops = []
+    end
+
+    def append_row(values)
+      @ops << [:row, values]
+      nil
+    end
+
+    def skip_rows(count)
+      @ops << [:skip_rows, count]
+      nil
+    end
+
+    def set_column(col_idx, width:, hidden:, outline_level:)
+      @ops << [:column, col_idx, width, hidden, outline_level]
+      nil
+    end
+
+    def apply_freeze_pane(row)
+      @ops << [:freeze_pane, row]
+      nil
+    end
+
+    def add_merge_and_filter(auto_filter:, merge_range:)
+      @ops << [:merge_filter, auto_filter, merge_range]
+      nil
+    end
+
+    def add_hyperlink_and_comment(ref, url, comment_text)
+      @ops << [:link_comment, ref, url, comment_text]
+      nil
+    end
+
+    def apply_print_area(range)
+      @ops << [:print_area, range]
+      nil
+    end
+
+    def serialize_bytes
+      io = StringIO.new
+      Xlsxrb.write(io) do |wb|
+        wb.sheet("Data") do |sheet|
+          @ops.each do |op|
+            case op[0]
+            when :row
+              sheet.row(op[1])
+            when :skip_rows
+              sheet.skip_rows(op[1])
+            when :column
+              sheet.column(op[1], width: op[2], hidden: op[3], outline_level: op[4])
+            when :freeze_pane
+              sheet.freeze_pane(row: op[1], column: 0)
+            when :merge_filter
+              sheet.auto_filter = op[1]
+              sheet.merge(op[2])
+            when :link_comment
+              sheet.hyperlink(op[1], op[2])
+              sheet.comment(op[1], op[3])
+            when :print_area
+              sheet.print_area = op[1]
+            end
+          end
+        end
+      end
+      io.string.b
+    end
+  end
+
+  test "stateful PBT: Xlsxrb.load, Xlsxrb.read (StreamSheet), and StreamSheet#load equivalence across stateful sheet authoring" do
+    val_arb = Pbt.one_of(
+      Pbt.integer(min: -500, max: 500),
+      Pbt.alphanumeric_string(min: 1, max: 10),
+      Pbt.boolean,
+      Pbt.constant(Date.new(2026, 6, 15))
+    )
+
+    Pbt.assert(num_runs: 15) do
+      Pbt.stateful(max_steps: 14) do |m|
+        m.initial_state do
+          MultiReaderState.new(
+            row_cursor: 0,
+            rows: [],
+            columns: {},
+            auto_filter: nil,
+            merges: [],
+            comments: {},
+            hyperlinks: {},
+            print_area: nil,
+            freeze_row: nil
+          )
+        end
+
+        m.sut { MultiReaderSut.new }
+
+        m.command :append_row, weight: 4 do |c|
+          c.arguments(v0: val_arb, v1: val_arb)
+          c.next_state do |s, args|
+            expected = [args[:v0], args[:v1]].map { |v| v.is_a?(Date) ? Xlsxrb.date_to_serial(v) : v }
+            row_record = { row_index: s.row_cursor, values: expected }
+            s.with(row_cursor: s.row_cursor + 1, rows: [*s.rows, row_record])
+          end
+          c.run { |sut, args| sut.append_row([args[:v0], args[:v1]]) }
+        end
+
+        m.command :skip_rows, weight: 2 do |c|
+          c.arguments Pbt.integer(min: 1, max: 2)
+          c.next_state { |s, count| s.with(row_cursor: s.row_cursor + count) }
+          c.run { |sut, count| sut.skip_rows(count) }
+        end
+
+        m.command :set_column, weight: 2 do |c|
+          c.guard { |s| s.row_cursor.zero? }
+          c.arguments(
+            col_idx: Pbt.constant_from(0, 1),
+            width: Pbt.integer(min: 10, max: 30),
+            hidden: Pbt.boolean,
+            outline_level: Pbt.constant_from(nil, 1, 2)
+          )
+          c.next_state do |s, args|
+            col_spec = { width: args[:width].to_f, hidden: args[:hidden], outline_level: args[:outline_level] }
+            s.with(columns: s.columns.merge(args[:col_idx] => col_spec))
+          end
+          c.run do |sut, args|
+            sut.set_column(args[:col_idx], width: args[:width], hidden: args[:hidden], outline_level: args[:outline_level])
+          end
+        end
+
+        m.command :set_freeze_pane, weight: 1 do |c|
+          c.guard { |s| s.row_cursor.zero? }
+          c.next_state { |s| s.with(freeze_row: 1) }
+          c.run { |sut, _args| sut.apply_freeze_pane(1) }
+        end
+
+        m.command :add_merge_and_filter, weight: 2 do |c|
+          c.next_state do |s|
+            new_merges = s.merges.include?("A1:B1") ? s.merges : [*s.merges, "A1:B1"]
+            s.with(auto_filter: "A1:B2", merges: new_merges)
+          end
+          c.run { |sut, _args| sut.add_merge_and_filter(auto_filter: "A1:B2", merge_range: "A1:B1") }
+        end
+
+        m.command :add_hyperlink_and_comment, weight: 2 do |c|
+          c.guard { |s| s.comments.size < 3 }
+          c.arguments do |s|
+            available_refs = %w[A1 B1 A2] - s.comments.keys
+            Pbt.fixed_hash(
+              ref: Pbt.constant_from(*available_refs),
+              comment_text: Pbt.alphanumeric_string(min: 1, max: 12)
+            )
+          end
+          c.next_state do |s, args|
+            ref = args[:ref]
+            s.with(
+              comments: s.comments.merge(ref => args[:comment_text]),
+              hyperlinks: s.hyperlinks.merge(ref => "https://example.com/#{ref}")
+            )
+          end
+          c.run do |sut, args|
+            ref = args[:ref]
+            sut.add_hyperlink_and_comment(ref, "https://example.com/#{ref}", args[:comment_text])
+          end
+        end
+
+        m.command :set_print_area, weight: 1 do |c|
+          c.next_state { |s| s.with(print_area: "A1:B4") }
+          c.run { |sut, _args| sut.apply_print_area("A1:B4") }
+        end
+
+        m.invariant(:three_way_reader_equivalence) do |state, sut|
+          next if state.rows.empty?
+
+          bytes = sut.serialize_bytes
+          assert_empty ExcelRules.check(bytes).map(&:to_s)
+
+          loaded_ws = Xlsxrb.load(StringIO.new(bytes)).sheet(0)
+          expected_rows = state.rows.map { |r| [r[:row_index], r[:values]] }
+          loaded_rows = loaded_ws.rows.map { |r| [r.index, r.cells.map(&:value)] }
+          assert_equal expected_rows, loaded_rows
+          assert_equal state.auto_filter, loaded_ws.auto_filter
+          assert_equal state.merges, loaded_ws.merged_cells
+          assert_equal(state.comments.to_a, loaded_ws.comments.map { |c| [c.ref, c.text] })
+          assert_equal(state.hyperlinks, loaded_ws.hyperlinks.transform_values(&:url))
+          assert_equal state.print_area, loaded_ws.print_area
+          assert_equal state.freeze_row, loaded_ws.freeze_pane&.row
+
+          expected_cols = state.columns.sort_by(&:first).map do |idx, col|
+            [idx, col[:width], col[:hidden], col[:outline_level]]
+          end
+          loaded_cols = loaded_ws.columns.map { |c| [c.index, c.width, c.hidden?, c.outline_level] }
+          assert_equal expected_cols, loaded_cols
+
+          stream_count = 0
+          Xlsxrb.read(StringIO.new(bytes)) do |stream_sheet|
+            stream_count += 1
+            assert_equal loaded_ws.name, stream_sheet.name
+            assert_equal loaded_ws.auto_filter, stream_sheet.auto_filter
+            assert_equal loaded_ws.merged_cells, stream_sheet.merged_cells
+            assert_equal(loaded_ws.comments.map { |c| [c.ref, c.text] }, stream_sheet.comments.map { |c| [c.ref, c.text] })
+            assert_equal(loaded_ws.hyperlinks.transform_values(&:url), stream_sheet.hyperlinks.transform_values(&:url))
+            assert_equal loaded_ws.print_area, stream_sheet.print_area
+            assert_equal loaded_ws.freeze_pane&.row, stream_sheet.freeze_pane&.row
+            assert_equal(loaded_cols, stream_sheet.columns.map { |c| [c.index, c.width, c.hidden?, c.outline_level] })
+            assert_equal(loaded_rows, stream_sheet.each_row.map { |r| [r.index, r.values] })
+
+            mat_ws = stream_sheet.load
+            assert_equal loaded_ws.name, mat_ws.name
+            assert_equal loaded_ws.auto_filter, mat_ws.auto_filter
+            assert_equal loaded_ws.merged_cells, mat_ws.merged_cells
+            assert_equal(loaded_ws.comments.map { |c| [c.ref, c.text] }, mat_ws.comments.map { |c| [c.ref, c.text] })
+            assert_equal(loaded_ws.hyperlinks.transform_values(&:url), mat_ws.hyperlinks.transform_values(&:url))
+            assert_equal loaded_ws.print_area, mat_ws.print_area
+            assert_equal loaded_ws.freeze_pane&.row, mat_ws.freeze_pane&.row
+            assert_equal(loaded_cols, mat_ws.columns.map { |c| [c.index, c.width, c.hidden?, c.outline_level] })
+            assert_equal(loaded_rows, mat_ws.rows.map { |r| [r.index, r.cells.map(&:value)] })
+          end
+          assert_equal 1, stream_count
+
+          padded_indices = []
+          Xlsxrb.read(StringIO.new(bytes), pad_empty_rows: true) do |stream_sheet|
+            padded_indices = stream_sheet.each_row.map(&:index)
+          end
+          assert_equal((0..state.rows.last[:row_index]).to_a, padded_indices)
         end
       end
     end
