@@ -1735,6 +1735,17 @@ module Xlsxrb
                      else
                        row_style
                      end
+      if cell_styles.is_a?(Array) && cell_styles.any?(Hash)
+        cell_styles = cell_styles.map do |cell_style|
+          if cell_style.is_a?(Hash)
+            inline_cell_name = "__inline_#{cell_style.hash}"
+            style(inline_cell_name, **cell_style) unless @style_name_to_id.key?(inline_cell_name)
+            inline_cell_name
+          else
+            cell_style
+          end
+        end
+      end
       if cell_styles || row_style || !@current_column_style_names.empty?
         cell_styles = with_date_style_variants(values, cell_styles, row_style.is_a?(Hash) ? inline_name : row_style)
       end

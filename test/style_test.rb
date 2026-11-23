@@ -546,4 +546,46 @@ class StyleTest < Test::Unit::TestCase
 
     assert_equal([[["B"]]], describe_cell_formats(built.string))
   end
+
+  test "inline Hash cell_styles match build and stream for regular, Date, Time, and post-flush rows" do
+    date = Date.new(2026, 6, 15)
+    time = Time.utc(2026, 6, 15, 9, 30, 0)
+    filler_rows = 160
+    filler = Array.new(20) { |c| c + 100 }
+
+    build_doc = lambda do |w|
+      w.sheet("Inline") do |s|
+        s.row(["txt", date, time], cell_styles: [{ bold: true }, { italic: true }, { bold: true, italic: true }])
+        s.row(["hash", date, time], cell_styles: { 0 => { bold: true }, "B" => { italic: true }, "C" => { underline: true } })
+        filler_rows.times { s.row(filler) }
+        s.row(["after_arr", date, time], cell_styles: [{ underline: true }, { bold: true }, { italic: true }])
+        s.row(["after_hash", date, time], cell_styles: { 0 => { italic: true }, "B" => { bold: true, italic: true }, "C" => { bold: true } })
+      end
+    end
+
+    stream = StringIO.new
+    Xlsxrb.write(stream, &build_doc)
+    built = StringIO.new
+    Xlsxrb.write(built, Xlsxrb.build(&build_doc))
+
+    stream_formats = describe_cell_formats(stream.string).first
+    built_formats = describe_cell_formats(built.string).first
+
+    assert_equal(built_formats[0..1], stream_formats[0..1])
+    assert_equal(
+      [
+        ["B", "Iyyyy-mm-dd", "BIyyyy-mm-dd hh:mm:ss"],
+        ["B", "Iyyyy-mm-dd", "Uyyyy-mm-dd hh:mm:ss"]
+      ],
+      stream_formats[0..1]
+    )
+    assert_equal(built_formats[-2..], stream_formats[-2..])
+    assert_equal(
+      [
+        ["U", "Byyyy-mm-dd", "Iyyyy-mm-dd hh:mm:ss"],
+        ["I", "BIyyyy-mm-dd", "Byyyy-mm-dd hh:mm:ss"]
+      ],
+      stream_formats[-2..]
+    )
+  end
 end

@@ -5,6 +5,7 @@
 - Build XML parts in `Ooxml::Writer`, its `DrawingXml`, `FeaturesXml`, and `StylesXml` mixins, and `Ooxml::Crypto::Agile` through `Ooxml::XmlBuilder` ([ADR 0014](docs/adr/0014-build-xml-through-xml-builder.md)), keeping string concatenation only for cell-loop and shared-string hot paths in `Ooxml::WorksheetWriter` and `Ooxml::WorkbookWriter`.
 
 ### Fixed
+- Register inline Hash style definitions passed in `cell_styles` in `StreamWriter#row` (including date and time format variants) so streaming rows apply inline cell styles identically to `WorkbookBuilder`.
 - Deduplicate conditional formatting differential formats (`dxfs`) against `Elements::Styles` in `Ooxml::WorkbookWriter` so identical rules across sheets or repeated writes share a single `dxfId` matching `StreamWriter`.
 - Clear incompatible fill properties in `StyleBuilder` when switching between solid, pattern, and gradient fills so stale gradient or pattern keys do not persist into `styles.xml`.
 - Return an unfrozen empty string from `Ooxml::ZipReader::EntryStreamIO#read(0)` instead of raising `FrozenError` when forcing encoding on a frozen string literal.
