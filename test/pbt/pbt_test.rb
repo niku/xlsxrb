@@ -2024,4 +2024,80 @@ class PbtTest < Test::Unit::TestCase
       end
     end
   end
+
+  test "XmlBuilder.encode_xstring, escape, and unescape roundtrip property across control chars and _xHHHH_ literals" do
+    segment_arb = Pbt.frequency(
+      [3, Pbt.alphanumeric_string(min: 0, max: 12)],
+      [2, Pbt.constant_from("\x00", "\x01", "\x08", "\x1F", "\uFFFE")],
+      [2, Pbt.constant_from("_x0041_", "_x005F_", "_xdead_", "_x005F_x0041_")],
+      [2, Pbt.constant_from("&", "<", ">", "\"", "'", "&#60;", "&amp;lt;")]
+    )
+
+    Pbt.assert(num_runs: 100) do
+      Pbt.property(Pbt.array(segment_arb, min: 0, max: 12)) do |segments|
+        str = segments.join
+        encoded = Xlsxrb::Ooxml::XmlBuilder.encode_xstring(str)
+        escaped = Xlsxrb::Ooxml::XmlBuilder.escape(encoded)
+        unescaped = Xlsxrb::Ooxml::XmlBuilder.unescape(escaped)
+        assert_equal str, unescaped
+      end
+    end
+  end
+
+  test "Xlsxrb.truncate_cell_text UTF-16 code unit boundary and character integrity property" do
+    unit_arb = Pbt.constant_from("a", "漢", "🎉")
+
+    Pbt.assert(num_runs: 80) do
+      Pbt.property(
+        unit_arb,
+        Pbt.integer(min: 32_758, max: 32_774),
+        Pbt.array(unit_arb, min: 1, max: 6)
+      ) do |fill_unit, base_units, tail_units|
+        fill_unit_size = Xlsxrb::Ooxml::Utils.utf16_length(fill_unit)
+        repeat_count = base_units / fill_unit_size
+        str = (fill_unit * repeat_count) + tail_units.join
+
+        truncated = Xlsxrb.truncate_cell_text(str)
+        assert_true truncated.valid_encoding?
+        assert_operator Xlsxrb::Ooxml::Utils.utf16_length(truncated), :<=, 32_767
+        assert_true str.start_with?(truncated)
+
+        assert_equal str, truncated if Xlsxrb::Ooxml::Utils.utf16_length(str) <= 32_767
+      end
+    end
+  end
+
+  test "Xlsxrb.format_value determinism and safety across numeric, temporal, and edge values" do
+    all_formats = ["General", "0.00", "#,##0", "0.0%", "yyyy-mm-dd", "hh:mm:ss", "@"]
+    non_general_formats = ["0.00", "#,##0", "0.0%", "yyyy-mm-dd", "hh:mm:ss", "@"]
+
+    finite_val_arb = Pbt.one_of(
+      Pbt.integer(min: -100_000, max: 100_000),
+      Pbt.float.filter(&:finite?),
+      Pbt.date(base_date: Date.new(2026, 6, 15), past_offset_days: -36_500, future_offset_days: 36_500),
+      Pbt.constant(Time.utc(2026, 6, 15, 10, 20, 30)),
+      Pbt.boolean,
+      Pbt.alphanumeric_string(min: 0, max: 15),
+      Pbt.nil
+    )
+    non_finite_arb = Pbt.constant_from(Float::NAN, Float::INFINITY, -Float::INFINITY)
+
+    Pbt.assert(num_runs: 50) do
+      Pbt.property(finite_val_arb, Pbt.constant_from(*all_formats)) do |val, fmt|
+        formatted = Xlsxrb.format_value(val, fmt)
+        assert_instance_of String, formatted
+        assert_includes [Encoding::UTF_8, Encoding::US_ASCII], formatted.encoding
+        assert_true formatted.valid_encoding?
+        assert_equal formatted, Xlsxrb.format_value(val, fmt)
+      end
+
+      Pbt.property(non_finite_arb, Pbt.constant_from(*non_general_formats)) do |val, fmt|
+        formatted = Xlsxrb.format_value(val, fmt)
+        assert_instance_of String, formatted
+        assert_includes [Encoding::UTF_8, Encoding::US_ASCII], formatted.encoding
+        assert_true formatted.valid_encoding?
+        assert_equal formatted, Xlsxrb.format_value(val, fmt)
+      end
+    end
+  end
 end
