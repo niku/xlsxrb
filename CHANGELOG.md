@@ -5,6 +5,7 @@
 - Build XML parts in `Ooxml::Writer`, its `DrawingXml`, `FeaturesXml`, and `StylesXml` mixins, and `Ooxml::Crypto::Agile` through `Ooxml::XmlBuilder` ([ADR 0014](docs/adr/0014-build-xml-through-xml-builder.md)), keeping string concatenation only for cell-loop and shared-string hot paths in `Ooxml::WorksheetWriter` and `Ooxml::WorkbookWriter`.
 
 ### Fixed
+- Clear incompatible fill properties in `StyleBuilder` when switching between solid, pattern, and gradient fills so stale gradient or pattern keys do not persist into `styles.xml`.
 - Return an unfrozen empty string from `Ooxml::ZipReader::EntryStreamIO#read(0)` instead of raising `FrozenError` when forcing encoding on a frozen string literal.
 - Number chart parts sequentially across sheets and mixed image/chart drawings in `Ooxml::WorkbookWriter` so workbooks with charts on multiple sheets or alongside images do not emit duplicate `xl/charts/chart1.xml` entries or mismatched `[Content_Types].xml` overrides.
 - Chain multiple directory, FAT, and DIFAT sectors in `Ooxml::Cfb::Writer` so encrypted workbooks and CFB containers larger than 63 KB or holding more than three streams can be read back.

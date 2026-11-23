@@ -775,6 +775,7 @@ module Xlsxrb
     def fill_pattern(pattern = nil, fg_color: nil, bg_color: nil)
       return @fill_props[:pattern] if pattern.nil? && fg_color.nil? && bg_color.nil?
 
+      @fill_props.delete(:gradient)
       @fill_props[:pattern] = pattern if pattern
       @fill_props[:fg_color] = fg_color if fg_color
       @fill_props[:bg_color] = bg_color if bg_color
@@ -790,6 +791,7 @@ module Xlsxrb
       if pattern.is_a?(Hash)
         fill_pattern(pattern[:pattern] || "solid", fg_color: pattern[:fg_color], bg_color: pattern[:bg_color])
       else
+        @fill_props.delete(:gradient)
         @fill_props[:pattern] = pattern
       end
       pattern
@@ -809,6 +811,8 @@ module Xlsxrb
     # @api public
     #: (String | Symbol color) -> (String | Symbol)
     def fill_color=(color)
+      @fill_props.delete(:gradient)
+      @fill_props.delete(:bg_color)
       @fill_props[:pattern] = "solid"
       @fill_props[:fg_color] = resolve_color(color)
       color
@@ -855,6 +859,7 @@ module Xlsxrb
     def fill_gradient(type: nil, degree: nil, stops: [])
       return @fill_props[:gradient] if type.nil? && degree.nil? && stops.empty?
 
+      @fill_props.clear
       @fill_props[:gradient] = {
         type: type,
         degree: degree,

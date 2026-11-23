@@ -199,6 +199,62 @@ class StyleBuilderTest < Test::Unit::TestCase
     assert_equal(b.fill_props[:gradient], b.fill_gradient)
   end
 
+  test "switching StyleBuilder fill modes clears incompatible fill properties" do
+    grad_to_solid = Xlsxrb::StyleBuilder.new
+    grad_to_solid.fill_gradient(type: "linear", degree: 90, stops: [{ position: 0, color: "FFFF0000" }, { position: 1, color: "FF0000FF" }])
+    grad_to_solid.fill_color = :yellow
+    assert_nil(grad_to_solid.fill_gradient)
+    assert_equal("solid", grad_to_solid.fill_pattern)
+    assert_equal("FFFFFF00", grad_to_solid.fill_color)
+    assert_equal({ pattern: "solid", fg_color: "FFFFFF00" }, grad_to_solid.fill_props)
+
+    fresh_solid = Xlsxrb::StyleBuilder.new
+    fresh_solid.fill_color = :yellow
+    assert_true(grad_to_solid.same_format?(fresh_solid))
+
+    pat_to_solid = Xlsxrb::StyleBuilder.new
+    pat_to_solid.fill_pattern("gray125", fg_color: "FF112233", bg_color: "FF445566")
+    pat_to_solid.fill_color = "#00FF00"
+    assert_equal({ pattern: "solid", fg_color: "FF00FF00" }, pat_to_solid.fill_props)
+
+    grad_to_pattern = Xlsxrb::StyleBuilder.new
+    grad_to_pattern.fill_gradient(type: "linear", degree: 45, stops: [{ position: 0, color: "FFFF0000" }])
+    grad_to_pattern.fill_pattern("darkGray", fg_color: "FF111111", bg_color: "FF222222")
+    assert_nil(grad_to_pattern.fill_gradient)
+    assert_equal("darkGray", grad_to_pattern.fill_pattern)
+
+    solid_to_grad = Xlsxrb::StyleBuilder.new
+    solid_to_grad.fill_pattern("gray125", fg_color: "FF111111", bg_color: "FF222222")
+    solid_to_grad.fill_gradient(type: "linear", degree: 90, stops: [{ position: 0, color: "FF000000" }, { position: 1, color: "FFFFFFFF" }])
+    assert_nil(solid_to_grad.fill_pattern)
+    assert_nil(solid_to_grad.fill_color)
+    assert_equal([:gradient], solid_to_grad.fill_props.keys)
+
+    writer = Xlsxrb::Ooxml::Writer.new
+    xf_solid = grad_to_solid.register_with(writer)
+    xf_pat = grad_to_pattern.register_with(writer)
+    xf_grad = solid_to_grad.register_with(writer)
+    styles = Xlsxrb::Ooxml::StylesParser.parse(writer.send(:generate_styles_xml))
+
+    parsed_solid = styles.fill(styles.cell_xf(xf_solid).fill_id)
+    assert_nil(parsed_solid.gradient)
+    assert_equal("solid", parsed_solid.pattern_type)
+    assert_equal({ rgb: "FFFFFF00" }, parsed_solid.fg_color)
+    assert_nil(parsed_solid.bg_color)
+
+    parsed_pat = styles.fill(styles.cell_xf(xf_pat).fill_id)
+    assert_nil(parsed_pat.gradient)
+    assert_equal("darkGray", parsed_pat.pattern_type)
+    assert_equal({ rgb: "FF111111" }, parsed_pat.fg_color)
+    assert_equal({ rgb: "FF222222" }, parsed_pat.bg_color)
+
+    parsed_grad = styles.fill(styles.cell_xf(xf_grad).fill_id)
+    assert_not_nil(parsed_grad.gradient)
+    assert_nil(parsed_grad.pattern_type)
+    assert_nil(parsed_grad.fg_color)
+    assert_nil(parsed_grad.bg_color)
+  end
+
   # --- Border properties ---
 
   test "border directional setters and 0-argument getters" do
