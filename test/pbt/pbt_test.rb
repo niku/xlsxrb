@@ -2068,30 +2068,21 @@ class PbtTest < Test::Unit::TestCase
   end
 
   test "Xlsxrb.format_value determinism and safety across numeric, temporal, and edge values" do
-    all_formats = ["General", "0.00", "#,##0", "0.0%", "yyyy-mm-dd", "hh:mm:ss", "@"]
-    non_general_formats = ["0.00", "#,##0", "0.0%", "yyyy-mm-dd", "hh:mm:ss", "@"]
+    all_formats = [nil, "General", "0.00", "#,##0", "0.0%", "yyyy-mm-dd", "hh:mm:ss", "@"]
 
-    finite_val_arb = Pbt.one_of(
+    val_arb = Pbt.one_of(
       Pbt.integer(min: -100_000, max: 100_000),
-      Pbt.float.filter(&:finite?),
+      Pbt.float,
+      Pbt.constant_from(Float::NAN, Float::INFINITY, -Float::INFINITY),
       Pbt.date(base_date: Date.new(2026, 6, 15), past_offset_days: -36_500, future_offset_days: 36_500),
       Pbt.constant(Time.utc(2026, 6, 15, 10, 20, 30)),
       Pbt.boolean,
       Pbt.alphanumeric_string(min: 0, max: 15),
       Pbt.nil
     )
-    non_finite_arb = Pbt.constant_from(Float::NAN, Float::INFINITY, -Float::INFINITY)
 
-    Pbt.assert(num_runs: 50) do
-      Pbt.property(finite_val_arb, Pbt.constant_from(*all_formats)) do |val, fmt|
-        formatted = Xlsxrb.format_value(val, fmt)
-        assert_instance_of String, formatted
-        assert_includes [Encoding::UTF_8, Encoding::US_ASCII], formatted.encoding
-        assert_true formatted.valid_encoding?
-        assert_equal formatted, Xlsxrb.format_value(val, fmt)
-      end
-
-      Pbt.property(non_finite_arb, Pbt.constant_from(*non_general_formats)) do |val, fmt|
+    Pbt.assert(num_runs: 60) do
+      Pbt.property(val_arb, Pbt.constant_from(*all_formats)) do |val, fmt|
         formatted = Xlsxrb.format_value(val, fmt)
         assert_instance_of String, formatted
         assert_includes [Encoding::UTF_8, Encoding::US_ASCII], formatted.encoding

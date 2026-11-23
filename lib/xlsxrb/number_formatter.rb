@@ -38,11 +38,11 @@ module Xlsxrb
         return "" if value.nil?
         return value.code.to_s if value.respond_to?(:code)
         return value ? "TRUE" : "FALSE" if [true, false].include?(value)
+        # Infinity and NaN, from values such as 1e999, have no date or digits to format.
+        return value.to_s if value.is_a?(Float) && !value.finite?
 
         code = format_code.to_s.strip
         return default_format(value) if code.empty? || code.casecmp("general").zero? || code.length > MAX_FORMAT_CODE_LENGTH
-        # Infinity and NaN, from values such as 1e999, have no date or digits to format.
-        return value.to_s if value.is_a?(Float) && !value.finite?
 
         return format_datetime(value, code) if value.is_a?(Date) || value.is_a?(DateTime) || value.is_a?(Time)
 
@@ -275,7 +275,7 @@ module Xlsxrb
       private
 
       def default_format(value)
-        if value.is_a?(Float)
+        if value.is_a?(Float) && value.finite?
           value == value.to_i ? value.to_i.to_s : value.to_s
         else
           value.to_s
@@ -284,7 +284,7 @@ module Xlsxrb
 
       def split_sections(code)
         sections = []
-        current = String.new
+        current = String.new(encoding: code.encoding)
         in_quotes = false
         code.each_char do |ch|
           if ch == "\""
@@ -292,7 +292,7 @@ module Xlsxrb
             current << ch
           elsif ch == ";" && !in_quotes
             sections << current
-            current = String.new
+            current = String.new(encoding: code.encoding)
           else
             current << ch
           end

@@ -12,6 +12,12 @@ class NumberFormatterTest < Test::Unit::TestCase
     assert_equal("-1042", Xlsxrb::NumberFormatter.format(-1042, "General"))
     assert_equal("Hello", Xlsxrb::NumberFormatter.format("Hello", "General"))
     assert_equal("1042", Xlsxrb.format_value(1042))
+    assert_equal("NaN", Xlsxrb::NumberFormatter.format(Float::NAN))
+    assert_equal("NaN", Xlsxrb::NumberFormatter.format(Float::NAN, "General"))
+    assert_equal("Infinity", Xlsxrb::NumberFormatter.format(Float::INFINITY, "General"))
+    assert_equal("-Infinity", Xlsxrb::NumberFormatter.format(-Float::INFINITY, "0.#{"0" * 2000}"))
+    assert_equal(Encoding::UTF_8, Xlsxrb::NumberFormatter.format("Hello", "@").encoding)
+    assert_equal(Encoding::UTF_8, Xlsxrb::NumberFormatter.format("", "@").encoding)
   end
 
   test "boolean formatting" do
