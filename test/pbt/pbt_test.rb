@@ -2088,7 +2088,7 @@ class PbtTest < Test::Unit::TestCase
             col_spec = {
               width: args[:width].to_f,
               hidden: args[:hidden] || prev_col&.dig(:hidden) || false,
-              outline_level: args[:outline_level],
+              outline_level: args[:outline_level].nil? ? prev_col&.dig(:outline_level) : args[:outline_level],
               collapsed: args[:collapsed] || prev_col&.dig(:collapsed) || false,
               best_fit: args[:best_fit] || prev_col&.dig(:best_fit) || false
             }
@@ -2437,6 +2437,1826 @@ class PbtTest < Test::Unit::TestCase
         assert_equal Encoding::UTF_8, formatted.encoding
         assert_match(/\A\d{4}-\d{2}-\d{2}/, formatted)
         assert_equal formatted, Xlsxrb::NumberFormatter.format(serial, dfmt)
+      end
+    end
+  end
+
+  MINIMAL_PNG_BYTES = [
+    0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A,
+    0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52,
+    0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
+    0x08, 0x02, 0x00, 0x00, 0x00, 0x90, 0x77, 0x53,
+    0xDE, 0x00, 0x00, 0x00, 0x0C, 0x49, 0x44, 0x41,
+    0x54, 0x08, 0xD7, 0x63, 0xF8, 0xCF, 0xC0, 0x00,
+    0x00, 0x00, 0x02, 0x00, 0x01, 0xE2, 0x21, 0xBC,
+    0x33, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E,
+    0x44, 0xAE, 0x42, 0x60, 0x82
+  ].pack("C*").freeze
+
+  # --- Stateful PBT #1: Multi-sheet compound parts & dual-builder parity ---
+
+  MultiPartsState = Data.define(
+    :date1904,
+    :shared_strings,
+    :sheets,
+    :active_sheet,
+    :col_grouped,
+    :row_counts,
+    :rows_data,
+    :charts,
+    :shapes,
+    :images,
+    :tables,
+    :filters,
+    :comments,
+    :defined_names
+  )
+
+  # Drives live WorkbookBuilder and StreamWriter across multi-sheet compound parts and replays ops for snapshots.
+  class MultiPartsSut
+    def initialize(date1904:, shared_strings:)
+      @date1904 = date1904
+      @shared_strings = shared_strings
+      @builder = Xlsxrb::WorkbookBuilder.new
+      @builder.workbook_properties(date1904: true) if @date1904
+      @stream_io = StringIO.new
+      @stream_writer = Xlsxrb::StreamWriter.new(@stream_io, shared_strings: @shared_strings)
+      @stream_writer.workbook_properties(date1904: true) if @date1904
+      @active_fiber = nil
+      @b_sheet = nil
+      @s_proxy = nil
+      @current_row_count = 0
+      @ops = []
+    end
+
+    def add_sheet(name)
+      close_active_fiber
+      fiber = Fiber.new do
+        @builder.sheet(name) do |sh|
+          @b_sheet = sh
+          Fiber.yield
+        end
+      end
+      fiber.resume
+      @active_fiber = fiber
+      @stream_writer.sheet(name)
+      @s_proxy = @stream_writer[]
+      @current_row_count = 0
+      @ops << [:add_sheet, name]
+      nil
+    end
+
+    def group_columns(collapsed:)
+      @b_sheet.group_columns(0..1, collapsed: collapsed)
+      @s_proxy.group_columns(0..1, collapsed: collapsed)
+      @ops << [:group_columns, collapsed]
+      nil
+    end
+
+    def append_next_row(label, val, day_off)
+      values = @current_row_count.zero? ? %w[Cat Val When] : [label, val, Date.new(2026, 6, 15) + day_off]
+      @b_sheet.row(values)
+      @s_proxy.row(values)
+      @current_row_count += 1
+      @ops << [:append_row, values]
+      nil
+    end
+
+    def add_chart(spec)
+      @b_sheet.chart(**spec)
+      @s_proxy.chart(**spec)
+      @ops << [:add_chart, spec]
+      nil
+    end
+
+    def add_shape(spec)
+      @b_sheet.shape(**spec)
+      @s_proxy.shape(**spec)
+      @ops << [:add_shape, spec]
+      nil
+    end
+
+    def add_image(spec)
+      @b_sheet.image(MINIMAL_PNG_BYTES, **spec)
+      @s_proxy.image(MINIMAL_PNG_BYTES, **spec)
+      @ops << [:add_image, spec]
+      nil
+    end
+
+    def add_table(ref, name:, columns:)
+      @b_sheet.table(ref, name: name, columns: columns)
+      @s_proxy.table(ref, name: name, columns: columns)
+      @ops << [:add_table, ref, name, columns]
+      nil
+    end
+
+    def add_filter_and_sort(auto_filter:, filter_col:, filter_val:, sort_ref:, cond_ref:)
+      @b_sheet.auto_filter = auto_filter
+      @s_proxy.auto_filter = auto_filter
+      @b_sheet.filter_column(filter_col, { type: :filters, values: [filter_val] })
+      @s_proxy.filter_column(filter_col, { type: :filters, values: [filter_val] })
+      @b_sheet.sort_state(sort_ref, [{ ref: cond_ref, descending: true }])
+      @s_proxy.sort_state(sort_ref, [{ ref: cond_ref, descending: true }])
+      @ops << [:add_filter_and_sort, auto_filter, filter_col, filter_val, sort_ref, cond_ref]
+      nil
+    end
+
+    def add_comment(ref, text)
+      @b_sheet.comment(ref, text)
+      @s_proxy.comment(ref, text)
+      @ops << [:add_comment, ref, text]
+      nil
+    end
+
+    def add_defined_name(name, range:, sheet:, scope:)
+      @builder.defined_name(name, range: range, sheet: sheet, scope: scope)
+      @stream_writer.defined_name(name, range: range, sheet: sheet, scope: scope)
+      @ops << [:add_defined_name, name, range, sheet, scope]
+      nil
+    end
+
+    def snapshot_bytes
+      snap_builder = Xlsxrb::WorkbookBuilder.new
+      snap_builder.workbook_properties(date1904: true) if @date1904
+      snap_io = StringIO.new
+      snap_stream = Xlsxrb::StreamWriter.new(snap_io, shared_strings: @shared_strings)
+      snap_stream.workbook_properties(date1904: true) if @date1904
+      snap_fiber = nil
+      b_sh = nil
+      s_pr = nil
+
+      begin
+        @ops.each do |op|
+          case op[0]
+          when :add_sheet
+            snap_fiber.resume if snap_fiber&.alive?
+            snap_fiber = Fiber.new do
+              snap_builder.sheet(op[1]) do |sh|
+                b_sh = sh
+                Fiber.yield
+              end
+            end
+            snap_fiber.resume
+            snap_stream.sheet(op[1])
+            s_pr = snap_stream[]
+          when :group_columns
+            b_sh.group_columns(0..1, collapsed: op[1])
+            s_pr.group_columns(0..1, collapsed: op[1])
+          when :append_row
+            b_sh.row(op[1])
+            s_pr.row(op[1])
+          when :add_chart
+            b_sh.chart(**op[1])
+            s_pr.chart(**op[1])
+          when :add_shape
+            b_sh.shape(**op[1])
+            s_pr.shape(**op[1])
+          when :add_image
+            b_sh.image(MINIMAL_PNG_BYTES, **op[1])
+            s_pr.image(MINIMAL_PNG_BYTES, **op[1])
+          when :add_table
+            b_sh.table(op[1], name: op[2], columns: op[3])
+            s_pr.table(op[1], name: op[2], columns: op[3])
+          when :add_filter_and_sort
+            b_sh.auto_filter = op[1]
+            s_pr.auto_filter = op[1]
+            b_sh.filter_column(op[2], { type: :filters, values: [op[3]] })
+            s_pr.filter_column(op[2], { type: :filters, values: [op[3]] })
+            b_sh.sort_state(op[4], [{ ref: op[5], descending: true }])
+            s_pr.sort_state(op[4], [{ ref: op[5], descending: true }])
+          when :add_comment
+            b_sh.comment(op[1], op[2])
+            s_pr.comment(op[1], op[2])
+          when :add_defined_name
+            snap_builder.defined_name(op[1], range: op[2], sheet: op[3], scope: op[4])
+            snap_stream.defined_name(op[1], range: op[2], sheet: op[3], scope: op[4])
+          end
+        end
+
+        snap_fiber.resume if snap_fiber&.alive?
+        snap_stream.close
+        mem_bytes = Xlsxrb.write(snap_builder.build, shared_strings: @shared_strings)
+        [mem_bytes, snap_io.string.b]
+      ensure
+        if snap_fiber&.alive?
+          begin
+            snap_fiber.resume
+          rescue StandardError
+            nil
+          end
+        end
+        snap_stream.cleanup!
+      end
+    end
+
+    def cleanup!
+      close_active_fiber
+      @stream_writer.cleanup!
+    end
+
+    private
+
+    def close_active_fiber
+      return unless @active_fiber&.alive?
+
+      @active_fiber.resume
+    rescue StandardError
+      nil
+    ensure
+      @active_fiber = nil
+    end
+  end
+
+  test "stateful PBT: multi-sheet compound parts numbering, relationships, and dual-builder parity" do
+    init_arb = Pbt.fixed_hash(date1904: Pbt.boolean, shared_strings: Pbt.boolean).map(
+      lambda do |h|
+        MultiPartsState.new(
+          date1904: h[:date1904],
+          shared_strings: h[:shared_strings],
+          sheets: [],
+          active_sheet: nil,
+          col_grouped: {},
+          row_counts: {},
+          rows_data: {},
+          charts: {},
+          shapes: {},
+          images: {},
+          tables: {},
+          filters: {},
+          comments: {},
+          defined_names: []
+        )
+      end,
+      ->(s) { { date1904: s.date1904, shared_strings: s.shared_strings } }
+    )
+
+    Pbt.assert(num_runs: 10) do
+      Pbt.stateful(max_steps: 14) do |m|
+        m.initial_state init_arb
+        m.sut { |init| MultiPartsSut.new(date1904: init.date1904, shared_strings: init.shared_strings) }
+        m.teardown(&:cleanup!)
+
+        m.command :add_sheet, weight: 3 do |c|
+          c.guard { |s| s.sheets.size < 3 }
+          c.arguments Pbt.constant_from("Part1", "Data's", "Summary")
+          c.precondition { |s, name| !s.sheets.include?(name) }
+          c.next_state do |s, name|
+            s.with(
+              sheets: [*s.sheets, name],
+              active_sheet: name,
+              col_grouped: s.col_grouped.merge(name => false),
+              row_counts: s.row_counts.merge(name => 0),
+              rows_data: s.rows_data.merge(name => []),
+              charts: s.charts.merge(name => []),
+              shapes: s.shapes.merge(name => []),
+              images: s.images.merge(name => []),
+              tables: s.tables.merge(name => []),
+              filters: s.filters.merge(name => false),
+              comments: s.comments.merge(name => [])
+            )
+          end
+          c.run { |sut, name| sut.add_sheet(name) }
+        end
+
+        m.command :group_columns, weight: 1 do |c|
+          c.guard { |s| !s.active_sheet.nil? && s.row_counts.fetch(s.active_sheet).zero? && !s.col_grouped.fetch(s.active_sheet) }
+          c.arguments Pbt.boolean
+          c.next_state { |s, collapsed| s.with(col_grouped: s.col_grouped.merge(s.active_sheet => collapsed)) }
+          c.run { |sut, collapsed| sut.group_columns(collapsed: collapsed) }
+        end
+
+        m.command :append_row, weight: 4 do |c|
+          c.guard { |s| !s.active_sheet.nil? }
+          c.arguments(label: Pbt.constant_from("A", "B", "C"), val: Pbt.integer(min: 1, max: 500), day_off: Pbt.integer(min: 0, max: 30))
+          c.next_state do |s, args|
+            sname = s.active_sheet
+            count = s.row_counts.fetch(sname)
+            row_vals = count.zero? ? %w[Cat Val When] : [args[:label], args[:val], Date.new(2026, 6, 15) + args[:day_off]]
+            s.with(
+              row_counts: s.row_counts.merge(sname => count + 1),
+              rows_data: s.rows_data.merge(sname => [*s.rows_data.fetch(sname), row_vals])
+            )
+          end
+          c.run do |sut, args|
+            sut.append_next_row(args[:label], args[:val], args[:day_off])
+          end
+        end
+
+        m.command :add_chart, weight: 4 do |c|
+          c.guard { |s| !s.active_sheet.nil? && s.row_counts.fetch(s.active_sheet) >= 2 && s.charts.fetch(s.active_sheet).size < 2 }
+          c.arguments do |s|
+            sname = s.active_sheet
+            idx = s.charts.fetch(sname).size
+            last_r = s.row_counts.fetch(sname)
+            quoted = Xlsxrb::DslHelpers.quote_sheet_name(sname)
+            Pbt.fixed_hash(
+              type: Pbt.constant_from(:bar, :line),
+              title: Pbt.constant("Chart_#{sname}_#{idx + 1}"),
+              from_column: Pbt.constant(3 + (idx * 6)),
+              from_row: Pbt.constant(0),
+              to_column: Pbt.constant(8 + (idx * 6)),
+              to_row: Pbt.constant(9),
+              series: Pbt.constant([{ name: "S#{idx + 1}", categories: "#{quoted}!$A$2:$A$#{last_r}", values: "#{quoted}!$B$2:$B$#{last_r}" }])
+            )
+          end
+          c.next_state do |s, spec|
+            sname = s.active_sheet
+            entry = { type: spec[:type] == :line ? "lineChart" : "barChart", title: spec[:title] }
+            s.with(charts: s.charts.merge(sname => [*s.charts.fetch(sname), entry]))
+          end
+          c.run { |sut, spec| sut.add_chart(spec) }
+        end
+
+        m.command :add_shape, weight: 2 do |c|
+          c.guard { |s| !s.active_sheet.nil? && s.shapes.fetch(s.active_sheet).size < 2 }
+          c.arguments do |s|
+            sname = s.active_sheet
+            idx = s.shapes.fetch(sname).size
+            Pbt.fixed_hash(
+              preset: Pbt.constant_from("rect", "ellipse"),
+              text: Pbt.constant("Box_#{sname}_#{idx + 1}"),
+              from_column: Pbt.constant(3),
+              from_row: Pbt.constant(11 + (idx * 5)),
+              to_column: Pbt.constant(6),
+              to_row: Pbt.constant(15 + (idx * 5))
+            )
+          end
+          c.next_state do |s, spec|
+            sname = s.active_sheet
+            entry = { preset: spec[:preset], text: spec[:text] }
+            s.with(shapes: s.shapes.merge(sname => [*s.shapes.fetch(sname), entry]))
+          end
+          c.run { |sut, spec| sut.add_shape(spec) }
+        end
+
+        m.command :add_image, weight: 3 do |c|
+          c.guard { |s| !s.active_sheet.nil? && s.images.fetch(s.active_sheet).size < 2 }
+          c.arguments do |s|
+            idx = s.images.fetch(s.active_sheet).size
+            Pbt.fixed_hash(
+              ext: Pbt.constant("png"),
+              from_column: Pbt.constant(0),
+              from_row: Pbt.constant(10 + (idx * 5)),
+              to_column: Pbt.constant(2),
+              to_row: Pbt.constant(14 + (idx * 5))
+            )
+          end
+          c.next_state do |s, spec|
+            sname = s.active_sheet
+            s.with(images: s.images.merge(sname => [*s.images.fetch(sname), spec]))
+          end
+          c.run { |sut, spec| sut.add_image(spec) }
+        end
+
+        m.command :add_table, weight: 2 do |c|
+          c.guard { |s| !s.active_sheet.nil? && s.row_counts.fetch(s.active_sheet) >= 2 && s.tables.fetch(s.active_sheet).empty? }
+          c.arguments do |s|
+            sname = s.active_sheet
+            sidx = s.sheets.index(sname) + 1
+            Pbt.fixed_hash(
+              ref: Pbt.constant("A1:C#{s.row_counts.fetch(sname)}"),
+              name: Pbt.constant("TblSheet#{sidx}"),
+              columns: Pbt.constant(%w[Cat Val When])
+            )
+          end
+          c.next_state do |s, args|
+            sname = s.active_sheet
+            s.with(tables: s.tables.merge(sname => [{ name: args[:name], ref: args[:ref] }]))
+          end
+          c.run { |sut, args| sut.add_table(args[:ref], name: args[:name], columns: args[:columns]) }
+        end
+
+        m.command :add_filter_and_sort, weight: 2 do |c|
+          c.guard { |s| !s.active_sheet.nil? && s.row_counts.fetch(s.active_sheet) >= 2 && !s.filters.fetch(s.active_sheet) }
+          c.arguments do |s|
+            last_r = s.row_counts.fetch(s.active_sheet)
+            Pbt.fixed_hash(
+              auto_filter: Pbt.constant("A1:C#{last_r}"),
+              filter_col: Pbt.constant(0),
+              filter_val: Pbt.constant("A"),
+              sort_ref: Pbt.constant("A2:C#{last_r}"),
+              cond_ref: Pbt.constant("B2:B#{last_r}")
+            )
+          end
+          c.next_state { |s, _args| s.with(filters: s.filters.merge(s.active_sheet => true)) }
+          c.run do |sut, args|
+            sut.add_filter_and_sort(
+              auto_filter: args[:auto_filter],
+              filter_col: args[:filter_col],
+              filter_val: args[:filter_val],
+              sort_ref: args[:sort_ref],
+              cond_ref: args[:cond_ref]
+            )
+          end
+        end
+
+        m.command :add_comment, weight: 2 do |c|
+          c.guard { |s| !s.active_sheet.nil? && s.comments.fetch(s.active_sheet).size < 2 }
+          c.arguments do |s|
+            used = s.comments.fetch(s.active_sheet).map { |cm| cm[:ref] }
+            avail = %w[A1 B1] - used
+            Pbt.fixed_hash(ref: Pbt.constant_from(*avail), text: Pbt.alphanumeric_string(min: 1, max: 12))
+          end
+          c.next_state do |s, args|
+            sname = s.active_sheet
+            s.with(comments: s.comments.merge(sname => [*s.comments.fetch(sname), { ref: args[:ref], text: args[:text] }]))
+          end
+          c.run { |sut, args| sut.add_comment(args[:ref], args[:text]) }
+        end
+
+        m.command :add_defined_name, weight: 2 do |c|
+          c.guard { |s| !s.active_sheet.nil? && s.defined_names.size < 4 }
+          c.arguments do |s|
+            idx = s.defined_names.size + 1
+            Pbt.fixed_hash(
+              name: Pbt.constant("NamedRange#{idx}"),
+              range: Pbt.constant_from("A1:B2", "B1:C2"),
+              sheet: Pbt.constant(s.active_sheet),
+              scoped: Pbt.boolean
+            )
+          end
+          c.next_state do |s, args|
+            sname = args[:sheet]
+            val = "#{Xlsxrb::DslHelpers.quote_sheet_name(sname)}!#{Xlsxrb::DslHelpers.absolute_range(args[:range])}"
+            local_idx = args[:scoped] ? s.sheets.index(sname) : nil
+            entry = { name: args[:name], value: val, local_sheet_id: local_idx }
+            s.with(defined_names: [*s.defined_names, entry])
+          end
+          c.run do |sut, args|
+            scope = args[:scoped] ? args[:sheet] : nil
+            sut.add_defined_name(args[:name], range: args[:range], sheet: args[:sheet], scope: scope)
+          end
+        end
+
+        m.invariant(:compound_parts_and_parity) do |state, sut|
+          next if state.sheets.empty?
+
+          mem_bytes, stream_bytes = sut.snapshot_bytes
+          assert_empty ExcelRules.check(mem_bytes).map(&:to_s), "WorkbookBuilder violated ExcelRules"
+          assert_empty ExcelRules.check(stream_bytes).map(&:to_s), "StreamWriter violated ExcelRules"
+
+          expected_total_charts = state.charts.values.sum(&:size)
+          [mem_bytes, stream_bytes].each do |bytes|
+            entries = Xlsxrb::Ooxml::ZipReader.new(StringIO.new(bytes)).entry_names
+            (1..expected_total_charts).each do |ci|
+              assert_include entries, "xl/charts/chart#{ci}.xml"
+            end
+          end
+
+          m_wb = Xlsxrb.load(StringIO.new(mem_bytes))
+          s_wb = Xlsxrb.load(StringIO.new(stream_bytes))
+
+          assert_equal state.date1904, m_wb.date1904?
+          assert_equal state.date1904, s_wb.date1904?
+          assert_equal state.sheets, m_wb.sheet_names
+          assert_equal state.sheets, s_wb.sheet_names
+
+          exp_dns = state.defined_names.map { |d| [d[:name], d[:value], d[:local_sheet_id]] }
+          assert_equal(exp_dns, m_wb.defined_names.map { |d| [d.name, d.value, d.local_sheet_id] })
+          assert_equal(exp_dns, s_wb.defined_names.map { |d| [d.name, d.value, d.local_sheet_id] })
+
+          state.sheets.each_with_index do |sname, sidx|
+            m_ws = m_wb.sheet(sidx)
+            s_ws = s_wb.sheet(sidx)
+
+            exp_charts = state.charts.fetch(sname).map { |ch| [ch[:type], ch[:title]] }
+            assert_equal(exp_charts, m_ws.charts.map { |ch| [ch.type, ch.title] })
+            assert_equal(exp_charts, s_ws.charts.map { |ch| [ch.type, ch.title] })
+
+            exp_shapes = state.shapes.fetch(sname).map { |sh| [sh[:preset], sh[:text]] }
+            assert_equal(exp_shapes, m_ws.shapes.map { |sh| [sh.preset, sh.text] })
+            assert_equal(exp_shapes, s_ws.shapes.map { |sh| [sh.preset, sh.text] })
+
+            assert_equal state.images.fetch(sname).size, m_ws.images.size
+            assert_equal state.images.fetch(sname).size, s_ws.images.size
+            assert_equal(m_ws.images.map(&:data), s_ws.images.map(&:data))
+
+            exp_tables = state.tables.fetch(sname).map { |tb| [tb[:name], tb[:ref]] }
+            assert_equal(exp_tables, m_ws.tables.map { |tb| [tb.name, tb.ref] })
+            assert_equal(exp_tables, s_ws.tables.map { |tb| [tb.name, tb.ref] })
+
+            exp_cmts = state.comments.fetch(sname).map { |cm| [cm[:ref], cm[:text]] }
+            assert_equal(exp_cmts, m_ws.comments.map { |cm| [cm.ref, cm.text] })
+            assert_equal(exp_cmts, s_ws.comments.map { |cm| [cm.ref, cm.text] })
+
+            assert_equal m_ws.filter_columns, s_ws.filter_columns
+            assert_equal m_ws.sort_state, s_ws.sort_state
+            assert_equal(m_ws.columns.map { |col| [col.index, col.outline_level, col.collapsed?] },
+                         s_ws.columns.map { |col| [col.index, col.outline_level, col.collapsed?] })
+
+            exp_rows = state.rows_data.fetch(sname)
+            assert_equal exp_rows.size, m_ws.rows.size
+            assert_equal exp_rows.size, s_ws.rows.size
+            exp_rows.each_with_index do |exp_r, r_idx|
+              exp_r.each_with_index do |exp_v, c_idx|
+                mc = m_ws[r_idx, c_idx]
+                sc = s_ws[r_idx, c_idx]
+                if exp_v.is_a?(Date)
+                  assert_equal exp_v, mc.to_date
+                  assert_equal exp_v, sc.to_date
+                else
+                  assert_equal exp_v, mc.value
+                  assert_equal exp_v, sc.value
+                end
+              end
+            end
+          end
+        end
+      end
+    end
+  end
+
+  # Helper for MultiPartsSut#append_row inside command run block
+  # --- Stateful PBT #2: Load -> #with immutable edit -> re-save -> reload lifecycle ---
+
+  EditLifecycleState = Data.define(
+    :use_stream,
+    :rows_vals,
+    :merged_cells,
+    :auto_filter,
+    :print_area,
+    :print_titles_rows,
+    :freeze_row,
+    :zoom_scale,
+    :tab_color,
+    :comments,
+    :hyperlinks,
+    :row_breaks,
+    :column_breaks,
+    :core_title,
+    :user_defined_names
+  )
+
+  # Holds a loaded Workbook and applies immutable #with updates and save/reload cycles.
+  class EditLifecycleSut
+    attr_accessor :wb
+
+    def initialize(use_stream:)
+      build_init = lambda do |w|
+        w.core_properties(title: "InitTitle")
+        w.defined_name("UserRange", range: "A1:B2", sheet: "EditSheet")
+        w.sheet("EditSheet") do |s|
+          s.freeze_pane(row: 1, column: 0)
+          s.sheet_view(zoom_scale: 120)
+          s.sheet_properties(tab_color: "FF0000")
+          s.row(%w[H1 H2])
+          s.row([10, 20])
+          s.merge("A1:B1")
+          s.auto_filter = "A1:B2"
+          s.print_area = "A1:B2"
+          s.print_titles(rows: "1:1")
+          s.comment("A1", "init comment")
+          s.hyperlink("B1", "https://example.com/init")
+          s.row_break(0)
+          s.column_break(0)
+        end
+      end
+      bytes = use_stream ? Xlsxrb.write(&build_init) : Xlsxrb.write(Xlsxrb.build(&build_init))
+      @wb = Xlsxrb.load(StringIO.new(bytes))
+    end
+
+    def update_sheet(**changes)
+      ws = @wb.sheet(0).with(**changes)
+      @wb = @wb.with(sheets: [ws])
+      nil
+    end
+
+    def update_workbook(**changes)
+      @wb = @wb.with(**changes)
+      nil
+    end
+
+    def save_and_reload!
+      bytes = @wb.to_data
+      @wb = Xlsxrb.load(StringIO.new(bytes))
+      bytes
+    end
+  end
+
+  test "stateful PBT: load, immutable edit via #with, re-save, and reload fixed-point lifecycle" do
+    init_arb = Pbt.boolean.map(
+      lambda do |use_stream|
+        EditLifecycleState.new(
+          use_stream: use_stream,
+          rows_vals: [%w[H1 H2], [10, 20]],
+          merged_cells: ["A1:B1"],
+          auto_filter: "A1:B2",
+          print_area: "A1:B2",
+          print_titles_rows: "1:1",
+          freeze_row: 1,
+          zoom_scale: 120,
+          tab_color: "FF0000",
+          comments: [["A1", "init comment"]],
+          hyperlinks: { "B1" => "https://example.com/init" },
+          row_breaks: [0],
+          column_breaks: [0],
+          core_title: "InitTitle",
+          user_defined_names: [%w[UserRange 'EditSheet'!$A$1:$B$2]]
+        )
+      end,
+      :use_stream.to_proc
+    )
+
+    Pbt.assert(num_runs: 15) do
+      Pbt.stateful(max_steps: 14) do |m|
+        m.initial_state init_arb
+        m.sut { |init| EditLifecycleSut.new(use_stream: init.use_stream) }
+
+        m.command :update_rows, weight: 3 do |c|
+          c.arguments(v0: Pbt.integer(min: 1, max: 999), v1: Pbt.alphanumeric_string(min: 1, max: 8))
+          c.next_state { |s, args| s.with(rows_vals: [%w[H1 H2], [args[:v0], args[:v1]]]) }
+          c.run do |sut, args|
+            new_rows = [
+              Xlsxrb::Elements::Row.new(index: 0, cells: [
+                                          Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 0, value: "H1"),
+                                          Xlsxrb::Elements::Cell.new(row_index: 0, column_index: 1, value: "H2")
+                                        ]),
+              Xlsxrb::Elements::Row.new(index: 1, cells: [
+                                          Xlsxrb::Elements::Cell.new(row_index: 1, column_index: 0, value: args[:v0]),
+                                          Xlsxrb::Elements::Cell.new(row_index: 1, column_index: 1, value: args[:v1])
+                                        ])
+            ]
+            sut.update_sheet(rows: new_rows)
+          end
+        end
+
+        m.command :edit_merges, weight: 2 do |c|
+          c.arguments Pbt.constant_from([], ["A1:B1"], ["A2:B2"])
+          c.next_state { |s, merges| s.with(merged_cells: merges) }
+          c.run { |sut, merges| sut.update_sheet(merged_cells: merges) }
+        end
+
+        m.command :edit_auto_filter, weight: 2 do |c|
+          c.arguments Pbt.constant_from(nil, "A1:B2")
+          c.next_state { |s, af| s.with(auto_filter: af) }
+          c.run { |sut, af| sut.update_sheet(auto_filter: af) }
+        end
+
+        m.command :edit_print_settings, weight: 2 do |c|
+          c.arguments(
+            print_area: Pbt.constant_from(nil, "A1:B2", "A1:A2"),
+            print_titles_rows: Pbt.constant_from(nil, "1:1", "2:2")
+          )
+          c.next_state { |s, args| s.with(print_area: args[:print_area], print_titles_rows: args[:print_titles_rows]) }
+          c.run do |sut, args|
+            pt = args[:print_titles_rows] ? { rows: args[:print_titles_rows] } : nil
+            sut.update_sheet(print_area: args[:print_area], print_titles: pt)
+          end
+        end
+
+        m.command :edit_freeze_and_view, weight: 2 do |c|
+          c.arguments(freeze_row: Pbt.constant_from(nil, 1), zoom_scale: Pbt.constant_from(80, 120, 150))
+          c.next_state { |s, args| s.with(freeze_row: args[:freeze_row], zoom_scale: args[:zoom_scale]) }
+          c.run do |sut, args|
+            fp = args[:freeze_row] ? { row: args[:freeze_row], column: 0 } : nil
+            sut.update_sheet(freeze_pane: fp, sheet_view: { zoom_scale: args[:zoom_scale] })
+          end
+        end
+
+        m.command :edit_sheet_properties, weight: 2 do |c|
+          c.arguments Pbt.constant_from("FFFF0000", "FF00FF00", "FF0000FF")
+          c.next_state { |s, color| s.with(tab_color: color) }
+          c.run { |sut, color| sut.update_sheet(sheet_properties: { tab_color: color }) }
+        end
+
+        m.command :edit_comments_and_links, weight: 2 do |c|
+          c.arguments(clear: Pbt.boolean, comment_text: Pbt.alphanumeric_string(min: 1, max: 10))
+          c.next_state do |s, args|
+            if args[:clear]
+              s.with(comments: [], hyperlinks: {})
+            else
+              s.with(comments: [["A1", args[:comment_text]]], hyperlinks: { "B1" => "https://example.com/#{args[:comment_text]}" })
+            end
+          end
+          c.run do |sut, args|
+            if args[:clear]
+              sut.update_sheet(comments: [], hyperlinks: {})
+            else
+              sut.update_sheet(
+                comments: [{ ref: "A1", text: args[:comment_text] }],
+                hyperlinks: { "B1" => "https://example.com/#{args[:comment_text]}" }
+              )
+            end
+          end
+        end
+
+        m.command :edit_breaks, weight: 2 do |c|
+          c.arguments Pbt.boolean
+          c.next_state do |s, clear|
+            clear ? s.with(row_breaks: [], column_breaks: []) : s.with(row_breaks: [0], column_breaks: [0])
+          end
+          c.run do |sut, clear|
+            if clear
+              sut.update_sheet(row_breaks: [], column_breaks: [])
+            else
+              sut.update_sheet(row_breaks: [0], column_breaks: [0])
+            end
+          end
+        end
+
+        m.command :edit_workbook_meta, weight: 2 do |c|
+          c.arguments(title: Pbt.alphanumeric_string(min: 1, max: 12), clear_dn: Pbt.boolean)
+          c.next_state do |s, args|
+            dns = args[:clear_dn] ? [] : [%w[UserRange 'EditSheet'!$A$1:$B$2]]
+            s.with(core_title: args[:title], user_defined_names: dns)
+          end
+          c.run do |sut, args|
+            dns = if args[:clear_dn]
+                    []
+                  else
+                    [{ name: "UserRange", value: "'EditSheet'!$A$1:$B$2", local_sheet_id: 0 }]
+                  end
+            sut.update_workbook(core_properties: { title: args[:title] }, defined_names: dns)
+          end
+        end
+
+        m.command :save_and_reload, weight: 4 do |c|
+          c.run { |sut, _args| sut.save_and_reload! }
+          c.verify { |ctx| assert_empty ExcelRules.check(ctx.result).map(&:to_s) }
+        end
+
+        m.invariant(:edit_lifecycle_and_fixed_point) do |state, sut|
+          bytes1 = sut.wb.to_data
+          assert_empty ExcelRules.check(bytes1).map(&:to_s)
+          wb1 = Xlsxrb.load(StringIO.new(bytes1))
+          ws1 = wb1.sheet(0)
+
+          assert_equal(state.rows_vals, ws1.rows.map { |r| r.cells.map(&:value) })
+          assert_equal state.merged_cells, ws1.merged_cells
+          assert_equal state.auto_filter, ws1.auto_filter
+          assert_equal state.print_area, ws1.print_area
+          assert_equal state.print_titles_rows, ws1.print_titles&.rows
+          assert_equal state.freeze_row, ws1.freeze_pane&.row
+          assert_equal state.zoom_scale, ws1.sheet_view.zoom_scale
+          assert_equal state.tab_color, ws1.tab_color
+          assert_equal(state.comments, ws1.comments.map { |cm| [cm.ref, cm.text] })
+          assert_equal state.hyperlinks, ws1.hyperlinks.transform_values(&:url)
+          assert_equal state.row_breaks, ws1.row_breaks.map(&:id)
+          assert_equal state.column_breaks, ws1.column_breaks.map(&:id)
+          assert_equal state.core_title, wb1.core_properties.title
+
+          actual_user_dns = wb1.defined_names.reject { |dn| dn.name.start_with?("_xlnm.") }.map { |dn| [dn.name, dn.value] }
+          assert_equal state.user_defined_names, actual_user_dns
+
+          bytes2 = wb1.to_data
+          assert_empty ExcelRules.check(bytes2).map(&:to_s)
+          wb2 = Xlsxrb.load(StringIO.new(bytes2))
+          ws2 = wb2.sheet(0)
+
+          assert_equal ws1, ws2
+          assert_equal ws1.print_area, ws2.print_area
+          assert_equal ws1.print_titles, ws2.print_titles
+          assert_equal wb1.core_properties, wb2.core_properties
+        end
+      end
+    end
+  end
+
+  # --- Stateful PBT #3: StreamWriter 64KB flush boundary & style precedence ---
+
+  FlushStyleState = Data.define(
+    :shared_strings,
+    :flushed,
+    :row_cursor,
+    :styles,
+    :col_styles,
+    :tracked_rows,
+    :has_post_features
+  )
+
+  # Drives WorkbookBuilder and StreamWriter across the 64KB row-buffer flush boundary.
+  class FlushStyleSut
+    FLUSH_ROW_COUNT = 160
+
+    attr_reader :stream_writer
+
+    def initialize(shared_strings:)
+      @shared_strings = shared_strings
+      @builder = Xlsxrb::WorkbookBuilder.new
+      @stream_io = StringIO.new
+      @stream_writer = Xlsxrb::StreamWriter.new(@stream_io, shared_strings: @shared_strings)
+      @b_sheet = nil
+      @fiber = Fiber.new do
+        @builder.sheet("FlushSheet") do |sh|
+          @b_sheet = sh
+          Fiber.yield
+        end
+      end
+      @fiber.resume
+      @stream_writer.sheet("FlushSheet")
+      @s_proxy = @stream_writer[]
+      @ops = []
+      @row_idx = 0
+    end
+
+    def set_column_style(col_idx, style:)
+      @b_sheet.column(col_idx, style: style)
+      @s_proxy.column(col_idx, style: style)
+      @ops << [:col, col_idx, style]
+      nil
+    end
+
+    def define_style(name, **opts)
+      @builder.style(name, **opts)
+      @stream_writer.style(name, **opts)
+      @ops << [:style, name, opts]
+      nil
+    end
+
+    def flush_past_64kb
+      FLUSH_ROW_COUNT.times do |i|
+        vals = Array.new(20) { |c| @row_idx + i + c }
+        @b_sheet.row(vals)
+        @s_proxy.row(vals)
+      end
+      @row_idx += FLUSH_ROW_COUNT
+      @ops << [:flush_rows, FLUSH_ROW_COUNT]
+      @stream_writer.instance_variable_get(:@sheet_entry_started)
+    end
+
+    def append_styled_row(values, cell_styles:, row_style:)
+      @b_sheet.row(values, cell_styles: cell_styles, row_style: row_style)
+      @s_proxy.row(values, cell_styles: cell_styles, row_style: row_style)
+      @row_idx += 1
+      @ops << [:styled_row, values, cell_styles, row_style]
+      nil
+    end
+
+    def add_post_features
+      @b_sheet.merge("A1:B1")
+      @s_proxy.merge("A1:B1")
+      @b_sheet.auto_filter = "A1:C2"
+      @s_proxy.auto_filter = "A1:C2"
+      @b_sheet.comment("A1", "post_flush")
+      @s_proxy.comment("A1", "post_flush")
+      @ops << [:post_features]
+      nil
+    end
+
+    def snapshot_bytes
+      snap_builder = Xlsxrb::WorkbookBuilder.new
+      snap_io = StringIO.new
+      snap_stream = Xlsxrb::StreamWriter.new(snap_io, shared_strings: @shared_strings)
+      snap_b_sheet = nil
+      snap_fiber = Fiber.new do
+        snap_builder.sheet("FlushSheet") do |sh|
+          snap_b_sheet = sh
+          Fiber.yield
+        end
+      end
+      snap_fiber.resume
+      snap_stream.sheet("FlushSheet")
+      snap_s_proxy = snap_stream[]
+      r_idx = 0
+
+      begin
+        @ops.each do |op|
+          case op[0]
+          when :col
+            snap_b_sheet.column(op[1], style: op[2])
+            snap_s_proxy.column(op[1], style: op[2])
+          when :style
+            snap_builder.style(op[1], **op[2])
+            snap_stream.style(op[1], **op[2])
+          when :flush_rows
+            op[1].times do |i|
+              vals = Array.new(20) { |c| r_idx + i + c }
+              snap_b_sheet.row(vals)
+              snap_s_proxy.row(vals)
+            end
+            r_idx += op[1]
+          when :styled_row
+            snap_b_sheet.row(op[1], cell_styles: op[2], row_style: op[3])
+            snap_s_proxy.row(op[1], cell_styles: op[2], row_style: op[3])
+            r_idx += 1
+          when :post_features
+            snap_b_sheet.merge("A1:B1")
+            snap_s_proxy.merge("A1:B1")
+            snap_b_sheet.auto_filter = "A1:C2"
+            snap_s_proxy.auto_filter = "A1:C2"
+            snap_b_sheet.comment("A1", "post_flush")
+            snap_s_proxy.comment("A1", "post_flush")
+          end
+        end
+
+        snap_fiber.resume if snap_fiber.alive?
+        snap_stream.close
+        [Xlsxrb.write(snap_builder.build, shared_strings: @shared_strings), snap_io.string.b]
+      ensure
+        if snap_fiber&.alive?
+          begin
+            snap_fiber.resume
+          rescue StandardError
+            nil
+          end
+        end
+        snap_stream.cleanup!
+      end
+    end
+
+    def cleanup!
+      if @fiber&.alive?
+        begin
+          @fiber.resume
+        rescue StandardError
+          nil
+        end
+      end
+      @stream_writer.cleanup!
+    end
+  end
+
+  def resolve_flush_cell_style(value, cell_style, row_style, col_style_spec, styles_map)
+    spec = cell_style || row_style
+    style_def = if spec.is_a?(Hash)
+                  spec
+                elsif spec
+                  styles_map.fetch(spec)
+                elsif col_style_spec
+                  col_style_spec.is_a?(Hash) ? col_style_spec : styles_map.fetch(col_style_spec)
+                end
+
+    bold = style_def&.dig(:bold) || false
+    italic = style_def&.dig(:italic) || false
+    fmt = style_def&.dig(:number_format)
+    if fmt.nil?
+      fmt = if value.is_a?(Time)
+              "yyyy-mm-dd hh:mm:ss"
+            elsif value.is_a?(Date)
+              "yyyy-mm-dd"
+            else
+              "General"
+            end
+    end
+    [bold, italic, fmt]
+  end
+
+  test "stateful PBT: StreamWriter 64KB flush boundary with style redefinition, precedence, and date variants" do
+    init_arb = Pbt.boolean.map(
+      lambda do |ss|
+        FlushStyleState.new(
+          shared_strings: ss,
+          flushed: false,
+          row_cursor: 0,
+          styles: {
+            s_a: { bold: true, italic: false, number_format: nil },
+            s_b: { bold: false, italic: true, number_format: "#,##0" }
+          },
+          col_styles: {},
+          tracked_rows: [],
+          has_post_features: false
+        )
+      end,
+      :shared_strings.to_proc
+    )
+
+    Pbt.assert(num_runs: 10) do
+      Pbt.stateful(max_steps: 10) do |m|
+        m.initial_state init_arb
+        m.sut do |init|
+          sut = FlushStyleSut.new(shared_strings: init.shared_strings)
+          init.styles.each { |name, opts| sut.define_style(name, **opts) }
+          sut
+        end
+        m.teardown(&:cleanup!)
+
+        m.command :set_column_style, weight: 2 do |c|
+          c.guard { |s| s.row_cursor.zero? }
+          c.arguments(col_idx: Pbt.constant_from(0, 1), style: Pbt.constant_from(:s_a, :s_b, { bold: true, italic: true }))
+          c.next_state { |s, args| s.with(col_styles: s.col_styles.merge(args[:col_idx] => args[:style])) }
+          c.run { |sut, args| sut.set_column_style(args[:col_idx], style: args[:style]) }
+        end
+
+        m.command :define_style, weight: 3 do |c|
+          c.arguments(
+            name: Pbt.constant_from(:s_a, :s_b),
+            bold: Pbt.boolean,
+            italic: Pbt.boolean,
+            number_format: Pbt.constant_from(nil, "#,##0", "0.00")
+          )
+          c.next_state do |s, args|
+            defn = { bold: args[:bold], italic: args[:italic], number_format: args[:number_format] }
+            s.with(styles: s.styles.merge(args[:name] => defn))
+          end
+          c.run { |sut, args| sut.define_style(args[:name], bold: args[:bold], italic: args[:italic], number_format: args[:number_format]) }
+        end
+
+        m.command :flush_past_64kb, weight: 3 do |c|
+          c.guard { |s| !s.flushed }
+          c.next_state do |s|
+            s.with(flushed: true, row_cursor: s.row_cursor + FlushStyleSut::FLUSH_ROW_COUNT)
+          end
+          c.run { |sut, _args| sut.flush_past_64kb }
+          c.verify { |ctx| assert_true ctx.result }
+        end
+
+        m.command :append_styled_row, weight: 4 do |c|
+          c.arguments(
+            v0: Pbt.one_of(Pbt.integer(min: 1, max: 500), Pbt.alphanumeric_string(min: 1, max: 8)),
+            day_off: Pbt.integer(min: 0, max: 20),
+            use_hash_cell_styles: Pbt.boolean,
+            cs0: Pbt.constant_from(nil, :s_a, :s_b, { bold: true }),
+            cs1: Pbt.constant_from(nil, :s_a, :s_b, { italic: true }),
+            cs2: Pbt.constant_from(nil, :s_a, :s_b),
+            row_style: Pbt.constant_from(nil, :s_a, :s_b, { italic: true })
+          )
+          c.next_state do |s, args|
+            vals = [args[:v0], Date.new(2026, 6, 15) + args[:day_off], Time.utc(2026, 6, 15, 9, 30, 0)]
+            styles_for_cells = [args[:cs0], args[:cs1], args[:cs2]]
+            exp_cells = vals.each_with_index.map do |v, ci|
+              [v, resolve_flush_cell_style(v, styles_for_cells[ci], args[:row_style], s.col_styles[ci], s.styles)]
+            end
+            record = { row_index: s.row_cursor, cells: exp_cells }
+            s.with(row_cursor: s.row_cursor + 1, tracked_rows: [*s.tracked_rows, record])
+          end
+          c.run do |sut, args|
+            vals = [args[:v0], Date.new(2026, 6, 15) + args[:day_off], Time.utc(2026, 6, 15, 9, 30, 0)]
+            cell_styles = if args[:use_hash_cell_styles]
+                            h = {}
+                            h[0] = args[:cs0] if args[:cs0]
+                            h["B"] = args[:cs1] if args[:cs1]
+                            h["C"] = args[:cs2] if args[:cs2]
+                            h.empty? ? nil : h
+                          elsif args[:cs0].nil? && args[:cs1].nil? && args[:cs2].nil?
+                            nil
+                          else
+                            [args[:cs0], args[:cs1], args[:cs2]]
+                          end
+            sut.append_styled_row(vals, cell_styles: cell_styles, row_style: args[:row_style])
+          end
+        end
+
+        m.command :add_post_features, weight: 2 do |c|
+          c.guard { |s| s.row_cursor >= 2 && !s.has_post_features }
+          c.next_state { |s| s.with(has_post_features: true) }
+          c.run { |sut, _args| sut.add_post_features }
+        end
+
+        m.invariant(:flush_boundary_style_parity) do |state, sut|
+          next if state.tracked_rows.empty?
+
+          mem_bytes, stream_bytes = sut.snapshot_bytes
+          assert_empty ExcelRules.check(mem_bytes).map(&:to_s)
+          assert_empty ExcelRules.check(stream_bytes).map(&:to_s)
+
+          m_wb = Xlsxrb.load(StringIO.new(mem_bytes))
+          s_wb = Xlsxrb.load(StringIO.new(stream_bytes))
+          m_ws = m_wb.sheet(0)
+          s_ws = s_wb.sheet(0)
+
+          assert_equal state.row_cursor, m_ws.rows.size
+          assert_equal state.row_cursor, s_ws.rows.size
+
+          if state.has_post_features
+            assert_equal ["A1:B1"], m_ws.merged_cells
+            assert_equal ["A1:B1"], s_ws.merged_cells
+            assert_equal "A1:C2", m_ws.auto_filter
+            assert_equal "A1:C2", s_ws.auto_filter
+            assert_equal([%w[A1 post_flush]], m_ws.comments.map { |cm| [cm.ref, cm.text] })
+            assert_equal([%w[A1 post_flush]], s_ws.comments.map { |cm| [cm.ref, cm.text] })
+          end
+
+          state.tracked_rows.each do |rec|
+            r_idx = rec[:row_index]
+            rec[:cells].each_with_index do |(exp_val, exp_style), c_idx|
+              mc = m_ws[r_idx, c_idx]
+              sc = s_ws[r_idx, c_idx]
+              case exp_val
+              when Date
+                assert_equal exp_val, mc.to_date
+                assert_equal exp_val, sc.to_date
+              when Time
+                assert_in_delta exp_val.to_i, mc.to_time.to_i, 1
+                assert_in_delta exp_val.to_i, sc.to_time.to_i, 1
+              else
+                assert_equal exp_val, mc.value
+                assert_equal exp_val, sc.value
+              end
+              assert_equal exp_style, extract_loaded_cell_style(m_wb.styles, mc)
+              assert_equal exp_style, extract_loaded_cell_style(s_wb.styles, sc)
+            end
+          end
+        end
+      end
+    end
+  end
+
+  # --- Stateful PBT #4: Ooxml::ZipReader & EntryStreamIO state machine ---
+
+  ZipReaderState = Data.define(:entries, :next_stream_id, :open_streams, :closed_streams)
+
+  # Drives a single Ooxml::ZipReader and multiple interleaved EntryStreamIO handles.
+  class ZipReaderSut
+    attr_reader :reader, :expected_bytes
+
+    def initialize(entries_spec)
+      io = StringIO.new
+      zw = Xlsxrb::Ooxml::ZipWriter.new(io, compression_level: 6)
+      @expected_bytes = {}
+
+      zw.instance_variable_set(:@compression_level, 0)
+      zw.add_entry("small_stored.xml", entries_spec[:small])
+      @expected_bytes["small_stored.xml"] = entries_spec[:small].b
+
+      zw.instance_variable_set(:@compression_level, 6)
+      zw.add_entry("large_deflated.xml", entries_spec[:large])
+      @expected_bytes["large_deflated.xml"] = entries_spec[:large].b
+
+      utf8_bom = ("\xEF\xBB\xBF".b + entries_spec[:bom8].b).b
+      zw.add_binary_entry("bom_utf8.xml", utf8_bom)
+      @expected_bytes["bom_utf8.xml"] = entries_spec[:bom8].b
+
+      utf16_le = ("\xFF\xFE".b + entries_spec[:bom16].encode("UTF-16LE").b).b
+      zw.add_binary_entry("bom_utf16le.xml", utf16_le)
+      @expected_bytes["bom_utf16le.xml"] = entries_spec[:bom16].encode("UTF-8").b
+
+      zw.close
+
+      @reader = Xlsxrb::Ooxml::ZipReader.new(StringIO.new(io.string))
+      @streams = {}
+      @next_id = 0
+    end
+
+    def open_stream(name)
+      id = @next_id
+      @next_id += 1
+      @streams[id] = @reader.open_entry_io(name)
+      id
+    end
+
+    def read_chunk(stream_id, len)
+      @streams.fetch(stream_id).read(len)
+    end
+
+    def direct_read(name)
+      @reader.read_entry(name).b
+    end
+
+    def copy_entry(name)
+      out = StringIO.new
+      Xlsxrb::Ooxml::ZipWriter.open(out) { |zw| @reader.copy_to_writer(name, zw) }
+      Xlsxrb::Ooxml::ZipReader.new(StringIO.new(out.string)).read_entry(name).b
+    end
+
+    def close_stream(stream_id)
+      st = @streams.fetch(stream_id)
+      st.close
+      { closed: st.closed? }
+    end
+
+    def read_closed(stream_id)
+      @streams.fetch(stream_id).read(4)
+      nil
+    rescue IOError => e
+      e
+    end
+
+    def stream(stream_id)
+      @streams.fetch(stream_id)
+    end
+
+    def cleanup!
+      @streams.each_value do |st|
+        st.close unless st.closed?
+      rescue StandardError
+        nil
+      end
+      @reader.close
+    rescue StandardError
+      nil
+    end
+  end
+
+  test "stateful PBT: Ooxml::ZipReader and EntryStreamIO interleaved streaming, BOM decoding, and close transitions" do
+    init_arb = Pbt.fixed_hash(
+      small_txt: Pbt.alphanumeric_string(min: 20, max: 300),
+      large_pad: Pbt.integer(min: 66_000, max: 72_000),
+      bom8_txt: Pbt.alphanumeric_string(min: 10, max: 200),
+      bom16_txt: Pbt.alphanumeric_string(min: 10, max: 200)
+    ).map(
+      lambda do |h|
+        small_xml = "<root>#{h[:small_txt]}_日本語</root>"
+        large_xml = "<root>#{"L" * h[:large_pad]}_end</root>"
+        bom8_xml = "<bom8>#{h[:bom8_txt]}_漢字</bom8>"
+        bom16_xml = "<bom16>#{h[:bom16_txt]}_絵文字</bom16>"
+        ZipReaderState.new(
+          entries: {
+            "small_stored.xml" => small_xml.b,
+            "large_deflated.xml" => large_xml.b,
+            "bom_utf8.xml" => bom8_xml.b,
+            "bom_utf16le.xml" => bom16_xml.b
+          },
+          next_stream_id: 0,
+          open_streams: {},
+          closed_streams: []
+        )
+      end,
+      ->(_s) { { small_txt: "x", large_pad: 66_000, bom8_txt: "y", bom16_txt: "z" } }
+    )
+
+    Pbt.assert(num_runs: 20) do
+      Pbt.stateful(max_steps: 18) do |m|
+        m.initial_state init_arb
+        m.sut do |init|
+          ZipReaderSut.new(
+            small: init.entries.fetch("small_stored.xml").dup.force_encoding("UTF-8"),
+            large: init.entries.fetch("large_deflated.xml").dup.force_encoding("UTF-8"),
+            bom8: init.entries.fetch("bom_utf8.xml").dup.force_encoding("UTF-8"),
+            bom16: init.entries.fetch("bom_utf16le.xml").dup.force_encoding("UTF-8")
+          )
+        end
+        m.teardown(&:cleanup!)
+
+        m.command :open_stream, weight: 3 do |c|
+          c.guard { |s| s.open_streams.size + s.closed_streams.size < 5 }
+          c.arguments { |s| Pbt.constant_from(*s.entries.keys) }
+          c.next_state do |s, name|
+            sid = s.next_stream_id
+            info = { name: name, pos: 0, eof_seen: false }
+            s.with(next_stream_id: sid + 1, open_streams: s.open_streams.merge(sid => info))
+          end
+          c.run { |sut, name| sut.open_stream(name) }
+        end
+
+        m.command :read_chunk, weight: 6 do |c|
+          c.guard { |s| !s.open_streams.empty? }
+          c.arguments do |s|
+            Pbt.fixed_hash(
+              stream_id: Pbt.constant_from(*s.open_streams.keys),
+              len: Pbt.constant_from(0, 1, 2, 7, 257, 4096, 70_000, nil)
+            )
+          end
+          c.next_state do |s, args|
+            sid = args[:stream_id]
+            len = args[:len]
+            info = s.open_streams.fetch(sid)
+            total = s.entries.fetch(info[:name]).bytesize
+            if len.nil?
+              new_pos = total
+              eof_seen = true
+            elsif len.zero?
+              new_pos = info[:pos]
+              eof_seen = info[:eof_seen]
+            else
+              avail = total - info[:pos]
+              if avail <= 0
+                new_pos = info[:pos]
+                eof_seen = true
+              else
+                read_len = [len, avail].min
+                new_pos = info[:pos] + read_len
+                eof_seen = info[:eof_seen]
+              end
+            end
+            s.with(open_streams: s.open_streams.merge(sid => info.merge(pos: new_pos, eof_seen: eof_seen)))
+          end
+          c.run { |sut, args| [args[:stream_id], args[:len], sut.read_chunk(args[:stream_id], args[:len])] }
+          c.verify do |ctx|
+            sid, len, chunk = ctx.result
+            old_info = ctx.before.open_streams.fetch(sid)
+            expected = ctx.before.entries.fetch(old_info[:name])
+            pos = old_info[:pos]
+            if len.nil?
+              exp = expected.byteslice(pos, expected.bytesize - pos) || "".b
+              assert_equal exp, chunk.b
+            elsif len.zero?
+              assert_equal "".b, chunk.b
+            elsif pos >= expected.bytesize
+              assert_nil chunk
+            else
+              exp = expected.byteslice(pos, [len, expected.bytesize - pos].min)
+              assert_equal exp, chunk.b
+            end
+          end
+        end
+
+        m.command :direct_read, weight: 2 do |c|
+          c.arguments { |s| Pbt.constant_from(*s.entries.keys) }
+          c.run { |sut, name| [name, sut.direct_read(name)] }
+          c.verify { |ctx| assert_equal ctx.before.entries.fetch(ctx.result[0]), ctx.result[1] }
+        end
+
+        m.command :copy_to_writer, weight: 2 do |c|
+          c.arguments { |s| Pbt.constant_from(*s.entries.keys) }
+          c.run { |sut, name| [name, sut.copy_entry(name)] }
+          c.verify { |ctx| assert_equal ctx.before.entries.fetch(ctx.result[0]), ctx.result[1] }
+        end
+
+        m.command :close_stream, weight: 2 do |c|
+          c.guard { |s| !s.open_streams.empty? }
+          c.arguments { |s| Pbt.constant_from(*s.open_streams.keys) }
+          c.next_state do |s, sid|
+            rest = s.open_streams.reject { |k, _| k == sid }
+            s.with(open_streams: rest, closed_streams: [*s.closed_streams, sid])
+          end
+          c.run(&:close_stream)
+          c.verify { |ctx| assert_true ctx.result[:closed] }
+        end
+
+        m.command :read_closed_stream, weight: 1 do |c|
+          c.guard { |s| !s.closed_streams.empty? }
+          c.arguments { |s| Pbt.constant_from(*s.closed_streams) }
+          c.run(&:read_closed)
+          c.verify { |ctx| assert_instance_of IOError, ctx.result }
+        end
+
+        m.invariant(:stream_states) do |state, sut|
+          state.open_streams.each do |sid, info|
+            st = sut.stream(sid)
+            assert_false st.closed?
+            total = state.entries.fetch(info[:name]).bytesize
+            if info[:pos] < total
+              assert_false st.eof?
+            elsif info[:eof_seen]
+              assert_true st.eof?
+            end
+          end
+
+          state.closed_streams.each do |sid|
+            assert_true sut.stream(sid).closed?
+          end
+        end
+      end
+    end
+  end
+
+  # --- Stateful PBT #5: StreamSheet lazy metadata & option switching ---
+
+  StreamSheetState = Data.define(:use_stream, :lead_skip, :data_rows, :mid_skip, :tail_empty, :verified_ops)
+
+  # Holds an open Xlsxrb.read Fiber yielding StreamSheet alongside a reference Worksheet from Xlsxrb.load.
+  class StreamSheetSut
+    attr_reader :stream_sheet, :loaded_ws
+
+    def initialize(spec)
+      build_proc = lambda do |wb|
+        wb.sheet("Sparse") do |s|
+          s.column(0, width: 16)
+          s.column(1, width: 22, best_fit: true)
+          s.skip_rows(spec.lead_skip) if spec.lead_skip.positive?
+          spec.data_rows.each_with_index do |r, idx|
+            s.row(r)
+            s.skip_rows(spec.mid_skip) if idx.zero? && spec.mid_skip.positive?
+          end
+          spec.tail_empty.times { s.row([nil, nil]) }
+          s.merge("A1:B1")
+          s.auto_filter = "A1:C4"
+          s.print_area = "A1:C4"
+          s.comment("A1", "lazy_comment")
+          s.hyperlink("B1", "https://example.com/lazy")
+        end
+      end
+
+      bytes = spec.use_stream ? Xlsxrb.write(&build_proc) : Xlsxrb.write(Xlsxrb.build(&build_proc))
+      @loaded_ws = Xlsxrb.load(StringIO.new(bytes)).sheet(0)
+      @stream_sheet = nil
+      @fiber = Fiber.new do
+        Xlsxrb.read(StringIO.new(bytes)) do |ss|
+          @stream_sheet = ss
+          Fiber.yield
+        end
+      end
+      @fiber.resume
+    end
+
+    def cleanup!
+      return unless @fiber&.alive?
+
+      @fiber.resume
+    rescue StandardError
+      nil
+    ensure
+      @fiber = nil
+    end
+  end
+
+  test "stateful PBT: StreamSheet lazy metadata access, partial iteration, and row option switching" do
+    init_arb = Pbt.fixed_hash(
+      use_stream: Pbt.boolean,
+      lead_skip: Pbt.integer(min: 0, max: 2),
+      mid_skip: Pbt.integer(min: 0, max: 2),
+      tail_empty: Pbt.integer(min: 0, max: 2),
+      n1: Pbt.integer(min: -50, max: 500),
+      str1: Pbt.alphanumeric_string(min: 1, max: 8)
+    ).map(
+      lambda do |h|
+        rows = [
+          [nil, h[:n1], Date.new(2026, 6, 15)],
+          [h[:str1], nil, true]
+        ]
+        StreamSheetState.new(
+          use_stream: h[:use_stream],
+          lead_skip: h[:lead_skip],
+          data_rows: rows,
+          mid_skip: h[:mid_skip],
+          tail_empty: h[:tail_empty],
+          verified_ops: 0
+        )
+      end,
+      ->(s) { { use_stream: s.use_stream, lead_skip: s.lead_skip, mid_skip: s.mid_skip, tail_empty: s.tail_empty, n1: 1, str1: "a" } }
+    )
+
+    Pbt.assert(num_runs: 15) do
+      Pbt.stateful(max_steps: 14) do |m|
+        m.initial_state init_arb
+        m.sut { |init| StreamSheetSut.new(init) }
+        m.teardown(&:cleanup!)
+
+        m.command :iterate_full, weight: 4 do |c|
+          c.arguments(trim: Pbt.boolean, pad_r: Pbt.boolean, pad_c: Pbt.boolean)
+          c.next_state { |s, _| s.with(verified_ops: s.verified_ops + 1) }
+          c.run do |sut, args|
+            opts = { trim_empty_rows: args[:trim], pad_empty_rows: args[:pad_r], pad_empty_cells: args[:pad_c] }
+            s_rows = sut.stream_sheet.each_row(**opts).map { |r| [r.index, r.cells.map { |cell| [cell.column_index, cell.value] }] }
+            l_rows = sut.loaded_ws.each_row(**opts).map { |r| [r.index, r.cells.map { |cell| [cell.column_index, cell.value] }] }
+            [s_rows, l_rows]
+          end
+          c.verify { |ctx| assert_equal ctx.result[1], ctx.result[0] }
+        end
+
+        m.command :iterate_values, weight: 3 do |c|
+          c.arguments(type_cast: Pbt.boolean, trim: Pbt.boolean, pad_r: Pbt.boolean, pad_c: Pbt.boolean)
+          c.next_state { |s, _| s.with(verified_ops: s.verified_ops + 1) }
+          c.run do |sut, args|
+            opts = { type_cast: args[:type_cast], trim_empty_rows: args[:trim], pad_empty_rows: args[:pad_r], pad_empty_cells: args[:pad_c] }
+            [sut.stream_sheet.each_row_values(**opts).to_a, sut.loaded_ws.each_row_values(**opts).to_a]
+          end
+          c.verify { |ctx| assert_equal ctx.result[1], ctx.result[0] }
+        end
+
+        m.command :iterate_partial_break, weight: 3 do |c|
+          c.arguments Pbt.integer(min: 0, max: 2)
+          c.next_state { |s, _| s.with(verified_ops: s.verified_ops + 1) }
+          c.run do |sut, take_n|
+            partial = []
+            sut.stream_sheet.each_row do |r|
+              break if partial.size >= take_n
+
+              partial << [r.index, r.values]
+            end
+            expected = sut.loaded_ws.each_row.first(take_n).map { |r| [r.index, r.values] }
+            [partial, expected]
+          end
+          c.verify { |ctx| assert_equal ctx.result[1], ctx.result[0] }
+        end
+
+        m.command :access_metadata, weight: 4 do |c|
+          c.arguments Pbt.constant_from(:columns, :comments, :hyperlinks, :auto_filter, :merged_cells, :print_area)
+          c.next_state { |s, _| s.with(verified_ops: s.verified_ops + 1) }
+          c.run do |sut, field|
+            case field
+            when :columns
+              [
+                sut.stream_sheet.columns.map { |col| [col.index, col.width, col.best_fit?] },
+                sut.loaded_ws.columns.map { |col| [col.index, col.width, col.best_fit?] }
+              ]
+            when :comments
+              [
+                sut.stream_sheet.comments.map { |cm| [cm.ref, cm.text] },
+                sut.loaded_ws.comments.map { |cm| [cm.ref, cm.text] }
+              ]
+            when :hyperlinks
+              [
+                sut.stream_sheet.hyperlinks.transform_values(&:url),
+                sut.loaded_ws.hyperlinks.transform_values(&:url)
+              ]
+            when :auto_filter
+              [sut.stream_sheet.auto_filter, sut.loaded_ws.auto_filter]
+            when :merged_cells
+              [sut.stream_sheet.merged_cells, sut.loaded_ws.merged_cells]
+            when :print_area
+              [sut.stream_sheet.print_area, sut.loaded_ws.print_area]
+            end
+          end
+          c.verify { |ctx| assert_equal ctx.result[1], ctx.result[0] }
+        end
+
+        m.command :materialize_load, weight: 2 do |c|
+          c.next_state { |s| s.with(verified_ops: s.verified_ops + 1) }
+          c.run do |sut|
+            mat = sut.stream_sheet.load
+            [
+              [mat.rows.map { |r| [r.index, r.values] }, mat.columns, mat.comments, mat.hyperlinks, mat.auto_filter, mat.merged_cells, mat.print_area],
+              [sut.loaded_ws.rows.map { |r| [r.index, r.values] }, sut.loaded_ws.columns, sut.loaded_ws.comments, sut.loaded_ws.hyperlinks, sut.loaded_ws.auto_filter, sut.loaded_ws.merged_cells, sut.loaded_ws.print_area]
+            ]
+          end
+          c.verify { |ctx| assert_equal ctx.result[1], ctx.result[0] }
+        end
+
+        m.invariant(:stream_sheet_default_parity) do |_state, sut|
+          assert_equal sut.loaded_ws.name, sut.stream_sheet.name
+          assert_equal(sut.loaded_ws.each_row.map { |r| [r.index, r.values] },
+                       sut.stream_sheet.each_row.map { |r| [r.index, r.values] })
+        end
+      end
+    end
+  end
+
+  # --- Stateful PBT #6: StyleBuilder fluent mutation, copy isolation, and StylesXml roundtrip ---
+
+  StyleBuilderState = Data.define(:builders, :next_id)
+
+  # Tracks live StyleBuilder instances and serializes them through StylesXml and StylesParser.
+  class StyleBuilderSut
+    attr_reader :builders
+
+    def initialize
+      @builders = { b0: Xlsxrb::StyleBuilder.new(:b0) }
+    end
+
+    def mutate_font(id, args)
+      sb = @builders.fetch(id)
+      sb.bold = args[:bold]
+      sb.italic = args[:italic]
+      sb.strike = args[:strike]
+      sb.underline = args[:underline]
+      case args[:va]
+      when :super then sb.superscript = true
+      when :sub then sb.subscript = true
+      else sb.vert_align = :baseline
+      end
+      sb.font_size = args[:font_size]
+      sb.font_name = args[:font_name]
+      sb.font_color = args[:font_color]
+      nil
+    end
+
+    def mutate_fill(id, mode, color1, color2)
+      sb = @builders.fetch(id)
+      case mode
+      when :solid
+        sb.fill_color = color1
+      when :pattern
+        sb.fill_pattern("gray125", fg_color: color1, bg_color: color2)
+      when :gradient
+        sb.fill_gradient(type: "linear", degree: 90, stops: [{ position: 0, color: color1 }, { position: 1, color: color2 }])
+      end
+      nil
+    end
+
+    def mutate_border(id, all_style, all_color, diag_style, diag_up)
+      sb = @builders.fetch(id)
+      sb.border_all(style: all_style, color: all_color)
+      sb.border_diagonal(style: diag_style, color: all_color, up: diag_up, down: !diag_up)
+      nil
+    end
+
+    def mutate_alignment_and_prot(id, args)
+      sb = @builders.fetch(id)
+      sb.align_horizontal = args[:h]
+      sb.align_vertical = args[:v]
+      sb.wrap_text = args[:wrap]
+      sb.text_rotation = args[:rot]
+      sb.indent = args[:indent]
+      sb.shrink_to_fit = args[:shrink]
+      sb.locked = args[:locked]
+      sb.hidden = args[:hidden]
+      sb.number_format = args[:num_fmt]
+      nil
+    end
+
+    def fork_copy(src_id, new_id, with_fmt:)
+      src = @builders.fetch(src_id)
+      copy = with_fmt ? src.with_number_format(new_id.to_s, with_fmt) : src.dup
+      @builders[new_id] = copy
+      nil
+    end
+
+    def roundtrip_styles
+      writer = Xlsxrb::Ooxml::Writer.new
+      xf_by_id = @builders.transform_values { |sb| sb.register_with(writer) }
+      xml = writer.send(:generate_styles_xml)
+      styles = Xlsxrb::Ooxml::StylesParser.parse(xml)
+      [xf_by_id, styles]
+    end
+  end
+
+  test "stateful PBT: StyleBuilder fluent mutation, copy isolation, and StylesXml roundtrip" do
+    init_model = {
+      bold: false, italic: false, strike: false, underline: nil, vert_align: nil,
+      font_size: nil, font_name: nil, font_color: nil,
+      fill_mode: nil, fill_color: nil, fill_pattern: nil, fill_bg: nil, fill_grad_stops: nil,
+      border_style: nil, border_color: nil,
+      align_h: nil, align_v: nil, wrap_text: false, text_rotation: nil, indent: nil, shrink_to_fit: false,
+      locked: true, hidden: false, number_format: nil
+    }
+
+    Pbt.assert(num_runs: 20) do
+      Pbt.stateful(max_steps: 14) do |m|
+        m.initial_state { StyleBuilderState.new(builders: { b0: init_model }, next_id: 1) }
+        m.sut { StyleBuilderSut.new }
+
+        m.command :mutate_font, weight: 3 do |c|
+          c.arguments do |s|
+            Pbt.fixed_hash(
+              id: Pbt.constant_from(*s.builders.keys),
+              bold: Pbt.boolean,
+              italic: Pbt.boolean,
+              strike: Pbt.boolean,
+              underline: Pbt.constant_from(false, true, :double, :single_accounting),
+              va: Pbt.constant_from(:super, :sub, :baseline),
+              font_size: Pbt.constant_from(10, 11.5, 14),
+              font_name: Pbt.constant_from("Arial", "Calibri"),
+              font_color: Pbt.constant_from(:red, "#00FF00", "#00F")
+            )
+          end
+          c.next_state do |s, args|
+            cur = s.builders.fetch(args[:id])
+            exp_u = case args[:underline]
+                    when false then nil
+                    when true then "single"
+                    when :single_accounting then "singleAccounting"
+                    else args[:underline].to_s
+                    end
+            exp_va = case args[:va]
+                     when :super then "superscript"
+                     when :sub then "subscript"
+                     else "baseline"
+                     end
+            exp_fc = Xlsxrb::StyleBuilder.resolve_color(args[:font_color])
+            updated = cur.merge(
+              bold: args[:bold],
+              italic: args[:italic],
+              strike: args[:strike],
+              underline: exp_u,
+              vert_align: exp_va,
+              font_size: args[:font_size],
+              font_name: args[:font_name],
+              font_color: exp_fc
+            )
+            s.with(builders: s.builders.merge(args[:id] => updated))
+          end
+          c.run { |sut, args| sut.mutate_font(args[:id], args) }
+        end
+
+        m.command :mutate_fill, weight: 3 do |c|
+          c.arguments do |s|
+            Pbt.fixed_hash(
+              id: Pbt.constant_from(*s.builders.keys),
+              mode: Pbt.constant_from(:solid, :pattern, :gradient),
+              color1: Pbt.constant_from("FFFF0000", "FF00FF00"),
+              color2: Pbt.constant_from("FF0000FF", "FFFFFF00")
+            )
+          end
+          c.next_state do |s, args|
+            cur = s.builders.fetch(args[:id])
+            updated = case args[:mode]
+                      when :solid
+                        cur.merge(fill_mode: :solid, fill_color: args[:color1], fill_pattern: "solid", fill_bg: nil, fill_grad_stops: nil)
+                      when :pattern
+                        cur.merge(fill_mode: :pattern, fill_color: args[:color1], fill_pattern: "gray125", fill_bg: args[:color2], fill_grad_stops: nil)
+                      when :gradient
+                        cur.merge(fill_mode: :gradient, fill_color: nil, fill_pattern: nil, fill_bg: nil, fill_grad_stops: [args[:color1], args[:color2]])
+                      end
+            s.with(builders: s.builders.merge(args[:id] => updated))
+          end
+          c.run { |sut, args| sut.mutate_fill(args[:id], args[:mode], args[:color1], args[:color2]) }
+        end
+
+        m.command :mutate_border, weight: 3 do |c|
+          c.arguments do |s|
+            Pbt.fixed_hash(
+              id: Pbt.constant_from(*s.builders.keys),
+              all_style: Pbt.constant_from(:thin, :medium_dashed, 2, "double"),
+              all_color: Pbt.constant_from(:navy, "#112233"),
+              diag_style: Pbt.constant_from(:thin, :dotted),
+              diag_up: Pbt.boolean
+            )
+          end
+          c.next_state do |s, args|
+            cur = s.builders.fetch(args[:id])
+            norm_s = Xlsxrb::StyleBuilder.border_style!(args[:all_style])
+            norm_c = Xlsxrb::StyleBuilder.resolve_color(args[:all_color])
+            s.with(builders: s.builders.merge(args[:id] => cur.merge(border_style: norm_s, border_color: norm_c)))
+          end
+          c.run { |sut, args| sut.mutate_border(args[:id], args[:all_style], args[:all_color], args[:diag_style], args[:diag_up]) }
+        end
+
+        m.command :mutate_alignment_and_prot, weight: 2 do |c|
+          c.arguments do |s|
+            Pbt.fixed_hash(
+              id: Pbt.constant_from(*s.builders.keys),
+              h: Pbt.constant_from("left", "center", "right"),
+              v: Pbt.constant_from("top", "center", "bottom"),
+              wrap: Pbt.boolean,
+              rot: Pbt.constant_from(0, 45, 90),
+              indent: Pbt.integer(min: 0, max: 3),
+              shrink: Pbt.boolean,
+              locked: Pbt.boolean,
+              hidden: Pbt.boolean,
+              num_fmt: Pbt.constant_from("#,##0.00", "0.0%", "yyyy-mm-dd")
+            )
+          end
+          c.next_state do |s, args|
+            cur = s.builders.fetch(args[:id])
+            updated = cur.merge(
+              align_h: args[:h], align_v: args[:v], wrap_text: args[:wrap],
+              text_rotation: args[:rot], indent: args[:indent], shrink_to_fit: args[:shrink],
+              locked: args[:locked], hidden: args[:hidden], number_format: args[:num_fmt]
+            )
+            s.with(builders: s.builders.merge(args[:id] => updated))
+          end
+          c.run { |sut, args| sut.mutate_alignment_and_prot(args[:id], args) }
+        end
+
+        m.command :fork_copy, weight: 3 do |c|
+          c.guard { |s| s.builders.size < 4 }
+          c.arguments do |s|
+            Pbt.fixed_hash(
+              src_id: Pbt.constant_from(*s.builders.keys),
+              new_id: Pbt.constant(:"b#{s.next_id}"),
+              with_fmt: Pbt.constant_from(nil, "0.000", "yyyy/mm/dd")
+            )
+          end
+          c.next_state do |s, args|
+            src = s.builders.fetch(args[:src_id])
+            copy = args[:with_fmt] ? src.merge(number_format: args[:with_fmt]) : src.dup
+            s.with(builders: s.builders.merge(args[:new_id] => copy), next_id: s.next_id + 1)
+          end
+          c.run { |sut, args| sut.fork_copy(args[:src_id], args[:new_id], with_fmt: args[:with_fmt]) }
+        end
+
+        m.invariant(:builder_isolation_and_styles_xml_roundtrip) do |state, sut|
+          assert_equal state.builders.keys, sut.builders.keys
+          state.builders.each do |id, exp|
+            sb = sut.builders.fetch(id)
+            assert_equal exp[:bold], sb.bold?
+            assert_equal exp[:italic], sb.italic?
+            assert_equal exp[:strike], sb.strike?
+            assert_equal exp[:underline], sb.underline
+            assert_equal exp[:vert_align], sb.vert_align
+            assert_equal exp[:font_size], sb.font_size
+            assert_equal exp[:font_name], sb.font_name
+            assert_equal exp[:font_color], sb.font_color
+            assert_equal exp[:align_h], sb.align_horizontal
+            assert_equal exp[:align_v], sb.align_vertical
+            assert_equal exp[:wrap_text], sb.wrap_text?
+            assert_equal exp[:text_rotation], sb.text_rotation
+            assert_equal exp[:indent], sb.indent
+            assert_equal exp[:shrink_to_fit], sb.shrink_to_fit?
+            assert_equal exp[:locked], sb.locked?
+            assert_equal exp[:hidden], sb.hidden?
+            assert_equal exp[:number_format], sb.number_format
+            assert_equal exp[:fill_pattern], sb.fill_pattern if exp[:fill_mode] && exp[:fill_mode] != :gradient
+            assert_equal exp[:fill_color], sb.fill_color if exp[:fill_mode] == :solid
+          end
+
+          xf_by_id, styles = sut.roundtrip_styles
+          state.builders.each do |id, exp|
+            xf_idx = xf_by_id.fetch(id)
+            xf = styles.cell_xf(xf_idx)
+            assert_not_nil xf
+
+            if exp[:font_name]
+              font = styles.font(xf.font_id)
+              assert_equal exp[:bold], font.bold?
+              assert_equal exp[:italic], font.italic?
+              assert_equal exp[:strike], font.strike?
+              assert_equal exp[:underline], font.underline
+              assert_equal exp[:vert_align], font.vert_align
+              assert_equal exp[:font_size].to_f, font.size
+              assert_equal exp[:font_name], font.name
+              assert_equal({ rgb: exp[:font_color] }, font.color)
+            end
+
+            if exp[:fill_mode]
+              fill = styles.fill(xf.fill_id)
+              case exp[:fill_mode]
+              when :solid
+                assert_nil fill.gradient
+                assert_equal "solid", fill.pattern_type
+                assert_equal({ rgb: exp[:fill_color] }, fill.fg_color)
+              when :pattern
+                assert_nil fill.gradient
+                assert_equal exp[:fill_pattern], fill.pattern_type
+                assert_equal({ rgb: exp[:fill_color] }, fill.fg_color)
+                assert_equal({ rgb: exp[:fill_bg] }, fill.bg_color)
+              when :gradient
+                assert_not_nil fill.gradient
+                assert_equal(exp[:fill_grad_stops].map { |c| { rgb: c } }, fill.gradient[:stops].map { |st| st[:color] })
+              end
+            end
+
+            if exp[:border_style]
+              border = styles.border(xf.border_id)
+              assert_equal({ style: exp[:border_style], color: { rgb: exp[:border_color] } }, border.left)
+              assert_equal({ style: exp[:border_style], color: { rgb: exp[:border_color] } }, border.bottom)
+            end
+
+            next unless exp[:align_h]
+
+            align = xf.alignment
+            assert_equal exp[:align_h], align.horizontal
+            assert_equal exp[:align_v], align.vertical
+            assert_equal exp[:wrap_text], align.wrap_text?
+            assert_equal exp[:text_rotation], align.text_rotation
+            assert_equal exp[:indent], align.indent
+            assert_equal exp[:shrink_to_fit], align.shrink_to_fit?
+            assert_equal exp[:locked], xf.protection.locked?
+            assert_equal exp[:hidden], xf.protection.hidden?
+            assert_equal exp[:number_format], styles.number_format(xf_idx)
+          end
+        end
       end
     end
   end
