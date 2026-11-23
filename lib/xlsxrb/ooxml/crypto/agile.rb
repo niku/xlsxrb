@@ -5,6 +5,7 @@
 require "openssl"
 require "rexml/document"
 require "securerandom"
+require_relative "../xml_builder"
 
 module Xlsxrb
   module Ooxml
@@ -144,18 +145,46 @@ module Xlsxrb
             encrypted_hmac_val = aes_encrypt(cipher_name, package_key, digest.digest(key_data_salt + BLOCK_KEY_INTEGRITY_VALUE), hmac_value)
 
             # Build EncryptionInfo XML
-            xml = <<~XML
-              <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-              <encryption xmlns="http://schemas.microsoft.com/office/2006/encryption" xmlns:p="http://schemas.microsoft.com/office/2006/keyEncryptor/password" xmlns:c="http://schemas.microsoft.com/office/2006/keyEncryptor/certificate">
-                <keyData saltSize="#{key_data_salt.bytesize}" blockSize="#{block_size}" keyBits="#{key_bits}" hashSize="#{hash_size}" cipherAlgorithm="#{cipher_algorithm}" cipherChaining="#{cipher_chaining}" hashAlgorithm="#{hash_algorithm}" saltValue="#{[key_data_salt].pack("m0")}"/>
-                <dataIntegrity encryptedHmacKey="#{[encrypted_hmac_key].pack("m0")}" encryptedHmacValue="#{[encrypted_hmac_val].pack("m0")}"/>
-                <keyEncryptors>
-                  <keyEncryptor uri="http://schemas.microsoft.com/office/2006/keyEncryptor/password">
-                    <p:encryptedKey spinCount="#{spin_count}" saltSize="#{encryptor_salt.bytesize}" blockSize="#{block_size}" keyBits="#{key_bits}" hashSize="#{hash_size}" cipherAlgorithm="#{cipher_algorithm}" cipherChaining="#{cipher_chaining}" hashAlgorithm="#{hash_algorithm}" saltValue="#{[encryptor_salt].pack("m0")}" encryptedVerifierHashInput="#{[encrypted_verifier_input].pack("m0")}" encryptedVerifierHashValue="#{[encrypted_verifier_val].pack("m0")}" encryptedKeyValue="#{[encrypted_key_value].pack("m0")}"/>
-                  </keyEncryptor>
-                </keyEncryptors>
-              </encryption>
-            XML
+            xml = XmlBuilder.build(declaration: :standalone) do |b|
+              b.tag("encryption", {
+                      xmlns: "http://schemas.microsoft.com/office/2006/encryption",
+                      "xmlns:p": "http://schemas.microsoft.com/office/2006/keyEncryptor/password",
+                      "xmlns:c": "http://schemas.microsoft.com/office/2006/keyEncryptor/certificate"
+                    }) do
+                b.empty_tag("keyData", {
+                              saltSize: key_data_salt.bytesize,
+                              blockSize: block_size,
+                              keyBits: key_bits,
+                              hashSize: hash_size,
+                              cipherAlgorithm: cipher_algorithm,
+                              cipherChaining: cipher_chaining,
+                              hashAlgorithm: hash_algorithm,
+                              saltValue: [key_data_salt].pack("m0")
+                            })
+                b.empty_tag("dataIntegrity", {
+                              encryptedHmacKey: [encrypted_hmac_key].pack("m0"),
+                              encryptedHmacValue: [encrypted_hmac_val].pack("m0")
+                            })
+                b.tag("keyEncryptors") do
+                  b.tag("keyEncryptor", { uri: "http://schemas.microsoft.com/office/2006/keyEncryptor/password" }) do
+                    b.empty_tag("p:encryptedKey", {
+                                  spinCount: spin_count,
+                                  saltSize: encryptor_salt.bytesize,
+                                  blockSize: block_size,
+                                  keyBits: key_bits,
+                                  hashSize: hash_size,
+                                  cipherAlgorithm: cipher_algorithm,
+                                  cipherChaining: cipher_chaining,
+                                  hashAlgorithm: hash_algorithm,
+                                  saltValue: [encryptor_salt].pack("m0"),
+                                  encryptedVerifierHashInput: [encrypted_verifier_input].pack("m0"),
+                                  encryptedVerifierHashValue: [encrypted_verifier_val].pack("m0"),
+                                  encryptedKeyValue: [encrypted_key_value].pack("m0")
+                                })
+                  end
+                end
+              end
+            end
 
             # EncryptionInfo stream header: versionMajor=4, versionMinor=4, flags=0x40
             info_stream = [4, 4, 0x40].pack("vvV") + xml.b

@@ -408,10 +408,138 @@ class SecurityResilienceTest < Test::Unit::TestCase
     end
   end
 
-  # Values a writer puts in an attribute without escaping them, by file, each with the
-  # reason it cannot hold a character that needs escaping. The check below cannot see
-  # that reason; it only matches the expression as written. A value that is not listed
-  # here must be escaped, converted to an Integer, or be a constant.
+  def test_hot_path_attribute_and_shared_strings_breakout
+    omit "Passes values the signatures do not allow, which RBS runtime checks reject first" if defined?(RBS::Test)
+
+    rt = Xlsxrb::Elements::RichText.new(
+      runs: [
+        {
+          text: ATTRIBUTE_BREAKOUT,
+          font: {
+            underline: ATTRIBUTE_BREAKOUT,
+            vert_align: ATTRIBUTE_BREAKOUT,
+            size: ATTRIBUTE_BREAKOUT,
+            color: ATTRIBUTE_BREAKOUT,
+            name: ATTRIBUTE_BREAKOUT,
+            family: ATTRIBUTE_BREAKOUT,
+            scheme: ATTRIBUTE_BREAKOUT
+          }
+        }
+      ]
+    )
+    shared_obj = Xlsxrb.shared_formula("1", shared_index: ATTRIBUTE_BREAKOUT, ref: ATTRIBUTE_BREAKOUT)
+    row_attrs = { height: ATTRIBUTE_BREAKOUT, outline_level: ATTRIBUTE_BREAKOUT }
+
+    io = StringIO.new
+    ws = Xlsxrb::Ooxml::WorksheetWriter.new(io)
+    ws.write_row(0, [{ column_index: 0, formula: shared_obj }, { column_index: 1, value: rt }], attrs: row_attrs)
+    ws.write_row_values(1, [shared_obj, rt], sst: nil, sst_index: nil, attrs: row_attrs)
+    ws.write_row_values(2, [shared_obj, rt], styles: [0, 0], sst: nil, sst_index: nil, attrs: row_attrs)
+    ws.finish
+
+    ws_doc = REXML::Document.new(io.string)
+    assert_empty REXML::XPath.match(ws_doc, "//injected")
+    rows = REXML::XPath.match(ws_doc, "//row")
+    assert_equal(Array.new(3, ATTRIBUTE_BREAKOUT), rows.map { |r| r.attributes["ht"] })
+    assert_equal(Array.new(3, ATTRIBUTE_BREAKOUT), rows.map { |r| r.attributes["outlineLevel"] })
+    formulas = REXML::XPath.match(ws_doc, "//f")
+    assert_equal(Array.new(3, ATTRIBUTE_BREAKOUT), formulas.map { |f| f.attributes["si"] })
+    assert_equal(Array.new(3, ATTRIBUTE_BREAKOUT), formulas.map { |f| f.attributes["ref"] })
+    assert_equal(Array.new(3, ATTRIBUTE_BREAKOUT), REXML::XPath.match(ws_doc, "//u").map { |u| u.attributes["val"] })
+    assert_equal(Array.new(3, ATTRIBUTE_BREAKOUT), REXML::XPath.match(ws_doc, "//sz").map { |s| s.attributes["val"] })
+    assert_equal(Array.new(3, ATTRIBUTE_BREAKOUT), REXML::XPath.match(ws_doc, "//t").map(&:text))
+
+    streamed = StringIO.new
+    Xlsxrb.write(streamed) do |wb|
+      wb.sheet("S") { |sheet| sheet.row([ATTRIBUTE_BREAKOUT, rt]) }
+    end
+    sst_doc = REXML::Document.new(read_part(streamed.string, "xl/sharedStrings.xml"))
+    assert_empty REXML::XPath.match(sst_doc, "//injected")
+    assert_equal [ATTRIBUTE_BREAKOUT, ATTRIBUTE_BREAKOUT], REXML::XPath.match(sst_doc, "//t").map(&:text)
+    assert_equal ATTRIBUTE_BREAKOUT, REXML::XPath.first(sst_doc, "//u").attributes["val"]
+    assert_equal ATTRIBUTE_BREAKOUT, REXML::XPath.first(sst_doc, "//vertAlign").attributes["val"]
+    assert_equal ATTRIBUTE_BREAKOUT, REXML::XPath.first(sst_doc, "//sz").attributes["val"]
+    assert_equal ATTRIBUTE_BREAKOUT, REXML::XPath.first(sst_doc, "//rFont").attributes["val"]
+    assert_equal ATTRIBUTE_BREAKOUT, REXML::XPath.first(sst_doc, "//family").attributes["val"]
+    assert_equal ATTRIBUTE_BREAKOUT, REXML::XPath.first(sst_doc, "//scheme").attributes["val"]
+  end
+
+  def test_xml_builder_attributes_and_text_are_escaped_once
+    writer = Xlsxrb::Ooxml::Writer.new
+
+    persons_xml = writer.generate_persons_xml(
+      [
+        {
+          id: ATTRIBUTE_BREAKOUT,
+          display_name: ATTRIBUTE_BREAKOUT,
+          user_id: ATTRIBUTE_BREAKOUT,
+          provider_id: ATTRIBUTE_BREAKOUT
+        }
+      ]
+    )
+    refute_includes persons_xml, "&amp;quot;"
+    refute_includes persons_xml, "&amp;lt;"
+    persons_doc = REXML::Document.new(persons_xml)
+    assert_empty REXML::XPath.match(persons_doc, "//*[local-name()='injected']")
+    person = REXML::XPath.first(persons_doc, "//*[local-name()='person']")
+    assert_equal ATTRIBUTE_BREAKOUT, person.attributes["displayName"]
+    assert_equal ATTRIBUTE_BREAKOUT, person.attributes["id"]
+    assert_equal ATTRIBUTE_BREAKOUT, person.attributes["userId"]
+    assert_equal ATTRIBUTE_BREAKOUT, person.attributes["providerId"]
+
+    drawing_xml = writer.generate_drawing_xml(
+      [
+        {
+          kind: :chart,
+          rid_index: 1,
+          chart: {
+            from_column: 0,
+            from_row: 0,
+            to_column: 5,
+            to_row: 10,
+            frame_macro: ATTRIBUTE_BREAKOUT
+          }
+        }
+      ]
+    )
+    refute_includes drawing_xml, "&amp;quot;"
+    refute_includes drawing_xml, "&amp;lt;"
+    drawing_doc = REXML::Document.new(drawing_xml)
+    assert_empty REXML::XPath.match(drawing_doc, "//*[local-name()='injected']")
+    assert_equal ATTRIBUTE_BREAKOUT, REXML::XPath.first(drawing_doc, "//*[local-name()='graphicFrame']").attributes["macro"]
+
+    chart_xml = writer.generate_chart_xml(
+      {
+        type: :bar,
+        title: { text: ATTRIBUTE_BREAKOUT },
+        series: [
+          {
+            name: "S1",
+            fill_color: ATTRIBUTE_BREAKOUT,
+            line_color: { scheme: ATTRIBUTE_BREAKOUT }
+          }
+        ]
+      }
+    )
+    refute_includes chart_xml, "&amp;quot;"
+    refute_includes chart_xml, "&amp;lt;"
+    chart_doc = REXML::Document.new(chart_xml)
+    assert_empty REXML::XPath.match(chart_doc, "//*[local-name()='injected']")
+    assert_equal ATTRIBUTE_BREAKOUT, REXML::XPath.first(chart_doc, "//*[local-name()='t']").text
+    assert_equal ATTRIBUTE_BREAKOUT, REXML::XPath.first(chart_doc, "//*[local-name()='srgbClr']").attributes["val"]
+    assert_equal ATTRIBUTE_BREAKOUT, REXML::XPath.first(chart_doc, "//*[local-name()='schemeClr']").attributes["val"]
+  end
+
+  HOT_PATH_STRING_WRITERS = [
+    "lib/xlsxrb/ooxml/worksheet_writer.rb",
+    "lib/xlsxrb/ooxml/workbook_writer.rb"
+  ].freeze
+  RAW_XML_START_TAG = %r{<[a-zA-Z_][\w:.-]*[\s>/]}
+
+  # Values that the string-concatenating hot-path writers put in an attribute without
+  # escaping them, by file, each with the reason it cannot hold a character that needs
+  # escaping. All other XML writers build XML through XmlBuilder and may not construct raw
+  # attributes at all.
   UNESCAPED_ATTRIBUTE_VALUES = {
     "lib/xlsxrb/ooxml/worksheet_writer.rb" => {
       "col_ref" => "column letters and a row number computed here, or the ref of a Hash cell, escaped where it is taken",
@@ -426,22 +554,6 @@ class SecurityResilienceTest < Test::Unit::TestCase
     },
     "lib/xlsxrb/ooxml/workbook_writer.rb" => {
       "count_str" => "Integer#to_s"
-    },
-    "lib/xlsxrb/ooxml/writer.rb" => {
-      "i + 1" => "loop index"
-    },
-    "lib/xlsxrb/ooxml/writer/drawing_xml.rb" => {
-      "i" => "loop index",
-      "i + 1" => "loop index"
-    },
-    "lib/xlsxrb/ooxml/crypto/agile.rb" => {
-      "spin_count" => "Integer literal",
-      "block_size" => "Integer literal",
-      "key_bits" => "Integer literal",
-      "hash_size" => "Integer literal",
-      "cipher_algorithm" => "String literal",
-      "cipher_chaining" => "String literal",
-      "hash_algorithm" => "String literal"
     }
   }.freeze
 
@@ -458,11 +570,10 @@ class SecurityResilienceTest < Test::Unit::TestCase
   ATTRIBUTE_INTERPOLATION = /=\\?["'](?:[^"'#]|#(?!\{))*#\{/
   ATTRIBUTE_CONCATENATION = /="' *<< *([^<\n]+?) *(?=<<|$)/
 
-  # The writers build XML as strings, so nothing but the author stops a value from being
-  # written into an attribute as given. This reads the source of every writer and fails
-  # for a value that is neither escaped, nor of a form that needs no escaping, nor listed
-  # above. It matches the two ways the writers write an attribute today and does not see
-  # an attribute built in another way.
+  # Row and shared-string hot paths still build XML strings for throughput, so this reads
+  # every file under lib/ and fails if any raw attribute construction appears outside
+  # HOT_PATH_STRING_WRITERS, or if an attribute value in HOT_PATH_STRING_WRITERS is
+  # neither escaped, nor of a safe form, nor listed in UNESCAPED_ATTRIBUTE_VALUES.
   #
   # Static inspection does not extend to element content (`>#{...}</`) in
   # string-interpolating writers because most element-content interpolations insert
@@ -477,8 +588,14 @@ class SecurityResilienceTest < Test::Unit::TestCase
     Dir[File.join(root, "lib/**/*.rb")].each do |path|
       file = path.delete_prefix("#{root}/")
       listed = UNESCAPED_ATTRIBUTE_VALUES.fetch(file, {})
+      hot_path = HOT_PATH_STRING_WRITERS.include?(file)
       File.foreach(path, encoding: Encoding::UTF_8).with_index(1) do |line, number|
         attribute_values(line).each do |expression|
+          unless hot_path
+            offenses << "#{file}:#{number}: raw attribute outside hot-path writers: #{expression}"
+            next
+          end
+
           seen += 1
           value = expression.delete_suffix(".to_s")
           next if value.match?(ESCAPE_CALL) || SAFE_ATTRIBUTE_VALUES.any? { |form| value.match?(form) }
@@ -492,9 +609,25 @@ class SecurityResilienceTest < Test::Unit::TestCase
       end
     end
 
-    assert_operator seen, :>, 900, "the patterns no longer match the attributes the writers write"
-    assert_empty offenses, "written into an attribute as given; escape each one, or list it in UNESCAPED_ATTRIBUTE_VALUES with the reason it needs no escaping"
+    assert_operator seen, :>, 80, "the patterns no longer match the attributes the hot-path writers write"
+    assert_empty offenses, "written into an attribute as given; build XML with XmlBuilder, or escape each hot-path value or list it in UNESCAPED_ATTRIBUTE_VALUES"
     assert_empty unused.reject { |_file, values| values.empty? }, "listed in UNESCAPED_ATTRIBUTE_VALUES but not found"
+  end
+
+  def test_xml_builder_writers_emit_no_raw_start_tags
+    root = File.expand_path("..", __dir__)
+    files = %w[lib/xlsxrb/ooxml/writer.rb lib/xlsxrb/ooxml/crypto/agile.rb] +
+            Dir[File.join(root, "lib/xlsxrb/ooxml/writer/*.rb")].map { |p| p.delete_prefix("#{root}/") }
+    offenses = []
+    files.each do |file|
+      File.foreach(File.join(root, file), encoding: Encoding::UTF_8).with_index(1) do |line, number|
+        next if line.lstrip.start_with?("#")
+
+        offenses << "#{file}:#{number}: #{line.strip}" if line.match?(RAW_XML_START_TAG)
+      end
+    end
+
+    assert_empty offenses, "XML writers migrated to XmlBuilder must not construct raw XML start tags"
   end
 
   private

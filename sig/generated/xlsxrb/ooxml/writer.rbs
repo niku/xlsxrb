@@ -698,41 +698,92 @@ module Xlsxrb
 
       private
 
-      # : (?::Hash[untyped, untyped] all_entries) -> untyped
+      # : (?::Hash[untyped, untyped] all_entries) -> ::String
       def generate_content_types_xml: (?untyped all_entries) -> untyped
 
-      # : () -> untyped
+      # : () -> ::String
       def generate_rels_root: () -> untyped
 
-      # : (?::Integer pivot_cache_count) -> untyped
+      # : (?::Integer pivot_cache_count) -> ::String
       def generate_workbook_xml: (?untyped pivot_cache_count) -> untyped
 
-      # : (?has_calc_chain: bool) -> untyped
+      # : (?has_calc_chain: bool) -> ::String
       def generate_workbook_rels: (?has_calc_chain: untyped) -> untyped
 
-      # : () -> (nil | untyped)
+      # : () -> (nil | ::String)
       def generate_calc_chain_xml: () -> untyped
 
-      # : (untyped sheet_cells, untyped sheet_col_widths, untyped sheet_col_attrs, untyped sheet_row_attrs, untyped sheet_auto_filter, untyped sheet_filter_cols, untyped sheet_sort, untyped sheet_merge_cells, untyped sheet_hyperlinks, untyped sheet_cell_styles, untyped sheet_props, untyped sheet_fmt, untyped sheet_sv, untyped sheet_fp, untyped sheet_sel, untyped sheet_po, untyped sheet_pm, untyped sheet_ps, untyped sheet_hf, untyped sheet_rb, untyped sheet_cb, untyped sheet_dv, untyped sheet_cf, ?untyped? sst, ?untyped sheet_tables, ?::Integer hyperlink_count, ?has_drawing: bool, ?has_comments: bool, ?sheet_prot: untyped?, ?vml_rid: untyped?, ?phonetic_pr: untyped?, ?dv_options: ::Hash[untyped, untyped], ?prot_ranges: untyped, ?cell_watches: untyped, ?ignored_errors: untyped, ?data_consol: untyped?, ?sheet_scenarios: untyped?, ?cell_phonetic: ::Hash[untyped, untyped]) -> untyped
+      # : (untyped sheet_cells, untyped sheet_col_widths, untyped sheet_col_attrs, untyped sheet_row_attrs, untyped sheet_auto_filter, untyped sheet_filter_cols, untyped sheet_sort, untyped sheet_merge_cells, untyped sheet_hyperlinks, untyped sheet_cell_styles, untyped sheet_props, untyped sheet_fmt, untyped sheet_sv, untyped sheet_fp, untyped sheet_sel, untyped sheet_po, untyped sheet_pm, untyped sheet_ps, untyped sheet_hf, untyped sheet_rb, untyped sheet_cb, untyped sheet_dv, untyped sheet_cf, ?untyped? sst, ?untyped sheet_tables, ?::Integer hyperlink_count, ?has_drawing: bool, ?has_comments: bool, ?sheet_prot: untyped?, ?vml_rid: untyped?, ?phonetic_pr: untyped?, ?dv_options: ::Hash[untyped, untyped], ?prot_ranges: untyped, ?cell_watches: untyped, ?ignored_errors: untyped, ?data_consol: untyped?, ?sheet_scenarios: untyped?, ?cell_phonetic: ::Hash[untyped, untyped]) -> ::String
       def generate_worksheet_xml: (untyped sheet_cells, untyped sheet_col_widths, untyped sheet_col_attrs, untyped sheet_row_attrs, untyped sheet_auto_filter, untyped sheet_filter_cols, untyped sheet_sort, untyped sheet_merge_cells, untyped sheet_hyperlinks, untyped sheet_cell_styles, untyped sheet_props, untyped sheet_fmt, untyped sheet_sv, untyped sheet_fp, untyped sheet_sel, untyped sheet_po, untyped sheet_pm, untyped sheet_ps, untyped sheet_hf, untyped sheet_rb, untyped sheet_cb, untyped sheet_dv, untyped sheet_cf, ?untyped sst, ?untyped sheet_tables, ?untyped hyperlink_count, ?has_drawing: untyped, ?has_comments: untyped, ?sheet_prot: untyped, ?vml_rid: untyped, ?phonetic_pr: untyped, ?dv_options: untyped, ?prot_ranges: untyped, ?cell_watches: untyped, ?ignored_errors: untyped, ?data_consol: untyped, ?sheet_scenarios: untyped, ?cell_phonetic: untyped) -> untyped
 
       # : () -> ::Array[untyped]
       def build_shared_string_table: () -> untyped
 
-      # : (untyped sst) -> untyped
+      # : (untyped sst) -> ::String
       def generate_shared_strings_xml: (untyped sst) -> untyped
 
-      # : (untyped tbl) -> untyped
+      # : (untyped tbl) -> ::String
       def generate_table_xml: (untyped tbl) -> untyped
 
-      # : (untyped sheet_hyperlinks, ?untyped sheet_tables, ?::Integer table_start_index) -> untyped
+      # : (untyped sheet_hyperlinks, ?untyped sheet_tables, ?::Integer table_start_index) -> ::String
       def generate_worksheet_rels: (untyped sheet_hyperlinks, ?untyped sheet_tables, ?untyped table_start_index) -> untyped
 
       # : (untyped sheet_name, untyped sheet_tables, untyped table_start_index, untyped drawing_idx, untyped comment_idx, untyped pivot_start, untyped pivot_count, ?untyped? threaded_comment_idx) -> untyped
       def build_sheet_rels_parts_v2: (untyped sheet_name, untyped sheet_tables, untyped table_start_index, untyped drawing_idx, untyped comment_idx, untyped pivot_start, untyped pivot_count, ?untyped threaded_comment_idx) -> untyped
 
-      # : (untyped rels_data) -> untyped
+      # : (untyped rels_data) -> ::String
       def generate_generic_rels: (untyped rels_data) -> untyped
+
+      # : (XmlBuilder xml) -> void
+      def write_workbook_file_version_xml: (untyped xml) -> untyped
+
+      # : (XmlBuilder xml) -> void
+      def write_workbook_file_sharing_xml: (untyped xml) -> untyped
+
+      # : (XmlBuilder xml) -> void
+      def write_workbook_pr_xml: (untyped xml) -> untyped
+
+      # : (XmlBuilder xml) -> void
+      def write_workbook_views_xml: (untyped xml) -> untyped
+
+      # : (XmlBuilder xml) -> void
+      def write_workbook_protection_xml: (untyped xml) -> untyped
+
+      # : (XmlBuilder xml) -> void
+      def write_workbook_calc_pr_xml: (untyped xml) -> untyped
+
+      # : (XmlBuilder xml, untyped sheet_props) -> void
+      def write_sheet_pr_xml: (untyped xml, untyped sheet_props) -> untyped
+
+      # : (untyped sheet_props) -> (nil | ::Hash[untyped, untyped])
+      def resolve_tab_color_attrs: (untyped sheet_props) -> untyped
+
+      # : (XmlBuilder xml, untyped sheet_sv, untyped sheet_fp, untyped sheet_sel) -> void
+      def write_sheet_views_xml: (untyped xml, untyped sheet_sv, untyped sheet_fp, untyped sheet_sel) -> untyped
+
+      # : (XmlBuilder xml, untyped sheet_cells, untyped sheet_row_attrs, untyped sheet_cell_styles, untyped? sst, untyped cell_phonetic) -> void
+      def write_sheet_data_xml: (untyped xml, untyped sheet_cells, untyped sheet_row_attrs, untyped sheet_cell_styles, untyped sst, untyped cell_phonetic) -> untyped
+
+      # : (XmlBuilder xml, untyped sheet_prot) -> void
+      def write_sheet_protection_xml: (untyped xml, untyped sheet_prot) -> untyped
+
+      # : (XmlBuilder xml, untyped prot_ranges) -> void
+      def write_protected_ranges_xml: (untyped xml, untyped prot_ranges) -> untyped
+
+      # : (XmlBuilder xml, untyped sheet_scenarios) -> void
+      def write_scenarios_xml: (untyped xml, untyped sheet_scenarios) -> untyped
+
+      # : (XmlBuilder xml, untyped data_consol) -> void
+      def write_data_consolidate_xml: (untyped xml, untyped data_consol) -> untyped
+
+      # : (XmlBuilder xml, untyped sheet_dv, ::Hash[untyped, untyped] dv_options) -> void
+      def write_data_validations_xml: (untyped xml, untyped sheet_dv, untyped dv_options) -> untyped
+
+      # : (XmlBuilder xml, untyped sheet_po, untyped sheet_pm, untyped sheet_ps, untyped sheet_hf) -> void
+      def write_print_and_page_xml: (untyped xml, untyped sheet_po, untyped sheet_pm, untyped sheet_ps, untyped sheet_hf) -> untyped
+
+      # : (XmlBuilder xml, ::String tag, untyped breaks, default_max: ::Integer) -> void
+      def write_page_breaks_xml: (untyped xml, untyped tag, untyped breaks, default_max: untyped) -> untyped
 
       # Extracts the row number from a cell address, e.g. 1 from "A1".
       # : (untyped cell_address) -> untyped

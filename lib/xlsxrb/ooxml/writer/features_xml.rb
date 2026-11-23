@@ -10,59 +10,60 @@ module Xlsxrb
         # : (untyped pivot_table, untyped cache_id) -> untyped
         def generate_pivot_table_xml(pivot_table, cache_id)
           data_caption = pivot_table[:data_caption] || (pivot_table[:data_fields].first ? pivot_table[:data_fields].first[:name] : "Values")
-          pt_attrs = %( xmlns="#{SSML_NS}" name="#{xml_escape(pivot_table[:name])}" cacheId="#{xml_escape(cache_id)}" dataCaption="#{xml_escape(data_caption)}")
-          pt_attrs << %( grandTotalCaption="#{xml_escape(pivot_table[:grand_total_caption])}") if pivot_table[:grand_total_caption]
-          pt_attrs << %( errorCaption="#{xml_escape(pivot_table[:error_caption])}") if pivot_table[:error_caption]
-          pt_attrs << ' showError="1"' if pivot_table[:show_error]
-          pt_attrs << %( missingCaption="#{xml_escape(pivot_table[:missing_caption])}") if pivot_table[:missing_caption]
-          pt_attrs << ' showMissing="0"' if pivot_table[:show_missing] == false
-          pt_attrs << %( tag="#{xml_escape(pivot_table[:tag])}") if pivot_table[:tag]
-          pt_attrs << %( dataOnRows="1") if pivot_table[:data_on_rows]
-          pt_attrs << %( dataOnRows="0") unless pivot_table[:data_on_rows]
-          pt_attrs << %( rowGrandTotals="0") if pivot_table[:row_grand_totals] == false
-          pt_attrs << %( colGrandTotals="0") if pivot_table[:col_grand_totals] == false
-          pt_attrs << %( compact="0") if pivot_table[:compact] == false
-          pt_attrs << %( outline="0") if pivot_table[:outline] == false
-          pt_attrs << %( outlineData="1") if pivot_table[:outline_data]
-          pt_attrs << %( compactData="0") if pivot_table[:compact_data] == false
-          pt_attrs << %( showHeaders="0") if pivot_table[:show_headers] == false
-          pt_attrs << %( showMultipleLabel="0") if pivot_table[:show_multiple_label] == false
-          pt_attrs << %( showDataDropDown="0") if pivot_table[:show_data_drop_down] == false
-          pt_attrs << %( indent="#{xml_escape(pivot_table[:indent])}") if pivot_table[:indent]
-          pt_attrs << ' published="1"' if pivot_table[:published]
-          pt_attrs << ' editData="1"' if pivot_table[:edit_data]
-          pt_attrs << ' disableFieldList="1"' if pivot_table[:disable_field_list]
-          pt_attrs << ' visualTotals="0"' if pivot_table[:visual_totals] == false
-          pt_attrs << ' printDrill="1"' if pivot_table[:print_drill]
-          pt_attrs << %( createdVersion="#{xml_escape(pivot_table[:created_version])}") if pivot_table[:created_version]
-          pt_attrs << %( updatedVersion="#{xml_escape(pivot_table[:updated_version])}") if pivot_table[:updated_version]
-          pt_attrs << %( minRefreshableVersion="#{xml_escape(pivot_table[:min_refreshable_version])}") if pivot_table[:min_refreshable_version]
           anf = pivot_table.fetch(:apply_number_formats, false)
           abf = pivot_table.fetch(:apply_border_formats, false)
           aff = pivot_table.fetch(:apply_font_formats, false)
           apf = pivot_table.fetch(:apply_pattern_formats, false)
           aaf = pivot_table.fetch(:apply_alignment_formats, false)
           awf = pivot_table.fetch(:apply_width_height_formats, true)
-          pt_attrs << %( applyNumberFormats="#{anf ? 1 : 0}")
-          pt_attrs << %( applyBorderFormats="#{abf ? 1 : 0}")
-          pt_attrs << %( applyFontFormats="#{aff ? 1 : 0}")
-          pt_attrs << %( applyPatternFormats="#{apf ? 1 : 0}")
-          pt_attrs << %( applyAlignmentFormats="#{aaf ? 1 : 0}")
-          pt_attrs << %( applyWidthHeightFormats="#{awf ? 1 : 0}")
-          pt_attrs << ' multipleFieldFilters="0"' if pivot_table[:multiple_field_filters] == false
-          pt_attrs << ' showDrill="0"' if pivot_table[:show_drill] == false
-          pt_attrs << ' showDataTips="0"' if pivot_table[:show_data_tips] == false
-          pt_attrs << ' enableDrill="0"' if pivot_table[:enable_drill] == false
-          pt_attrs << ' showMemberPropertyTips="0"' if pivot_table[:show_member_property_tips] == false
-          pt_attrs << ' itemPrintTitles="1"' if pivot_table[:item_print_titles]
-          pt_attrs << ' fieldPrintTitles="1"' if pivot_table[:field_print_titles]
-          pt_attrs << ' preserveFormatting="0"' if pivot_table[:preserve_formatting] == false
-          pt_attrs << ' pageOverThenDown="1"' if pivot_table[:page_over_then_down]
-          pt_attrs << %( pageWrap="#{xml_escape(pivot_table[:page_wrap])}") if pivot_table[:page_wrap]
-          parts = [
-            XML_HEADER,
-            "<pivotTableDefinition#{pt_attrs}>"
-          ]
+
+          pt_attrs = {
+            xmlns: SSML_NS,
+            name: pivot_table[:name] || "",
+            cacheId: cache_id || "",
+            dataCaption: data_caption || "",
+            grandTotalCaption: pivot_table[:grand_total_caption],
+            errorCaption: pivot_table[:error_caption],
+            showError: pivot_table[:show_error] ? 1 : nil,
+            missingCaption: pivot_table[:missing_caption],
+            showMissing: pivot_table[:show_missing] == false ? 0 : nil,
+            tag: pivot_table[:tag],
+            dataOnRows: pivot_table[:data_on_rows] ? 1 : 0,
+            rowGrandTotals: pivot_table[:row_grand_totals] == false ? 0 : nil,
+            colGrandTotals: pivot_table[:col_grand_totals] == false ? 0 : nil,
+            compact: pivot_table[:compact] == false ? 0 : nil,
+            outline: pivot_table[:outline] == false ? 0 : nil,
+            outlineData: pivot_table[:outline_data] ? 1 : nil,
+            compactData: pivot_table[:compact_data] == false ? 0 : nil,
+            showHeaders: pivot_table[:show_headers] == false ? 0 : nil,
+            showMultipleLabel: pivot_table[:show_multiple_label] == false ? 0 : nil,
+            showDataDropDown: pivot_table[:show_data_drop_down] == false ? 0 : nil,
+            indent: pivot_table[:indent],
+            published: pivot_table[:published] ? 1 : nil,
+            editData: pivot_table[:edit_data] ? 1 : nil,
+            disableFieldList: pivot_table[:disable_field_list] ? 1 : nil,
+            visualTotals: pivot_table[:visual_totals] == false ? 0 : nil,
+            printDrill: pivot_table[:print_drill] ? 1 : nil,
+            createdVersion: pivot_table[:created_version],
+            updatedVersion: pivot_table[:updated_version],
+            minRefreshableVersion: pivot_table[:min_refreshable_version],
+            applyNumberFormats: anf ? 1 : 0,
+            applyBorderFormats: abf ? 1 : 0,
+            applyFontFormats: aff ? 1 : 0,
+            applyPatternFormats: apf ? 1 : 0,
+            applyAlignmentFormats: aaf ? 1 : 0,
+            applyWidthHeightFormats: awf ? 1 : 0,
+            multipleFieldFilters: pivot_table[:multiple_field_filters] == false ? 0 : nil,
+            showDrill: pivot_table[:show_drill] == false ? 0 : nil,
+            showDataTips: pivot_table[:show_data_tips] == false ? 0 : nil,
+            enableDrill: pivot_table[:enable_drill] == false ? 0 : nil,
+            showMemberPropertyTips: pivot_table[:show_member_property_tips] == false ? 0 : nil,
+            itemPrintTitles: pivot_table[:item_print_titles] ? 1 : nil,
+            fieldPrintTitles: pivot_table[:field_print_titles] ? 1 : nil,
+            preserveFormatting: pivot_table[:preserve_formatting] == false ? 0 : nil,
+            pageOverThenDown: pivot_table[:page_over_then_down] ? 1 : nil,
+            pageWrap: pivot_table[:page_wrap]
+          }
 
           # Compute field count from source range or explicit field_names.
           field_count = if pivot_table[:field_names]
@@ -70,251 +71,272 @@ module Xlsxrb
                         else
                           (pivot_table[:row_fields].size + pivot_table[:col_fields].size + pivot_table[:data_fields].size).clamp(1, 100)
                         end
-          loc_attrs = %(<location ref="#{xml_escape(pivot_table[:dest_ref])}" firstHeaderRow="#{xml_escape(pivot_table[:first_header_row] || 1)}" ) +
-                      %(firstDataRow="#{xml_escape(pivot_table[:first_data_row] || 1)}" firstDataCol="#{xml_escape(pivot_table[:first_data_col] || 1)}")
-          loc_attrs << %( rowPageCount="#{xml_escape(pivot_table[:row_page_count])}") if pivot_table[:row_page_count]
-          loc_attrs << %( colPageCount="#{xml_escape(pivot_table[:col_page_count])}") if pivot_table[:col_page_count]
-          loc_attrs << "/>"
-          parts << loc_attrs
-          parts << %(<pivotFields count="#{xml_escape(field_count)}">)
-          field_count.times do |fi|
-            attrs = +""
-            if pivot_table[:row_fields].include?(fi)
-              attrs << ' axis="axisRow"'
-            elsif pivot_table[:col_fields].include?(fi)
-              attrs << ' axis="axisCol"'
+
+          XmlBuilder.build(declaration: :plain) do |xml|
+            xml.tag("pivotTableDefinition", pt_attrs) do
+              xml.empty_tag("location", {
+                              ref: pivot_table[:dest_ref] || "",
+                              firstHeaderRow: pivot_table[:first_header_row] || 1,
+                              firstDataRow: pivot_table[:first_data_row] || 1,
+                              firstDataCol: pivot_table[:first_data_col] || 1,
+                              rowPageCount: pivot_table[:row_page_count],
+                              colPageCount: pivot_table[:col_page_count]
+                            })
+              xml.tag("pivotFields", { count: field_count }) do
+                field_count.times do |fi|
+                  axis_val = if pivot_table[:row_fields].include?(fi)
+                               "axisRow"
+                             elsif pivot_table[:col_fields].include?(fi)
+                               "axisCol"
+                             end
+                  fa = pivot_table[:field_attrs] && pivot_table[:field_attrs][fi]
+                  pf_attrs = {
+                    axis: axis_val,
+                    dataField: pivot_table[:data_fields].any? { |df| df[:fld] == fi } ? 1 : nil,
+                    compact: xml_bool_attr(fa&.[](:compact)),
+                    outline: xml_bool_attr(fa&.[](:outline)),
+                    subtotalTop: xml_bool_attr(fa&.[](:subtotal_top)),
+                    showAll: fa && fa[:show_all] == true ? "1" : "0",
+                    numFmtId: fa && fa[:num_fmt_id] ? fa[:num_fmt_id] : nil,
+                    sortType: fa && fa[:sort_type] ? fa[:sort_type] : nil,
+                    defaultSubtotal: fa && fa[:default_subtotal] == false ? 0 : nil,
+                    insertBlankRow: fa && fa[:insert_blank_row] ? 1 : nil,
+                    insertPageBreak: fa && fa[:insert_page_break] ? 1 : nil,
+                    includeNewItemsInFilter: fa && fa[:include_new_items_in_filter] ? 1 : nil
+                  }
+                  field_items = pivot_table[:items] && pivot_table[:items][fi]
+                  axis_field = pivot_table[:row_fields].include?(fi) || pivot_table[:col_fields].include?(fi)
+                  # The default subtotal item goes with the default subtotal; a field with
+                  # defaultSubtotal="0" must not list it.
+                  default_subtotal = !(fa && fa[:default_subtotal] == false)
+                  if field_items || (axis_field && default_subtotal)
+                    # A row or column field needs an <items> list; without known items it holds only the
+                    # default subtotal, which Excel fills in when it refreshes the cache on open.
+                    field_items ||= []
+                    xml.tag("pivotField", pf_attrs) do
+                      xml.tag("items", { count: field_items.size + (default_subtotal ? 1 : 0) }) do
+                        field_items.size.times { |ix| xml.empty_tag("item", { x: ix }) }
+                        xml.empty_tag("item", { t: "default" }) if default_subtotal
+                      end
+                    end
+                  else
+                    xml.empty_tag("pivotField", pf_attrs)
+                  end
+                end
+              end
+
+              unless pivot_table[:row_fields].empty?
+                xml.tag("rowFields", { count: pivot_table[:row_fields].size }) do
+                  pivot_table[:row_fields].each { |f| xml.empty_tag("field", { x: f || "" }) }
+                end
+              end
+
+              unless pivot_table[:col_fields].empty?
+                xml.tag("colFields", { count: pivot_table[:col_fields].size }) do
+                  pivot_table[:col_fields].each { |f| xml.empty_tag("field", { x: f || "" }) }
+                end
+              end
+
+              unless pivot_table[:data_fields].empty?
+                xml.tag("dataFields", { count: pivot_table[:data_fields].size }) do
+                  pivot_table[:data_fields].each do |df|
+                    xml.empty_tag("dataField", {
+                                    name: df[:name] || "",
+                                    fld: df[:fld] || "",
+                                    subtotal: df[:subtotal] || "sum",
+                                    showDataAs: df[:show_data_as],
+                                    baseField: df[:base_field],
+                                    baseItem: df[:base_item],
+                                    numFmtId: df[:num_fmt_id]
+                                  })
+                  end
+                end
+              end
+
+              if (psi = pivot_table[:pivot_table_style])
+                xml.empty_tag("pivotTableStyleInfo", {
+                                name: psi[:name],
+                                showRowHeaders: xml_bool_attr(psi[:show_row_headers]),
+                                showColHeaders: xml_bool_attr(psi[:show_col_headers]),
+                                showRowStripes: xml_bool_attr(psi[:show_row_stripes]),
+                                showColStripes: xml_bool_attr(psi[:show_col_stripes]),
+                                showLastColumn: xml_bool_attr(psi[:show_last_column])
+                              })
+              end
             end
-            attrs << ' dataField="1"' if pivot_table[:data_fields].any? { |df| df[:fld] == fi }
-            fa = pivot_table[:field_attrs] && pivot_table[:field_attrs][fi]
-            attrs << %( compact="#{fa[:compact] ? "1" : "0"}") if fa && !fa[:compact].nil?
-            attrs << %( outline="#{fa[:outline] ? "1" : "0"}") if fa && !fa[:outline].nil?
-            attrs << %( subtotalTop="#{fa[:subtotal_top] ? "1" : "0"}") if fa && !fa[:subtotal_top].nil?
-            attrs << %( showAll="#{fa && fa[:show_all] == true ? "1" : "0"}")
-            attrs << %( numFmtId="#{xml_escape(fa[:num_fmt_id])}") if fa && fa[:num_fmt_id]
-            attrs << %( sortType="#{xml_escape(fa[:sort_type])}") if fa && fa[:sort_type]
-            attrs << ' defaultSubtotal="0"' if fa && fa[:default_subtotal] == false
-            attrs << ' insertBlankRow="1"' if fa && fa[:insert_blank_row]
-            attrs << ' insertPageBreak="1"' if fa && fa[:insert_page_break]
-            attrs << ' includeNewItemsInFilter="1"' if fa && fa[:include_new_items_in_filter]
-
-            field_items = pivot_table[:items] && pivot_table[:items][fi]
-            axis_field = pivot_table[:row_fields].include?(fi) || pivot_table[:col_fields].include?(fi)
-            # The default subtotal item goes with the default subtotal; a field with
-            # defaultSubtotal="0" must not list it.
-            default_subtotal = !(fa && fa[:default_subtotal] == false)
-            if field_items || (axis_field && default_subtotal)
-              # A row or column field needs an <items> list; without known items it holds only the
-              # default subtotal, which Excel fills in when it refreshes the cache on open.
-              field_items ||= []
-              parts << "<pivotField#{attrs}>"
-              parts << %(<items count="#{xml_escape(field_items.size + (default_subtotal ? 1 : 0))}">)
-              field_items.size.times { |ix| parts << %(<item x="#{xml_escape(ix)}"/>) }
-              parts << '<item t="default"/>' if default_subtotal
-              parts << "</items>"
-              parts << "</pivotField>"
-            else
-              parts << "<pivotField#{attrs}/>"
-            end
           end
-          parts << "</pivotFields>"
-
-          unless pivot_table[:row_fields].empty?
-            parts << %(<rowFields count="#{pivot_table[:row_fields].size}">)
-            pivot_table[:row_fields].each { |f| parts << %(<field x="#{xml_escape(f)}"/>) }
-            parts << "</rowFields>"
-          end
-
-          unless pivot_table[:col_fields].empty?
-            parts << %(<colFields count="#{pivot_table[:col_fields].size}">)
-            pivot_table[:col_fields].each { |f| parts << %(<field x="#{xml_escape(f)}"/>) }
-            parts << "</colFields>"
-          end
-
-          unless pivot_table[:data_fields].empty?
-            parts << %(<dataFields count="#{pivot_table[:data_fields].size}">)
-            pivot_table[:data_fields].each do |df|
-              df_attrs = %( name="#{xml_escape(df[:name])}" fld="#{xml_escape(df[:fld])}" subtotal="#{xml_escape(df[:subtotal] || "sum")}")
-              df_attrs << %( showDataAs="#{xml_escape(df[:show_data_as])}") if df[:show_data_as]
-              df_attrs << %( baseField="#{xml_escape(df[:base_field])}") if df[:base_field]
-              df_attrs << %( baseItem="#{xml_escape(df[:base_item])}") if df[:base_item]
-              df_attrs << %( numFmtId="#{xml_escape(df[:num_fmt_id])}") if df[:num_fmt_id]
-              parts << "<dataField#{df_attrs}/>"
-            end
-            parts << "</dataFields>"
-          end
-
-          if pivot_table[:pivot_table_style]
-            psi = pivot_table[:pivot_table_style]
-            psi_attrs = +""
-            psi_attrs << %( name="#{xml_escape(psi[:name])}") if psi[:name]
-            psi_attrs << %( showRowHeaders="#{psi[:show_row_headers] ? "1" : "0"}") unless psi[:show_row_headers].nil?
-            psi_attrs << %( showColHeaders="#{psi[:show_col_headers] ? "1" : "0"}") unless psi[:show_col_headers].nil?
-            psi_attrs << %( showRowStripes="#{psi[:show_row_stripes] ? "1" : "0"}") unless psi[:show_row_stripes].nil?
-            psi_attrs << %( showColStripes="#{psi[:show_col_stripes] ? "1" : "0"}") unless psi[:show_col_stripes].nil?
-            psi_attrs << %( showLastColumn="#{psi[:show_last_column] ? "1" : "0"}") unless psi[:show_last_column].nil?
-            parts << "<pivotTableStyleInfo#{psi_attrs}/>"
-          end
-
-          parts << "</pivotTableDefinition>"
-          parts.join
         end
 
         # : (untyped pivot_table, untyped _cache_id) -> untyped
         def generate_pivot_cache_definition_xml(pivot_table, _cache_id)
-          pcd_attrs = %( xmlns="#{SSML_NS}" xmlns:r="#{DOC_REL_NS}" r:id="rId1" refreshOnLoad="1")
-          pcd_attrs << ' saveData="0"' if pivot_table[:cache_save_data] == false
-          pcd_attrs << ' enableRefresh="0"' if pivot_table[:cache_enable_refresh] == false
-          pcd_attrs << %( refreshedBy="#{xml_escape(pivot_table[:cache_refreshed_by])}") if pivot_table[:cache_refreshed_by]
-          pcd_attrs << %( refreshedVersion="#{xml_escape(pivot_table[:cache_refreshed_version])}") if pivot_table[:cache_refreshed_version]
-          pcd_attrs << %( createdVersion="#{xml_escape(pivot_table[:cache_created_version])}") if pivot_table[:cache_created_version]
-          pcd_attrs << %( recordCount="#{xml_escape(pivot_table[:cache_record_count])}") if pivot_table[:cache_record_count]
-          pcd_attrs << ' optimizeMemory="1"' if pivot_table[:cache_optimize_memory]
-          parts = [
-            XML_HEADER,
-            "<pivotCacheDefinition#{pcd_attrs}>"
-          ]
+          pcd_attrs = {
+            xmlns: SSML_NS,
+            "xmlns:r": DOC_REL_NS,
+            "r:id": "rId1",
+            refreshOnLoad: 1,
+            saveData: pivot_table[:cache_save_data] == false ? 0 : nil,
+            enableRefresh: pivot_table[:cache_enable_refresh] == false ? 0 : nil,
+            refreshedBy: pivot_table[:cache_refreshed_by],
+            refreshedVersion: pivot_table[:cache_refreshed_version],
+            createdVersion: pivot_table[:cache_created_version],
+            recordCount: pivot_table[:cache_record_count],
+            optimizeMemory: pivot_table[:cache_optimize_memory] ? 1 : nil
+          }
 
-          # Parse source ref: "Sheet1!A1:C4" => sheet name + range.
-          source = pivot_table[:source_ref]
-          ws_name_attr = pivot_table[:source_name] ? %( name="#{xml_escape(pivot_table[:source_name])}") : ""
-          if source.nil?
-            parts << %(<cacheSource type="worksheet"><worksheetSource#{ws_name_attr}/></cacheSource>)
-          elsif source.include?("!")
-            sname, srange = source.split("!", 2)
-            sname = sname.delete("'")
-            parts << %(<cacheSource type="worksheet"><worksheetSource ref="#{xml_escape(srange)}" sheet="#{xml_escape(sname)}"#{ws_name_attr}/></cacheSource>)
-          else
-            parts << %(<cacheSource type="worksheet"><worksheetSource ref="#{xml_escape(source)}"#{ws_name_attr}/></cacheSource>)
-          end
+          XmlBuilder.build(declaration: :plain) do |xml|
+            xml.tag("pivotCacheDefinition", pcd_attrs) do
+              # Parse source ref: "Sheet1!A1:C4" => sheet name + range.
+              source = pivot_table[:source_ref]
+              ws_attrs = {}
+              if source&.include?("!")
+                sname, srange = source.split("!", 2)
+                ws_attrs[:ref] = srange
+                ws_attrs[:sheet] = sname.delete("'")
+              elsif !source.nil?
+                ws_attrs[:ref] = source
+              end
+              ws_attrs[:name] = pivot_table[:source_name] if pivot_table[:source_name]
+              xml.tag("cacheSource", { type: "worksheet" }) do
+                xml.empty_tag("worksheetSource", ws_attrs)
+              end
 
-          field_count = pivot_table[:field_names] ? pivot_table[:field_names].size : (pivot_table[:row_fields].size + pivot_table[:col_fields].size + pivot_table[:data_fields].size)
-          parts << %(<cacheFields count="#{xml_escape(field_count)}">)
-          field_count.times do |fi|
-            fname = if pivot_table[:field_names] && pivot_table[:field_names][fi]
-                      pivot_table[:field_names][fi]
+              field_count = pivot_table[:field_names] ? pivot_table[:field_names].size : (pivot_table[:row_fields].size + pivot_table[:col_fields].size + pivot_table[:data_fields].size)
+              xml.tag("cacheFields", { count: field_count }) do
+                field_count.times do |fi|
+                  fname = if pivot_table[:field_names] && pivot_table[:field_names][fi]
+                            pivot_table[:field_names][fi]
+                          else
+                            df = pivot_table[:data_fields].find { |d| d[:fld] == fi }
+                            df ? df[:name] : "Field#{fi + 1}"
+                          end
+                  fa = pivot_table[:field_attrs] && pivot_table[:field_attrs][fi]
+                  cf_attrs = {
+                    name: fname || "",
+                    numFmtId: (fa && fa[:cache_num_fmt_id]) || 0,
+                    caption: fa && fa[:cache_caption] ? fa[:cache_caption] : nil,
+                    formula: fa && fa[:cache_formula] ? fa[:cache_formula] : nil
+                  }
+                  field_items = pivot_table[:items] && pivot_table[:items][fi]
+                  xml.tag("cacheField", cf_attrs) do
+                    if field_items
+                      write_shared_items_xml(xml, field_items)
                     else
-                      df = pivot_table[:data_fields].find { |d| d[:fld] == fi }
-                      df ? df[:name] : "Field#{fi + 1}"
+                      xml.empty_tag("sharedItems")
                     end
-            fa = pivot_table[:field_attrs] && pivot_table[:field_attrs][fi]
-            cf_num_fmt = (fa && fa[:cache_num_fmt_id]) || 0
-            cf_attrs = %( name="#{xml_escape(fname)}" numFmtId="#{xml_escape(cf_num_fmt)}")
-            cf_attrs << %( caption="#{xml_escape(fa[:cache_caption])}") if fa && fa[:cache_caption]
-            cf_attrs << %( formula="#{xml_escape(fa[:cache_formula])}") if fa && fa[:cache_formula]
-            field_items = pivot_table[:items] && pivot_table[:items][fi]
-            if field_items
-              parts << "<cacheField#{cf_attrs}>"
-              parts << %(<sharedItems#{shared_items_attrs(field_items)} count="#{field_items.size}">)
-              field_items.each { |v| parts << shared_item_xml(v) }
-              parts << "</sharedItems>"
-              parts << "</cacheField>"
-            else
-              parts << "<cacheField#{cf_attrs}><sharedItems/></cacheField>"
+                  end
+                end
+              end
             end
           end
-          parts << "</cacheFields>"
-          parts << "</pivotCacheDefinition>"
-          parts.join
         end
 
-        # Attributes that describe the value types of a cache field's shared items.
-        # : (Array[untyped] values) -> String
-        def shared_items_attrs(values)
+        # Writes <sharedItems> and its typed children for a cache field.
+        # : (XmlBuilder xml, Array[untyped] values) -> void
+        def write_shared_items_xml(xml, values)
           numbers = values.grep(Numeric)
           strings = values.any? { |v| !v.nil? && !v.is_a?(Numeric) && v != true && v != false }
-          attrs = +""
-          attrs << ' containsSemiMixedTypes="0"' unless strings || values.include?(nil)
-          attrs << ' containsString="0"' unless strings
-          attrs << ' containsBlank="1"' if values.include?(nil)
-          unless numbers.empty?
-            attrs << ' containsNumber="1"'
-            attrs << ' containsInteger="1"' if numbers.all? { |n| n.is_a?(Integer) || n == n.to_i }
-            attrs << %( minValue="#{xml_escape(numbers.min)}" maxValue="#{xml_escape(numbers.max)}")
-          end
-          attrs
-        end
-
-        # : (untyped value) -> String
-        def shared_item_xml(value)
-          case value
-          when nil then "<m/>"
-          when true, false then %(<b v="#{value ? 1 : 0}"/>)
-          when Numeric then %(<n v="#{xml_escape(value)}"/>)
-          else %(<s v="#{xml_escape(value.to_s)}"/>)
+          attrs = {
+            containsSemiMixedTypes: strings || values.include?(nil) ? nil : 0,
+            containsString: strings ? nil : 0,
+            containsBlank: values.include?(nil) ? 1 : nil,
+            containsNumber: numbers.empty? ? nil : 1,
+            containsInteger: !numbers.empty? && numbers.all? { |n| n.is_a?(Integer) || n == n.to_i } ? 1 : nil,
+            minValue: numbers.empty? ? nil : numbers.min,
+            maxValue: numbers.empty? ? nil : numbers.max,
+            count: values.size
+          }
+          xml.tag("sharedItems", attrs) do
+            values.each do |value|
+              case value
+              when nil then xml.empty_tag("m")
+              when true, false then xml.empty_tag("b", { v: value ? 1 : 0 })
+              when Numeric then xml.empty_tag("n", { v: value })
+              else xml.empty_tag("s", { v: value.to_s })
+              end
+            end
           end
         end
 
         # : (untyped pivot_table) -> untyped
         def generate_pivot_cache_records_xml(pivot_table)
           items = pivot_table[:items]
-          if items&.values&.any? { |v| v && !v.empty? }
-            max_len = items.values.map { |v| v ? v.size : 0 }.max
-            parts = [XML_HEADER, %(<pivotCacheRecords xmlns="#{SSML_NS}" count="#{xml_escape(max_len)}">)]
-            max_len.times do |ri|
-              parts << "<r>"
+          XmlBuilder.build(declaration: :plain) do |xml|
+            if items&.values&.any? { |v| v && !v.empty? }
+              max_len = items.values.map { |v| v ? v.size : 0 }.max
               field_count = pivot_table[:field_names] ? pivot_table[:field_names].size : (pivot_table[:row_fields].size + pivot_table[:col_fields].size + pivot_table[:data_fields].size)
-              field_count.times do |fi|
-                field_items = items[fi]
-                parts << if field_items
-                           %(<x v="#{xml_escape(ri < field_items.size ? ri : 0)}"/>)
-                         else
-                           %(<n v="0"/>)
-                         end
+              xml.tag("pivotCacheRecords", { xmlns: SSML_NS, count: max_len }) do
+                max_len.times do |ri|
+                  xml.tag("r") do
+                    field_count.times do |fi|
+                      field_items = items[fi]
+                      if field_items
+                        xml.empty_tag("x", { v: ri < field_items.size ? ri : 0 })
+                      else
+                        xml.empty_tag("n", { v: 0 })
+                      end
+                    end
+                  end
+                end
               end
-              parts << "</r>"
+            else
+              xml.empty_tag("pivotCacheRecords", { xmlns: SSML_NS, count: 0 })
             end
-            parts << "</pivotCacheRecords>"
-            parts.join
-          else
-            [XML_HEADER, %(<pivotCacheRecords xmlns="#{SSML_NS}" count="0"/>)].join
           end
         end
 
         # : (untyped cache_id) -> untyped
         def generate_pivot_cache_rels(cache_id)
-          [
-            XML_HEADER,
-            %(<Relationships xmlns="#{REL_NS}">),
-            %(<Relationship Id="rId1" Type="#{DOC_REL_NS}/pivotCacheRecords" Target="pivotCacheRecords#{xml_escape(cache_id)}.xml"/>),
-            "</Relationships>"
-          ].join
+          XmlBuilder.build(declaration: :plain) do |xml|
+            xml.tag("Relationships", { xmlns: REL_NS }) do
+              xml.empty_tag("Relationship", {
+                              Id: "rId1",
+                              Type: "#{DOC_REL_NS}/pivotCacheRecords",
+                              Target: "pivotCacheRecords#{cache_id}.xml"
+                            })
+            end
+          end
         end
 
         # : (untyped cache_id) -> untyped
         def generate_pivot_table_rels(cache_id)
-          [
-            XML_HEADER,
-            %(<Relationships xmlns="#{REL_NS}">),
-            %(<Relationship Id="rId1" Type="#{DOC_REL_NS}/pivotCacheDefinition" Target="../pivotCache/pivotCacheDefinition#{xml_escape(cache_id)}.xml"/>),
-            "</Relationships>"
-          ].join
+          XmlBuilder.build(declaration: :plain) do |xml|
+            xml.tag("Relationships", { xmlns: REL_NS }) do
+              xml.empty_tag("Relationship", {
+                              Id: "rId1",
+                              Type: "#{DOC_REL_NS}/pivotCacheDefinition",
+                              Target: "../pivotCache/pivotCacheDefinition#{cache_id}.xml"
+                            })
+            end
+          end
         end
 
         # : (untyped ext_link) -> untyped
         def generate_external_link_xml(ext_link)
-          parts = [
-            XML_HEADER,
-            %(<externalLink xmlns="#{SSML_NS}" xmlns:r="#{DOC_REL_NS}">),
-            '<externalBook r:id="rId1">'
-          ]
-          unless ext_link[:sheet_names].empty?
-            parts << "<sheetNames>"
-            ext_link[:sheet_names].each { |sn| parts << %(<sheetName val="#{xml_escape(sn)}"/>) }
-            parts << "</sheetNames>"
+          XmlBuilder.build(declaration: :plain) do |xml|
+            xml.tag("externalLink", { xmlns: SSML_NS, "xmlns:r": DOC_REL_NS }) do
+              xml.tag("externalBook", { "r:id": "rId1" }) do
+                unless ext_link[:sheet_names].empty?
+                  xml.tag("sheetNames") do
+                    ext_link[:sheet_names].each { |sn| xml.empty_tag("sheetName", { val: sn || "" }) }
+                  end
+                end
+              end
+            end
           end
-          parts << "</externalBook>"
-          parts << "</externalLink>"
-          parts.join
         end
 
         # : (untyped ext_link) -> untyped
         def generate_external_link_rels(ext_link)
-          [
-            XML_HEADER,
-            %(<Relationships xmlns="#{REL_NS}">),
-            %(<Relationship Id="rId1" Type="#{DOC_REL_NS}/externalLinkPath" Target="#{xml_escape(ext_link[:target])}" TargetMode="External"/>),
-            "</Relationships>"
-          ].join
+          XmlBuilder.build(declaration: :plain) do |xml|
+            xml.tag("Relationships", { xmlns: REL_NS }) do
+              xml.empty_tag("Relationship", {
+                              Id: "rId1",
+                              Type: "#{DOC_REL_NS}/externalLinkPath",
+                              Target: ext_link[:target] || "",
+                              TargetMode: "External"
+                            })
+            end
+          end
         end
 
         # : (untyped ct_xml) -> untyped
@@ -327,149 +349,142 @@ module Xlsxrb
           end
         end
 
-        # : (untyped element, untyped opts) -> ("" | ::String)
-        def build_line_end_xml(element, opts)
-          return "" unless opts
+        # : (XmlBuilder xml, untyped element, untyped opts) -> void
+        def write_line_end_xml(xml, element, opts)
+          return unless opts
 
-          attrs = +""
-          attrs << %( type="#{xml_escape(opts[:type])}") if opts[:type]
-          attrs << %( w="#{xml_escape(opts[:w])}") if opts[:w]
-          attrs << %( len="#{xml_escape(opts[:len])}") if opts[:len]
-          "<a:#{element}#{attrs}/>"
+          xml.empty_tag("a:#{element}", {
+                          type: opts[:type],
+                          w: opts[:w],
+                          len: opts[:len]
+                        })
         end
 
-        # : (untyped value) -> untyped
-        # Escapes cell text: ST_Xstring (XmlBuilder.encode_xstring), then XML.
-        def xml_escape_text(value)
-          str = value.to_s
-          str = str.dup.force_encoding(Encoding::UTF_8) if str.encoding == Encoding::BINARY
-          xml_escape(XmlBuilder.encode_xstring(str))
-        end
-
-        def xml_escape(value)
-          value.to_s
-               .gsub(/[^\x09\x0A\x0D\x20-\uD7FF\uE000-\uFFFD\u{10000}-\u{10FFFF}]/, "")
-               .gsub("&", "&amp;")
-               .gsub("<", "&lt;")
-               .gsub(">", "&gt;")
-               .gsub('"', "&quot;")
-               .gsub("'", "&apos;")
-        end
-
-        # : (untyped rich_text) -> untyped
-        def rich_text_xml(rich_text)
-          rich_text.runs.map do |run|
+        # : (XmlBuilder xml, untyped rich_text) -> void
+        def write_rich_text_xml(xml, rich_text)
+          rich_text.runs.each do |run|
             font = run.respond_to?(:font) ? run.font : run[:font]
             text = run.respond_to?(:text) ? run.text : run[:text]
-            if font && !font.empty?
-              rpr = +""
-              rpr << "<b/>" if font[:bold]
-              rpr << "<i/>" if font[:italic]
-              rpr << "<strike/>" if font[:strike]
-              if font[:underline]
-                u_val = font[:underline]
-                if u_val == true || u_val.to_s == "single"
-                  rpr << "<u/>"
-                else
-                  mapped_u = StyleBuilder::UNDERLINE_MAP[u_val.to_sym] || u_val
-                  rpr << %(<u val="#{xml_escape(mapped_u)}"/>)
+            xml.tag("r") do
+              if font && !font.empty?
+                xml.tag("rPr") do
+                  xml.empty_tag("b") if font[:bold]
+                  xml.empty_tag("i") if font[:italic]
+                  xml.empty_tag("strike") if font[:strike]
+                  if font[:underline]
+                    u_val = font[:underline]
+                    if u_val == true || u_val.to_s == "single"
+                      xml.empty_tag("u")
+                    else
+                      mapped_u = StyleBuilder::UNDERLINE_MAP[u_val.to_sym] || u_val
+                      xml.empty_tag("u", { val: mapped_u })
+                    end
+                  end
+                  va_val = font[:vert_align] || font[:vertical_align]
+                  va_val ||= "superscript" if font[:superscript]
+                  va_val ||= "subscript" if font[:subscript]
+                  if va_val
+                    mapped_va = StyleBuilder::VERT_ALIGN_MAP[va_val.to_sym] || va_val
+                    xml.empty_tag("vertAlign", { val: mapped_va })
+                  end
+                  font_sz = font[:size] || font[:sz]
+                  xml.empty_tag("sz", { val: font_sz }) if font_sz
+                  write_color_xml(xml, font)
+                  xml.empty_tag("rFont", { val: font[:name] }) if font[:name]
+                  xml.empty_tag("family", { val: font[:family] }) if font[:family]
+                  xml.empty_tag("scheme", { val: font[:scheme] }) if font[:scheme]
                 end
               end
-              va_val = font[:vert_align] || font[:vertical_align]
-              va_val ||= "superscript" if font[:superscript]
-              va_val ||= "subscript" if font[:subscript]
-              if va_val
-                mapped_va = StyleBuilder::VERT_ALIGN_MAP[va_val.to_sym] || va_val
-                rpr << %(<vertAlign val="#{xml_escape(mapped_va)}"/>)
-              end
-              font_sz = font[:size] || font[:sz]
-              rpr << %(<sz val="#{xml_escape(font_sz)}"/>) if font_sz
-              rpr << emit_color_xml(font)
-              rpr << %(<rFont val="#{xml_escape(font[:name])}"/>) if font[:name]
-              rpr << %(<family val="#{xml_escape(font[:family])}"/>) if font[:family]
-              rpr << %(<scheme val="#{xml_escape(font[:scheme])}"/>) if font[:scheme]
-              "<r><rPr>#{rpr}</rPr><t>#{xml_escape_text(text)}</t></r>"
-            else
-              "<r><t>#{xml_escape_text(text)}</t></r>"
+              xml.tag("t") { xml.xstring_text(text) }
             end
-          end.join
+          end
         end
 
-        # : (untyped cell_ref, untyped value, untyped style_idx, ?untyped? sst, ?ph: untyped?) -> untyped
-        def cell_xml(cell_ref, value, style_idx, sst = nil, ph: nil) # rubocop:disable Naming/MethodParameterName
-          s_attr = style_idx ? %( s="#{xml_escape(style_idx)}") : ""
-          ph_attr = ph ? ' ph="1"' : ""
+        # : (XmlBuilder xml, untyped cell_ref, untyped value, untyped style_idx, ?untyped? sst, ?ph: untyped?) -> void
+        def write_cell_xml(xml, cell_ref, value, style_idx, sst = nil, ph: nil) # rubocop:disable Naming/MethodParameterName
+          ph_val = ph ? 1 : nil
           case value
           when Xlsxrb::Elements::CellError
-            %(<c r="#{xml_escape(cell_ref)}" t="e"#{s_attr}#{ph_attr}><v>#{xml_escape(value.code)}</v></c>)
-          when Xlsxrb::Elements::Formula
-            f_attrs = +""
-            case value.type
-            when :shared
-              f_attrs << %( t="shared" si="#{xml_escape(value.shared_index)}")
-              f_attrs << %( ref="#{xml_escape(value.ref)}") if value.ref
-            when :array
-              f_attrs << %( t="array" ref="#{xml_escape(value.ref)}") if value.ref
-            when :data_table
-              f_attrs << ' t="dataTable"'
-              f_attrs << ' dt2D="1"' if value.dt2d
-              f_attrs << ' dtr="1"' if value.dtr
-              f_attrs << %( r1="#{xml_escape(value.r1)}") if value.r1
-              f_attrs << %( r2="#{xml_escape(value.r2)}") if value.r2
+            xml.tag("c", { r: cell_ref || "", t: "e", s: style_idx, ph: ph_val }) do
+              xml.text_tag("v", value.code)
             end
-            f_attrs << ' ca="1"' if value.calculate_always?
-            f_attrs << ' aca="1"' if value.aca
-            f_attrs << ' bx="1"' if value.bx
-            t_attr = ""
+          when Xlsxrb::Elements::Formula
+            f_attrs = case value.type
+                      when :shared
+                        { t: "shared", si: value.shared_index || "", ref: value.ref }
+                      when :array
+                        value.ref ? { t: "array", ref: value.ref } : {}
+                      when :data_table
+                        {
+                          t: "dataTable",
+                          dt2D: value.dt2d ? 1 : nil,
+                          dtr: value.dtr ? 1 : nil,
+                          r1: value.r1,
+                          r2: value.r2
+                        }
+                      else
+                        {}
+                      end
+            f_attrs[:ca] = 1 if value.calculate_always?
+            f_attrs[:aca] = 1 if value.aca
+            f_attrs[:bx] = 1 if value.bx
+            t_val = nil
             cached_val_str = value.cached_value.to_s
             case value.cached_value
             when String
-              t_attr = ' t="str"'
+              t_val = "str"
             when true
-              t_attr = ' t="b"'
+              t_val = "b"
               cached_val_str = "1"
             when false
-              t_attr = ' t="b"'
+              t_val = "b"
               cached_val_str = "0"
             end
-            f_tag = if value.expression && !value.expression.empty?
-                      "<f#{f_attrs}>#{xml_escape(value.expression)}</f>"
-                    else
-                      "<f#{f_attrs}/>"
-                    end
-            parts = %(<c r="#{xml_escape(cell_ref)}"#{t_attr}#{s_attr}#{ph_attr}>#{f_tag})
-            parts << "<v>#{xml_escape_text(cached_val_str)}</v>" unless value.cached_value.nil?
-            parts << "</c>"
-            parts
+            xml.tag("c", { r: cell_ref || "", t: t_val, s: style_idx, ph: ph_val }) do
+              if value.expression && !value.expression.empty?
+                xml.text_tag("f", value.expression, f_attrs)
+              else
+                xml.empty_tag("f", f_attrs)
+              end
+              xml.tag("v") { xml.xstring_text(cached_val_str) } unless value.cached_value.nil?
+            end
           when Xlsxrb::Elements::RichText
             if sst
               rt_sst, = sst
-              idx = rt_sst[value]
-              %(<c r="#{xml_escape(cell_ref)}" t="s"#{s_attr}#{ph_attr}><v>#{idx}</v></c>)
+              xml.tag("c", { r: cell_ref || "", t: "s", s: style_idx, ph: ph_val }) do
+                xml.text_tag("v", rt_sst[value])
+              end
             else
-              %(<c r="#{xml_escape(cell_ref)}" t="inlineStr"#{s_attr}#{ph_attr}><is>#{rich_text_xml(value)}</is></c>)
+              xml.tag("c", { r: cell_ref || "", t: "inlineStr", s: style_idx, ph: ph_val }) do
+                xml.tag("is") { write_rich_text_xml(xml, value) }
+              end
             end
           when true, false
-            %(<c r="#{xml_escape(cell_ref)}" t="b"#{s_attr}#{ph_attr}><v>#{value ? 1 : 0}</v></c>)
+            xml.tag("c", { r: cell_ref || "", t: "b", s: style_idx, ph: ph_val }) do
+              xml.text_tag("v", value ? 1 : 0)
+            end
           when Time
             date1904 = @workbook_properties&.[](:date1904) ? true : false
             serial = Xlsxrb::Ooxml::Utils.datetime_to_serial(value, date1904: date1904)
-            dt_attr = s_attr.empty? && (dt_style = resolve_style_index(datetime_num_fmt_id)) ? %( s="#{xml_escape(dt_style)}") : s_attr
-            %(<c r="#{xml_escape(cell_ref)}"#{dt_attr}#{ph_attr}><v>#{serial}</v></c>)
+            s_val = style_idx || resolve_style_index(datetime_num_fmt_id)
+            xml.tag("c", { r: cell_ref || "", s: s_val, ph: ph_val }) { xml.text_tag("v", serial) }
           when Date
             date1904 = @workbook_properties&.[](:date1904) ? true : false
             serial = Xlsxrb::Ooxml::Utils.date_to_serial(value, date1904: date1904)
-            ds_attr = s_attr.empty? && (date_style = resolve_style_index(date_num_fmt_id)) ? %( s="#{xml_escape(date_style)}") : s_attr
-            %(<c r="#{xml_escape(cell_ref)}"#{ds_attr}#{ph_attr}><v>#{serial}</v></c>)
+            s_val = style_idx || resolve_style_index(date_num_fmt_id)
+            xml.tag("c", { r: cell_ref || "", s: s_val, ph: ph_val }) { xml.text_tag("v", serial) }
           when Numeric
-            %(<c r="#{xml_escape(cell_ref)}"#{s_attr}#{ph_attr}><v>#{value}</v></c>)
+            xml.tag("c", { r: cell_ref || "", s: style_idx, ph: ph_val }) { xml.text_tag("v", value) }
           else
             if sst
               _, str_sst = sst
-              idx = str_sst[value.to_s]
-              %(<c r="#{xml_escape(cell_ref)}" t="s"#{s_attr}#{ph_attr}><v>#{idx}</v></c>)
+              xml.tag("c", { r: cell_ref || "", t: "s", s: style_idx, ph: ph_val }) do
+                xml.text_tag("v", str_sst[value.to_s])
+              end
             else
-              %(<c r="#{xml_escape(cell_ref)}" t="inlineStr"#{s_attr}#{ph_attr}><is><t>#{xml_escape_text(value)}</t></is></c>)
+              xml.tag("c", { r: cell_ref || "", t: "inlineStr", s: style_idx, ph: ph_val }) do
+                xml.tag("is") { xml.tag("t") { xml.xstring_text(value) } }
+              end
             end
           end
         end
@@ -512,71 +527,76 @@ module Xlsxrb
           @xf_index_map[num_fmt_id]
         end
 
-        # : (untyped filter) -> untyped
-        def emit_filter_xml(filter)
+        # : (XmlBuilder xml, untyped filter) -> void
+        def write_filter_xml(xml, filter)
           case filter[:type]
           when :filters
-            attrs = filter[:blank] ? +' blank="1"' : +""
-            attrs << %( calendarType="#{xml_escape(filter[:calendar_type])}") if filter[:calendar_type]
+            attrs = {
+              blank: filter[:blank] ? 1 : nil,
+              calendarType: filter[:calendar_type]
+            }
             has_values = filter[:values]&.any?
             has_date_groups = filter[:date_group_items]&.any?
             if has_values || has_date_groups
-              parts = ["<filters#{attrs}>"]
-              filter[:values]&.each { |v| parts << %(<filter val="#{xml_escape(v)}"/>) }
-              filter[:date_group_items]&.each do |dg|
-                dg_attrs = %(dateTimeGrouping="#{xml_escape(dg[:date_time_grouping])}")
-                dg_attrs << %( year="#{xml_escape(dg[:year])}") if dg[:year]
-                dg_attrs << %( month="#{xml_escape(dg[:month])}") if dg[:month]
-                dg_attrs << %( day="#{xml_escape(dg[:day])}") if dg[:day]
-                dg_attrs << %( hour="#{xml_escape(dg[:hour])}") if dg[:hour]
-                dg_attrs << %( minute="#{xml_escape(dg[:minute])}") if dg[:minute]
-                dg_attrs << %( second="#{xml_escape(dg[:second])}") if dg[:second]
-                parts << "<dateGroupItem #{dg_attrs}/>"
+              xml.tag("filters", attrs) do
+                filter[:values]&.each { |v| xml.empty_tag("filter", { val: v || "" }) }
+                filter[:date_group_items]&.each do |dg|
+                  xml.empty_tag("dateGroupItem", {
+                                  dateTimeGrouping: dg[:date_time_grouping] || "",
+                                  year: dg[:year],
+                                  month: dg[:month],
+                                  day: dg[:day],
+                                  hour: dg[:hour],
+                                  minute: dg[:minute],
+                                  second: dg[:second]
+                                })
+                end
               end
-              parts << "</filters>"
-              parts.join
             else
-              "<filters#{attrs}/>"
+              xml.empty_tag("filters", attrs)
             end
           when :custom
             if filter[:filters]
-              and_attr = filter[:and] ? ' and="1"' : ""
-              parts = ["<customFilters#{and_attr}>"]
-              filter[:filters].each do |cf|
-                parts << %(<customFilter operator="#{xml_escape(cf[:operator])}" val="#{xml_escape(cf[:val])}"/>)
+              xml.tag("customFilters", { and: filter[:and] ? 1 : nil }) do
+                filter[:filters].each do |cf|
+                  xml.empty_tag("customFilter", { operator: cf[:operator] || "", val: cf[:val] || "" })
+                end
               end
-              parts << "</customFilters>"
-              parts.join
             else
-              %(<customFilters><customFilter operator="#{xml_escape(filter[:operator])}" val="#{xml_escape(filter[:val])}"/></customFilters>)
+              xml.tag("customFilters") do
+                xml.empty_tag("customFilter", { operator: filter[:operator] || "", val: filter[:val] || "" })
+              end
             end
           when :dynamic
-            dyn_attrs = %( type="#{xml_escape(filter[:dynamic_type])}")
-            dyn_attrs << %( val="#{xml_escape(filter[:val])}") if filter[:val]
-            dyn_attrs << %( valIso="#{xml_escape(filter[:val_iso])}") if filter[:val_iso]
-            dyn_attrs << %( maxVal="#{xml_escape(filter[:max_val])}") if filter[:max_val]
-            dyn_attrs << %( maxValIso="#{xml_escape(filter[:max_val_iso])}") if filter[:max_val_iso]
-            "<dynamicFilter#{dyn_attrs}/>"
+            xml.empty_tag("dynamicFilter", {
+                            type: filter[:dynamic_type] || "",
+                            val: filter[:val],
+                            valIso: filter[:val_iso],
+                            maxVal: filter[:max_val],
+                            maxValIso: filter[:max_val_iso]
+                          })
           when :top10
-            top_attr = filter[:top] ? ' top="1"' : ""
-            pct_attr = filter[:percent] ? ' percent="1"' : ""
-            fv_attr = filter[:filter_val] ? %( filterVal="#{xml_escape(filter[:filter_val])}") : ""
-            %(<top10#{top_attr}#{pct_attr} val="#{xml_escape(filter[:val])}"#{fv_attr}/>)
+            xml.empty_tag("top10", {
+                            top: filter[:top] ? 1 : nil,
+                            percent: filter[:percent] ? 1 : nil,
+                            val: filter[:val] || "",
+                            filterVal: filter[:filter_val]
+                          })
           when :color_filter
-            cf_attrs = %(dxfId="#{xml_escape(filter[:dxf_id])}")
-            cf_attrs << ' cellColor="0"' if filter[:cell_color] == false
-            %(<colorFilter #{cf_attrs}/>)
+            xml.empty_tag("colorFilter", {
+                            dxfId: filter[:dxf_id] || "",
+                            cellColor: filter[:cell_color] == false ? 0 : nil
+                          })
           when :icon_filter
-            if_attrs = %(iconSet="#{xml_escape(filter[:icon_set])}")
-            if_attrs << %( iconId="#{xml_escape(filter[:icon_id])}") if filter[:icon_id]
-            %(<iconFilter #{if_attrs}/>)
-          else
-            ""
+            xml.empty_tag("iconFilter", {
+                            iconSet: filter[:icon_set] || "",
+                            iconId: filter[:icon_id]
+                          })
           end
         end
 
-        # : (untyped parts, untyped rule) -> untyped
-        def emit_cf_rule(parts, rule)
+        # : (XmlBuilder xml, untyped rule) -> void
+        def write_cf_rule(xml, rule)
           type = rule[:type]
           if type.is_a?(String) || type.is_a?(Symbol)
             t_str = type.to_s
@@ -586,24 +606,26 @@ module Xlsxrb
             type = snake if CF_TYPE_MAP.key?(snake)
           end
           rule_type = CF_TYPE_MAP[type] || type.to_s
-          rule_attrs = %(type="#{xml_escape(rule_type)}")
-          rule_attrs << %( priority="#{xml_escape(rule[:priority])}") if rule[:priority]
-          rule_attrs << %( operator="#{xml_escape(rule[:operator])}") if rule[:operator]
           did = rule[:dxf_id] || rule[:format_id]
-          rule_attrs << %( dxfId="#{xml_escape(did)}") if did
-          rule_attrs << %( stopIfTrue="1") if rule[:stop_if_true]
-          rule_attrs << %( aboveAverage="0") if rule[:above_average] == false
-          rule_attrs << %( equalAverage="1") if rule[:equal_average]
-          rule_attrs << %( rank="#{xml_escape(rule[:rank])}") if rule[:rank]
-          rule_attrs << %( percent="1") if rule[:percent]
-          rule_attrs << %( bottom="1") if rule[:bottom]
-          rule_attrs << %( text="#{xml_escape(rule[:text])}") if rule[:text]
-          if rule[:time_period]
-            tp = rule[:time_period]
-            tp_str = DslHelpers::CF_TIME_PERIODS[tp.to_sym] || tp.to_s
-            rule_attrs << %( timePeriod="#{xml_escape(tp_str)}")
-          end
-          rule_attrs << %( stdDev="#{xml_escape(rule[:std_dev])}") if rule[:std_dev]
+          tp_str = if rule[:time_period]
+                     tp = rule[:time_period]
+                     DslHelpers::CF_TIME_PERIODS[tp.to_sym] || tp.to_s
+                   end
+          rule_attrs = {
+            type: rule_type,
+            priority: rule[:priority],
+            operator: rule[:operator],
+            dxfId: did,
+            stopIfTrue: rule[:stop_if_true] ? 1 : nil,
+            aboveAverage: rule[:above_average] == false ? 0 : nil,
+            equalAverage: rule[:equal_average] ? 1 : nil,
+            rank: rule[:rank],
+            percent: rule[:percent] ? 1 : nil,
+            bottom: rule[:bottom] ? 1 : nil,
+            text: rule[:text],
+            timePeriod: tp_str,
+            stdDev: rule[:std_dev]
+          }
 
           case type
           when :cell_is, :expression, :above_average, :top10, :duplicate_values, :unique_values,
@@ -611,71 +633,74 @@ module Xlsxrb
                :contains_blanks, :not_contains_blanks, :contains_errors, :not_contains_errors, :time_period
             formulas = rule[:formulas] || [rule[:formula]].compact
             if formulas.empty?
-              parts << "<cfRule #{rule_attrs}/>"
+              xml.empty_tag("cfRule", rule_attrs)
             else
-              parts << "<cfRule #{rule_attrs}>"
-              formulas.each { |f| parts << "<formula>#{xml_escape(f)}</formula>" }
-              parts << "</cfRule>"
+              xml.tag("cfRule", rule_attrs) do
+                formulas.each { |f| xml.text_tag("formula", f) }
+              end
             end
           when :color_scale
             cs = rule[:color_scale]
-            parts << "<cfRule #{rule_attrs}>"
-            parts << "<colorScale>"
-            cs[:cfvo]&.each do |cfvo|
-              cfvo_attrs = %(type="#{xml_escape(cfvo[:type])}")
-              cfvo_attrs << %( val="#{xml_escape(cfvo[:val])}") if cfvo[:val]
-              cfvo_attrs << ' gte="0"' if cfvo[:gte] == false
-              parts << "<cfvo #{cfvo_attrs}/>"
+            xml.tag("cfRule", rule_attrs) do
+              xml.tag("colorScale") do
+                cs[:cfvo]&.each do |cfvo|
+                  xml.empty_tag("cfvo", {
+                                  type: cfvo[:type] || "",
+                                  val: cfvo[:val],
+                                  gte: cfvo[:gte] == false ? 0 : nil
+                                })
+                end
+                cs[:colors]&.each { |c| write_cf_color_xml(xml, c) }
+              end
             end
-            cs[:colors]&.each { |c| parts << emit_cf_color_xml(c) }
-            parts << "</colorScale>"
-            parts << "</cfRule>"
           when :data_bar
             db = rule[:data_bar]
-            parts << "<cfRule #{rule_attrs}>"
-            db_attrs = +""
-            db_attrs << %( minLength="#{xml_escape(db[:min_length])}") if db[:min_length]
-            db_attrs << %( maxLength="#{xml_escape(db[:max_length])}") if db[:max_length]
-            db_attrs << %( showValue="#{db[:show_value] ? 1 : 0}") unless db[:show_value].nil?
-            parts << "<dataBar#{db_attrs}>"
-            db[:cfvo]&.each do |cfvo|
-              cfvo_attrs = %(type="#{xml_escape(cfvo[:type])}")
-              cfvo_attrs << %( val="#{xml_escape(cfvo[:val])}") if cfvo[:val]
-              cfvo_attrs << ' gte="0"' if cfvo[:gte] == false
-              parts << "<cfvo #{cfvo_attrs}/>"
+            xml.tag("cfRule", rule_attrs) do
+              xml.tag("dataBar", {
+                        minLength: db[:min_length],
+                        maxLength: db[:max_length],
+                        showValue: xml_bool_attr(db[:show_value])
+                      }) do
+                db[:cfvo]&.each do |cfvo|
+                  xml.empty_tag("cfvo", {
+                                  type: cfvo[:type] || "",
+                                  val: cfvo[:val],
+                                  gte: cfvo[:gte] == false ? 0 : nil
+                                })
+                end
+                write_cf_color_xml(xml, db[:color]) if db[:color]
+              end
             end
-            parts << emit_cf_color_xml(db[:color]) if db[:color]
-            parts << "</dataBar>"
-            parts << "</cfRule>"
           when :icon_set
             is = rule[:icon_set]
-            parts << "<cfRule #{rule_attrs}>"
-            is_attrs = +""
-            is_attrs << %( iconSet="#{xml_escape(is[:icon_set])}") if is[:icon_set]
-            is_attrs << %( reverse="#{is[:reverse] ? 1 : 0}") unless is[:reverse].nil?
-            is_attrs << %( percent="#{is[:percent] ? 1 : 0}") unless is[:percent].nil?
-            is_attrs << %( showValue="#{is[:show_value] ? 1 : 0}") unless is[:show_value].nil?
-            parts << "<iconSet#{is_attrs}>"
-            is[:cfvo]&.each do |cfvo|
-              cfvo_attrs = %(type="#{xml_escape(cfvo[:type])}")
-              cfvo_attrs << %( val="#{xml_escape(cfvo[:val])}") if cfvo[:val]
-              cfvo_attrs << ' gte="0"' if cfvo[:gte] == false
-              parts << "<cfvo #{cfvo_attrs}/>"
+            xml.tag("cfRule", rule_attrs) do
+              xml.tag("iconSet", {
+                        iconSet: is[:icon_set],
+                        reverse: xml_bool_attr(is[:reverse]),
+                        percent: xml_bool_attr(is[:percent]),
+                        showValue: xml_bool_attr(is[:show_value])
+                      }) do
+                is[:cfvo]&.each do |cfvo|
+                  xml.empty_tag("cfvo", {
+                                  type: cfvo[:type] || "",
+                                  val: cfvo[:val],
+                                  gte: cfvo[:gte] == false ? 0 : nil
+                                })
+                end
+              end
             end
-            parts << "</iconSet>"
-            parts << "</cfRule>"
           else
-            parts << "<cfRule #{rule_attrs}/>"
+            xml.empty_tag("cfRule", rule_attrs)
           end
         end
 
         # Emits a <color> element for CF rules, accepting either a plain RGB string or a hash.
-        # : (untyped color) -> (untyped | ::String)
-        def emit_cf_color_xml(color)
+        # : (XmlBuilder xml, untyped color) -> void
+        def write_cf_color_xml(xml, color)
           if color.is_a?(Hash)
-            emit_color_xml(color)
+            write_color_xml(xml, color)
           else
-            %(<color rgb="#{xml_escape(color)}"/>)
+            xml.empty_tag("color", { rgb: color || "" })
           end
         end
 
@@ -714,63 +739,60 @@ module Xlsxrb
 
         # : () -> untyped
         def generate_core_properties_xml
-          parts = [
-            XML_HEADER,
-            %(<cp:coreProperties xmlns:cp="#{CP_NS}" xmlns:dc="#{DC_NS}" xmlns:dcterms="#{DCTERMS_NS}" xmlns:xsi="#{XSI_NS}">)
-          ]
-          parts << "<dc:title>#{xml_escape(@core_properties[:title])}</dc:title>" if @core_properties[:title]
-          parts << "<dc:subject>#{xml_escape(@core_properties[:subject])}</dc:subject>" if @core_properties[:subject]
-          parts << "<dc:creator>#{xml_escape(@core_properties[:creator])}</dc:creator>" if @core_properties[:creator]
-          parts << "<cp:keywords>#{xml_escape(@core_properties[:keywords])}</cp:keywords>" if @core_properties[:keywords]
-          parts << "<dc:description>#{xml_escape(@core_properties[:description])}</dc:description>" if @core_properties[:description]
-          parts << "<cp:lastModifiedBy>#{xml_escape(@core_properties[:last_modified_by])}</cp:lastModifiedBy>" if @core_properties[:last_modified_by]
-          parts << "<cp:revision>#{xml_escape(@core_properties[:revision])}</cp:revision>" if @core_properties[:revision]
-          parts << %(<dcterms:created xsi:type="dcterms:W3CDTF">#{xml_escape(@core_properties[:created])}</dcterms:created>) if @core_properties[:created]
-          parts << %(<dcterms:modified xsi:type="dcterms:W3CDTF">#{xml_escape(@core_properties[:modified])}</dcterms:modified>) if @core_properties[:modified]
-          parts << "<cp:category>#{xml_escape(@core_properties[:category])}</cp:category>" if @core_properties[:category]
-          parts << "<cp:contentStatus>#{xml_escape(@core_properties[:content_status])}</cp:contentStatus>" if @core_properties[:content_status]
-          parts << "<dc:language>#{xml_escape(@core_properties[:language])}</dc:language>" if @core_properties[:language]
-          parts << "</cp:coreProperties>"
-          parts.join
+          XmlBuilder.build(declaration: :plain) do |xml|
+            xml.tag("cp:coreProperties", {
+                      "xmlns:cp": CP_NS,
+                      "xmlns:dc": DC_NS,
+                      "xmlns:dcterms": DCTERMS_NS,
+                      "xmlns:xsi": XSI_NS
+                    }) do
+              xml.text_tag("dc:title", @core_properties[:title]) if @core_properties[:title]
+              xml.text_tag("dc:subject", @core_properties[:subject]) if @core_properties[:subject]
+              xml.text_tag("dc:creator", @core_properties[:creator]) if @core_properties[:creator]
+              xml.text_tag("cp:keywords", @core_properties[:keywords]) if @core_properties[:keywords]
+              xml.text_tag("dc:description", @core_properties[:description]) if @core_properties[:description]
+              xml.text_tag("cp:lastModifiedBy", @core_properties[:last_modified_by]) if @core_properties[:last_modified_by]
+              xml.text_tag("cp:revision", @core_properties[:revision]) if @core_properties[:revision]
+              xml.text_tag("dcterms:created", @core_properties[:created], { "xsi:type": "dcterms:W3CDTF" }) if @core_properties[:created]
+              xml.text_tag("dcterms:modified", @core_properties[:modified], { "xsi:type": "dcterms:W3CDTF" }) if @core_properties[:modified]
+              xml.text_tag("cp:category", @core_properties[:category]) if @core_properties[:category]
+              xml.text_tag("cp:contentStatus", @core_properties[:content_status]) if @core_properties[:content_status]
+              xml.text_tag("dc:language", @core_properties[:language]) if @core_properties[:language]
+            end
+          end
         end
 
         # : () -> untyped
         def generate_app_properties_xml
-          parts = [
-            XML_HEADER,
-            %(<Properties xmlns="#{APP_NS}" xmlns:vt="#{VT_NS}">)
-          ]
           app_val = @app_properties[:app_name] || @app_properties[:application]
-          parts << "<Application>#{xml_escape(app_val)}</Application>" if app_val
-          parts << "<AppVersion>#{xml_escape(@app_properties[:app_version])}</AppVersion>" if @app_properties[:app_version]
-          if @app_properties[:heading_pairs] && @app_properties[:titles_of_parts]
-            hp = @app_properties[:heading_pairs]
-            tp = @app_properties[:titles_of_parts]
-            parts << "<HeadingPairs>"
-            parts << %(<vt:vector size="#{xml_escape(hp.size * 2)}" baseType="variant">)
-            hp.each do |label, count|
-              parts << "<vt:variant><vt:lpstr>#{xml_escape(label)}</vt:lpstr></vt:variant>"
-              parts << "<vt:variant><vt:i4>#{xml_escape(count)}</vt:i4></vt:variant>"
+          XmlBuilder.build(declaration: :plain) do |xml|
+            xml.tag("Properties", { xmlns: APP_NS, "xmlns:vt": VT_NS }) do
+              xml.text_tag("Application", app_val) if app_val
+              xml.text_tag("AppVersion", @app_properties[:app_version]) if @app_properties[:app_version]
+              if @app_properties[:heading_pairs] && @app_properties[:titles_of_parts]
+                hp = @app_properties[:heading_pairs]
+                tp = @app_properties[:titles_of_parts]
+                xml.tag("HeadingPairs") do
+                  xml.tag("vt:vector", { size: hp.size * 2, baseType: "variant" }) do
+                    hp.each do |label, count|
+                      xml.tag("vt:variant") { xml.text_tag("vt:lpstr", label) }
+                      xml.tag("vt:variant") { xml.text_tag("vt:i4", count) }
+                    end
+                  end
+                end
+                xml.tag("TitlesOfParts") do
+                  xml.tag("vt:vector", { size: tp.size, baseType: "lpstr" }) do
+                    tp.each { |t| xml.text_tag("vt:lpstr", t) }
+                  end
+                end
+              end
             end
-            parts << "</vt:vector>"
-            parts << "</HeadingPairs>"
-            parts << "<TitlesOfParts>"
-            parts << %(<vt:vector size="#{tp.size}" baseType="lpstr">)
-            tp.each { |t| parts << "<vt:lpstr>#{xml_escape(t)}</vt:lpstr>" }
-            parts << "</vt:vector>"
-            parts << "</TitlesOfParts>"
           end
-          parts << "</Properties>"
-          parts.join
         end
 
         # : () -> untyped
         def generate_custom_properties_xml
           custom_ns = "http://schemas.openxmlformats.org/officeDocument/2006/custom-properties"
-          parts = [
-            XML_HEADER,
-            %(<Properties xmlns="#{xml_escape(custom_ns)}" xmlns:vt="#{VT_NS}">)
-          ]
           list = if @custom_properties.is_a?(Hash)
                    @custom_properties.map do |name, val|
                      if val.is_a?(Elements::CustomProperty) || (val.respond_to?(:name) && val.respond_to?(:value))
@@ -790,26 +812,37 @@ module Xlsxrb
                      end
                    end
                  end
-          list.each_with_index do |prop, idx|
-            fmtid = "{D5CDD505-2E9C-101B-9397-08002B2CF9AE}"
-            pid = idx + 2 # pids start at 2
-            parts << %(<property fmtid="#{xml_escape(fmtid)}" pid="#{xml_escape(pid)}" name="#{xml_escape(prop[:name])}">)
-            parts << case prop[:type]
-                     when :number, :int, :i4
-                       "<vt:i4>#{xml_escape(prop[:value])}</vt:i4>"
-                     when :float, :r8
-                       "<vt:r8>#{xml_escape(prop[:value])}</vt:r8>"
-                     when :bool, :boolean
-                       "<vt:bool>#{prop[:value] ? "true" : "false"}</vt:bool>"
-                     when :date, :filetime
-                       "<vt:filetime>#{xml_escape(prop[:value])}</vt:filetime>"
-                     else
-                       "<vt:lpwstr>#{xml_escape(prop[:value].to_s)}</vt:lpwstr>"
-                     end
-            parts << "</property>"
+
+          XmlBuilder.build(declaration: :plain) do |xml|
+            xml.tag("Properties", { xmlns: custom_ns, "xmlns:vt": VT_NS }) do
+              list.each_with_index do |prop, idx|
+                fmtid = "{D5CDD505-2E9C-101B-9397-08002B2CF9AE}"
+                xml.tag("property", { fmtid: fmtid, pid: idx + 2, name: prop[:name] || "" }) do
+                  case prop[:type]
+                  when :number, :int, :i4
+                    xml.text_tag("vt:i4", prop[:value])
+                  when :float, :r8
+                    xml.text_tag("vt:r8", prop[:value])
+                  when :bool, :boolean
+                    xml.text_tag("vt:bool", prop[:value] ? "true" : "false")
+                  when :date, :filetime
+                    xml.text_tag("vt:filetime", prop[:value])
+                  else
+                    xml.text_tag("vt:lpwstr", prop[:value])
+                  end
+                end
+              end
+            end
           end
-          parts << "</Properties>"
-          parts.join
+        end
+
+        private
+
+        # : (untyped val) -> (nil | ::Integer)
+        def xml_bool_attr(val)
+          return nil if val.nil?
+
+          val ? 1 : 0
         end
       end
     end

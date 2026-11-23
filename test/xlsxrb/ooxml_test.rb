@@ -655,6 +655,28 @@ class OoxmlTest < Test::Unit::TestCase
     assert_equal("", io_noop.string)
   end
 
+  test "xml_builder build, plain declaration, text_tag, and xstring_text" do
+    plain = Xlsxrb::Ooxml::XmlBuilder.build(declaration: :plain) do |b|
+      assert_same(b, b.text_tag("t", "a & b", { id: 1 }))
+      b.text_tag("u", "plain")
+    end
+    assert_equal('<?xml version="1.0" encoding="UTF-8"?><t id="1">a &amp; b</t><u>plain</u>', plain)
+
+    standalone = Xlsxrb::Ooxml::XmlBuilder.build(declaration: :standalone) do |b|
+      b.empty_tag("root")
+    end
+    assert_equal(%(<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<root/>), standalone)
+
+    fragment = Xlsxrb::Ooxml::XmlBuilder.build do |b|
+      assert_same(b, b.xstring_text("_x0001_&\u0001<"))
+      bin = "caf\xC3\xA9\x01<".b.freeze
+      b.xstring_text(bin)
+      assert_equal(Encoding::BINARY, bin.encoding)
+      b.xstring_text(123)
+    end
+    assert_equal("_x005F_x0001_&amp;_x0001_&lt;café_x0001_&lt;123", fragment)
+  end
+
   # --- XmlParser::BaseListener ---
 
   test "base_listener captures unknown elements as nested unmapped_data trees" do

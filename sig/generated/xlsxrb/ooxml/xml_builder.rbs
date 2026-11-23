@@ -6,13 +6,23 @@ module Xlsxrb
     class XmlBuilder
       XML_HEADER: ::String
 
+      PLAIN_XML_HEADER: ::String
+
+      # Builds an XML string with a new {XmlBuilder}.
+      #
+      # @param declaration [Symbol, false, nil] `:standalone`, `:plain`, or falsy for none.
+      # @return [String]
+      # : (?declaration: (:standalone | :plain | false)?) { (XmlBuilder) -> void } -> String
+      def self.build: (?declaration: (:standalone | :plain | false)?) { (XmlBuilder) -> void } -> String
+
       ESCAPE_MAP: untyped
 
       ESCAPE_RE: ::Regexp
 
       def initialize: (untyped io) -> untyped
 
-      def declaration: () -> untyped
+      # : (?standalone: bool) -> self
+      def declaration: (?standalone: bool) -> self
 
       EMPTY_HASH: untyped
 
@@ -26,6 +36,14 @@ module Xlsxrb
       def empty_tag: (untyped name, ?untyped attrs) -> untyped
 
       def text: (untyped content) -> untyped
+
+      # Writes an element containing escaped text content.
+      # : (String name, untyped content, ?Hash[untyped, untyped] attrs) -> self
+      def text_tag: (String name, untyped content, ?Hash[untyped, untyped] attrs) -> self
+
+      # Writes ST_Xstring-encoded and XML-escaped text content.
+      # : (untyped content) -> self
+      def xstring_text: (untyped content) -> self
 
       # Write raw XML string (for unmapped_data restoration).
       def raw: (untyped xml_string) -> untyped

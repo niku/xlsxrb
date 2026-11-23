@@ -7,6 +7,20 @@ module Xlsxrb
     # Streams well-formed XML to a writable IO without building a DOM.
     class XmlBuilder
       XML_HEADER = %(<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n)
+      PLAIN_XML_HEADER = %(<?xml version="1.0" encoding="UTF-8"?>)
+
+      # Builds an XML string with a new {XmlBuilder}.
+      #
+      # @param declaration [Symbol, false, nil] `:standalone`, `:plain`, or falsy for none.
+      # @return [String]
+      #: (?declaration: (:standalone | :plain | false)?) { (XmlBuilder) -> void } -> String
+      def self.build(declaration: nil)
+        io = +""
+        builder = new(io)
+        builder.declaration(standalone: declaration == :standalone) if declaration
+        yield builder
+        io
+      end
 
       ESCAPE_MAP = {
         "&" => "&amp;",
@@ -22,8 +36,9 @@ module Xlsxrb
         @io = io
       end
 
-      def declaration
-        @io << XML_HEADER
+      #: (?standalone: bool) -> self
+      def declaration(standalone: true)
+        @io << (standalone ? XML_HEADER : PLAIN_XML_HEADER)
         self
       end
 
@@ -42,30 +57,47 @@ module Xlsxrb
       end
 
       def open_tag(name, attrs = EMPTY_HASH)
-        @io.write("<")
-        @io.write(name)
+        @io << "<"
+        @io << name
         write_attrs(attrs) unless attrs.empty?
-        @io.write(">")
+        @io << ">"
         self
       end
 
       def close_tag(name)
-        @io.write("</")
-        @io.write(name)
-        @io.write(">")
+        @io << "</"
+        @io << name
+        @io << ">"
         self
       end
 
       def empty_tag(name, attrs = EMPTY_HASH)
-        @io.write("<")
-        @io.write(name)
+        @io << "<"
+        @io << name
         write_attrs(attrs) unless attrs.empty?
-        @io.write("/>")
+        @io << "/>"
         self
       end
 
       def text(content)
         @io << escape(content.to_s)
+        self
+      end
+
+      # Writes an element containing escaped text content.
+      #: (String name, untyped content, ?Hash[untyped, untyped] attrs) -> self
+      def text_tag(name, content, attrs = EMPTY_HASH)
+        open_tag(name, attrs)
+        text(content)
+        close_tag(name)
+      end
+
+      # Writes ST_Xstring-encoded and XML-escaped text content.
+      #: (untyped content) -> self
+      def xstring_text(content)
+        str = content.to_s
+        str = str.dup.force_encoding(Encoding::UTF_8) if str.encoding.equal?(Encoding::BINARY)
+        @io << escape(self.class.encode_xstring(str))
         self
       end
 
@@ -182,11 +214,11 @@ module Xlsxrb
         attrs.each do |k, v|
           next if v.nil?
 
-          @io.write(" ")
-          @io.write(k.to_s)
-          @io.write('="')
-          @io.write(escape(v))
-          @io.write('"')
+          @io << " "
+          @io << k.to_s
+          @io << '="'
+          @io << escape(v)
+          @io << '"'
         end
       end
 

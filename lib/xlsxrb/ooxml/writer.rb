@@ -3,6 +3,7 @@
 # rbs_inline: enabled
 
 require_relative "zip_generator"
+require_relative "xml_builder"
 require_relative "writer/drawing_xml"
 require_relative "writer/features_xml"
 require_relative "writer/styles_xml"
@@ -2142,7 +2143,7 @@ module Xlsxrb
 
       private
 
-      # : (?::Hash[untyped, untyped] all_entries) -> untyped
+      # : (?::Hash[untyped, untyped] all_entries) -> ::String
       def generate_content_types_xml(all_entries = {})
         defaults = {
           "rels" => "application/vnd.openxmlformats-package.relationships+xml",
@@ -2245,280 +2246,159 @@ module Xlsxrb
         # Merge extra overrides from pass-through.
         overrides.merge!(@extra_ct_overrides) { |_k, generated, _extra| generated }
 
-        parts = [XML_HEADER, %(<Types xmlns="#{CT_NS}">)]
-        defaults.each { |ext, ct| parts << %(<Default Extension="#{xml_escape(ext)}" ContentType="#{xml_escape(ct)}"/>) }
-        overrides.each { |pn, ct| parts << %(<Override PartName="#{xml_escape(pn)}" ContentType="#{xml_escape(ct)}"/>) }
-        parts << "</Types>"
-        parts.join
+        XmlBuilder.build(declaration: :plain) do |xml|
+          xml.tag("Types", { xmlns: CT_NS }) do
+            defaults.each { |ext, ct| xml.empty_tag("Default", { Extension: ext || "", ContentType: ct || "" }) }
+            overrides.each { |pn, ct| xml.empty_tag("Override", { PartName: pn || "", ContentType: ct || "" }) }
+          end
+        end
       end
 
-      # : () -> untyped
+      # : () -> ::String
       def generate_rels_root
         rid_counter = 1
-        parts = [
-          XML_HEADER,
-          %(<Relationships xmlns="#{REL_NS}">),
-          %(<Relationship Id="rId#{xml_escape(rid_counter)}" Type="#{DOC_REL_NS}/officeDocument" Target="xl/workbook.xml"/>)
-        ]
-        unless @core_properties.empty?
-          rid_counter += 1
-          parts << %(<Relationship Id="rId#{xml_escape(rid_counter)}" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/>)
+        XmlBuilder.build(declaration: :plain) do |xml|
+          xml.tag("Relationships", { xmlns: REL_NS }) do
+            xml.empty_tag("Relationship", { Id: "rId#{rid_counter}", Type: "#{DOC_REL_NS}/officeDocument", Target: "xl/workbook.xml" })
+            unless @core_properties.empty?
+              rid_counter += 1
+              xml.empty_tag("Relationship", { Id: "rId#{rid_counter}", Type: "http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties", Target: "docProps/core.xml" })
+            end
+            if @app_properties.any?
+              rid_counter += 1
+              xml.empty_tag("Relationship", { Id: "rId#{rid_counter}", Type: "#{DOC_REL_NS}/extended-properties", Target: "docProps/app.xml" })
+            end
+            unless @custom_properties.empty?
+              rid_counter += 1
+              xml.empty_tag("Relationship", { Id: "rId#{rid_counter}", Type: "#{DOC_REL_NS}/custom-properties", Target: "docProps/custom.xml" })
+            end
+          end
         end
-        if @app_properties.any?
-          rid_counter += 1
-          parts << %(<Relationship Id="rId#{xml_escape(rid_counter)}" Type="#{DOC_REL_NS}/extended-properties" Target="docProps/app.xml"/>)
-        end
-        unless @custom_properties.empty?
-          rid_counter += 1
-          parts << %(<Relationship Id="rId#{xml_escape(rid_counter)}" Type="#{DOC_REL_NS}/custom-properties" Target="docProps/custom.xml"/>)
-        end
-        parts << "</Relationships>"
-        parts.join
       end
 
-      # : (?::Integer pivot_cache_count) -> untyped
+      # : (?::Integer pivot_cache_count) -> ::String
       def generate_workbook_xml(pivot_cache_count = 0)
-        wb_attrs = %(xmlns="#{SSML_NS}" xmlns:r="#{DOC_REL_NS}")
-        wb_attrs << %( conformance="#{xml_escape(@workbook_properties[:conformance])}") if @workbook_properties[:conformance]
-        parts = [
-          XML_HEADER,
-          "<workbook #{wb_attrs}>"
-        ]
+        XmlBuilder.build(declaration: :plain) do |xml|
+          xml.tag("workbook", { xmlns: SSML_NS, "xmlns:r": DOC_REL_NS, conformance: @workbook_properties[:conformance] }) do
+            write_workbook_file_version_xml(xml)
+            write_workbook_file_sharing_xml(xml)
+            write_workbook_pr_xml(xml)
+            write_workbook_views_xml(xml)
 
-        # fileVersion
-        unless @file_version.empty?
-          fv_attrs = []
-          fv_attrs << %(appName="#{xml_escape(@file_version[:app_name])}") if @file_version[:app_name]
-          fv_attrs << %(lastEdited="#{xml_escape(@file_version[:last_edited])}") if @file_version[:last_edited]
-          fv_attrs << %(lowestEdited="#{xml_escape(@file_version[:lowest_edited])}") if @file_version[:lowest_edited]
-          fv_attrs << %(rupBuild="#{xml_escape(@file_version[:rup_build])}") if @file_version[:rup_build]
-          fv_attrs << %(codeName="#{xml_escape(@file_version[:code_name])}") if @file_version[:code_name]
-          parts << "<fileVersion #{fv_attrs.join(" ")}/>" unless fv_attrs.empty?
-        end
+            xml.tag("sheets") do
+              @sheet_order.each_with_index do |name, i|
+                state_attr = case @sheet_states[name]
+                             when :hidden then "hidden"
+                             when :very_hidden then "veryHidden"
+                             end
+                xml.empty_tag("sheet", { name: name || "", sheetId: i + 1, state: state_attr, "r:id": "rId#{i + 1}" })
+              end
+            end
 
-        # fileSharing
-        unless @file_sharing.empty?
-          fs_attrs = []
-          fs_attrs << 'readOnlyRecommended="1"' if @file_sharing[:read_only_recommended]
-          fs_attrs << %(userName="#{xml_escape(@file_sharing[:user_name])}") if @file_sharing[:user_name]
-          fs_attrs << %(algorithmName="#{xml_escape(@file_sharing[:algorithm_name])}") if @file_sharing[:algorithm_name]
-          fs_attrs << %(hashValue="#{xml_escape(@file_sharing[:hash_value])}") if @file_sharing[:hash_value]
-          fs_attrs << %(saltValue="#{xml_escape(@file_sharing[:salt_value])}") if @file_sharing[:salt_value]
-          fs_attrs << %(spinCount="#{xml_escape(@file_sharing[:spin_count])}") if @file_sharing[:spin_count]
-          parts << "<fileSharing #{fs_attrs.join(" ")}/>" unless fs_attrs.empty?
-        end
+            write_workbook_protection_xml(xml) if @workbook_protection
 
-        # workbookPr
-        unless @workbook_properties.empty?
-          attrs = []
-          attrs << %(date1904="#{@workbook_properties[:date1904] ? 1 : 0}") unless @workbook_properties[:date1904].nil?
-          attrs << %(dateCompatibility="0") if @workbook_properties[:date_compatibility] == false
-          attrs << %(defaultThemeVersion="#{xml_escape(@workbook_properties[:default_theme_version])}") if @workbook_properties[:default_theme_version]
-          attrs << %(codeName="#{xml_escape(@workbook_properties[:code_name])}") if @workbook_properties[:code_name]
-          attrs << %(filterPrivacy="1") if @workbook_properties[:filter_privacy]
-          attrs << %(autoCompressPictures="0") if @workbook_properties[:auto_compress_pictures] == false
-          attrs << %(backupFile="1") if @workbook_properties[:backup_file]
-          attrs << %(showObjects="#{xml_escape(@workbook_properties[:show_objects])}") if @workbook_properties[:show_objects]
-          attrs << %(updateLinks="#{xml_escape(@workbook_properties[:update_links])}") if @workbook_properties[:update_links]
-          attrs << %(refreshAllConnections="1") if @workbook_properties[:refresh_all_connections]
-          attrs << %(checkCompatibility="1") if @workbook_properties[:check_compatibility]
-          attrs << %(hidePivotFieldList="1") if @workbook_properties[:hide_pivot_field_list]
-          attrs << %(showBorderUnselectedTables="0") if @workbook_properties[:show_border_unselected_tables] == false
-          attrs << %(promptedSolutions="1") if @workbook_properties[:prompted_solutions]
-          attrs << %(showInkAnnotation="0") if @workbook_properties[:show_ink_annotation] == false
-          attrs << %(saveExternalLinkValues="0") if @workbook_properties[:save_external_link_values] == false
-          attrs << %(showPivotChartFilter="1") if @workbook_properties[:show_pivot_chart_filter]
-          attrs << %(allowRefreshQuery="1") if @workbook_properties[:allow_refresh_query]
-          attrs << %(publishItems="1") if @workbook_properties[:publish_items]
-          parts << "<workbookPr #{attrs.join(" ")}/>" unless attrs.empty?
-        end
+            unless @external_links.empty?
+              # rId for external links: after sheets + styles + optional SST + pivot caches
+              el_rid_base = @sheet_order.size + 1 + (@use_shared_strings ? 1 : 0) + 1 + pivot_cache_count
+              xml.tag("externalReferences") do
+                @external_links.each_with_index do |_, idx|
+                  xml.empty_tag("externalReference", { "r:id": "rId#{el_rid_base + idx}" })
+                end
+              end
+            end
 
-        # bookViews/workbookView
-        unless @workbook_views.empty?
-          attrs = []
-          attrs << %(visibility="#{xml_escape(@workbook_views[:visibility])}") if @workbook_views[:visibility]
-          attrs << 'minimized="1"' if @workbook_views[:minimized]
-          shs = @workbook_views[:show_horizontal_scroll]
-          attrs << %(showHorizontalScroll="#{shs ? 1 : 0}") unless shs.nil?
-          svs = @workbook_views[:show_vertical_scroll]
-          attrs << %(showVerticalScroll="#{svs ? 1 : 0}") unless svs.nil?
-          sst = @workbook_views[:show_sheet_tabs]
-          attrs << %(showSheetTabs="#{sst ? 1 : 0}") unless sst.nil?
-          attrs << %(xWindow="#{xml_escape(@workbook_views[:x_window])}") if @workbook_views[:x_window]
-          attrs << %(yWindow="#{xml_escape(@workbook_views[:y_window])}") if @workbook_views[:y_window]
-          attrs << %(windowWidth="#{xml_escape(@workbook_views[:window_width])}") if @workbook_views[:window_width]
-          attrs << %(windowHeight="#{xml_escape(@workbook_views[:window_height])}") if @workbook_views[:window_height]
-          attrs << %(tabRatio="#{xml_escape(@workbook_views[:tab_ratio])}") if @workbook_views[:tab_ratio]
-          attrs << %(firstSheet="#{xml_escape(@workbook_views[:first_sheet])}") if @workbook_views[:first_sheet]
-          at = @workbook_views[:active_sheet_index] || @workbook_views[:active_tab]
-          attrs << %(activeTab="#{xml_escape(at)}") if at
-          afdg = @workbook_views[:auto_filter_date_grouping]
-          attrs << %(autoFilterDateGrouping="#{afdg ? 1 : 0}") unless afdg.nil?
-          parts << "<bookViews>"
-          parts << "<workbookView #{attrs.join(" ")}/>" unless attrs.empty?
-          parts << "</bookViews>"
-        end
+            unless @defined_names.empty?
+              xml.tag("definedNames") do
+                @defined_names.each do |dn|
+                  attrs = {
+                    name: dn[:name] || "",
+                    localSheetId: dn[:local_sheet_id],
+                    hidden: (1 if dn[:hidden]),
+                    comment: dn[:comment],
+                    description: dn[:description],
+                    function: (1 if dn[:function]),
+                    vbProcedure: (1 if dn[:vb_procedure]),
+                    xlm: (1 if dn[:xlm]),
+                    shortcutKey: dn[:shortcut_key],
+                    publishToServer: (1 if dn[:publish_to_server]),
+                    workbookParameter: (1 if dn[:workbook_parameter]),
+                    functionGroupId: dn[:function_group_id],
+                    customMenu: dn[:custom_menu],
+                    help: dn[:help],
+                    statusBar: dn[:status_bar]
+                  }
+                  xml.text_tag("definedName", dn[:value] || "", attrs)
+                end
+              end
+            end
 
-        parts << "<sheets>"
-        @sheet_order.each_with_index do |name, i|
-          state = @sheet_states[name]
-          state_attr = case state
-                       when :hidden then ' state="hidden"'
-                       when :very_hidden then ' state="veryHidden"'
-                       else ""
-                       end
-          parts << %(<sheet name="#{xml_escape(name)}" sheetId="#{i + 1}"#{state_attr} r:id="rId#{i + 1}"/>)
-        end
-        parts << "</sheets>"
+            write_workbook_calc_pr_xml(xml)
 
-        # workbookProtection
-        if @workbook_protection
-          wp_attrs = []
-          wp_attrs << 'lockStructure="1"' if @workbook_protection[:lock_structure]
-          wp_attrs << 'lockWindows="1"' if @workbook_protection[:lock_windows]
-          wp_attrs << 'lockRevision="1"' if @workbook_protection[:lock_revision]
-          if @workbook_protection[:algorithm_name]
-            wp_attrs << %(workbookAlgorithmName="#{xml_escape(@workbook_protection[:algorithm_name])}")
-            wp_attrs << %(workbookHashValue="#{xml_escape(@workbook_protection[:hash_value])}") if @workbook_protection[:hash_value]
-            wp_attrs << %(workbookSaltValue="#{xml_escape(@workbook_protection[:salt_value])}") if @workbook_protection[:salt_value]
-            wp_attrs << %(workbookSpinCount="#{xml_escape(@workbook_protection[:spin_count])}") if @workbook_protection[:spin_count]
-          elsif @workbook_protection[:password]
-            wp_attrs << %(workbookPassword="#{xml_escape(@workbook_protection[:password])}")
+            if pivot_cache_count.positive?
+              # rId layout: sheets(1..N), styles(N+1), optional SST(N+2), then pivot caches
+              pivot_rid_base = @sheet_order.size + 1 + (@use_shared_strings ? 1 : 0) + 1
+              xml.tag("pivotCaches") do
+                pivot_cache_count.times do |ci|
+                  xml.empty_tag("pivotCache", { cacheId: ci + 1, "r:id": "rId#{pivot_rid_base + ci}" })
+                end
+              end
+            end
+
+            unless @file_recovery_properties.empty?
+              frp = @file_recovery_properties
+              frp_attrs = {
+                autoRecover: xml_bool_attr(frp[:auto_recover]),
+                crashSave: xml_bool_attr(frp[:crash_save]),
+                dataExtractLoad: xml_bool_attr(frp[:data_extract_load]),
+                repairLoad: xml_bool_attr(frp[:repair_load])
+              }.compact
+              xml.empty_tag("fileRecoveryPr", frp_attrs) unless frp_attrs.empty?
+            end
           end
-          if @workbook_protection[:revisions_algorithm_name]
-            wp_attrs << %(revisionsAlgorithmName="#{xml_escape(@workbook_protection[:revisions_algorithm_name])}")
-            wp_attrs << %(revisionsHashValue="#{xml_escape(@workbook_protection[:revisions_hash_value])}") if @workbook_protection[:revisions_hash_value]
-            wp_attrs << %(revisionsSaltValue="#{xml_escape(@workbook_protection[:revisions_salt_value])}") if @workbook_protection[:revisions_salt_value]
-            wp_attrs << %(revisionsSpinCount="#{xml_escape(@workbook_protection[:revisions_spin_count])}") if @workbook_protection[:revisions_spin_count]
-          elsif @workbook_protection[:revisions_password]
-            wp_attrs << %(revisionsPassword="#{xml_escape(@workbook_protection[:revisions_password])}")
-          end
-          parts << "<workbookProtection #{wp_attrs.join(" ")}/>" unless wp_attrs.empty?
         end
-
-        # externalReferences
-        unless @external_links.empty?
-          # rId for external links: after sheets + styles + optional SST + pivot caches
-          el_rid_base = @sheet_order.size + 1 + (@use_shared_strings ? 1 : 0) + 1 + pivot_cache_count
-          parts << "<externalReferences>"
-          @external_links.each_with_index do |_, idx|
-            parts << %(<externalReference r:id="rId#{xml_escape(el_rid_base + idx)}"/>)
-          end
-          parts << "</externalReferences>"
-        end
-
-        # definedNames
-        unless @defined_names.empty?
-          parts << "<definedNames>"
-          @defined_names.each do |dn|
-            attrs = %(name="#{xml_escape(dn[:name])}")
-            attrs << %( localSheetId="#{xml_escape(dn[:local_sheet_id])}") if dn[:local_sheet_id]
-            attrs << ' hidden="1"' if dn[:hidden]
-            attrs << %( comment="#{xml_escape(dn[:comment])}") if dn[:comment]
-            attrs << %( description="#{xml_escape(dn[:description])}") if dn[:description]
-            attrs << ' function="1"' if dn[:function]
-            attrs << ' vbProcedure="1"' if dn[:vb_procedure]
-            attrs << ' xlm="1"' if dn[:xlm]
-            attrs << %( shortcutKey="#{xml_escape(dn[:shortcut_key])}") if dn[:shortcut_key]
-            attrs << ' publishToServer="1"' if dn[:publish_to_server]
-            attrs << ' workbookParameter="1"' if dn[:workbook_parameter]
-            attrs << %( functionGroupId="#{xml_escape(dn[:function_group_id])}") if dn[:function_group_id]
-            attrs << %( customMenu="#{xml_escape(dn[:custom_menu])}") if dn[:custom_menu]
-            attrs << %( help="#{xml_escape(dn[:help])}") if dn[:help]
-            attrs << %( statusBar="#{xml_escape(dn[:status_bar])}") if dn[:status_bar]
-            parts << "<definedName #{attrs}>#{xml_escape(dn[:value])}</definedName>"
-          end
-          parts << "</definedNames>"
-        end
-
-        # calcPr
-        unless @calc_properties.empty?
-          attrs = []
-          attrs << %(calcId="#{xml_escape(@calc_properties[:calc_id])}") if @calc_properties[:calc_id]
-          attrs << %(calcMode="#{xml_escape(@calc_properties[:calc_mode])}") if @calc_properties[:calc_mode]
-          attrs << %(fullCalcOnLoad="#{@calc_properties[:full_calc_on_load] ? 1 : 0}") unless @calc_properties[:full_calc_on_load].nil?
-          attrs << %(iterate="#{@calc_properties[:iterate] ? 1 : 0}") unless @calc_properties[:iterate].nil?
-          attrs << %(iterateCount="#{xml_escape(@calc_properties[:iterate_count])}") if @calc_properties[:iterate_count]
-          attrs << %(iterateDelta="#{xml_escape(@calc_properties[:iterate_delta])}") if @calc_properties[:iterate_delta]
-          attrs << %(refMode="#{xml_escape(@calc_properties[:ref_mode])}") if @calc_properties[:ref_mode]
-          attrs << %(calcCompleted="#{@calc_properties[:calc_completed] ? 1 : 0}") unless @calc_properties[:calc_completed].nil?
-          attrs << %(calcOnSave="#{@calc_properties[:calc_on_save] ? 1 : 0}") unless @calc_properties[:calc_on_save].nil?
-          fp = @calc_properties[:full_precision]
-          attrs << %(fullPrecision="#{fp ? 1 : 0}") unless fp.nil?
-          conc = @calc_properties[:concurrent_calc]
-          attrs << %(concurrentCalc="#{conc ? 1 : 0}") unless conc.nil?
-          attrs << %(concurrentManualCount="#{xml_escape(@calc_properties[:concurrent_manual_count])}") if @calc_properties[:concurrent_manual_count]
-          ffc = @calc_properties[:force_full_calc]
-          attrs << %(forceFullCalc="#{ffc ? 1 : 0}") unless ffc.nil?
-          parts << "<calcPr #{attrs.join(" ")}/>" unless attrs.empty?
-        end
-
-        # pivotCaches (reference from workbook to cache definition rels)
-        if pivot_cache_count.positive?
-          # rId layout: sheets(1..N), styles(N+1), optional SST(N+2), then pivot caches
-          pivot_rid_base = @sheet_order.size + 1 + (@use_shared_strings ? 1 : 0) + 1
-          parts << "<pivotCaches>"
-          pivot_cache_count.times do |ci|
-            parts << %(<pivotCache cacheId="#{xml_escape(ci + 1)}" r:id="rId#{xml_escape(pivot_rid_base + ci)}"/>)
-          end
-          parts << "</pivotCaches>"
-        end
-
-        # fileRecoveryPr
-        unless @file_recovery_properties.empty?
-          frp_attrs = []
-          ar = @file_recovery_properties[:auto_recover]
-          frp_attrs << %(autoRecover="#{ar ? 1 : 0}") unless ar.nil?
-          cs = @file_recovery_properties[:crash_save]
-          frp_attrs << %(crashSave="#{cs ? 1 : 0}") unless cs.nil?
-          del = @file_recovery_properties[:data_extract_load]
-          frp_attrs << %(dataExtractLoad="#{del ? 1 : 0}") unless del.nil?
-          rl = @file_recovery_properties[:repair_load]
-          frp_attrs << %(repairLoad="#{rl ? 1 : 0}") unless rl.nil?
-          parts << "<fileRecoveryPr #{frp_attrs.join(" ")}/>" unless frp_attrs.empty?
-        end
-
-        parts << "</workbook>"
-        parts.join
       end
 
-      # : (?has_calc_chain: bool) -> untyped
+      # : (?has_calc_chain: bool) -> ::String
       def generate_workbook_rels(has_calc_chain: false)
-        parts = [
-          XML_HEADER,
-          %(<Relationships xmlns="#{REL_NS}">)
-        ]
-        @sheet_order.each_with_index do |_, i|
-          parts << %(<Relationship Id="rId#{i + 1}" Type="#{DOC_REL_NS}/worksheet" Target="worksheets/sheet#{i + 1}.xml"/>)
+        XmlBuilder.build(declaration: :plain) do |xml|
+          xml.tag("Relationships", { xmlns: REL_NS }) do
+            @sheet_order.each_with_index do |_, i|
+              xml.empty_tag("Relationship", { Id: "rId#{i + 1}", Type: "#{DOC_REL_NS}/worksheet", Target: "worksheets/sheet#{i + 1}.xml" })
+            end
+            next_rid = @sheet_order.size + 1
+            xml.empty_tag("Relationship", { Id: "rId#{next_rid}", Type: "#{DOC_REL_NS}/styles", Target: "styles.xml" })
+            next_rid += 1
+            if @use_shared_strings
+              xml.empty_tag("Relationship", { Id: "rId#{next_rid}", Type: "#{DOC_REL_NS}/sharedStrings", Target: "sharedStrings.xml" })
+              next_rid += 1
+            end
+            (1..@pivot_cache_count.to_i).each do |c|
+              xml.empty_tag("Relationship", { Id: "rId#{next_rid}", Type: "#{DOC_REL_NS}/pivotCacheDefinition", Target: "pivotCache/pivotCacheDefinition#{c}.xml" })
+              next_rid += 1
+            end
+            @external_links.each_with_index do |_, idx|
+              xml.empty_tag("Relationship", { Id: "rId#{next_rid}", Type: "#{DOC_REL_NS}/externalLink", Target: "externalLinks/externalLink#{idx + 1}.xml" })
+              next_rid += 1
+            end
+            if has_calc_chain
+              xml.empty_tag("Relationship", { Id: "rId#{next_rid}", Type: "#{DOC_REL_NS}/calcChain", Target: "calcChain.xml" })
+              next_rid += 1
+            end
+            if @persons_data.any?
+              xml.empty_tag(
+                "Relationship",
+                {
+                  Id: "rId#{next_rid}",
+                  Type: "http://schemas.microsoft.com/office/2017/10/relationships/person",
+                  Target: "persons/person.xml"
+                }
+              )
+            end
+          end
         end
-        next_rid = @sheet_order.size + 1
-        parts << %(<Relationship Id="rId#{xml_escape(next_rid)}" Type="#{DOC_REL_NS}/styles" Target="styles.xml"/>)
-        next_rid += 1
-        if @use_shared_strings
-          parts << %(<Relationship Id="rId#{xml_escape(next_rid)}" Type="#{DOC_REL_NS}/sharedStrings" Target="sharedStrings.xml"/>)
-          next_rid += 1
-        end
-        (1..@pivot_cache_count.to_i).each do |c|
-          parts << %(<Relationship Id="rId#{xml_escape(next_rid)}" Type="#{DOC_REL_NS}/pivotCacheDefinition" Target="pivotCache/pivotCacheDefinition#{xml_escape(c)}.xml"/>)
-          next_rid += 1
-        end
-        @external_links.each_with_index do |_, idx|
-          parts << %(<Relationship Id="rId#{xml_escape(next_rid)}" Type="#{DOC_REL_NS}/externalLink" Target="externalLinks/externalLink#{xml_escape(idx + 1)}.xml"/>)
-          next_rid += 1
-        end
-        if has_calc_chain
-          parts << %(<Relationship Id="rId#{xml_escape(next_rid)}" Type="#{DOC_REL_NS}/calcChain" Target="calcChain.xml"/>)
-          next_rid += 1
-        end
-        if @persons_data.any?
-          parts << %(<Relationship Id="rId#{xml_escape(next_rid)}" Type="http://schemas.microsoft.com/office/2017/10/relationships/person" Target="persons/person.xml"/>)
-          next_rid += 1
-        end
-        parts << "</Relationships>"
-        parts.join
       end
 
-      # : () -> (nil | untyped)
+      # : () -> (nil | ::String)
       def generate_calc_chain_xml
         chain_entries = []
         @sheet_order.each_with_index do |sheet_name, i|
@@ -2528,627 +2408,221 @@ module Xlsxrb
         end
         return nil if chain_entries.empty?
 
-        parts = [XML_HEADER, %(<calcChain xmlns="#{SSML_NS}">)]
-        chain_entries.each do |entry|
-          parts << %(<c r="#{xml_escape(entry[:ref])}" i="#{xml_escape(entry[:sheet_id])}"/>)
+        XmlBuilder.build(declaration: :plain) do |xml|
+          xml.tag("calcChain", { xmlns: SSML_NS }) do
+            chain_entries.each do |entry|
+              xml.empty_tag("c", { r: entry[:ref] || "", i: entry[:sheet_id] || "" })
+            end
+          end
         end
-        parts << "</calcChain>"
-        parts.join
       end
 
-      # : (untyped sheet_cells, untyped sheet_col_widths, untyped sheet_col_attrs, untyped sheet_row_attrs, untyped sheet_auto_filter, untyped sheet_filter_cols, untyped sheet_sort, untyped sheet_merge_cells, untyped sheet_hyperlinks, untyped sheet_cell_styles, untyped sheet_props, untyped sheet_fmt, untyped sheet_sv, untyped sheet_fp, untyped sheet_sel, untyped sheet_po, untyped sheet_pm, untyped sheet_ps, untyped sheet_hf, untyped sheet_rb, untyped sheet_cb, untyped sheet_dv, untyped sheet_cf, ?untyped? sst, ?untyped sheet_tables, ?::Integer hyperlink_count, ?has_drawing: bool, ?has_comments: bool, ?sheet_prot: untyped?, ?vml_rid: untyped?, ?phonetic_pr: untyped?, ?dv_options: ::Hash[untyped, untyped], ?prot_ranges: untyped, ?cell_watches: untyped, ?ignored_errors: untyped, ?data_consol: untyped?, ?sheet_scenarios: untyped?, ?cell_phonetic: ::Hash[untyped, untyped]) -> untyped
+      # : (untyped sheet_cells, untyped sheet_col_widths, untyped sheet_col_attrs, untyped sheet_row_attrs, untyped sheet_auto_filter, untyped sheet_filter_cols, untyped sheet_sort, untyped sheet_merge_cells, untyped sheet_hyperlinks, untyped sheet_cell_styles, untyped sheet_props, untyped sheet_fmt, untyped sheet_sv, untyped sheet_fp, untyped sheet_sel, untyped sheet_po, untyped sheet_pm, untyped sheet_ps, untyped sheet_hf, untyped sheet_rb, untyped sheet_cb, untyped sheet_dv, untyped sheet_cf, ?untyped? sst, ?untyped sheet_tables, ?::Integer hyperlink_count, ?has_drawing: bool, ?has_comments: bool, ?sheet_prot: untyped?, ?vml_rid: untyped?, ?phonetic_pr: untyped?, ?dv_options: ::Hash[untyped, untyped], ?prot_ranges: untyped, ?cell_watches: untyped, ?ignored_errors: untyped, ?data_consol: untyped?, ?sheet_scenarios: untyped?, ?cell_phonetic: ::Hash[untyped, untyped]) -> ::String
       def generate_worksheet_xml(sheet_cells, sheet_col_widths, sheet_col_attrs, sheet_row_attrs, sheet_auto_filter, sheet_filter_cols, sheet_sort, sheet_merge_cells, sheet_hyperlinks, sheet_cell_styles, sheet_props, sheet_fmt, sheet_sv, sheet_fp, sheet_sel, sheet_po, sheet_pm, sheet_ps, sheet_hf, sheet_rb, sheet_cb, sheet_dv, sheet_cf, sst = nil, sheet_tables = [], hyperlink_count = 0, has_drawing: false, has_comments: false, sheet_prot: nil, vml_rid: nil, phonetic_pr: nil, dv_options: {}, prot_ranges: [], cell_watches: [], ignored_errors: [], data_consol: nil, sheet_scenarios: nil, cell_phonetic: {})
         needs_r_ns = !sheet_hyperlinks.empty? || sheet_tables.any? || has_drawing || has_comments
-        worksheet_attrs = %(xmlns="#{SSML_NS}")
-        worksheet_attrs << %( xmlns:r="#{DOC_REL_NS}") if needs_r_ns
-        parts = [
-          XML_HEADER,
-          "<worksheet #{worksheet_attrs}>"
-        ]
+        XmlBuilder.build(declaration: :plain) do |xml|
+          xml.tag("worksheet", { xmlns: SSML_NS, "xmlns:r": (DOC_REL_NS if needs_r_ns) }) do
+            write_sheet_pr_xml(xml, sheet_props) unless sheet_props.empty?
+            xml.empty_tag("dimension", { ref: compute_dimension(sheet_cells) }) unless sheet_cells.empty?
+            write_sheet_views_xml(xml, sheet_sv, sheet_fp, sheet_sel) if !sheet_sv.empty? || sheet_fp || sheet_sel
 
-        # Emit <sheetPr> if sheet properties are defined.
-        unless sheet_props.empty?
-          sp_attrs = []
-          sp_attrs << 'syncHorizontal="1"' if sheet_props[:sync_horizontal]
-          sp_attrs << 'syncVertical="1"' if sheet_props[:sync_vertical]
-          sp_attrs << %(syncRef="#{xml_escape(sheet_props[:sync_ref])}") if sheet_props[:sync_ref]
-          sp_attrs << 'transitionEvaluation="1"' if sheet_props[:transition_evaluation]
-          sp_attrs << 'transitionEntry="1"' if sheet_props[:transition_entry]
-          sp_attrs << %(codeName="#{xml_escape(sheet_props[:code_name])}") if sheet_props[:code_name]
-          sp_attrs << 'filterMode="1"' if sheet_props[:filter_mode]
-          sp_attrs << 'published="0"' if sheet_props[:published] == false
-          sp_attrs << 'enableFormatConditionsCalculation="0"' if sheet_props[:enable_format_conditions_calculation] == false
-          sp_children = []
-          tc = sheet_props[:tab_color]
-          if tc.is_a?(Hash)
-            tc_attrs = []
-            tc_attrs << 'auto="1"' if tc[:auto]
-            tc_attrs << %(indexed="#{xml_escape(tc[:indexed])}") if tc[:indexed]
-            tc_attrs << %(rgb="#{xml_escape(tc[:rgb].to_s.delete_prefix("#"))}") if tc[:rgb]
-            tc_attrs << %(theme="#{xml_escape(tc[:theme])}") if tc[:theme]
-            tc_attrs << %(tint="#{xml_escape(tc[:tint])}") if tc[:tint]
-            sp_children << "<tabColor #{tc_attrs.join(" ")}/>" unless tc_attrs.empty?
-          elsif tc
-            sp_children << %(<tabColor rgb="#{xml_escape(tc.to_s.delete_prefix("#"))}"/>)
-          elsif sheet_props[:tab_color_theme]
-            tc_attrs = [%(theme="#{xml_escape(sheet_props[:tab_color_theme])}")]
-            tc_attrs << %(tint="#{xml_escape(sheet_props[:tab_color_tint])}") if sheet_props[:tab_color_tint]
-            sp_children << "<tabColor #{tc_attrs.join(" ")}/>"
-          elsif sheet_props[:tab_color_indexed]
-            sp_children << %(<tabColor indexed="#{xml_escape(sheet_props[:tab_color_indexed])}"/>)
-          elsif sheet_props[:tab_color_auto]
-            sp_children << '<tabColor auto="1"/>'
-          end
-          sb = sheet_props[:summary_below]
-          sr = sheet_props[:summary_right]
-          as = sheet_props[:apply_styles]
-          sos = sheet_props[:show_outline_symbols]
-          unless sb.nil? && sr.nil? && as.nil? && sos.nil?
-            outline_attrs = []
-            outline_attrs << %(applyStyles="#{as ? 1 : 0}") unless as.nil?
-            outline_attrs << %(summaryBelow="#{sb ? 1 : 0}") unless sb.nil?
-            outline_attrs << %(summaryRight="#{sr ? 1 : 0}") unless sr.nil?
-            outline_attrs << %(showOutlineSymbols="#{sos ? 1 : 0}") unless sos.nil?
-            sp_children << "<outlinePr #{outline_attrs.join(" ")}/>"
-          end
-          psp = sheet_props[:page_setup_properties] || sheet_props[:page_setup_pr]
-          ftp = sheet_props[:fit_to_page]
-          ftp = psp[:fit_to_page] if ftp.nil? && psp.is_a?(Hash)
-          apb = sheet_props[:auto_page_breaks]
-          apb = psp[:auto_page_breaks] if apb.nil? && psp.is_a?(Hash)
-          unless ftp.nil? && apb.nil?
-            psp_attrs = []
-            psp_attrs << %(fitToPage="#{ftp ? 1 : 0}") unless ftp.nil?
-            psp_attrs << %(autoPageBreaks="#{apb ? 1 : 0}") unless apb.nil?
-            sp_children << "<pageSetUpPr #{psp_attrs.join(" ")}/>"
-          end
-          if !sp_children.empty? || !sp_attrs.empty?
-            sp_open = sp_attrs.empty? ? "<sheetPr>" : "<sheetPr #{sp_attrs.join(" ")}>"
-            parts << sp_open
-            parts.concat(sp_children)
-            parts << "</sheetPr>"
-          end
-        end
-
-        # Emit <dimension> computed from cell addresses.
-        parts << %(<dimension ref="#{xml_escape(compute_dimension(sheet_cells))}"/>) unless sheet_cells.empty?
-
-        # Emit <sheetViews> if sheet view properties, freeze pane, or selection are defined.
-        if !sheet_sv.empty? || sheet_fp || sheet_sel
-          parts << "<sheetViews>"
-          sv_attrs = []
-          wp = sheet_sv[:window_protection]
-          sv_attrs << %(windowProtection="#{wp ? 1 : 0}") unless wp.nil?
-          sf = sheet_sv[:show_formulas]
-          sv_attrs << %(showFormulas="#{sf ? 1 : 0}") unless sf.nil?
-          sgl = sheet_sv[:show_grid_lines]
-          sv_attrs << %(showGridLines="#{sgl ? 1 : 0}") unless sgl.nil?
-          srch = sheet_sv[:show_row_col_headers]
-          sv_attrs << %(showRowColHeaders="#{srch ? 1 : 0}") unless srch.nil?
-          sz = sheet_sv[:show_zeros]
-          sv_attrs << %(showZeros="#{sz ? 1 : 0}") unless sz.nil?
-          rtl = sheet_sv[:right_to_left]
-          sv_attrs << %(rightToLeft="#{rtl ? 1 : 0}") unless rtl.nil?
-          sv_attrs << 'tabSelected="1"' if sheet_sv[:tab_selected]
-          sr = sheet_sv[:show_ruler]
-          sv_attrs << %(showRuler="#{sr ? 1 : 0}") unless sr.nil?
-          sos = sheet_sv[:show_outline_symbols]
-          sv_attrs << %(showOutlineSymbols="#{sos ? 1 : 0}") unless sos.nil?
-          dgc = sheet_sv[:default_grid_color]
-          sv_attrs << %(defaultGridColor="#{dgc ? 1 : 0}") unless dgc.nil?
-          sws = sheet_sv[:show_white_space]
-          sv_attrs << %(showWhiteSpace="#{sws ? 1 : 0}") unless sws.nil?
-          sv_attrs << %(view="#{xml_escape(sheet_sv[:view])}") if sheet_sv[:view]
-          sv_attrs << %(topLeftCell="#{xml_escape(sheet_sv[:top_left_cell])}") if sheet_sv[:top_left_cell]
-          sv_attrs << %(colorId="#{xml_escape(sheet_sv[:color_id])}") if sheet_sv[:color_id]
-          zs = sheet_sv[:zoom_scale]
-          sv_attrs << %(zoomScale="#{xml_escape(zs)}") if zs
-          sv_attrs << %(zoomScaleNormal="#{xml_escape(sheet_sv[:zoom_scale_normal])}") if sheet_sv[:zoom_scale_normal]
-          sv_attrs << %(zoomScaleSheetLayoutView="#{xml_escape(sheet_sv[:zoom_scale_sheet_layout_view])}") if sheet_sv[:zoom_scale_sheet_layout_view]
-          sv_attrs << %(zoomScalePageLayoutView="#{xml_escape(sheet_sv[:zoom_scale_page_layout_view])}") if sheet_sv[:zoom_scale_page_layout_view]
-          sv_attrs << 'workbookViewId="0"'
-          parts << "<sheetView #{sv_attrs.join(" ")}>"
-
-          if sheet_fp && sheet_fp[:state] == :split
-            pane_attrs = []
-            pane_attrs << %(xSplit="#{xml_escape(sheet_fp[:x_split])}") if sheet_fp[:x_split].to_i.positive?
-            pane_attrs << %(ySplit="#{xml_escape(sheet_fp[:y_split])}") if sheet_fp[:y_split].to_i.positive?
-            pane_attrs << %(topLeftCell="#{xml_escape(sheet_fp[:top_left_cell])}") if sheet_fp[:top_left_cell]
-            has_x = sheet_fp[:x_split].to_i.positive?
-            has_y = sheet_fp[:y_split].to_i.positive?
-            active_pane = if has_y && has_x
-                            "bottomRight"
-                          elsif has_y
-                            "bottomLeft"
-                          else
-                            "topRight"
-                          end
-            pane_attrs << %(activePane="#{xml_escape(active_pane)}")
-            parts << "<pane #{pane_attrs.join(" ")}/>"
-          elsif sheet_fp
-            fp_col = sheet_fp[:column] || sheet_fp[:col] || 0
-            if sheet_fp[:row].to_i.positive? || fp_col.to_i.positive?
-              top_left = "#{index_to_column_letter(fp_col.to_i + 1)}#{sheet_fp[:row].to_i + 1}"
-              pane_attrs = []
-              pane_attrs << %(ySplit="#{xml_escape(sheet_fp[:row])}") if sheet_fp[:row].to_i.positive?
-              pane_attrs << %(xSplit="#{xml_escape(fp_col)}") if fp_col.to_i.positive?
-              pane_attrs << %(topLeftCell="#{xml_escape(top_left)}")
-              active_pane = if sheet_fp[:row].to_i.positive? && fp_col.to_i.positive?
-                              "bottomRight"
-                            elsif sheet_fp[:row].to_i.positive?
-                              "bottomLeft"
-                            else
-                              "topRight"
-                            end
-              pane_attrs << %(activePane="#{xml_escape(active_pane)}")
-              pane_attrs << 'state="frozen"'
-              parts << "<pane #{pane_attrs.join(" ")}/>"
+            unless sheet_fmt.empty?
+              xml.empty_tag(
+                "sheetFormatPr",
+                {
+                  defaultRowHeight: sheet_fmt[:default_row_height],
+                  defaultColWidth: sheet_fmt[:default_col_width],
+                  baseColWidth: sheet_fmt[:base_col_width],
+                  outlineLevelRow: sheet_fmt[:outline_level_row],
+                  outlineLevelCol: sheet_fmt[:outline_level_col],
+                  customHeight: (1 if sheet_fmt[:custom_height]),
+                  zeroHeight: (1 if sheet_fmt[:zero_height]),
+                  thickTop: (1 if sheet_fmt[:thick_top]),
+                  thickBottom: (1 if sheet_fmt[:thick_bottom])
+                }
+              )
             end
-          end
 
-          if sheet_sel
-            sel_attrs = []
-            sel_attrs << %(pane="#{xml_escape(sheet_sel[:pane])}") if sheet_sel[:pane]
-            sel_attrs << %(activeCell="#{xml_escape(sheet_sel[:active_cell])}") if sheet_sel[:active_cell]
-            sel_attrs << %(activeCellId="#{xml_escape(sheet_sel[:active_cell_id])}") if sheet_sel[:active_cell_id]
-            sel_attrs << %(sqref="#{xml_escape(sheet_sel[:sqref])}") if sheet_sel[:sqref]
-            parts << "<selection #{sel_attrs.join(" ")}/>"
-          end
-
-          parts << "</sheetView>"
-          parts << "</sheetViews>"
-        end
-
-        # Emit <sheetFormatPr> if sheet format properties are defined.
-        unless sheet_fmt.empty?
-          fmt_attrs = []
-          fmt_attrs << %(defaultRowHeight="#{xml_escape(sheet_fmt[:default_row_height])}") if sheet_fmt[:default_row_height]
-          fmt_attrs << %(defaultColWidth="#{xml_escape(sheet_fmt[:default_col_width])}") if sheet_fmt[:default_col_width]
-          fmt_attrs << %(baseColWidth="#{xml_escape(sheet_fmt[:base_col_width])}") if sheet_fmt[:base_col_width]
-          fmt_attrs << %(outlineLevelRow="#{xml_escape(sheet_fmt[:outline_level_row])}") if sheet_fmt[:outline_level_row]
-          fmt_attrs << %(outlineLevelCol="#{xml_escape(sheet_fmt[:outline_level_col])}") if sheet_fmt[:outline_level_col]
-          fmt_attrs << 'customHeight="1"' if sheet_fmt[:custom_height]
-          fmt_attrs << 'zeroHeight="1"' if sheet_fmt[:zero_height]
-          fmt_attrs << 'thickTop="1"' if sheet_fmt[:thick_top]
-          fmt_attrs << 'thickBottom="1"' if sheet_fmt[:thick_bottom]
-          parts << "<sheetFormatPr #{fmt_attrs.join(" ")}/>"
-        end
-
-        # Emit <cols> if column widths or column attributes are defined.
-        all_cols = sheet_col_widths.keys | sheet_col_attrs.keys
-        unless all_cols.empty?
-          parts << "<cols>"
-          all_cols.sort_by { |col| column_letter_to_index(col) }.each do |col_letter|
-            idx = column_letter_to_index(col_letter)
-            width = sheet_col_widths[col_letter]
-            ca = sheet_col_attrs[col_letter] || {}
-            col_attrs = %(min="#{xml_escape(idx)}" max="#{xml_escape(idx)}")
-            col_attrs << %( width="#{xml_escape(width)}" customWidth="1") if width
-            col_attrs << ' hidden="1"' if ca[:hidden]
-            col_attrs << ' bestFit="1"' if ca[:best_fit]
-            col_attrs << %( outlineLevel="#{xml_escape(ca[:outline_level])}") if ca[:outline_level]
-            col_attrs << ' collapsed="1"' if ca[:collapsed]
-            col_attrs << %( style="#{xml_escape(ca[:style])}") if ca[:style]
-            col_attrs << ' phonetic="1"' if ca[:phonetic]
-            parts << "<col #{col_attrs}/>"
-          end
-          parts << "</cols>"
-        end
-
-        parts << "<sheetData>"
-
-        # Group cells by row number.
-        cells_by_row = {}
-        sheet_cells.each do |address, value|
-          row_num = extract_row_number(address)
-          col_letter = extract_column_letter(address)
-          cells_by_row[row_num] ||= {}
-          cells_by_row[row_num][col_letter] = value
-        end
-
-        # Include rows that have attributes but no cells.
-        sheet_row_attrs.each_key { |rn| cells_by_row[rn] ||= {} }
-
-        # Emit rows in ascending order.
-        cells_by_row.sort.each do |row_num, row_cells|
-          attrs = %(r="#{xml_escape(row_num)}")
-          ra = sheet_row_attrs[row_num]
-          if ra
-            attrs << %( ht="#{xml_escape(ra[:height])}" customHeight="1") if ra[:height]
-            attrs << ' hidden="1"' if ra[:hidden]
-            attrs << %( outlineLevel="#{xml_escape(ra[:outline_level])}") if ra[:outline_level]
-            attrs << ' collapsed="1"' if ra[:collapsed]
-            attrs << %( s="#{xml_escape(ra[:style])}" customFormat="1") if ra.key?(:style)
-            attrs << ' thickTop="1"' if ra[:thick_top]
-            attrs << ' thickBot="1"' if ra[:thick_bot]
-            attrs << ' ph="1"' if ra[:ph]
-          end
-          parts << "<row #{attrs}>"
-          row_cells.sort_by { |col, _| column_letter_to_index(col) }.each do |col_letter, value|
-            cell_ref = "#{col_letter}#{row_num}"
-            style_idx = resolve_style_index(sheet_cell_styles[cell_ref])
-            parts << cell_xml(cell_ref, value, style_idx, sst, ph: cell_phonetic[cell_ref])
-          end
-          parts << "</row>"
-        end
-
-        parts << "</sheetData>"
-
-        # Emit <sheetCalcPr> if fullCalcOnLoad is set.
-        parts << '<sheetCalcPr fullCalcOnLoad="1"/>' if sheet_props[:full_calc_on_load]
-
-        # Emit <sheetProtection> if defined.
-        if sheet_prot
-          sp_attrs = []
-          sp_attrs << 'sheet="1"' if sheet_prot[:sheet] != false
-          sp_attrs << 'objects="1"' if sheet_prot[:objects]
-          sp_attrs << 'scenarios="1"' if sheet_prot[:scenarios]
-          sp_attrs << 'formatCells="0"' if sheet_prot[:format_cells] == false
-          sp_attrs << 'formatColumns="0"' if sheet_prot[:format_columns] == false
-          sp_attrs << 'formatRows="0"' if sheet_prot[:format_rows] == false
-          sp_attrs << 'insertColumns="0"' if sheet_prot[:insert_columns] == false
-          sp_attrs << 'insertRows="0"' if sheet_prot[:insert_rows] == false
-          sp_attrs << 'insertHyperlinks="0"' if sheet_prot[:insert_hyperlinks] == false
-          sp_attrs << 'deleteColumns="0"' if sheet_prot[:delete_columns] == false
-          sp_attrs << 'deleteRows="0"' if sheet_prot[:delete_rows] == false
-          sp_attrs << 'selectLockedCells="1"' if sheet_prot[:select_locked_cells]
-          sp_attrs << 'sort="0"' if sheet_prot[:sort] == false
-          sp_attrs << 'autoFilter="0"' if sheet_prot[:auto_filter] == false
-          sp_attrs << 'pivotTables="0"' if sheet_prot[:pivot_tables] == false
-          sp_attrs << 'selectUnlockedCells="1"' if sheet_prot[:select_unlocked_cells]
-          if sheet_prot[:algorithm_name]
-            sp_attrs << %(algorithmName="#{xml_escape(sheet_prot[:algorithm_name])}")
-            sp_attrs << %(hashValue="#{xml_escape(sheet_prot[:hash_value])}") if sheet_prot[:hash_value]
-            sp_attrs << %(saltValue="#{xml_escape(sheet_prot[:salt_value])}") if sheet_prot[:salt_value]
-            sp_attrs << %(spinCount="#{xml_escape(sheet_prot[:spin_count])}") if sheet_prot[:spin_count]
-          elsif sheet_prot[:password]
-            sp_attrs << %(password="#{xml_escape(sheet_prot[:password])}")
-          end
-          parts << "<sheetProtection #{sp_attrs.join(" ")}/>"
-        end
-
-        # Emit <protectedRanges> if defined.
-        unless prot_ranges.empty?
-          parts << "<protectedRanges>"
-          prot_ranges.each do |pr|
-            pr_attrs = [%(sqref="#{xml_escape(pr[:sqref])}"), %(name="#{xml_escape(pr[:name])}")]
-            if pr[:algorithm_name]
-              pr_attrs << %(algorithmName="#{xml_escape(pr[:algorithm_name])}")
-              pr_attrs << %(hashValue="#{xml_escape(pr[:hash_value])}") if pr[:hash_value]
-              pr_attrs << %(saltValue="#{xml_escape(pr[:salt_value])}") if pr[:salt_value]
-              pr_attrs << %(spinCount="#{xml_escape(pr[:spin_count])}") if pr[:spin_count]
-            end
-            sds = pr[:security_descriptors] || []
-            if sds.empty?
-              parts << "<protectedRange #{pr_attrs.join(" ")}/>"
-            else
-              parts << "<protectedRange #{pr_attrs.join(" ")}>"
-              sds.each { |sd| parts << "<securityDescriptor>#{xml_escape(sd)}</securityDescriptor>" }
-              parts << "</protectedRange>"
-            end
-          end
-          parts << "</protectedRanges>"
-        end
-
-        # Emit <scenarios> if defined.
-        if sheet_scenarios
-          sc_attrs = []
-          sc_attrs << %(current="#{xml_escape(sheet_scenarios[:current])}") if sheet_scenarios[:current]
-          sc_attrs << %(show="#{xml_escape(sheet_scenarios[:show])}") if sheet_scenarios[:show]
-          sc_attrs << %(sqref="#{xml_escape(sheet_scenarios[:sqref])}") if sheet_scenarios[:sqref]
-          items = sheet_scenarios[:scenarios] || []
-          sc_attr_str = sc_attrs.empty? ? "" : " #{sc_attrs.join(" ")}"
-          parts << "<scenarios#{sc_attr_str}>"
-          items.each do |sc|
-            s_attrs = [%(name="#{xml_escape(sc[:name])}")]
-            s_attrs << 'locked="1"' if sc[:locked]
-            s_attrs << 'hidden="1"' if sc[:hidden]
-            s_attrs << %(count="#{sc[:input_cells].size}") if sc[:input_cells]&.any?
-            s_attrs << %(user="#{xml_escape(sc[:user])}") if sc[:user]
-            s_attrs << %(comment="#{xml_escape(sc[:comment])}") if sc[:comment]
-            parts << "<scenario #{s_attrs.join(" ")}>"
-            (sc[:input_cells] || []).each do |ic|
-              ic_attrs = [%(r="#{xml_escape(ic[:r])}"), %(val="#{xml_escape(ic[:val].to_s)}")]
-              ic_attrs << 'deleted="1"' if ic[:deleted]
-              ic_attrs << 'undone="1"' if ic[:undone]
-              ic_attrs << %(numFmtId="#{xml_escape(ic[:num_fmt_id])}") if ic[:num_fmt_id]
-              parts << "<inputCells #{ic_attrs.join(" ")}/>"
-            end
-            parts << "</scenario>"
-          end
-          parts << "</scenarios>"
-        end
-
-        # Emit <autoFilter> with optional filterColumns.
-        if sheet_auto_filter
-          if sheet_filter_cols.empty?
-            parts << %(<autoFilter ref="#{xml_escape(sheet_auto_filter)}"/>)
-          else
-            parts << %(<autoFilter ref="#{xml_escape(sheet_auto_filter)}">)
-            sheet_filter_cols.sort.each do |col_id, filter|
-              fc_attrs = %( colId="#{xml_escape(col_id)}")
-              fc_attrs << ' hiddenButton="1"' if filter[:hidden_button]
-              fc_attrs << ' showButton="0"' if filter[:show_button] == false
-              parts << "<filterColumn#{fc_attrs}>"
-              parts << emit_filter_xml(filter)
-              parts << "</filterColumn>"
-            end
-            parts << "</autoFilter>"
-          end
-        end
-
-        # Emit <sortState> if defined.
-        if sheet_sort
-          ss_attrs = %( ref="#{xml_escape(sheet_sort[:ref])}")
-          ss_attrs << ' columnSort="1"' if sheet_sort[:column_sort]
-          ss_attrs << ' caseSensitive="1"' if sheet_sort[:case_sensitive]
-          ss_attrs << %( sortMethod="#{xml_escape(sheet_sort[:sort_method])}") if sheet_sort[:sort_method]
-          parts << "<sortState#{ss_attrs}>"
-          sheet_sort[:sort_conditions].each do |sc|
-            sc_attrs = %(ref="#{xml_escape(sc[:ref])}")
-            sc_attrs << ' descending="1"' if sc[:descending]
-            sc_attrs << %( sortBy="#{xml_escape(sc[:sort_by])}") if sc[:sort_by]
-            sc_attrs << %( customList="#{xml_escape(sc[:custom_list])}") if sc[:custom_list]
-            sc_attrs << %( dxfId="#{xml_escape(sc[:dxf_id])}") if sc[:dxf_id]
-            sc_attrs << %( iconSet="#{xml_escape(sc[:icon_set])}") if sc[:icon_set]
-            sc_attrs << %( iconId="#{xml_escape(sc[:icon_id])}") if sc[:icon_id]
-            parts << "<sortCondition #{sc_attrs}/>"
-          end
-          parts << "</sortState>"
-        end
-
-        # Emit <dataConsolidate> if defined.
-        if data_consol
-          dc_attrs = []
-          dc_attrs << %(function="#{xml_escape(data_consol[:function])}") if data_consol[:function] && data_consol[:function] != "sum"
-          dc_attrs << 'startLabels="1"' if data_consol[:start_labels]
-          dc_attrs << 'leftLabels="1"' if data_consol[:left_labels]
-          dc_attrs << 'topLabels="1"' if data_consol[:top_labels]
-          dc_attrs << 'link="1"' if data_consol[:link]
-          refs = data_consol[:data_refs] || []
-          dc_attr_str = dc_attrs.empty? ? "" : " #{dc_attrs.join(" ")}"
-          if refs.empty?
-            parts << "<dataConsolidate#{dc_attr_str}/>"
-          else
-            parts << "<dataConsolidate#{dc_attr_str}>"
-            parts << %(<dataRefs count="#{refs.size}">)
-            refs.each do |r|
-              ref_attrs = []
-              ref_attrs << %(ref="#{xml_escape(r[:ref])}") if r[:ref]
-              ref_attrs << %(name="#{xml_escape(r[:name])}") if r[:name]
-              ref_attrs << %(sheet="#{xml_escape(r[:sheet])}") if r[:sheet]
-              parts << "<dataRef #{ref_attrs.join(" ")}/>"
-            end
-            parts << "</dataRefs>"
-            parts << "</dataConsolidate>"
-          end
-        end
-
-        # Emit <mergeCells> if merge ranges are defined.
-        unless sheet_merge_cells.empty?
-          parts << %(<mergeCells count="#{sheet_merge_cells.size}">)
-          sheet_merge_cells.each { |ref| parts << %(<mergeCell ref="#{xml_escape(ref)}"/>) }
-          parts << "</mergeCells>"
-        end
-
-        # Emit <phoneticPr> if defined.
-        if phonetic_pr
-          pp_attrs = []
-          pp_attrs << %(fontId="#{xml_escape(phonetic_pr[:font_id])}") if phonetic_pr[:font_id]
-          pp_attrs << %(type="#{xml_escape(phonetic_pr[:type])}") if phonetic_pr[:type]
-          pp_attrs << %(alignment="#{xml_escape(phonetic_pr[:alignment])}") if phonetic_pr[:alignment]
-          parts << "<phoneticPr #{pp_attrs.join(" ")}/>"
-        end
-
-        # Emit <hyperlinks> if hyperlinks are defined.
-        unless sheet_hyperlinks.empty?
-          parts << "<hyperlinks>"
-          ext_rid = 0
-          sheet_hyperlinks.each do |(cell_ref, link)|
-            attrs = %(ref="#{xml_escape(cell_ref)}")
-            if link[:url]
-              ext_rid += 1
-              attrs << %( r:id="rId#{xml_escape(ext_rid)}")
-            end
-            attrs << %( display="#{xml_escape(link[:display])}") if link[:display]
-            attrs << %( tooltip="#{xml_escape(link[:tooltip])}") if link[:tooltip]
-            attrs << %( location="#{xml_escape(link[:location])}") if link[:location]
-            parts << %(<hyperlink #{attrs}/>)
-          end
-          parts << "</hyperlinks>"
-        end
-
-        # Emit <conditionalFormatting> if defined.
-        unless sheet_cf.empty?
-          sheet_cf.group_by { |cf| cf[:sqref] }.each do |sqref, rules|
-            cf_attrs = %( sqref="#{xml_escape(sqref)}")
-            cf_attrs << ' pivot="1"' if rules.any? { |r| r[:pivot] }
-            parts << "<conditionalFormatting#{cf_attrs}>"
-            rules.each do |cf|
-              emit_cf_rule(parts, cf)
-            end
-            parts << "</conditionalFormatting>"
-          end
-        end
-
-        # Emit <dataValidations> if defined.
-        unless sheet_dv.empty?
-          valid_dv = sheet_dv.reject { |dv| dv[:sqref].nil? || dv[:sqref].to_s.empty? }
-          unless valid_dv.empty?
-            dv_container_attrs = %( count="#{valid_dv.size}")
-            dv_container_attrs << ' disablePrompts="1"' if dv_options[:disable_prompts]
-            dv_container_attrs << %( xWindow="#{xml_escape(dv_options[:x_window])}") if dv_options[:x_window]
-            dv_container_attrs << %( yWindow="#{xml_escape(dv_options[:y_window])}") if dv_options[:y_window]
-            parts << "<dataValidations#{dv_container_attrs}>"
-            valid_dv.each do |dv|
-              dv_attrs = %(sqref="#{xml_escape(dv[:sqref])}")
-              dv_attrs << %( type="#{xml_escape(dv[:type])}") if dv[:type]
-              dv_attrs << %( operator="#{xml_escape(dv[:operator])}") if dv[:operator]
-              dv_attrs << %( errorStyle="#{xml_escape(dv[:error_style])}") if dv[:error_style]
-              dv_attrs << ' allowBlank="1"' if dv[:allow_blank]
-              dv_attrs << ' showInputMessage="1"' if dv[:show_input_message]
-              dv_attrs << ' showErrorMessage="1"' if dv[:show_error_message]
-              dv_attrs << %( errorTitle="#{xml_escape(dv[:error_title])}") if dv[:error_title]
-              dv_attrs << %( error="#{xml_escape(dv[:error])}") if dv[:error]
-              dv_attrs << %( promptTitle="#{xml_escape(dv[:prompt_title])}") if dv[:prompt_title]
-              dv_attrs << %( prompt="#{xml_escape(dv[:prompt])}") if dv[:prompt]
-              dv_attrs << ' showDropDown="1"' if dv[:show_drop_down]
-              dv_attrs << %( imeMode="#{xml_escape(dv[:ime_mode])}") if dv[:ime_mode]
-              if dv[:formula1] || dv[:formula2]
-                parts << "<dataValidation #{dv_attrs}>"
-                parts << "<formula1>#{xml_escape(dv[:formula1])}</formula1>" if dv[:formula1]
-                parts << "<formula2>#{xml_escape(dv[:formula2])}</formula2>" if dv[:formula2]
-                parts << "</dataValidation>"
-              else
-                parts << "<dataValidation #{dv_attrs}/>"
+            all_cols = sheet_col_widths.keys | sheet_col_attrs.keys
+            unless all_cols.empty?
+              xml.tag("cols") do
+                all_cols.sort_by { |col| column_letter_to_index(col) }.each do |col_letter|
+                  idx = column_letter_to_index(col_letter)
+                  width = sheet_col_widths[col_letter]
+                  ca = sheet_col_attrs[col_letter] || {}
+                  xml.empty_tag(
+                    "col",
+                    {
+                      min: idx,
+                      max: idx,
+                      width: width,
+                      customWidth: (1 if width),
+                      hidden: (1 if ca[:hidden]),
+                      bestFit: (1 if ca[:best_fit]),
+                      outlineLevel: ca[:outline_level],
+                      collapsed: (1 if ca[:collapsed]),
+                      style: ca[:style],
+                      phonetic: (1 if ca[:phonetic])
+                    }
+                  )
+                end
               end
             end
-            parts << "</dataValidations>"
-          end
-        end
 
-        # Emit <printOptions> if defined.
-        unless sheet_po.empty?
-          po_attrs = []
-          po_attrs << 'gridLines="1"' if sheet_po[:grid_lines]
-          po_attrs << 'headings="1"' if sheet_po[:headings]
-          po_attrs << 'horizontalCentered="1"' if sheet_po[:horizontal_centered]
-          po_attrs << 'verticalCentered="1"' if sheet_po[:vertical_centered]
-          po_attrs << 'gridLinesSet="0"' if sheet_po[:grid_lines_set] == false
-          parts << "<printOptions #{po_attrs.join(" ")}/>" unless po_attrs.empty?
-        end
+            write_sheet_data_xml(xml, sheet_cells, sheet_row_attrs, sheet_cell_styles, sst, cell_phonetic)
+            xml.empty_tag("sheetCalcPr", { fullCalcOnLoad: 1 }) if sheet_props[:full_calc_on_load]
+            write_sheet_protection_xml(xml, sheet_prot) if sheet_prot
+            write_protected_ranges_xml(xml, prot_ranges) unless prot_ranges.empty?
+            write_scenarios_xml(xml, sheet_scenarios) if sheet_scenarios
 
-        # Emit <pageMargins> if defined.
-        if sheet_pm
-          pm_attrs = %w[left right top bottom header footer].filter_map do |k|
-            v = sheet_pm[k.to_sym]
-            %(#{k}="#{xml_escape(v)}") if v
-          end
-          parts << "<pageMargins #{pm_attrs.join(" ")}/>" unless pm_attrs.empty?
-        end
-
-        # Emit <pageSetup> if defined.
-        unless sheet_ps.empty?
-          ps_attrs = []
-          ps_attrs << %(orientation="#{xml_escape(sheet_ps[:orientation])}") if sheet_ps[:orientation]
-          ps_attrs << %(paperSize="#{xml_escape(sheet_ps[:paper_size])}") if sheet_ps[:paper_size]
-          ps_attrs << %(scale="#{xml_escape(sheet_ps[:scale])}") if sheet_ps[:scale]
-          ps_attrs << %(fitToWidth="#{xml_escape(sheet_ps[:fit_to_width])}") if sheet_ps[:fit_to_width]
-          ps_attrs << %(fitToHeight="#{xml_escape(sheet_ps[:fit_to_height])}") if sheet_ps[:fit_to_height]
-          ps_attrs << %(pageOrder="#{xml_escape(sheet_ps[:page_order])}") if sheet_ps[:page_order]
-          ps_attrs << 'blackAndWhite="1"' if sheet_ps[:black_and_white]
-          ps_attrs << 'draft="1"' if sheet_ps[:draft]
-          ps_attrs << %(cellComments="#{xml_escape(sheet_ps[:cell_comments])}") if sheet_ps[:cell_comments]
-          ps_attrs << %(firstPageNumber="#{xml_escape(sheet_ps[:first_page_number])}") if sheet_ps[:first_page_number] && sheet_ps[:first_page_number].to_i >= 0
-          ps_attrs << 'useFirstPageNumber="1"' if sheet_ps[:use_first_page_number]
-          ps_attrs << %(horizontalDpi="#{xml_escape(sheet_ps[:horizontal_dpi])}") if sheet_ps[:horizontal_dpi].to_i.positive?
-          ps_attrs << %(verticalDpi="#{xml_escape(sheet_ps[:vertical_dpi])}") if sheet_ps[:vertical_dpi].to_i.positive?
-          ps_attrs << %(copies="#{xml_escape(sheet_ps[:copies])}") if sheet_ps[:copies]
-          ps_attrs << %(paperHeight="#{xml_escape(sheet_ps[:paper_height])}") if sheet_ps[:paper_height]
-          ps_attrs << %(paperWidth="#{xml_escape(sheet_ps[:paper_width])}") if sheet_ps[:paper_width]
-          ps_attrs << %(errors="#{xml_escape(sheet_ps[:errors])}") if sheet_ps[:errors]
-          ps_attrs << 'usePrinterDefaults="0"' if sheet_ps[:use_printer_defaults] == false
-          parts << "<pageSetup #{ps_attrs.join(" ")}/>" unless ps_attrs.empty?
-        end
-
-        # Emit <headerFooter> if defined.
-        unless sheet_hf.empty?
-          hf_attrs = []
-          hf_attrs << 'differentFirst="1"' if sheet_hf[:different_first]
-          hf_attrs << 'differentOddEven="1"' if sheet_hf[:different_odd_even]
-          hf_attrs << 'scaleWithDoc="0"' if sheet_hf[:scale_with_doc] == false
-          hf_attrs << 'alignWithMargins="0"' if sheet_hf[:align_with_margins] == false
-          hf_tag = hf_attrs.empty? ? "<headerFooter>" : "<headerFooter #{hf_attrs.join(" ")}>"
-          parts << hf_tag
-          parts << "<oddHeader>#{xml_escape(sheet_hf[:odd_header])}</oddHeader>" if sheet_hf[:odd_header]
-          parts << "<oddFooter>#{xml_escape(sheet_hf[:odd_footer])}</oddFooter>" if sheet_hf[:odd_footer]
-          parts << "<evenHeader>#{xml_escape(sheet_hf[:even_header])}</evenHeader>" if sheet_hf[:even_header]
-          parts << "<evenFooter>#{xml_escape(sheet_hf[:even_footer])}</evenFooter>" if sheet_hf[:even_footer]
-          parts << "<firstHeader>#{xml_escape(sheet_hf[:first_header])}</firstHeader>" if sheet_hf[:first_header]
-          parts << "<firstFooter>#{xml_escape(sheet_hf[:first_footer])}</firstFooter>" if sheet_hf[:first_footer]
-          parts << "</headerFooter>"
-        end
-
-        # Emit <rowBreaks> if defined.
-        unless sheet_rb.empty?
-          manual_count = sheet_rb.count do |r|
-            if r.is_a?(Elements::PageBreak)
-              r.manual?
-            elsif r.is_a?(Hash)
-              r[:man] != false
-            else
-              true
+            if sheet_auto_filter
+              if sheet_filter_cols.empty?
+                xml.empty_tag("autoFilter", { ref: sheet_auto_filter })
+              else
+                xml.tag("autoFilter", { ref: sheet_auto_filter }) do
+                  sheet_filter_cols.sort.each do |col_id, filter|
+                    xml.tag(
+                      "filterColumn",
+                      {
+                        colId: col_id,
+                        hiddenButton: (1 if filter[:hidden_button]),
+                        showButton: (0 if filter[:show_button] == false)
+                      }
+                    ) do
+                      write_filter_xml(xml, filter)
+                    end
+                  end
+                end
+              end
             end
-          end
-          parts << %(<rowBreaks count="#{sheet_rb.size}" manualBreakCount="#{xml_escape(manual_count)}">)
-          sheet_rb.each { |r| parts << emit_brk_xml(r, default_max: 16_383) }
-          parts << "</rowBreaks>"
-        end
 
-        # Emit <colBreaks> if defined.
-        unless sheet_cb.empty?
-          manual_count = sheet_cb.count do |c|
-            if c.is_a?(Elements::PageBreak)
-              c.manual?
-            elsif c.is_a?(Hash)
-              c[:man] != false
-            else
-              true
+            if sheet_sort
+              xml.tag(
+                "sortState",
+                {
+                  ref: sheet_sort[:ref] || "",
+                  columnSort: (1 if sheet_sort[:column_sort]),
+                  caseSensitive: (1 if sheet_sort[:case_sensitive]),
+                  sortMethod: sheet_sort[:sort_method]
+                }
+              ) do
+                sheet_sort[:sort_conditions].each do |sc|
+                  xml.empty_tag(
+                    "sortCondition",
+                    {
+                      ref: sc[:ref] || "",
+                      descending: (1 if sc[:descending]),
+                      sortBy: sc[:sort_by],
+                      customList: sc[:custom_list],
+                      dxfId: sc[:dxf_id],
+                      iconSet: sc[:icon_set],
+                      iconId: sc[:icon_id]
+                    }
+                  )
+                end
+              end
             end
+
+            write_data_consolidate_xml(xml, data_consol) if data_consol
+
+            unless sheet_merge_cells.empty?
+              xml.tag("mergeCells", { count: sheet_merge_cells.size }) do
+                sheet_merge_cells.each { |ref| xml.empty_tag("mergeCell", { ref: ref || "" }) }
+              end
+            end
+
+            if phonetic_pr
+              xml.empty_tag(
+                "phoneticPr",
+                {
+                  fontId: phonetic_pr[:font_id],
+                  type: phonetic_pr[:type],
+                  alignment: phonetic_pr[:alignment]
+                }
+              )
+            end
+
+            unless sheet_hyperlinks.empty?
+              xml.tag("hyperlinks") do
+                ext_rid = 0
+                sheet_hyperlinks.each do |(cell_ref, link)|
+                  rid = if link[:url]
+                          ext_rid += 1
+                          "rId#{ext_rid}"
+                        end
+                  xml.empty_tag(
+                    "hyperlink",
+                    {
+                      ref: cell_ref || "",
+                      "r:id": rid,
+                      display: link[:display],
+                      tooltip: link[:tooltip],
+                      location: link[:location]
+                    }
+                  )
+                end
+              end
+            end
+
+            unless sheet_cf.empty?
+              sheet_cf.group_by { |cf| cf[:sqref] }.each do |sqref, rules|
+                xml.tag("conditionalFormatting", { sqref: sqref || "", pivot: (1 if rules.any? { |r| r[:pivot] }) }) do
+                  rules.each { |cf| write_cf_rule(xml, cf) }
+                end
+              end
+            end
+
+            write_data_validations_xml(xml, sheet_dv, dv_options) unless sheet_dv.empty?
+            write_print_and_page_xml(xml, sheet_po, sheet_pm, sheet_ps, sheet_hf)
+            write_page_breaks_xml(xml, "rowBreaks", sheet_rb, default_max: 16_383) unless sheet_rb.empty?
+            write_page_breaks_xml(xml, "colBreaks", sheet_cb, default_max: 1_048_575) unless sheet_cb.empty?
+
+            unless cell_watches.empty?
+              xml.tag("cellWatches") do
+                cell_watches.each { |r| xml.empty_tag("cellWatch", { r: r || "" }) }
+              end
+            end
+
+            unless ignored_errors.empty?
+              xml.tag("ignoredErrors") do
+                ignored_errors.each do |ie|
+                  xml.empty_tag(
+                    "ignoredError",
+                    {
+                      sqref: ie[:sqref] || "",
+                      evalError: (1 if ie[:eval_error]),
+                      twoDigitTextYear: (1 if ie[:two_digit_text_year]),
+                      numberStoredAsText: (1 if ie[:number_stored_as_text]),
+                      formula: (1 if ie[:formula]),
+                      formulaRange: (1 if ie[:formula_range]),
+                      unlockedFormula: (1 if ie[:unlocked_formula]),
+                      emptyCellReference: (1 if ie[:empty_cell_reference]),
+                      listDataValidation: (1 if ie[:list_data_validation]),
+                      calculatedColumn: (1 if ie[:calculated_column])
+                    }
+                  )
+                end
+              end
+            end
+
+            unless sheet_tables.empty?
+              xml.tag("tableParts", { count: sheet_tables.size }) do
+                sheet_tables.each_with_index do |_tbl, i|
+                  rid = hyperlink_count + i + 1
+                  xml.empty_tag("tablePart", { "r:id": "rId#{rid}" })
+                end
+              end
+            end
+
+            if has_drawing
+              # The drawing rId is after hyperlinks + tables + comments + vml
+              drawing_rid = hyperlink_count + sheet_tables.size + (has_comments ? 2 : 0) + 1
+              xml.empty_tag("drawing", { "r:id": "rId#{drawing_rid}" })
+            end
+
+            xml.empty_tag("legacyDrawing", { "r:id": "rId#{vml_rid}" }) if vml_rid
           end
-          parts << %(<colBreaks count="#{sheet_cb.size}" manualBreakCount="#{xml_escape(manual_count)}">)
-          sheet_cb.each { |c| parts << emit_brk_xml(c, default_max: 1_048_575) }
-          parts << "</colBreaks>"
         end
-
-        # Emit <cellWatches> if defined.
-        unless cell_watches.empty?
-          parts << "<cellWatches>"
-          cell_watches.each { |r| parts << %(<cellWatch r="#{xml_escape(r)}"/>) }
-          parts << "</cellWatches>"
-        end
-
-        # Emit <ignoredErrors> if defined.
-        unless ignored_errors.empty?
-          parts << "<ignoredErrors>"
-          ignored_errors.each do |ie|
-            ie_attrs = %( sqref="#{xml_escape(ie[:sqref])}")
-            ie_attrs << ' evalError="1"' if ie[:eval_error]
-            ie_attrs << ' twoDigitTextYear="1"' if ie[:two_digit_text_year]
-            ie_attrs << ' numberStoredAsText="1"' if ie[:number_stored_as_text]
-            ie_attrs << ' formula="1"' if ie[:formula]
-            ie_attrs << ' formulaRange="1"' if ie[:formula_range]
-            ie_attrs << ' unlockedFormula="1"' if ie[:unlocked_formula]
-            ie_attrs << ' emptyCellReference="1"' if ie[:empty_cell_reference]
-            ie_attrs << ' listDataValidation="1"' if ie[:list_data_validation]
-            ie_attrs << ' calculatedColumn="1"' if ie[:calculated_column]
-            parts << "<ignoredError#{ie_attrs}/>"
-          end
-          parts << "</ignoredErrors>"
-        end
-
-        # Emit <tableParts> if tables are defined.
-        unless sheet_tables.empty?
-          parts << %(<tableParts count="#{sheet_tables.size}">)
-          sheet_tables.each_with_index do |_tbl, i|
-            rid = hyperlink_count + i + 1
-            parts << %(<tablePart r:id="rId#{xml_escape(rid)}"/>)
-          end
-          parts << "</tableParts>"
-        end
-
-        # Emit <drawing> reference if images or charts exist.
-        if has_drawing
-          # The drawing rId is after hyperlinks + tables + comments + vml
-          drawing_rid = hyperlink_count + sheet_tables.size + (has_comments ? 2 : 0) + 1
-          parts << %(<drawing r:id="rId#{xml_escape(drawing_rid)}"/>)
-        end
-
-        # Emit <legacyDrawing> reference if comments exist (VML shapes).
-        parts << %(<legacyDrawing r:id="rId#{xml_escape(vml_rid)}"/>) if vml_rid
-
-        parts << "</worksheet>"
-        parts.join
       end
 
       # : () -> ::Array[untyped]
@@ -3174,7 +2648,7 @@ module Xlsxrb
         [rt_sst, str_sst]
       end
 
-      # : (untyped sst) -> untyped
+      # : (untyped sst) -> ::String
       def generate_shared_strings_xml(sst)
         rt_sst, str_sst = sst
         total = rt_sst.size + str_sst.size
@@ -3182,79 +2656,25 @@ module Xlsxrb
         rt_sst.each { |rt, idx| entries[idx] = { type: :rt, value: rt } }
         str_sst.each { |str, idx| entries[idx] = { type: :str, value: str } }
 
-        parts = [XML_HEADER, %(<sst xmlns="#{SSML_NS}" count="#{xml_escape(total)}" uniqueCount="#{xml_escape(total)}">)]
-        entries.each do |entry|
-          parts << if entry[:type] == :rt
-                     "<si>#{rich_text_xml(entry[:value])}</si>"
-                   else
-                     "<si><t>#{xml_escape_text(entry[:value])}</t></si>"
-                   end
-        end
-        parts << "</sst>"
-        parts.join
-      end
-
-      # : (untyped tbl) -> untyped
-      def generate_table_xml(tbl)
-        trc = tbl[:totals_row_count].to_i
-        table_attrs = %(xmlns="#{SSML_NS}" id="#{xml_escape(tbl[:id])}" name="#{xml_escape(tbl[:name])}" displayName="#{xml_escape(tbl[:display_name])}" ref="#{xml_escape(tbl[:ref])}")
-        table_attrs << %( comment="#{xml_escape(tbl[:comment])}") if tbl[:comment]
-        hrc = tbl[:header_row_count]
-        table_attrs << %( headerRowCount="#{xml_escape(hrc)}") if hrc && hrc != 1
-        table_attrs << ' insertRow="1"' if tbl[:insert_row]
-        table_attrs << ' insertRowShift="1"' if tbl[:insert_row_shift]
-        table_attrs << %( totalsRowCount="#{xml_escape(trc)}") if trc.positive?
-        table_attrs << ' totalsRowShown="0"' if trc.zero?
-        table_attrs << ' published="1"' if tbl[:published]
-        table_attrs << %( headerRowDxfId="#{xml_escape(tbl[:header_row_dxf_id])}") if tbl[:header_row_dxf_id]
-        table_attrs << %( dataDxfId="#{xml_escape(tbl[:data_dxf_id])}") if tbl[:data_dxf_id]
-        table_attrs << %( totalsRowDxfId="#{xml_escape(tbl[:totals_row_dxf_id])}") if tbl[:totals_row_dxf_id]
-        table_attrs << %( headerRowBorderDxfId="#{xml_escape(tbl[:header_row_border_dxf_id])}") if tbl[:header_row_border_dxf_id]
-        table_attrs << %( tableBorderDxfId="#{xml_escape(tbl[:table_border_dxf_id])}") if tbl[:table_border_dxf_id]
-        table_attrs << %( totalsRowBorderDxfId="#{xml_escape(tbl[:totals_row_border_dxf_id])}") if tbl[:totals_row_border_dxf_id]
-        table_attrs << %( headerRowCellStyle="#{xml_escape(tbl[:header_row_cell_style])}") if tbl[:header_row_cell_style]
-        table_attrs << %( totalsRowCellStyle="#{xml_escape(tbl[:totals_row_cell_style])}") if tbl[:totals_row_cell_style]
-        table_attrs << %( connectionId="#{xml_escape(tbl[:connection_id])}") if tbl[:connection_id]
-        table_attrs << %( tableType="#{xml_escape(tbl[:table_type])}") if tbl[:table_type]
-        parts = [
-          XML_HEADER,
-          "<table #{table_attrs}>"
-        ]
-        parts << %(<autoFilter ref="#{xml_escape(tbl[:ref])}"/>) unless tbl[:auto_filter] == false
-        parts << %(<tableColumns count="#{tbl[:columns].size}">)
-        tbl[:columns].each_with_index do |col, i|
-          col = col.to_h if col.is_a?(Elements::MetadataRecord)
-          col_name = if col.is_a?(Hash)
-                       col[:name]
-                     elsif col.is_a?(Elements::TableColumn)
-                       col.name
-                     else
-                       col
-                     end
-          col_attrs = %(id="#{i + 1}" name="#{xml_escape(col_name)}")
-          if col.is_a?(Hash) || col.is_a?(Elements::TableColumn)
-            calc_formula = col[:calculated_column_formula] || col[:data_formula] || col[:formula]
-            tot_formula = col[:totals_row_formula]
-            trf = col[:totals_row_function] || ("custom" if tot_formula)
-            col_attrs << %( totalsRowFunction="#{xml_escape(trf)}") if trf
-            col_attrs << %( totalsRowLabel="#{xml_escape(col[:totals_row_label])}") if col[:totals_row_label]
-            col_attrs << %( dataDxfId="#{xml_escape(col[:data_dxf_id])}") if col[:data_dxf_id]
-            col_attrs << %( totalsRowDxfId="#{xml_escape(col[:totals_row_dxf_id])}") if col[:totals_row_dxf_id]
-            col_attrs << %( headerRowDxfId="#{xml_escape(col[:header_row_dxf_id])}") if col[:header_row_dxf_id]
-            col_attrs << %( dataCellStyle="#{xml_escape(col[:data_cell_style])}") if col[:data_cell_style]
-            if calc_formula || tot_formula
-              parts << "<tableColumn #{col_attrs}>"
-              parts << "<calculatedColumnFormula>#{xml_escape(calc_formula.to_s)}</calculatedColumnFormula>" if calc_formula
-              parts << "<totalsRowFormula>#{xml_escape(tot_formula.to_s)}</totalsRowFormula>" if tot_formula
-              parts << "</tableColumn>"
-            else
-              parts << "<tableColumn #{col_attrs}/>"
+        XmlBuilder.build(declaration: :plain) do |xml|
+          xml.tag("sst", { xmlns: SSML_NS, count: total, uniqueCount: total }) do
+            entries.each do |entry|
+              xml.tag("si") do
+                if entry[:type] == :rt
+                  write_rich_text_xml(xml, entry[:value])
+                else
+                  xml.tag("t") { xml.xstring_text(entry[:value]) }
+                end
+              end
             end
-          else
-            parts << "<tableColumn #{col_attrs}/>"
           end
         end
-        parts << "</tableColumns>"
+      end
+
+      # : (untyped tbl) -> ::String
+      def generate_table_xml(tbl)
+        trc = tbl[:totals_row_count].to_i
+        hrc = tbl[:header_row_count]
         raw_style = tbl[:style] || tbl[:style_info]
         raw_style = raw_style.to_h if raw_style.respond_to?(:to_h)
         style = if raw_style.is_a?(Hash)
@@ -3276,34 +2696,103 @@ module Xlsxrb
                            end
         show_column_stripes = style.key?(:show_column_stripes) ? style[:show_column_stripes] : tbl[:show_column_stripes]
 
-        sfc = show_first_column ? "1" : "0"
-        slc = show_last_column ? "1" : "0"
-        srs = show_row_stripes ? "1" : "0"
-        scs = show_column_stripes ? "1" : "0"
-        parts << %(<tableStyleInfo name="#{xml_escape(style_name)}" showFirstColumn="#{xml_escape(sfc)}" showLastColumn="#{xml_escape(slc)}" showRowStripes="#{xml_escape(srs)}" showColumnStripes="#{xml_escape(scs)}"/>)
-        parts << "</table>"
-        parts.join
+        XmlBuilder.build(declaration: :plain) do |xml|
+          xml.tag(
+            "table",
+            {
+              xmlns: SSML_NS,
+              id: tbl[:id] || "",
+              name: tbl[:name] || "",
+              displayName: tbl[:display_name] || "",
+              ref: tbl[:ref] || "",
+              comment: tbl[:comment],
+              headerRowCount: (hrc if hrc && hrc != 1),
+              insertRow: (1 if tbl[:insert_row]),
+              insertRowShift: (1 if tbl[:insert_row_shift]),
+              totalsRowCount: (trc if trc.positive?),
+              totalsRowShown: (0 if trc.zero?),
+              published: (1 if tbl[:published]),
+              headerRowDxfId: tbl[:header_row_dxf_id],
+              dataDxfId: tbl[:data_dxf_id],
+              totalsRowDxfId: tbl[:totals_row_dxf_id],
+              headerRowBorderDxfId: tbl[:header_row_border_dxf_id],
+              tableBorderDxfId: tbl[:table_border_dxf_id],
+              totalsRowBorderDxfId: tbl[:totals_row_border_dxf_id],
+              headerRowCellStyle: tbl[:header_row_cell_style],
+              totalsRowCellStyle: tbl[:totals_row_cell_style],
+              connectionId: tbl[:connection_id],
+              tableType: tbl[:table_type]
+            }
+          ) do
+            xml.empty_tag("autoFilter", { ref: tbl[:ref] || "" }) unless tbl[:auto_filter] == false
+            xml.tag("tableColumns", { count: tbl[:columns].size }) do
+              tbl[:columns].each_with_index do |col, i|
+                col = col.to_h if col.is_a?(Elements::MetadataRecord)
+                col_name = if col.is_a?(Hash)
+                             col[:name]
+                           elsif col.is_a?(Elements::TableColumn)
+                             col.name
+                           else
+                             col
+                           end
+                if col.is_a?(Hash) || col.is_a?(Elements::TableColumn)
+                  calc_formula = col[:calculated_column_formula] || col[:data_formula] || col[:formula]
+                  tot_formula = col[:totals_row_formula]
+                  trf = col[:totals_row_function] || ("custom" if tot_formula)
+                  col_attrs = {
+                    id: i + 1,
+                    name: col_name || "",
+                    totalsRowFunction: trf,
+                    totalsRowLabel: col[:totals_row_label],
+                    dataDxfId: col[:data_dxf_id],
+                    totalsRowDxfId: col[:totals_row_dxf_id],
+                    headerRowDxfId: col[:header_row_dxf_id],
+                    dataCellStyle: col[:data_cell_style]
+                  }
+                  if calc_formula || tot_formula
+                    xml.tag("tableColumn", col_attrs) do
+                      xml.text_tag("calculatedColumnFormula", calc_formula.to_s) if calc_formula
+                      xml.text_tag("totalsRowFormula", tot_formula.to_s) if tot_formula
+                    end
+                  else
+                    xml.empty_tag("tableColumn", col_attrs)
+                  end
+                else
+                  xml.empty_tag("tableColumn", { id: i + 1, name: col_name || "" })
+                end
+              end
+            end
+            xml.empty_tag(
+              "tableStyleInfo",
+              {
+                name: style_name,
+                showFirstColumn: show_first_column ? "1" : "0",
+                showLastColumn: show_last_column ? "1" : "0",
+                showRowStripes: show_row_stripes ? "1" : "0",
+                showColumnStripes: show_column_stripes ? "1" : "0"
+              }
+            )
+          end
+        end
       end
 
-      # : (untyped sheet_hyperlinks, ?untyped sheet_tables, ?::Integer table_start_index) -> untyped
+      # : (untyped sheet_hyperlinks, ?untyped sheet_tables, ?::Integer table_start_index) -> ::String
       def generate_worksheet_rels(sheet_hyperlinks, sheet_tables = [], table_start_index = 0)
-        parts = [
-          XML_HEADER,
-          %(<Relationships xmlns="#{REL_NS}">)
-        ]
-        rid = 0
-        sheet_hyperlinks.each do |(_cell_ref, link)|
-          next unless link[:url]
+        XmlBuilder.build(declaration: :plain) do |xml|
+          xml.tag("Relationships", { xmlns: REL_NS }) do
+            rid = 0
+            sheet_hyperlinks.each do |(_cell_ref, link)|
+              next unless link[:url]
 
-          rid += 1
-          parts << %(<Relationship Id="rId#{xml_escape(rid)}" Type="#{DOC_REL_NS}/hyperlink" Target="#{xml_escape(link[:url])}" TargetMode="External"/>)
+              rid += 1
+              xml.empty_tag("Relationship", { Id: "rId#{rid}", Type: "#{DOC_REL_NS}/hyperlink", Target: link[:url], TargetMode: "External" })
+            end
+            sheet_tables.each_with_index do |_tbl, i|
+              rid += 1
+              xml.empty_tag("Relationship", { Id: "rId#{rid}", Type: "#{DOC_REL_NS}/table", Target: "../tables/table#{table_start_index + i + 1}.xml" })
+            end
+          end
         end
-        sheet_tables.each_with_index do |_tbl, i|
-          rid += 1
-          parts << %(<Relationship Id="rId#{xml_escape(rid)}" Type="#{DOC_REL_NS}/table" Target="../tables/table#{xml_escape(table_start_index + i + 1)}.xml"/>)
-        end
-        parts << "</Relationships>"
-        parts.join
       end
 
       # : (untyped sheet_name, untyped sheet_tables, untyped table_start_index, untyped drawing_idx, untyped comment_idx, untyped pivot_start, untyped pivot_count, ?untyped? threaded_comment_idx) -> untyped
@@ -3330,15 +2819,602 @@ module Xlsxrb
         rels
       end
 
-      # : (untyped rels_data) -> untyped
+      # : (untyped rels_data) -> ::String
       def generate_generic_rels(rels_data)
-        parts = [XML_HEADER, %(<Relationships xmlns="#{REL_NS}">)]
-        rels_data.each_with_index do |rel, i|
-          ext_attr = rel[:external] ? ' TargetMode="External"' : ""
-          parts << %(<Relationship Id="rId#{i + 1}" Type="#{xml_escape(rel[:type])}" Target="#{xml_escape(rel[:target])}"#{ext_attr}/>)
+        XmlBuilder.build(declaration: :plain) do |xml|
+          xml.tag("Relationships", { xmlns: REL_NS }) do
+            rels_data.each_with_index do |rel, i|
+              xml.empty_tag(
+                "Relationship",
+                {
+                  Id: "rId#{i + 1}",
+                  Type: rel[:type] || "",
+                  Target: rel[:target] || "",
+                  TargetMode: ("External" if rel[:external])
+                }
+              )
+            end
+          end
         end
-        parts << "</Relationships>"
-        parts.join
+      end
+
+      # : (XmlBuilder xml) -> void
+      def write_workbook_file_version_xml(xml)
+        return if @file_version.empty?
+
+        attrs = {
+          appName: @file_version[:app_name],
+          lastEdited: @file_version[:last_edited],
+          lowestEdited: @file_version[:lowest_edited],
+          rupBuild: @file_version[:rup_build],
+          codeName: @file_version[:code_name]
+        }.compact
+        xml.empty_tag("fileVersion", attrs) unless attrs.empty?
+      end
+
+      # : (XmlBuilder xml) -> void
+      def write_workbook_file_sharing_xml(xml)
+        return if @file_sharing.empty?
+
+        attrs = {
+          readOnlyRecommended: (1 if @file_sharing[:read_only_recommended]),
+          userName: @file_sharing[:user_name],
+          algorithmName: @file_sharing[:algorithm_name],
+          hashValue: @file_sharing[:hash_value],
+          saltValue: @file_sharing[:salt_value],
+          spinCount: @file_sharing[:spin_count]
+        }.compact
+        xml.empty_tag("fileSharing", attrs) unless attrs.empty?
+      end
+
+      # : (XmlBuilder xml) -> void
+      def write_workbook_pr_xml(xml)
+        return if @workbook_properties.empty?
+
+        wp = @workbook_properties
+        attrs = {
+          date1904: xml_bool_attr(wp[:date1904]),
+          dateCompatibility: (0 if wp[:date_compatibility] == false),
+          defaultThemeVersion: wp[:default_theme_version],
+          codeName: wp[:code_name],
+          filterPrivacy: (1 if wp[:filter_privacy]),
+          autoCompressPictures: (0 if wp[:auto_compress_pictures] == false),
+          backupFile: (1 if wp[:backup_file]),
+          showObjects: wp[:show_objects],
+          updateLinks: wp[:update_links],
+          refreshAllConnections: (1 if wp[:refresh_all_connections]),
+          checkCompatibility: (1 if wp[:check_compatibility]),
+          hidePivotFieldList: (1 if wp[:hide_pivot_field_list]),
+          showBorderUnselectedTables: (0 if wp[:show_border_unselected_tables] == false),
+          promptedSolutions: (1 if wp[:prompted_solutions]),
+          showInkAnnotation: (0 if wp[:show_ink_annotation] == false),
+          saveExternalLinkValues: (0 if wp[:save_external_link_values] == false),
+          showPivotChartFilter: (1 if wp[:show_pivot_chart_filter]),
+          allowRefreshQuery: (1 if wp[:allow_refresh_query]),
+          publishItems: (1 if wp[:publish_items])
+        }.compact
+        xml.empty_tag("workbookPr", attrs) unless attrs.empty?
+      end
+
+      # : (XmlBuilder xml) -> void
+      def write_workbook_views_xml(xml)
+        return if @workbook_views.empty?
+
+        wv = @workbook_views
+        attrs = {
+          visibility: wv[:visibility],
+          minimized: (1 if wv[:minimized]),
+          showHorizontalScroll: xml_bool_attr(wv[:show_horizontal_scroll]),
+          showVerticalScroll: xml_bool_attr(wv[:show_vertical_scroll]),
+          showSheetTabs: xml_bool_attr(wv[:show_sheet_tabs]),
+          xWindow: wv[:x_window],
+          yWindow: wv[:y_window],
+          windowWidth: wv[:window_width],
+          windowHeight: wv[:window_height],
+          tabRatio: wv[:tab_ratio],
+          firstSheet: wv[:first_sheet],
+          activeTab: wv[:active_sheet_index] || wv[:active_tab],
+          autoFilterDateGrouping: xml_bool_attr(wv[:auto_filter_date_grouping])
+        }.compact
+        xml.tag("bookViews") do
+          xml.empty_tag("workbookView", attrs) unless attrs.empty?
+        end
+      end
+
+      # : (XmlBuilder xml) -> void
+      def write_workbook_protection_xml(xml)
+        wp = @workbook_protection
+        attrs = {
+          lockStructure: (1 if wp[:lock_structure]),
+          lockWindows: (1 if wp[:lock_windows]),
+          lockRevision: (1 if wp[:lock_revision])
+        }
+        if wp[:algorithm_name]
+          attrs[:workbookAlgorithmName] = wp[:algorithm_name]
+          attrs[:workbookHashValue] = wp[:hash_value]
+          attrs[:workbookSaltValue] = wp[:salt_value]
+          attrs[:workbookSpinCount] = wp[:spin_count]
+        elsif wp[:password]
+          attrs[:workbookPassword] = wp[:password]
+        end
+        if wp[:revisions_algorithm_name]
+          attrs[:revisionsAlgorithmName] = wp[:revisions_algorithm_name]
+          attrs[:revisionsHashValue] = wp[:revisions_hash_value]
+          attrs[:revisionsSaltValue] = wp[:revisions_salt_value]
+          attrs[:revisionsSpinCount] = wp[:revisions_spin_count]
+        elsif wp[:revisions_password]
+          attrs[:revisionsPassword] = wp[:revisions_password]
+        end
+        attrs.compact!
+        xml.empty_tag("workbookProtection", attrs) unless attrs.empty?
+      end
+
+      # : (XmlBuilder xml) -> void
+      def write_workbook_calc_pr_xml(xml)
+        return if @calc_properties.empty?
+
+        cp = @calc_properties
+        attrs = {
+          calcId: cp[:calc_id],
+          calcMode: cp[:calc_mode],
+          fullCalcOnLoad: xml_bool_attr(cp[:full_calc_on_load]),
+          iterate: xml_bool_attr(cp[:iterate]),
+          iterateCount: cp[:iterate_count],
+          iterateDelta: cp[:iterate_delta],
+          refMode: cp[:ref_mode],
+          calcCompleted: xml_bool_attr(cp[:calc_completed]),
+          calcOnSave: xml_bool_attr(cp[:calc_on_save]),
+          fullPrecision: xml_bool_attr(cp[:full_precision]),
+          concurrentCalc: xml_bool_attr(cp[:concurrent_calc]),
+          concurrentManualCount: cp[:concurrent_manual_count],
+          forceFullCalc: xml_bool_attr(cp[:force_full_calc])
+        }.compact
+        xml.empty_tag("calcPr", attrs) unless attrs.empty?
+      end
+
+      # : (XmlBuilder xml, untyped sheet_props) -> void
+      def write_sheet_pr_xml(xml, sheet_props)
+        sp_attrs = {
+          syncHorizontal: (1 if sheet_props[:sync_horizontal]),
+          syncVertical: (1 if sheet_props[:sync_vertical]),
+          syncRef: sheet_props[:sync_ref],
+          transitionEvaluation: (1 if sheet_props[:transition_evaluation]),
+          transitionEntry: (1 if sheet_props[:transition_entry]),
+          codeName: sheet_props[:code_name],
+          filterMode: (1 if sheet_props[:filter_mode]),
+          published: (0 if sheet_props[:published] == false),
+          enableFormatConditionsCalculation: (0 if sheet_props[:enable_format_conditions_calculation] == false)
+        }.compact
+        tab_color_attrs = resolve_tab_color_attrs(sheet_props)
+
+        sb = sheet_props[:summary_below]
+        sr = sheet_props[:summary_right]
+        as = sheet_props[:apply_styles]
+        sos = sheet_props[:show_outline_symbols]
+        has_outline = !(sb.nil? && sr.nil? && as.nil? && sos.nil?)
+
+        psp = sheet_props[:page_setup_properties] || sheet_props[:page_setup_pr]
+        ftp = sheet_props[:fit_to_page]
+        ftp = psp[:fit_to_page] if ftp.nil? && psp.is_a?(Hash)
+        apb = sheet_props[:auto_page_breaks]
+        apb = psp[:auto_page_breaks] if apb.nil? && psp.is_a?(Hash)
+        has_psp = !(ftp.nil? && apb.nil?)
+
+        return if sp_attrs.empty? && tab_color_attrs.nil? && !has_outline && !has_psp
+
+        xml.tag("sheetPr", sp_attrs) do
+          xml.empty_tag("tabColor", tab_color_attrs) if tab_color_attrs
+          if has_outline
+            xml.empty_tag(
+              "outlinePr",
+              {
+                applyStyles: xml_bool_attr(as),
+                summaryBelow: xml_bool_attr(sb),
+                summaryRight: xml_bool_attr(sr),
+                showOutlineSymbols: xml_bool_attr(sos)
+              }
+            )
+          end
+          if has_psp
+            xml.empty_tag(
+              "pageSetUpPr",
+              {
+                fitToPage: xml_bool_attr(ftp),
+                autoPageBreaks: xml_bool_attr(apb)
+              }
+            )
+          end
+        end
+      end
+
+      # : (untyped sheet_props) -> (nil | ::Hash[untyped, untyped])
+      def resolve_tab_color_attrs(sheet_props)
+        tc = sheet_props[:tab_color]
+        if tc.is_a?(Hash)
+          attrs = {
+            auto: (1 if tc[:auto]),
+            indexed: tc[:indexed],
+            rgb: tc[:rgb]&.then { |v| v.to_s.delete_prefix("#") },
+            theme: tc[:theme],
+            tint: tc[:tint]
+          }.compact
+          attrs.empty? ? nil : attrs
+        elsif tc
+          { rgb: tc.to_s.delete_prefix("#") }
+        elsif sheet_props[:tab_color_theme]
+          { theme: sheet_props[:tab_color_theme], tint: sheet_props[:tab_color_tint] }
+        elsif sheet_props[:tab_color_indexed]
+          { indexed: sheet_props[:tab_color_indexed] }
+        elsif sheet_props[:tab_color_auto]
+          { auto: 1 }
+        end
+      end
+
+      # : (XmlBuilder xml, untyped sheet_sv, untyped sheet_fp, untyped sheet_sel) -> void
+      def write_sheet_views_xml(xml, sheet_sv, sheet_fp, sheet_sel)
+        xml.tag("sheetViews") do
+          xml.tag(
+            "sheetView",
+            {
+              windowProtection: xml_bool_attr(sheet_sv[:window_protection]),
+              showFormulas: xml_bool_attr(sheet_sv[:show_formulas]),
+              showGridLines: xml_bool_attr(sheet_sv[:show_grid_lines]),
+              showRowColHeaders: xml_bool_attr(sheet_sv[:show_row_col_headers]),
+              showZeros: xml_bool_attr(sheet_sv[:show_zeros]),
+              rightToLeft: xml_bool_attr(sheet_sv[:right_to_left]),
+              tabSelected: (1 if sheet_sv[:tab_selected]),
+              showRuler: xml_bool_attr(sheet_sv[:show_ruler]),
+              showOutlineSymbols: xml_bool_attr(sheet_sv[:show_outline_symbols]),
+              defaultGridColor: xml_bool_attr(sheet_sv[:default_grid_color]),
+              showWhiteSpace: xml_bool_attr(sheet_sv[:show_white_space]),
+              view: sheet_sv[:view],
+              topLeftCell: sheet_sv[:top_left_cell],
+              colorId: sheet_sv[:color_id],
+              zoomScale: sheet_sv[:zoom_scale],
+              zoomScaleNormal: sheet_sv[:zoom_scale_normal],
+              zoomScaleSheetLayoutView: sheet_sv[:zoom_scale_sheet_layout_view],
+              zoomScalePageLayoutView: sheet_sv[:zoom_scale_page_layout_view],
+              workbookViewId: 0
+            }
+          ) do
+            if sheet_fp && sheet_fp[:state] == :split
+              has_x = sheet_fp[:x_split].to_i.positive?
+              has_y = sheet_fp[:y_split].to_i.positive?
+              active_pane = if has_y && has_x
+                              "bottomRight"
+                            elsif has_y
+                              "bottomLeft"
+                            else
+                              "topRight"
+                            end
+              xml.empty_tag(
+                "pane",
+                {
+                  xSplit: (sheet_fp[:x_split] if has_x),
+                  ySplit: (sheet_fp[:y_split] if has_y),
+                  topLeftCell: sheet_fp[:top_left_cell],
+                  activePane: active_pane
+                }
+              )
+            elsif sheet_fp
+              fp_col = sheet_fp[:column] || sheet_fp[:col] || 0
+              if sheet_fp[:row].to_i.positive? || fp_col.to_i.positive?
+                top_left = "#{index_to_column_letter(fp_col.to_i + 1)}#{sheet_fp[:row].to_i + 1}"
+                active_pane = if sheet_fp[:row].to_i.positive? && fp_col.to_i.positive?
+                                "bottomRight"
+                              elsif sheet_fp[:row].to_i.positive?
+                                "bottomLeft"
+                              else
+                                "topRight"
+                              end
+                xml.empty_tag(
+                  "pane",
+                  {
+                    ySplit: (sheet_fp[:row] if sheet_fp[:row].to_i.positive?),
+                    xSplit: (fp_col if fp_col.to_i.positive?),
+                    topLeftCell: top_left,
+                    activePane: active_pane,
+                    state: "frozen"
+                  }
+                )
+              end
+            end
+
+            if sheet_sel
+              xml.empty_tag(
+                "selection",
+                {
+                  pane: sheet_sel[:pane],
+                  activeCell: sheet_sel[:active_cell],
+                  activeCellId: sheet_sel[:active_cell_id],
+                  sqref: sheet_sel[:sqref]
+                }
+              )
+            end
+          end
+        end
+      end
+
+      # : (XmlBuilder xml, untyped sheet_cells, untyped sheet_row_attrs, untyped sheet_cell_styles, untyped? sst, untyped cell_phonetic) -> void
+      def write_sheet_data_xml(xml, sheet_cells, sheet_row_attrs, sheet_cell_styles, sst, cell_phonetic)
+        xml.tag("sheetData") do
+          cells_by_row = {}
+          sheet_cells.each do |address, value|
+            row_num = extract_row_number(address)
+            col_letter = extract_column_letter(address)
+            cells_by_row[row_num] ||= {}
+            cells_by_row[row_num][col_letter] = value
+          end
+
+          sheet_row_attrs.each_key { |rn| cells_by_row[rn] ||= {} }
+
+          cells_by_row.sort.each do |row_num, row_cells|
+            ra = sheet_row_attrs[row_num]
+            row_attrs = { r: row_num }
+            if ra
+              if ra[:height]
+                row_attrs[:ht] = ra[:height]
+                row_attrs[:customHeight] = 1
+              end
+              row_attrs[:hidden] = 1 if ra[:hidden]
+              row_attrs[:outlineLevel] = ra[:outline_level] if ra[:outline_level]
+              row_attrs[:collapsed] = 1 if ra[:collapsed]
+              if ra.key?(:style)
+                row_attrs[:s] = ra[:style] || ""
+                row_attrs[:customFormat] = 1
+              end
+              row_attrs[:thickTop] = 1 if ra[:thick_top]
+              row_attrs[:thickBot] = 1 if ra[:thick_bot]
+              row_attrs[:ph] = 1 if ra[:ph]
+            end
+            xml.tag("row", row_attrs) do
+              row_cells.sort_by { |col, _| column_letter_to_index(col) }.each do |col_letter, value|
+                cell_ref = "#{col_letter}#{row_num}"
+                style_idx = resolve_style_index(sheet_cell_styles[cell_ref])
+                write_cell_xml(xml, cell_ref, value, style_idx, sst, ph: cell_phonetic[cell_ref])
+              end
+            end
+          end
+        end
+      end
+
+      # : (XmlBuilder xml, untyped sheet_prot) -> void
+      def write_sheet_protection_xml(xml, sheet_prot)
+        attrs = {
+          sheet: (1 if sheet_prot[:sheet] != false),
+          objects: (1 if sheet_prot[:objects]),
+          scenarios: (1 if sheet_prot[:scenarios]),
+          formatCells: (0 if sheet_prot[:format_cells] == false),
+          formatColumns: (0 if sheet_prot[:format_columns] == false),
+          formatRows: (0 if sheet_prot[:format_rows] == false),
+          insertColumns: (0 if sheet_prot[:insert_columns] == false),
+          insertRows: (0 if sheet_prot[:insert_rows] == false),
+          insertHyperlinks: (0 if sheet_prot[:insert_hyperlinks] == false),
+          deleteColumns: (0 if sheet_prot[:delete_columns] == false),
+          deleteRows: (0 if sheet_prot[:delete_rows] == false),
+          selectLockedCells: (1 if sheet_prot[:select_locked_cells]),
+          sort: (0 if sheet_prot[:sort] == false),
+          autoFilter: (0 if sheet_prot[:auto_filter] == false),
+          pivotTables: (0 if sheet_prot[:pivot_tables] == false),
+          selectUnlockedCells: (1 if sheet_prot[:select_unlocked_cells])
+        }
+        if sheet_prot[:algorithm_name]
+          attrs[:algorithmName] = sheet_prot[:algorithm_name]
+          attrs[:hashValue] = sheet_prot[:hash_value]
+          attrs[:saltValue] = sheet_prot[:salt_value]
+          attrs[:spinCount] = sheet_prot[:spin_count]
+        elsif sheet_prot[:password]
+          attrs[:password] = sheet_prot[:password]
+        end
+        xml.empty_tag("sheetProtection", attrs)
+      end
+
+      # : (XmlBuilder xml, untyped prot_ranges) -> void
+      def write_protected_ranges_xml(xml, prot_ranges)
+        xml.tag("protectedRanges") do
+          prot_ranges.each do |pr|
+            attrs = { sqref: pr[:sqref] || "", name: pr[:name] || "" }
+            if pr[:algorithm_name]
+              attrs[:algorithmName] = pr[:algorithm_name]
+              attrs[:hashValue] = pr[:hash_value]
+              attrs[:saltValue] = pr[:salt_value]
+              attrs[:spinCount] = pr[:spin_count]
+            end
+            sds = pr[:security_descriptors] || []
+            if sds.empty?
+              xml.empty_tag("protectedRange", attrs)
+            else
+              xml.tag("protectedRange", attrs) do
+                sds.each { |sd| xml.text_tag("securityDescriptor", sd || "") }
+              end
+            end
+          end
+        end
+      end
+
+      # : (XmlBuilder xml, untyped sheet_scenarios) -> void
+      def write_scenarios_xml(xml, sheet_scenarios)
+        xml.tag(
+          "scenarios",
+          {
+            current: sheet_scenarios[:current],
+            show: sheet_scenarios[:show],
+            sqref: sheet_scenarios[:sqref]
+          }
+        ) do
+          (sheet_scenarios[:scenarios] || []).each do |sc|
+            xml.tag(
+              "scenario",
+              {
+                name: sc[:name] || "",
+                locked: (1 if sc[:locked]),
+                hidden: (1 if sc[:hidden]),
+                count: (sc[:input_cells].size if sc[:input_cells]&.any?),
+                user: sc[:user],
+                comment: sc[:comment]
+              }
+            ) do
+              (sc[:input_cells] || []).each do |ic|
+                xml.empty_tag(
+                  "inputCells",
+                  {
+                    r: ic[:r] || "",
+                    val: ic[:val].to_s,
+                    deleted: (1 if ic[:deleted]),
+                    undone: (1 if ic[:undone]),
+                    numFmtId: ic[:num_fmt_id]
+                  }
+                )
+              end
+            end
+          end
+        end
+      end
+
+      # : (XmlBuilder xml, untyped data_consol) -> void
+      def write_data_consolidate_xml(xml, data_consol)
+        attrs = {
+          function: (data_consol[:function] if data_consol[:function] && data_consol[:function] != "sum"),
+          startLabels: (1 if data_consol[:start_labels]),
+          leftLabels: (1 if data_consol[:left_labels]),
+          topLabels: (1 if data_consol[:top_labels]),
+          link: (1 if data_consol[:link])
+        }
+        refs = data_consol[:data_refs] || []
+        if refs.empty?
+          xml.empty_tag("dataConsolidate", attrs)
+        else
+          xml.tag("dataConsolidate", attrs) do
+            xml.tag("dataRefs", { count: refs.size }) do
+              refs.each do |r|
+                xml.empty_tag("dataRef", { ref: r[:ref], name: r[:name], sheet: r[:sheet] })
+              end
+            end
+          end
+        end
+      end
+
+      # : (XmlBuilder xml, untyped sheet_dv, ::Hash[untyped, untyped] dv_options) -> void
+      def write_data_validations_xml(xml, sheet_dv, dv_options)
+        valid_dv = sheet_dv.reject { |dv| dv[:sqref].nil? || dv[:sqref].to_s.empty? }
+        return if valid_dv.empty?
+
+        xml.tag(
+          "dataValidations",
+          {
+            count: valid_dv.size,
+            disablePrompts: (1 if dv_options[:disable_prompts]),
+            xWindow: dv_options[:x_window],
+            yWindow: dv_options[:y_window]
+          }
+        ) do
+          valid_dv.each do |dv|
+            attrs = {
+              sqref: dv[:sqref] || "",
+              type: dv[:type],
+              operator: dv[:operator],
+              errorStyle: dv[:error_style],
+              allowBlank: (1 if dv[:allow_blank]),
+              showInputMessage: (1 if dv[:show_input_message]),
+              showErrorMessage: (1 if dv[:show_error_message]),
+              errorTitle: dv[:error_title],
+              error: dv[:error],
+              promptTitle: dv[:prompt_title],
+              prompt: dv[:prompt],
+              showDropDown: (1 if dv[:show_drop_down]),
+              imeMode: dv[:ime_mode]
+            }
+            if dv[:formula1] || dv[:formula2]
+              xml.tag("dataValidation", attrs) do
+                xml.text_tag("formula1", dv[:formula1]) if dv[:formula1]
+                xml.text_tag("formula2", dv[:formula2]) if dv[:formula2]
+              end
+            else
+              xml.empty_tag("dataValidation", attrs)
+            end
+          end
+        end
+      end
+
+      # : (XmlBuilder xml, untyped sheet_po, untyped sheet_pm, untyped sheet_ps, untyped sheet_hf) -> void
+      def write_print_and_page_xml(xml, sheet_po, sheet_pm, sheet_ps, sheet_hf)
+        unless sheet_po.empty?
+          po_attrs = {
+            gridLines: (1 if sheet_po[:grid_lines]),
+            headings: (1 if sheet_po[:headings]),
+            horizontalCentered: (1 if sheet_po[:horizontal_centered]),
+            verticalCentered: (1 if sheet_po[:vertical_centered]),
+            gridLinesSet: (0 if sheet_po[:grid_lines_set] == false)
+          }.compact
+          xml.empty_tag("printOptions", po_attrs) unless po_attrs.empty?
+        end
+
+        if sheet_pm
+          pm_attrs = %w[left right top bottom header footer].each_with_object({}) do |k, h|
+            v = sheet_pm[k.to_sym]
+            h[k] = v if v
+          end
+          xml.empty_tag("pageMargins", pm_attrs) unless pm_attrs.empty?
+        end
+
+        unless sheet_ps.empty?
+          ps_attrs = {
+            orientation: sheet_ps[:orientation],
+            paperSize: sheet_ps[:paper_size],
+            scale: sheet_ps[:scale],
+            fitToWidth: sheet_ps[:fit_to_width],
+            fitToHeight: sheet_ps[:fit_to_height],
+            pageOrder: sheet_ps[:page_order],
+            blackAndWhite: (1 if sheet_ps[:black_and_white]),
+            draft: (1 if sheet_ps[:draft]),
+            cellComments: sheet_ps[:cell_comments],
+            firstPageNumber: (sheet_ps[:first_page_number] if sheet_ps[:first_page_number] && sheet_ps[:first_page_number].to_i >= 0),
+            useFirstPageNumber: (1 if sheet_ps[:use_first_page_number]),
+            horizontalDpi: (sheet_ps[:horizontal_dpi] if sheet_ps[:horizontal_dpi].to_i.positive?),
+            verticalDpi: (sheet_ps[:vertical_dpi] if sheet_ps[:vertical_dpi].to_i.positive?),
+            copies: sheet_ps[:copies],
+            paperHeight: sheet_ps[:paper_height],
+            paperWidth: sheet_ps[:paper_width],
+            errors: sheet_ps[:errors],
+            usePrinterDefaults: (0 if sheet_ps[:use_printer_defaults] == false)
+          }.compact
+          xml.empty_tag("pageSetup", ps_attrs) unless ps_attrs.empty?
+        end
+
+        return if sheet_hf.empty?
+
+        xml.tag(
+          "headerFooter",
+          {
+            differentFirst: (1 if sheet_hf[:different_first]),
+            differentOddEven: (1 if sheet_hf[:different_odd_even]),
+            scaleWithDoc: (0 if sheet_hf[:scale_with_doc] == false),
+            alignWithMargins: (0 if sheet_hf[:align_with_margins] == false)
+          }
+        ) do
+          xml.text_tag("oddHeader", sheet_hf[:odd_header]) if sheet_hf[:odd_header]
+          xml.text_tag("oddFooter", sheet_hf[:odd_footer]) if sheet_hf[:odd_footer]
+          xml.text_tag("evenHeader", sheet_hf[:even_header]) if sheet_hf[:even_header]
+          xml.text_tag("evenFooter", sheet_hf[:even_footer]) if sheet_hf[:even_footer]
+          xml.text_tag("firstHeader", sheet_hf[:first_header]) if sheet_hf[:first_header]
+          xml.text_tag("firstFooter", sheet_hf[:first_footer]) if sheet_hf[:first_footer]
+        end
+      end
+
+      # : (XmlBuilder xml, ::String tag, untyped breaks, default_max: ::Integer) -> void
+      def write_page_breaks_xml(xml, tag, breaks, default_max:)
+        manual_count = breaks.count do |brk|
+          if brk.is_a?(Elements::PageBreak)
+            brk.manual?
+          elsif brk.is_a?(Hash)
+            brk[:man] != false
+          else
+            true
+          end
+        end
+        xml.tag(tag, { count: breaks.size, manualBreakCount: manual_count }) do
+          breaks.each { |brk| write_brk_xml(xml, brk, default_max: default_max) }
+        end
       end
 
       # Extracts the row number from a cell address, e.g. 1 from "A1".

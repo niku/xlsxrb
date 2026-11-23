@@ -11,12 +11,9 @@ module Xlsxrb
         # : (untyped pivot_table, untyped _cache_id) -> untyped
         def generate_pivot_cache_definition_xml: (untyped pivot_table, untyped _cache_id) -> untyped
 
-        # Attributes that describe the value types of a cache field's shared items.
-        # : (Array[untyped] values) -> String
-        def shared_items_attrs: (untyped values) -> untyped
-
-        # : (untyped value) -> String
-        def shared_item_xml: (untyped value) -> untyped
+        # Writes <sharedItems> and its typed children for a cache field.
+        # : (XmlBuilder xml, Array[untyped] values) -> void
+        def write_shared_items_xml: (untyped xml, untyped values) -> untyped
 
         # : (untyped pivot_table) -> untyped
         def generate_pivot_cache_records_xml: (untyped pivot_table) -> untyped
@@ -36,20 +33,14 @@ module Xlsxrb
         # : (untyped ct_xml) -> untyped
         def parse_extra_content_types: (untyped ct_xml) -> untyped
 
-        # : (untyped element, untyped opts) -> ("" | ::String)
-        def build_line_end_xml: (untyped element, untyped opts) -> untyped
+        # : (XmlBuilder xml, untyped element, untyped opts) -> void
+        def write_line_end_xml: (untyped xml, untyped element, untyped opts) -> untyped
 
-        # : (untyped value) -> untyped
-        # Escapes cell text: ST_Xstring (XmlBuilder.encode_xstring), then XML.
-        def xml_escape_text: (untyped value) -> untyped
+        # : (XmlBuilder xml, untyped rich_text) -> void
+        def write_rich_text_xml: (untyped xml, untyped rich_text) -> untyped
 
-        def xml_escape: (untyped value) -> untyped
-
-        # : (untyped rich_text) -> untyped
-        def rich_text_xml: (untyped rich_text) -> untyped
-
-        # : (untyped cell_ref, untyped value, untyped style_idx, ?untyped? sst, ?ph: untyped?) -> untyped
-        def cell_xml: (untyped cell_ref, untyped value, untyped style_idx, ?untyped sst, ?ph: untyped) -> untyped
+        # : (XmlBuilder xml, untyped cell_ref, untyped value, untyped style_idx, ?untyped? sst, ?ph: untyped?) -> void
+        def write_cell_xml: (untyped xml, untyped cell_ref, untyped value, untyped style_idx, ?untyped sst, ?ph: untyped) -> untyped
 
         # Returns the numFmtId for dates, registering it on first use.
         # : () -> untyped
@@ -63,15 +54,15 @@ module Xlsxrb
         # : (untyped style_value) -> (nil | untyped)
         def resolve_style_index: (untyped style_value) -> untyped
 
-        # : (untyped filter) -> untyped
-        def emit_filter_xml: (untyped filter) -> untyped
+        # : (XmlBuilder xml, untyped filter) -> void
+        def write_filter_xml: (untyped xml, untyped filter) -> untyped
 
-        # : (untyped parts, untyped rule) -> untyped
-        def emit_cf_rule: (untyped parts, untyped rule) -> untyped
+        # : (XmlBuilder xml, untyped rule) -> void
+        def write_cf_rule: (untyped xml, untyped rule) -> untyped
 
         # Emits a <color> element for CF rules, accepting either a plain RGB string or a hash.
-        # : (untyped color) -> (untyped | ::String)
-        def emit_cf_color_xml: (untyped color) -> untyped
+        # : (XmlBuilder xml, untyped color) -> void
+        def write_cf_color_xml: (untyped xml, untyped color) -> untyped
 
         # : (untyped sheet_cells) -> ("A1" | ::String)
         def compute_dimension: (untyped sheet_cells) -> untyped
@@ -87,6 +78,11 @@ module Xlsxrb
 
         # : () -> untyped
         def generate_custom_properties_xml: () -> untyped
+
+        private
+
+        # : (untyped val) -> (nil | ::Integer)
+        def xml_bool_attr: (untyped val) -> untyped
       end
     end
   end

@@ -9,161 +9,173 @@ module Xlsxrb
       module StylesXml
         # : () -> untyped
         def generate_styles_xml
-          parts = [
-            XML_HEADER,
-            %(<styleSheet xmlns="#{SSML_NS}">)
-          ]
-
-          # numFmts
-          unless @num_fmts.empty?
-            parts << %(<numFmts count="#{@num_fmts.size}">)
-            @num_fmts.each do |nf|
-              parts << %(<numFmt numFmtId="#{xml_escape(nf[:num_fmt_id])}" formatCode="#{xml_escape(nf[:format_code])}"/>)
-            end
-            parts << "</numFmts>"
-          end
-
-          # fonts
-          parts << %(<fonts count="#{@fonts.size}">)
-          @fonts.each { |f| parts << emit_font_xml(f) }
-          parts << "</fonts>"
-
-          # fills
-          parts << %(<fills count="#{@fills.size}">)
-          @fills.each { |f| parts << emit_fill_xml(f) }
-          parts << "</fills>"
-
-          # borders
-          parts << %(<borders count="#{@borders.size}">)
-          @borders.each { |b| parts << emit_border_xml(b) }
-          parts << "</borders>"
-
-          # cellStyleXfs
-          parts << %(<cellStyleXfs count="#{@cell_style_xfs.size}">)
-          @cell_style_xfs.each do |xf|
-            parts << %(<xf numFmtId="#{xml_escape(xf[:num_fmt_id])}" fontId="#{xml_escape(xf[:font_id])}" fillId="#{xml_escape(xf[:fill_id])}" borderId="#{xml_escape(xf[:border_id])}"/>)
-          end
-          parts << "</cellStyleXfs>"
-
-          # cellXfs
-          parts << %(<cellXfs count="#{@xf_entries.size}">)
-          @xf_entries.each do |xf|
-            apply_attrs = []
-            apply_attrs << ' applyNumberFormat="1"' if xf[:num_fmt_id].positive?
-            apply_attrs << ' applyFont="1"' if xf[:font_id].positive?
-            apply_attrs << ' applyFill="1"' if xf[:fill_id].positive?
-            apply_attrs << ' applyBorder="1"' if xf[:border_id].positive?
-            apply_attrs << ' applyAlignment="1"' if xf[:alignment]
-            apply_attrs << ' applyProtection="1"' if xf[:protection]
-            apply_attrs << ' quotePrefix="1"' if xf[:quote_prefix]
-            apply_attrs << ' pivotButton="1"' if xf[:pivot_button]
-            children = []
-            children << emit_alignment_xml(xf[:alignment]) if xf[:alignment]
-            children << emit_protection_xml(xf[:protection]) if xf[:protection]
-            xf_id = xf[:xf_id] || 0
-            parts << if children.any?
-                       %(<xf numFmtId="#{xml_escape(xf[:num_fmt_id])}" fontId="#{xml_escape(xf[:font_id])}" fillId="#{xml_escape(xf[:fill_id])}" borderId="#{xml_escape(xf[:border_id])}" xfId="#{xml_escape(xf_id)}"#{apply_attrs.join}>#{children.join}</xf>)
-                     else
-                       %(<xf numFmtId="#{xml_escape(xf[:num_fmt_id])}" fontId="#{xml_escape(xf[:font_id])}" fillId="#{xml_escape(xf[:fill_id])}" borderId="#{xml_escape(xf[:border_id])}" xfId="#{xml_escape(xf_id)}"#{apply_attrs.join}/>)
-                     end
-          end
-          parts << "</cellXfs>"
-
-          # cellStyles
-          parts << %(<cellStyles count="#{@cell_style_names.size}">)
-          @cell_style_names.each do |cs|
-            cs_attrs = %(name="#{xml_escape(cs[:name])}" xfId="#{xml_escape(cs[:xf_id])}")
-            cs_attrs << %( builtinId="#{xml_escape(cs[:builtin_id])}") if cs[:builtin_id]
-            cs_attrs << %( iLevel="#{xml_escape(cs[:i_level])}") if cs[:i_level]
-            cs_attrs << ' hidden="1"' if cs[:hidden]
-            cs_attrs << ' customBuiltin="1"' if cs[:custom_builtin]
-            parts << "<cellStyle #{cs_attrs}/>"
-          end
-          parts << "</cellStyles>"
-
-          # dxfs
-          unless @dxfs.empty?
-            parts << %(<dxfs count="#{@dxfs.size}">)
-            @dxfs.each { |d| parts << emit_dxf_xml(d) }
-            parts << "</dxfs>"
-          end
-
-          # tableStyles
-          ts_styles = @table_styles[:styles] || []
-          unless ts_styles.empty? && @table_styles[:default_table_style].nil? && @table_styles[:default_pivot_style].nil?
-            ts_attrs = [%(count="#{ts_styles.size}")]
-            ts_attrs << %(defaultTableStyle="#{xml_escape(@table_styles[:default_table_style])}") if @table_styles[:default_table_style]
-            ts_attrs << %(defaultPivotStyle="#{xml_escape(@table_styles[:default_pivot_style])}") if @table_styles[:default_pivot_style]
-            if ts_styles.empty?
-              parts << "<tableStyles #{ts_attrs.join(" ")}/>"
-            else
-              parts << "<tableStyles #{ts_attrs.join(" ")}>"
-              ts_styles.each do |ts|
-                s_attrs = [%(name="#{xml_escape(ts[:name])}")]
-                s_attrs << %(pivot="0") if ts[:pivot] == false
-                s_attrs << %(table="0") if ts[:table] == false
-                s_attrs << %(count="#{ts[:elements].size}") unless ts[:elements].empty?
-                if ts[:elements].empty?
-                  parts << "<tableStyle #{s_attrs.join(" ")}/>"
-                else
-                  parts << "<tableStyle #{s_attrs.join(" ")}>"
-                  ts[:elements].each do |el|
-                    el_attrs = [%(type="#{xml_escape(el[:type])}")]
-                    el_attrs << %(size="#{xml_escape(el[:size])}") if el[:size] && el[:size] != 1
-                    el_attrs << %(dxfId="#{xml_escape(el[:dxf_id])}") if el[:dxf_id]
-                    parts << "<tableStyleElement #{el_attrs.join(" ")}/>"
+          XmlBuilder.build(declaration: :plain) do |xml|
+            xml.tag("styleSheet", { xmlns: SSML_NS }) do
+              # numFmts
+              unless @num_fmts.empty?
+                xml.tag("numFmts", { count: @num_fmts.size }) do
+                  @num_fmts.each do |nf|
+                    xml.empty_tag("numFmt", { numFmtId: nf[:num_fmt_id] || "", formatCode: nf[:format_code] || "" })
                   end
-                  parts << "</tableStyle>"
                 end
               end
-              parts << "</tableStyles>"
-            end
-          end
 
-          # colors
-          unless @indexed_colors.empty? && @mru_colors.empty?
-            parts << "<colors>"
-            unless @indexed_colors.empty?
-              parts << "<indexedColors>"
-              @indexed_colors.each do |c|
-                rgb_str = format_rgb_hex(c) || c
-                parts << %(<rgbColor rgb="#{xml_escape(rgb_str)}"/>)
+              # fonts
+              xml.tag("fonts", { count: @fonts.size }) do
+                @fonts.each { |f| write_font_xml(xml, f) }
               end
-              parts << "</indexedColors>"
+
+              # fills
+              xml.tag("fills", { count: @fills.size }) do
+                @fills.each { |f| write_fill_xml(xml, f) }
+              end
+
+              # borders
+              xml.tag("borders", { count: @borders.size }) do
+                @borders.each { |bdr| write_border_xml(xml, bdr) }
+              end
+
+              # cellStyleXfs
+              xml.tag("cellStyleXfs", { count: @cell_style_xfs.size }) do
+                @cell_style_xfs.each do |xf|
+                  xml.empty_tag("xf", {
+                                  numFmtId: xf[:num_fmt_id] || "",
+                                  fontId: xf[:font_id] || "",
+                                  fillId: xf[:fill_id] || "",
+                                  borderId: xf[:border_id] || ""
+                                })
+                end
+              end
+
+              # cellXfs
+              xml.tag("cellXfs", { count: @xf_entries.size }) do
+                @xf_entries.each do |xf|
+                  xf_attrs = {
+                    numFmtId: xf[:num_fmt_id] || "",
+                    fontId: xf[:font_id] || "",
+                    fillId: xf[:fill_id] || "",
+                    borderId: xf[:border_id] || "",
+                    xfId: xf[:xf_id] || 0,
+                    applyNumberFormat: xf[:num_fmt_id].positive? ? 1 : nil,
+                    applyFont: xf[:font_id].positive? ? 1 : nil,
+                    applyFill: xf[:fill_id].positive? ? 1 : nil,
+                    applyBorder: xf[:border_id].positive? ? 1 : nil,
+                    applyAlignment: xf[:alignment] ? 1 : nil,
+                    applyProtection: xf[:protection] ? 1 : nil,
+                    quotePrefix: xf[:quote_prefix] ? 1 : nil,
+                    pivotButton: xf[:pivot_button] ? 1 : nil
+                  }
+                  if xf[:alignment] || xf[:protection]
+                    xml.tag("xf", xf_attrs) do
+                      write_alignment_xml(xml, xf[:alignment]) if xf[:alignment]
+                      write_protection_xml(xml, xf[:protection]) if xf[:protection]
+                    end
+                  else
+                    xml.empty_tag("xf", xf_attrs)
+                  end
+                end
+              end
+
+              # cellStyles
+              xml.tag("cellStyles", { count: @cell_style_names.size }) do
+                @cell_style_names.each do |cs|
+                  xml.empty_tag("cellStyle", {
+                                  name: cs[:name] || "",
+                                  xfId: cs[:xf_id] || "",
+                                  builtinId: cs[:builtin_id],
+                                  iLevel: cs[:i_level],
+                                  hidden: cs[:hidden] ? 1 : nil,
+                                  customBuiltin: cs[:custom_builtin] ? 1 : nil
+                                })
+                end
+              end
+
+              # dxfs
+              unless @dxfs.empty?
+                xml.tag("dxfs", { count: @dxfs.size }) do
+                  @dxfs.each { |d| write_dxf_xml(xml, d) }
+                end
+              end
+
+              # tableStyles
+              ts_styles = @table_styles[:styles] || []
+              unless ts_styles.empty? && @table_styles[:default_table_style].nil? && @table_styles[:default_pivot_style].nil?
+                ts_attrs = {
+                  count: ts_styles.size,
+                  defaultTableStyle: @table_styles[:default_table_style],
+                  defaultPivotStyle: @table_styles[:default_pivot_style]
+                }
+                if ts_styles.empty?
+                  xml.empty_tag("tableStyles", ts_attrs)
+                else
+                  xml.tag("tableStyles", ts_attrs) do
+                    ts_styles.each do |ts|
+                      s_attrs = {
+                        name: ts[:name] || "",
+                        pivot: ts[:pivot] == false ? 0 : nil,
+                        table: ts[:table] == false ? 0 : nil,
+                        count: ts[:elements].empty? ? nil : ts[:elements].size
+                      }
+                      if ts[:elements].empty?
+                        xml.empty_tag("tableStyle", s_attrs)
+                      else
+                        xml.tag("tableStyle", s_attrs) do
+                          ts[:elements].each do |el|
+                            xml.empty_tag("tableStyleElement", {
+                                            type: el[:type] || "",
+                                            size: el[:size] && el[:size] != 1 ? el[:size] : nil,
+                                            dxfId: el[:dxf_id]
+                                          })
+                          end
+                        end
+                      end
+                    end
+                  end
+                end
+              end
+
+              # colors
+              unless @indexed_colors.empty? && @mru_colors.empty?
+                xml.tag("colors") do
+                  unless @indexed_colors.empty?
+                    xml.tag("indexedColors") do
+                      @indexed_colors.each do |c|
+                        xml.empty_tag("rgbColor", { rgb: format_rgb_hex(c) || c || "" })
+                      end
+                    end
+                  end
+                  unless @mru_colors.empty?
+                    xml.tag("mruColors") do
+                      @mru_colors.each { |c| write_color_xml(xml, c) }
+                    end
+                  end
+                end
+              end
             end
-            unless @mru_colors.empty?
-              parts << "<mruColors>"
-              @mru_colors.each { |c| parts << emit_color_xml(c) }
-              parts << "</mruColors>"
-            end
-            parts << "</colors>"
           end
-
-          parts << "</styleSheet>"
-          parts.join
         end
 
-        # : (untyped alignment) -> ::String
-        def emit_alignment_xml(alignment)
-          attrs = []
-          attrs << %(horizontal="#{xml_escape(alignment[:horizontal])}") if alignment[:horizontal]
-          attrs << %(vertical="#{xml_escape(alignment[:vertical])}") if alignment[:vertical]
-          attrs << %(wrapText="1") if alignment[:wrap_text]
-          attrs << %(textRotation="#{xml_escape(alignment[:text_rotation])}") if alignment[:text_rotation]
-          attrs << %(indent="#{xml_escape(alignment[:indent])}") if alignment[:indent]
-          attrs << %(relativeIndent="#{xml_escape(alignment[:relative_indent])}") if alignment[:relative_indent]
-          attrs << %(shrinkToFit="1") if alignment[:shrink_to_fit]
-          attrs << %(readingOrder="#{xml_escape(alignment[:reading_order])}") if alignment[:reading_order]
-          attrs << %(justifyLastLine="1") if alignment[:justify_last_line]
-          "<alignment #{attrs.join(" ")}/>"
+        # : (XmlBuilder xml, untyped alignment) -> void
+        def write_alignment_xml(xml, alignment)
+          xml.empty_tag("alignment", {
+                          horizontal: alignment[:horizontal],
+                          vertical: alignment[:vertical],
+                          wrapText: alignment[:wrap_text] ? 1 : nil,
+                          textRotation: alignment[:text_rotation],
+                          indent: alignment[:indent],
+                          relativeIndent: alignment[:relative_indent],
+                          shrinkToFit: alignment[:shrink_to_fit] ? 1 : nil,
+                          readingOrder: alignment[:reading_order],
+                          justifyLastLine: alignment[:justify_last_line] ? 1 : nil
+                        })
         end
 
-        # : (untyped protection) -> ::String
-        def emit_protection_xml(protection)
-          attrs = []
-          attrs << %(locked="#{protection[:locked] ? "1" : "0"}") unless protection[:locked].nil?
-          attrs << %(hidden="#{protection[:hidden] ? "1" : "0"}") unless protection[:hidden].nil?
-          "<protection #{attrs.join(" ")}/>"
+        # : (XmlBuilder xml, untyped protection) -> void
+        def write_protection_xml(xml, protection)
+          xml.empty_tag("protection", {
+                          locked: xml_bool_attr(protection[:locked]),
+                          hidden: xml_bool_attr(protection[:hidden])
+                        })
         end
 
         # : (untyped rgb) -> ::String?
@@ -192,203 +204,183 @@ module Xlsxrb
           end
         end
 
-        # : (untyped source, ?tag: ::String) -> ::String
-        def emit_color_xml(source, tag: "color")
-          return "" unless source
+        # : (XmlBuilder xml, untyped source, ?tag: ::String) -> void
+        def write_color_xml(xml, source, tag: "color")
+          return unless source
 
           spec = if source.is_a?(Hash) && source[:color]
                    source[:color]
                  else
                    source
                  end
-
-          return "" unless spec
+          return unless spec
 
           if spec.is_a?(Hash)
             if spec[:auto]
-              %(<#{tag} auto="1"/>)
+              xml.empty_tag(tag, { auto: 1 })
             elsif spec[:rgb] || (spec[:color] && !spec[:color].is_a?(Hash))
-              raw_rgb = spec[:rgb] || spec[:color]
-              formatted_rgb = format_rgb_hex(raw_rgb)
-              formatted_rgb ? %(<#{tag} rgb="#{xml_escape(formatted_rgb)}"/>) : ""
+              formatted_rgb = format_rgb_hex(spec[:rgb] || spec[:color])
+              xml.empty_tag(tag, { rgb: formatted_rgb }) if formatted_rgb
             elsif spec[:theme]
-              attrs = [%(theme="#{xml_escape(spec[:theme])}")]
-              attrs << %(tint="#{xml_escape(spec[:tint])}") if spec[:tint]
-              %(<#{tag} #{attrs.join(" ")}/>)
+              xml.empty_tag(tag, { theme: spec[:theme], tint: spec[:tint] })
             elsif spec[:indexed]
-              %(<#{tag} indexed="#{xml_escape(spec[:indexed])}"/>)
-            else
-              ""
+              xml.empty_tag(tag, { indexed: spec[:indexed] })
             end
           elsif spec.is_a?(String) || spec.is_a?(Symbol)
             formatted_rgb = format_rgb_hex(spec)
-            formatted_rgb ? %(<#{tag} rgb="#{xml_escape(formatted_rgb)}"/>) : ""
-          else
-            ""
+            xml.empty_tag(tag, { rgb: formatted_rgb }) if formatted_rgb
           end
         end
 
-        # : (untyped font) -> untyped
-        def emit_font_xml(font)
-          parts = ["<font>"]
-          if font.key?(:bold)
-            parts << (font[:bold] ? "<b/>" : '<b val="0"/>')
-          end
-          if font.key?(:italic)
-            parts << (font[:italic] ? "<i/>" : '<i val="0"/>')
-          end
-          if font.key?(:strike)
-            parts << (font[:strike] ? "<strike/>" : '<strike val="0"/>')
-          end
-          parts << "<shadow/>" if font[:shadow]
-          parts << "<outline/>" if font[:outline]
-          parts << "<condense/>" if font[:condense]
-          parts << "<extend/>" if font[:extend]
-          if font[:underline]
-            u_val = font[:underline]
-            if u_val == true || u_val.to_s == "single"
-              parts << "<u/>"
-            else
-              mapped_u = StyleBuilder::UNDERLINE_MAP[u_val.to_sym] || u_val
-              parts << %(<u val="#{xml_escape(mapped_u)}"/>)
+        # : (XmlBuilder xml, untyped font) -> void
+        def write_font_xml(xml, font)
+          xml.tag("font") do
+            xml.empty_tag("b", font[:bold] ? XmlBuilder::EMPTY_HASH : { val: 0 }) if font.key?(:bold)
+            xml.empty_tag("i", font[:italic] ? XmlBuilder::EMPTY_HASH : { val: 0 }) if font.key?(:italic)
+            xml.empty_tag("strike", font[:strike] ? XmlBuilder::EMPTY_HASH : { val: 0 }) if font.key?(:strike)
+            xml.empty_tag("shadow") if font[:shadow]
+            xml.empty_tag("outline") if font[:outline]
+            xml.empty_tag("condense") if font[:condense]
+            xml.empty_tag("extend") if font[:extend]
+            if font[:underline]
+              u_val = font[:underline]
+              if u_val == true || u_val.to_s == "single"
+                xml.empty_tag("u")
+              else
+                mapped_u = StyleBuilder::UNDERLINE_MAP[u_val.to_sym] || u_val
+                xml.empty_tag("u", { val: mapped_u })
+              end
             end
+            va_val = font[:vert_align] || font[:vertical_align]
+            va_val ||= "superscript" if font[:superscript]
+            va_val ||= "subscript" if font[:subscript]
+            if va_val
+              mapped_va = StyleBuilder::VERT_ALIGN_MAP[va_val.to_sym] || va_val
+              xml.empty_tag("vertAlign", { val: mapped_va })
+            end
+            font_sz = font[:size] || font[:sz]
+            xml.empty_tag("sz", { val: font_sz }) if font_sz
+            write_color_xml(xml, font)
+            xml.empty_tag("name", { val: font[:name] }) if font[:name]
+            xml.empty_tag("family", { val: font[:family] }) if font[:family]
+            xml.empty_tag("charset", { val: font[:charset] }) if font[:charset]
+            xml.empty_tag("scheme", { val: font[:scheme] }) if font[:scheme]
           end
-          va_val = font[:vert_align] || font[:vertical_align]
-          va_val ||= "superscript" if font[:superscript]
-          va_val ||= "subscript" if font[:subscript]
-          if va_val
-            mapped_va = StyleBuilder::VERT_ALIGN_MAP[va_val.to_sym] || va_val
-            parts << %(<vertAlign val="#{xml_escape(mapped_va)}"/>)
-          end
-          font_sz = font[:size] || font[:sz]
-          parts << %(<sz val="#{xml_escape(font_sz)}"/>) if font_sz
-          parts << emit_color_xml(font)
-          parts << %(<name val="#{xml_escape(font[:name])}"/>) if font[:name]
-          parts << %(<family val="#{xml_escape(font[:family])}"/>) if font[:family]
-          parts << %(<charset val="#{xml_escape(font[:charset])}"/>) if font[:charset]
-          parts << %(<scheme val="#{xml_escape(font[:scheme])}"/>) if font[:scheme]
-          parts << "</font>"
-          parts.join
         end
 
-        # : (untyped fill) -> (untyped | ::String)
-        def emit_fill_xml(fill)
-          return emit_gradient_fill_xml(fill[:gradient]) if fill[:gradient]
+        # : (XmlBuilder xml, untyped fill) -> void
+        def write_fill_xml(xml, fill)
+          return write_gradient_fill_xml(xml, fill[:gradient]) if fill[:gradient]
 
           has_fg = fill[:fg_color] || fill[:fg_color_theme] || fill[:fg_color_indexed] || fill[:fg_color_auto]
           has_bg = fill[:bg_color] || fill[:bg_color_theme] || fill[:bg_color_indexed] || fill[:bg_color_auto]
           fill_pattern = fill[:pattern_type] || fill[:pattern]
-          return "<fill><patternFill patternType=\"#{xml_escape(fill_pattern)}\"/></fill>" if fill_pattern && !has_fg && !has_bg
+          if fill_pattern && !has_fg && !has_bg
+            xml.tag("fill") { xml.empty_tag("patternFill", { patternType: fill_pattern }) }
+            return
+          end
 
-          parts = ["<fill>"]
-          pt = fill_pattern || "solid"
-          parts << %(<patternFill patternType="#{xml_escape(pt)}">)
-          parts << emit_fill_color_xml("fgColor", fill, :fg)
-          parts << emit_fill_color_xml("bgColor", fill, :bg)
-          parts << "</patternFill>"
-          parts << "</fill>"
-          parts.join
+          xml.tag("fill") do
+            xml.tag("patternFill", { patternType: fill_pattern || "solid" }) do
+              write_fill_color_xml(xml, "fgColor", fill, :fg)
+              write_fill_color_xml(xml, "bgColor", fill, :bg)
+            end
+          end
         end
 
-        # : (untyped tag, untyped fill, untyped prefix) -> ::String
-        def emit_fill_color_xml(tag, fill, prefix)
+        # : (XmlBuilder xml, untyped tag, untyped fill, untyped prefix) -> void
+        def write_fill_color_xml(xml, tag, fill, prefix)
           val = fill[:"#{prefix}_color"]
           if val
-            emit_color_xml(val, tag: tag)
+            write_color_xml(xml, val, tag: tag)
           elsif fill[:"#{prefix}_color_theme"]
-            attrs = [%(theme="#{xml_escape(fill[:"#{prefix}_color_theme"])}")]
-            attrs << %(tint="#{xml_escape(fill[:"#{prefix}_color_tint"])}") if fill[:"#{prefix}_color_tint"]
-            %(<#{tag} #{attrs.join(" ")}/>)
+            xml.empty_tag(tag, { theme: fill[:"#{prefix}_color_theme"], tint: fill[:"#{prefix}_color_tint"] })
           elsif fill[:"#{prefix}_color_indexed"]
-            %(<#{tag} indexed="#{xml_escape(fill[:"#{prefix}_color_indexed"])}"/>)
+            xml.empty_tag(tag, { indexed: fill[:"#{prefix}_color_indexed"] })
           elsif fill[:"#{prefix}_color_auto"]
-            %(<#{tag} auto="1"/>)
-          else
-            ""
+            xml.empty_tag(tag, { auto: 1 })
           end
         end
 
-        # : (untyped gradient) -> untyped
-        def emit_gradient_fill_xml(gradient)
-          attrs = []
-          attrs << %(type="#{xml_escape(gradient[:type])}") if gradient[:type]
-          attrs << %(degree="#{xml_escape(gradient[:degree])}") if gradient[:degree]
-          attrs << %(left="#{xml_escape(gradient[:left])}") if gradient[:left]
-          attrs << %(right="#{xml_escape(gradient[:right])}") if gradient[:right]
-          attrs << %(top="#{xml_escape(gradient[:top])}") if gradient[:top]
-          attrs << %(bottom="#{xml_escape(gradient[:bottom])}") if gradient[:bottom]
-          parts = ["<fill>"]
-          parts << "<gradientFill#{" #{attrs.join(" ")}" unless attrs.empty?}"
-          if gradient[:stops]&.any?
-            parts[-1] = "#{parts[-1]}>"
-            gradient[:stops].each do |stop|
-              parts << %(<stop position="#{xml_escape(stop[:position])}">#{emit_color_xml(stop)}</stop>)
+        # : (XmlBuilder xml, untyped gradient) -> void
+        def write_gradient_fill_xml(xml, gradient)
+          attrs = {
+            type: gradient[:type],
+            degree: gradient[:degree],
+            left: gradient[:left],
+            right: gradient[:right],
+            top: gradient[:top],
+            bottom: gradient[:bottom]
+          }
+          xml.tag("fill") do
+            if gradient[:stops]&.any?
+              xml.tag("gradientFill", attrs) do
+                gradient[:stops].each do |stop|
+                  xml.tag("stop", { position: stop[:position] || "" }) { write_color_xml(xml, stop) }
+                end
+              end
+            else
+              xml.empty_tag("gradientFill", attrs)
             end
-            parts << "</gradientFill>"
-          else
-            parts[-1] = "#{parts[-1]}/>"
           end
-          parts << "</fill>"
-          parts.join
         end
 
-        # : (untyped brk, default_max: untyped) -> ::String
-        def emit_brk_xml(brk, default_max:)
+        # : (XmlBuilder xml, untyped brk, default_max: untyped) -> void
+        def write_brk_xml(xml, brk, default_max:)
           brk = brk.to_h if brk.is_a?(Elements::MetadataRecord)
           if brk.is_a?(Hash)
-            attrs = %(id="#{xml_escape(brk[:id])}")
-            attrs << %( min="#{xml_escape(brk[:min])}") if brk[:min]
-            attrs << %( max="#{xml_escape(brk.respond_to?(:fetch) ? brk.fetch(:max, default_max) : (brk[:max] || default_max))}")
+            max_val = brk.respond_to?(:fetch) ? brk.fetch(:max, default_max) : (brk[:max] || default_max)
             man_val = if brk.respond_to?(:fetch)
                         brk.fetch(:man, true)
                       else
                         brk[:man].nil? || brk[:man]
                       end
-            attrs << ' man="1"' if man_val
-            attrs << ' pt="1"' if brk[:pt]
-            "<brk #{attrs}/>"
+            xml.empty_tag("brk", {
+                            id: brk[:id] || "",
+                            min: brk[:min],
+                            max: max_val || "",
+                            man: man_val ? 1 : nil,
+                            pt: brk[:pt] ? 1 : nil
+                          })
           else
-            %(<brk id="#{xml_escape(brk)}" max="#{xml_escape(default_max)}" man="1"/>)
+            xml.empty_tag("brk", { id: brk || "", max: default_max || "", man: 1 })
           end
         end
 
-        # : (untyped bdr) -> untyped
-        def emit_border_xml(bdr)
-          border_attrs = []
-          border_attrs << ' diagonalUp="1"' if bdr[:diagonal_up]
-          border_attrs << ' diagonalDown="1"' if bdr[:diagonal_down]
-          border_attrs << ' outline="0"' if bdr[:outline] == false
-          parts = ["<border#{border_attrs.join}>"]
-          %i[left right top bottom diagonal vertical horizontal].each do |side|
-            s = bdr[side]
-            if s.is_a?(Hash)
-              parts << %(<#{side} style="#{xml_escape(s[:style])}">)
-              parts << emit_color_xml(s)
-              parts << "</#{side}>"
-            else
-              parts << "<#{side}/>"
+        # : (XmlBuilder xml, untyped bdr) -> void
+        def write_border_xml(xml, bdr)
+          b_attrs = {
+            diagonalUp: bdr[:diagonal_up] ? 1 : nil,
+            diagonalDown: bdr[:diagonal_down] ? 1 : nil,
+            outline: bdr[:outline] == false ? 0 : nil
+          }
+          xml.tag("border", b_attrs) do
+            %i[left right top bottom diagonal vertical horizontal].each do |side|
+              s = bdr[side]
+              if s.is_a?(Hash)
+                xml.tag(side.to_s, { style: s[:style] || "" }) { write_color_xml(xml, s) }
+              else
+                xml.empty_tag(side.to_s)
+              end
             end
           end
-          parts << "</border>"
-          parts.join
         end
 
-        # : (untyped dxf) -> untyped
-        def emit_dxf_xml(dxf)
+        # : (XmlBuilder xml, untyped dxf) -> void
+        def write_dxf_xml(xml, dxf)
           dxf = dxf.to_h if dxf.is_a?(Elements::MetadataRecord)
-          parts = ["<dxf>"]
-          parts << emit_font_xml(dxf[:font]) if dxf[:font]
-          nf = dxf.is_a?(Elements::MetadataRecord) ? dxf.number_format : (dxf[:number_format] || dxf[:num_fmt])
-          if nf
-            nf_h = nf.is_a?(Elements::MetadataRecord) ? nf.to_h : nf
-            parts << %(<numFmt numFmtId="#{xml_escape(nf_h[:num_fmt_id])}" formatCode="#{xml_escape(nf_h[:format_code])}"/>)
+          xml.tag("dxf") do
+            write_font_xml(xml, dxf[:font]) if dxf[:font]
+            nf = dxf[:number_format] || dxf[:num_fmt]
+            if nf
+              nf_h = nf.is_a?(Elements::MetadataRecord) ? nf.to_h : nf
+              xml.empty_tag("numFmt", { numFmtId: nf_h[:num_fmt_id] || "", formatCode: nf_h[:format_code] || "" })
+            end
+            write_fill_xml(xml, dxf[:fill]) if dxf[:fill]
+            write_alignment_xml(xml, dxf[:alignment]) if dxf[:alignment]
+            write_border_xml(xml, dxf[:border]) if dxf[:border]
+            write_protection_xml(xml, dxf[:protection]) if dxf[:protection]
           end
-          parts << emit_fill_xml(dxf[:fill]) if dxf[:fill]
-          parts << emit_alignment_xml(dxf[:alignment]) if dxf[:alignment]
-          parts << emit_border_xml(dxf[:border]) if dxf[:border]
-          parts << emit_protection_xml(dxf[:protection]) if dxf[:protection]
-          parts << "</dxf>"
-          parts.join
         end
 
         # : (untyped cell_address) -> untyped

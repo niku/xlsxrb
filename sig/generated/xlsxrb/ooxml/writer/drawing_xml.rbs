@@ -5,72 +5,19 @@ module Xlsxrb
     class Writer
       # Mixin containing DrawingML, Chart, Shape, Comment, and VML XML generation logic.
       module DrawingXml
-        # : (untyped drawing_parts) -> untyped
+        # : (untyped drawing_parts) -> ::String
         def generate_drawing_xml: (untyped drawing_parts) -> untyped
 
-        # : (untyped para) -> ::String
-        def paragraph_xml: (untyped para) -> untyped
-
-        # : (untyped tag, untyped font) -> untyped
-        def text_char_props_xml: (untyped tag, untyped font) -> untyped
-
-        # : (untyped tag, untyped col, untyped row, ?col_off: ::Integer, ?row_off: ::Integer) -> ::String
-        def anchor_xml: (untyped tag, untyped col, untyped row, ?col_off: untyped, ?row_off: untyped) -> untyped
-
-        # : (untyped obj) -> ::String
-        def client_data_xml: (untyped obj) -> untyped
-
-        # : (untyped rels_data) -> untyped
+        # : (untyped rels_data) -> ::String
         def generate_drawing_rels: (untyped rels_data) -> untyped
 
-        # : (untyped title_spec, ?overlay: bool) -> untyped
-        def build_chart_title_xml: (untyped title_spec, ?overlay: untyped) -> untyped
-
-        # : (untyped title_spec, untyped chart, untyped prefix) -> untyped
-        def merge_flat_title_styling: (untyped title_spec, untyped chart, untyped prefix) -> untyped
-
-        # : (untyped spec) -> untyped
-        def build_title_sp_pr: (untyped spec) -> untyped
-
-        # : (untyped layout) -> ("" | untyped)
-        def build_title_layout_xml: (untyped layout) -> untyped
-
-        # : (untyped tag, untyped spec) -> ("" | untyped)
-        def gridlines_xml: (untyped tag, untyped spec) -> untyped
-
-        # Resolves a cell reference like "Sheet1!$A$1:$A$5" to an array of values from @sheets.
-        # : (untyped ref) -> (nil | untyped)
-        def resolve_sheet_ref: (untyped ref) -> untyped
-
-        # : (untyped start_cell, untyped end_cell) -> (::Array[untyped] | untyped)
-        def enumerate_cell_range: (untyped start_cell, untyped end_cell) -> untyped
-
-        # : (untyped ref) -> ("" | ::String)
-        def num_cache_xml: (untyped ref) -> untyped
-
-        # : (untyped ref) -> ("" | ::String)
-        def str_cache_xml: (untyped ref) -> untyped
-
-        # : (untyped color, ?alpha: untyped?, ?transforms: untyped?) -> untyped
-        def color_xml: (untyped color, ?alpha: untyped, ?transforms: untyped) -> untyped
-
-        # : (untyped color) -> untyped
-        def normalize_drawing_rgb: (untyped color) -> untyped
-
-        alias srgb_clr_xml color_xml
-
-        # : (untyped rotation, untyped font) -> ("" | ::String)
-        def build_axis_txpr: (untyped rotation, untyped font) -> untyped
-
-        def build_val_ax_xml: (ax_id: untyped, prefix: untyped, chart: untyped, ?default_pos: untyped, ?default_crosses: untyped) -> untyped
-
-        # : (untyped chart) -> untyped
+        # : (untyped chart) -> ::String
         def generate_chart_xml: (untyped chart) -> untyped
 
-        # : (untyped sheet_comments) -> untyped
+        # : (untyped sheet_comments) -> ::String
         def generate_comments_xml: (untyped sheet_comments) -> untyped
 
-        # : (untyped sheet_comments) -> untyped
+        # : (untyped sheet_comments) -> ::String
         def generate_vml_drawing_xml: (untyped sheet_comments) -> untyped
 
         # : (untyped cell_ref) -> (::Array[0] | ::Array[untyped])
@@ -89,6 +36,174 @@ module Xlsxrb
         # Generates XML for xl/persons/person.xml.
         # : (Array[Hash[Symbol, untyped]] persons) -> String
         def generate_persons_xml: (untyped persons) -> untyped
+
+        private
+
+        # : (XmlBuilder xml, untyped part) -> void
+        def write_pic_anchor_xml: (untyped xml, untyped part) -> untyped
+
+        # : (XmlBuilder xml, untyped part) -> void
+        def write_chart_anchor_xml: (untyped xml, untyped part) -> untyped
+
+        # : (XmlBuilder xml, untyped part) -> void
+        def write_shape_anchor_xml: (untyped xml, untyped part) -> untyped
+
+        # : (XmlBuilder xml, untyped shape) -> void
+        def write_shape_fill_xml: (untyped xml, untyped shape) -> untyped
+
+        # : (XmlBuilder xml, untyped shape) -> void
+        def write_shape_line_xml: (untyped xml, untyped shape) -> untyped
+
+        # : (XmlBuilder xml, untyped line_join, untyped miter_limit) -> void
+        def write_line_join_xml: (untyped xml, untyped line_join, untyped miter_limit) -> untyped
+
+        # : (XmlBuilder xml, untyped source) -> void
+        def write_effect_lst_xml: (untyped xml, untyped source) -> untyped
+
+        # : (XmlBuilder xml, ::String tag, untyped spec, include_algn: bool) -> void
+        def write_shadow_xml: (untyped xml, untyped tag, untyped spec, include_algn: untyped) -> untyped
+
+        # : (XmlBuilder xml, untyped shape) -> void
+        def write_shape_text_body_xml: (untyped xml, untyped shape) -> untyped
+
+        # : (XmlBuilder xml, untyped autofit) -> void
+        def write_autofit_xml: (untyped xml, untyped autofit) -> untyped
+
+        # : (XmlBuilder xml, untyped para) -> void
+        def write_paragraph_xml: (untyped xml, untyped para) -> untyped
+
+        # : (untyped para) -> bool
+        def paragraph_ppr_has_children?: (untyped para) -> untyped
+
+        # : (XmlBuilder xml, untyped para) -> void
+        def write_paragraph_ppr_children_xml: (untyped xml, untyped para) -> untyped
+
+        # : (XmlBuilder xml, ::String tag, untyped font) -> void
+        def write_text_char_props_xml: (untyped xml, untyped tag, untyped font) -> untyped
+
+        # : (XmlBuilder xml, ::String tag, untyped col, untyped row, ?col_off: ::Integer, ?row_off: ::Integer) -> void
+        def write_anchor_xml: (untyped xml, untyped tag, untyped col, untyped row, ?col_off: untyped, ?row_off: untyped) -> untyped
+
+        # : (XmlBuilder xml, untyped obj) -> void
+        def write_client_data_xml: (untyped xml, untyped obj) -> untyped
+
+        # : (XmlBuilder xml, untyped title_spec, ?overlay: bool) -> void
+        def write_chart_title_xml: (untyped xml, untyped title_spec, ?overlay: untyped) -> untyped
+
+        # : (untyped title_spec, untyped chart, untyped prefix) -> untyped
+        def merge_flat_title_styling: (untyped title_spec, untyped chart, untyped prefix) -> untyped
+
+        # : (XmlBuilder xml, untyped spec) -> void
+        def write_title_sp_pr: (untyped xml, untyped spec) -> untyped
+
+        # : (XmlBuilder xml, untyped layout) -> void
+        def write_title_layout_xml: (untyped xml, untyped layout) -> untyped
+
+        # : (XmlBuilder xml, ::String tag, untyped spec) -> void
+        def write_gridlines_xml: (untyped xml, untyped tag, untyped spec) -> untyped
+
+        # Resolves a cell reference like "Sheet1!$A$1:$A$5" to an array of values from @sheets.
+        # : (untyped ref) -> (nil | untyped)
+        def resolve_sheet_ref: (untyped ref) -> untyped
+
+        # : (untyped start_cell, untyped end_cell) -> (::Array[untyped] | untyped)
+        def enumerate_cell_range: (untyped start_cell, untyped end_cell) -> untyped
+
+        # : (XmlBuilder xml, untyped ref) -> void
+        def write_num_cache_xml: (untyped xml, untyped ref) -> untyped
+
+        # : (XmlBuilder xml, untyped ref) -> void
+        def write_str_cache_xml: (untyped xml, untyped ref) -> untyped
+
+        # : (XmlBuilder xml, untyped color, ?alpha: untyped?, ?transforms: untyped?) -> void
+        def write_drawing_color_xml: (untyped xml, untyped color, ?alpha: untyped, ?transforms: untyped) -> untyped
+
+        # : (untyped color) -> untyped
+        def normalize_drawing_rgb: (untyped color) -> untyped
+
+        # : (XmlBuilder xml, untyped rotation, untyped font) -> void
+        def write_axis_txpr: (untyped xml, untyped rotation, untyped font) -> untyped
+
+        # : (XmlBuilder xml, ax_id: ::Integer, prefix: ::Symbol, chart: untyped, ?default_pos: ::String, ?default_crosses: ::String?) -> void
+        def write_val_ax_xml: (untyped xml, ax_id: untyped, prefix: untyped, chart: untyped, ?default_pos: untyped, ?default_crosses: untyped) -> untyped
+
+        # : (XmlBuilder xml, untyped disp_units) -> void
+        def write_disp_units_xml: (untyped xml, untyped disp_units) -> untyped
+
+        # : (XmlBuilder xml, untyped chart) -> void
+        def write_chart_top_title_xml: (untyped xml, untyped chart) -> untyped
+
+        # : (XmlBuilder xml, untyped v3d) -> void
+        def write_view_3d_xml: (untyped xml, untyped v3d) -> untyped
+
+        # : (XmlBuilder xml, untyped chart) -> void
+        def write_chart_walls_xml: (untyped xml, untyped chart) -> untyped
+
+        # : (XmlBuilder xml, untyped chart, ::String chart_type) -> void
+        def write_plot_area_xml: (untyped xml, untyped chart, untyped chart_type) -> untyped
+
+        # : (XmlBuilder xml, untyped layout, ?emit_empty: bool) -> void
+        def write_plot_area_layout_xml: (untyped xml, untyped layout, ?emit_empty: untyped) -> untyped
+
+        # : (untyped all_series, ::String chart_type) -> ::Array[untyped]
+        def group_chart_series: (untyped all_series, untyped chart_type) -> untyped
+
+        # : (XmlBuilder xml, untyped grp, untyped chart) -> void
+        def write_chart_group_xml: (untyped xml, untyped grp, untyped chart) -> untyped
+
+        # : (XmlBuilder xml, untyped ser, ::Integer idx, ::String g_type, untyped chart) -> void
+        def write_chart_series_xml: (untyped xml, untyped ser, untyped idx, untyped g_type, untyped chart) -> untyped
+
+        # : (XmlBuilder xml, untyped ser) -> void
+        def write_series_sp_pr_xml: (untyped xml, untyped ser) -> untyped
+
+        # : (XmlBuilder xml, untyped source) -> void
+        def write_marker_xml: (untyped xml, untyped source) -> untyped
+
+        # : (XmlBuilder xml, untyped data_point) -> void
+        def write_data_point_xml: (untyped xml, untyped data_point) -> untyped
+
+        # : (XmlBuilder xml, untyped data_labels) -> void
+        def write_data_labels_xml: (untyped xml, untyped data_labels) -> untyped
+
+        # : (XmlBuilder xml, untyped lbl) -> void
+        def write_data_label_flags_xml: (untyped xml, untyped lbl) -> untyped
+
+        # : (XmlBuilder xml, untyped trendline) -> void
+        def write_trendline_xml: (untyped xml, untyped trendline) -> untyped
+
+        # : (XmlBuilder xml, untyped err_bars) -> void
+        def write_error_bars_xml: (untyped xml, untyped err_bars) -> untyped
+
+        # : (XmlBuilder xml, untyped band_fmts) -> void
+        def write_band_fmts_xml: (untyped xml, untyped band_fmts) -> untyped
+
+        # : (XmlBuilder xml, untyped udb) -> void
+        def write_up_down_bars_xml: (untyped xml, untyped udb) -> untyped
+
+        # : (XmlBuilder xml, untyped chart, ::Array[untyped] groups, bool has_secondary) -> void
+        def write_chart_axes_xml: (untyped xml, untyped chart, untyped groups, untyped has_secondary) -> untyped
+
+        # : (XmlBuilder xml, untyped data_table) -> void
+        def write_chart_data_table_xml: (untyped xml, untyped data_table) -> untyped
+
+        # : (XmlBuilder xml, untyped legend) -> void
+        def write_chart_legend_xml: (untyped xml, untyped legend) -> untyped
+
+        # : (XmlBuilder xml, untyped print_settings) -> void
+        def write_chart_print_settings_xml: (untyped xml, untyped print_settings) -> untyped
+
+        # : (XmlBuilder xml, untyped hash) -> void
+        def write_simple_sp_pr_from_hash: (untyped xml, untyped hash) -> untyped
+
+        # : (XmlBuilder xml, ?fill_color: untyped?, ?no_fill: untyped?, ?line_color: untyped?, ?line_width: untyped?, ?line_dash: untyped?, ?emu: bool) -> void
+        def write_simple_sp_pr: (untyped xml, ?fill_color: untyped, ?no_fill: untyped, ?line_color: untyped, ?line_width: untyped, ?line_dash: untyped, ?emu: untyped) -> untyped
+
+        # : (XmlBuilder xml, ?line_color: untyped?, ?line_width: untyped?, ?line_dash: untyped?, ?emu: bool) -> void
+        def write_ln_xml: (untyped xml, ?line_color: untyped, ?line_width: untyped, ?line_dash: untyped, ?emu: untyped) -> untyped
+
+        # : (XmlBuilder xml, ::String tag, untyped spec) -> void
+        def write_line_sp_tag: (untyped xml, untyped tag, untyped spec) -> untyped
       end
     end
   end

@@ -1,5 +1,11 @@
 ## [Unreleased]
 
+### Changed
+- Build XML parts in `Ooxml::Writer`, its `DrawingXml`, `FeaturesXml`, and `StylesXml` mixins, and `Ooxml::Crypto::Agile` through `Ooxml::XmlBuilder` ([ADR 0014](docs/adr/0014-build-xml-through-xml-builder.md)), keeping string concatenation only for cell-loop and shared-string hot paths in `Ooxml::WorksheetWriter` and `Ooxml::WorkbookWriter`.
+
+### Fixed
+- Stop double-escaping chart `frame_macro` attributes, Hash chart title text, DrawingML color `val` attributes, and threaded comment person `displayName`, `userId`, and `providerId` attributes, which escaped values containing `&`, `<`, `>`, or `"` twice.
+
 ### Security
 - Escape non-String formula cached values, Hash cell values with an explicit type, VML comment anchors, and app property heading-pair counts when writing them as XML element content.
 
