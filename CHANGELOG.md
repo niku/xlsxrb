@@ -1,4 +1,4 @@
-## [Unreleased]
+## [0.2.2] - 2026-11-23
 
 ### Added
 - Add `Xlsxrb.truncate_cell_text`, which cuts text to what a cell holds: 32,767 characters counted in UTF-16 code units, as Excel counts them ([ADR 0011](docs/adr/0011-count-excel-text-limits-as-excel-does.md)). A character is never split, so 20,000 emoji become 16,383. `strict_excel_mode` raises `ArgumentError` for longer text; callers that want to keep the start of the text instead can call this for every cell. Text of 32,767 bytes or fewer is returned as is without being counted.
