@@ -1019,10 +1019,11 @@ module Xlsxrb
 
             normalized = rule.is_a?(Hash) ? rule.dup : rule.to_h
             dxf = normalized.delete(:dxf) || extract_dxf_from_rule!(normalized)
-            next normalized unless dxf
+            next normalized if dxf.nil? || dxf.empty?
 
             dxf_id = if @styles.respond_to?(:add_dxf)
-                       @styles.dxfs.index(dxf) || @styles.add_dxf(dxf)
+                       target = dxf.is_a?(Elements::Dxf) ? dxf : Elements::Dxf.new(**dxf)
+                       @styles.dxfs.index(target) || @styles.add_dxf(dxf)
                      else
                        @styles[:dxfs] ||= []
                        @styles[:dxfs].index(dxf) || begin

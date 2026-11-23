@@ -203,6 +203,34 @@ class StyleTest < Test::Unit::TestCase
     end
   end
 
+  test "identical conditional formatting rules across sheets and repeated writes share a single dxf_id" do
+    build_proc = lambda do |builder|
+      builder.sheet("First") do |s|
+        s.row([1, 20])
+        s.conditional_format("A1:B1", type: :cell_is, operator: :greater_than, formula: "10", fill_color: "FF00FF00")
+      end
+      builder.sheet("Second") do |s|
+        s.row([5, 30])
+        s.conditional_format("A1:B1", type: :cell_is, operator: :greater_than, formula: "10", fill_color: "FF00FF00")
+        s.conditional_format("A1:B1", type: :cell_is, operator: :less_than, formula: "5", fill_color: "FFFF0000")
+      end
+    end
+
+    built_wb = Xlsxrb.build(&build_proc)
+    built_bytes1 = Xlsxrb.write(built_wb)
+    built_bytes2 = Xlsxrb.write(built_wb)
+    stream_bytes = Xlsxrb.write(&build_proc)
+
+    [built_bytes1, built_bytes2, stream_bytes].each do |xlsx_bytes|
+      loaded = Xlsxrb.load(StringIO.new(xlsx_bytes))
+      assert_equal([0], loaded.sheet(0).conditional_formats.map(&:dxf_id))
+      assert_equal([0, 1], loaded.sheet(1).conditional_formats.map(&:dxf_id))
+
+      styles_xml = Xlsxrb::Ooxml::ZipReader.new(StringIO.new(xlsx_bytes)).read_entry("xl/styles.xml")
+      assert_equal(2, Xlsxrb::Ooxml::StylesParser.parse(styles_xml).dxfs.size)
+    end
+  end
+
   test "differential formats round-trip with font, alignment, border, and protection" do
     Dir.mktmpdir do |dir|
       filepath = File.join(dir, "dxf_all.xlsx")
