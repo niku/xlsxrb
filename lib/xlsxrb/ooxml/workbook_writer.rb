@@ -250,6 +250,7 @@ module Xlsxrb
 
       def write_auxiliary_parts(zip)
         drawing_idx = 0
+        chart_idx = 0
         media_idx = 0
         comment_idx = 0
         tc_idx = 0
@@ -302,9 +303,10 @@ module Xlsxrb
 
             processed_charts = chart_writer.charts
             processed_charts.each do |chart|
-              chart_path = "xl/charts/chart#{drawing_rels_data.size + 1}.xml" # simplified
+              chart_idx += 1
+              chart_path = "xl/charts/chart#{chart_idx}.xml"
               zip.add_entry(chart_path, chart_writer.send(:generate_chart_xml, chart))
-              drawing_rels_data << { type: :chart, target: "../charts/chart#{drawing_rels_data.size + 1}.xml" }
+              drawing_rels_data << { type: :chart, target: "../charts/chart#{chart_idx}.xml" }
               drawing_parts << { kind: :chart, chart: chart, rid_index: drawing_rels_data.size }
             end
 

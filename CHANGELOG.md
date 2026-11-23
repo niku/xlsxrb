@@ -5,6 +5,7 @@
 - Build XML parts in `Ooxml::Writer`, its `DrawingXml`, `FeaturesXml`, and `StylesXml` mixins, and `Ooxml::Crypto::Agile` through `Ooxml::XmlBuilder` ([ADR 0014](docs/adr/0014-build-xml-through-xml-builder.md)), keeping string concatenation only for cell-loop and shared-string hot paths in `Ooxml::WorksheetWriter` and `Ooxml::WorkbookWriter`.
 
 ### Fixed
+- Number chart parts sequentially across sheets and mixed image/chart drawings in `Ooxml::WorkbookWriter` so workbooks with charts on multiple sheets or alongside images do not emit duplicate `xl/charts/chart1.xml` entries or mismatched `[Content_Types].xml` overrides.
 - Chain multiple directory, FAT, and DIFAT sectors in `Ooxml::Cfb::Writer` so encrypted workbooks and CFB containers larger than 63 KB or holding more than three streams can be read back.
 - Populate `Elements::Column#collapsed?` and `#best_fit?` in `WorksheetBuilder#column`, `Xlsxrb.load`, `StreamSheet#columns`, and `StreamSheet#load`, and forward both flags when writing built workbooks in `Xlsxrb.write`.
 - Preserve existing row or column ranges when `WorksheetBuilder#print_titles` is called with only `rows:` or `columns:`, keep `StreamWriter#print_titles` synchronized after partial updates, and escape single quotes in sheet names when building and parsing `_xlnm.Print_Titles` and `_xlnm.Print_Area` defined names.

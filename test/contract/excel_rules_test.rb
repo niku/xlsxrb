@@ -151,4 +151,74 @@ class ExcelRulesTest < Test::Unit::TestCase
       end
     end
   end
+
+  test "charts across multiple sheets are numbered sequentially without duplicate zip entries" do
+    build_proc = lambda do |w|
+      w.sheet("SheetA") do |s|
+        s.row(%w[Cat Val])
+        s.row(["A", 10])
+        s.chart(type: :bar, title: "ChartA", from_column: 3, from_row: 0, to_column: 8, to_row: 10,
+                series: [{ name: "S1", categories: "SheetA!$A$2:$A$2", values: "SheetA!$B$2:$B$2" }])
+      end
+      w.sheet("SheetB") do |s|
+        s.row(%w[Cat Val])
+        s.row(["B", 20])
+        s.chart(type: :line, title: "ChartB", from_column: 3, from_row: 0, to_column: 8, to_row: 10,
+                series: [{ name: "S2", categories: "SheetB!$A$2:$A$2", values: "SheetB!$B$2:$B$2" }])
+      end
+    end
+
+    [
+      ["stream", Xlsxrb.write(&build_proc)],
+      ["build", Xlsxrb.write(Xlsxrb.build(&build_proc))]
+    ].each do |mode, data|
+      assert_no_violations(data, "#{mode} multi-sheet charts")
+      entry_names = Xlsxrb::Ooxml::ZipReader.new(StringIO.new(data)).entry_names
+      assert_include(entry_names, "xl/charts/chart1.xml", "#{mode}: missing chart1.xml")
+      assert_include(entry_names, "xl/charts/chart2.xml", "#{mode}: missing chart2.xml")
+
+      wb = Xlsxrb.load(StringIO.new(data))
+      assert_equal("ChartA", wb.sheet(0).charts.first.title)
+      assert_equal("ChartB", wb.sheet(1).charts.first.title)
+    end
+  end
+
+  test "mixed image and chart on a single sheet preserve distinct content types and chart numbers" do
+    minimal_png = [
+      0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A,
+      0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52,
+      0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
+      0x08, 0x02, 0x00, 0x00, 0x00, 0x90, 0x77, 0x53,
+      0xDE, 0x00, 0x00, 0x00, 0x0C, 0x49, 0x44, 0x41,
+      0x54, 0x08, 0xD7, 0x63, 0xF8, 0xCF, 0xC0, 0x00,
+      0x00, 0x00, 0x02, 0x00, 0x01, 0xE2, 0x21, 0xBC,
+      0x33, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E,
+      0x44, 0xAE, 0x42, 0x60, 0x82
+    ].pack("C*").freeze
+
+    build_proc = lambda do |w|
+      w.sheet("Mixed") do |s|
+        s.row(%w[Cat Val])
+        s.row(["A", 10])
+        s.image(minimal_png, ext: "png", from_column: 0, from_row: 3, to_column: 2, to_row: 6)
+        s.chart(type: :bar, title: "MixedChart", from_column: 3, from_row: 0, to_column: 8, to_row: 10,
+                series: [{ name: "S1", categories: "Mixed!$A$2:$A$2", values: "Mixed!$B$2:$B$2" }])
+      end
+    end
+
+    [
+      ["stream", Xlsxrb.write(&build_proc)],
+      ["build", Xlsxrb.write(Xlsxrb.build(&build_proc))]
+    ].each do |mode, data|
+      assert_no_violations(data, "#{mode} mixed image and chart")
+      entry_names = Xlsxrb::Ooxml::ZipReader.new(StringIO.new(data)).entry_names
+      assert_include(entry_names, "xl/media/image1.png", "#{mode}: missing image1.png")
+      assert_include(entry_names, "xl/charts/chart1.xml", "#{mode}: missing chart1.xml")
+
+      wb = Xlsxrb.load(StringIO.new(data))
+      assert_equal(1, wb.sheet(0).images.size)
+      assert_equal(1, wb.sheet(0).charts.size)
+      assert_equal("MixedChart", wb.sheet(0).charts.first.title)
+    end
+  end
 end
