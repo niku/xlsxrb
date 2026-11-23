@@ -122,6 +122,33 @@ module Xlsxrb
         assert_false entry_storage.root?
         assert_true entry_storage.storage?
       end
+
+      def test_cfb_multi_sector_directory_and_multi_sector_fat
+        streams = {
+          "EmptyStream" => "".b,
+          "MiniA" => ("m" * 100).b,
+          "MiniB" => ("n" * 4095).b,
+          "RegularSmall" => ("r" * 4096).b,
+          "LargePackage" => (0...75_000).map { |i| (i % 251).chr }.join.b,
+          "TrailingMeta" => "<meta/>".b
+        }
+
+        cfb_bytes = Cfb::Writer.write(streams)
+        reader = Cfb::Reader.new(cfb_bytes)
+        assert_equal streams.keys, reader.stream_names
+
+        streams.each do |name, expected|
+          assert_equal expected, reader.read_stream(name)
+        end
+      end
+
+      def test_cfb_difat_chain_beyond_109_fat_sectors
+        payload = ("D" * 7_200_000).b
+        cfb_bytes = Cfb::Writer.write({ "HugeStream" => payload })
+        reader = Cfb::Reader.new(cfb_bytes)
+        assert_equal ["HugeStream"], reader.stream_names
+        assert_equal payload, reader.read_stream("HugeStream")
+      end
     end
   end
 end

@@ -399,30 +399,61 @@ module Xlsxrb
             sector_chains << [first_minifat_sec, num_minifat_sec]
           end
 
-          # 4. Directory sector
+          # 4. Directory sectors (4 entries * 128 bytes = 512 bytes per sector)
           dir_sector_id = allocated_sectors.size
-          dir_sector_bytes = +""
-          dir_entries.each do |e|
-            dir_sector_bytes << serialize_dir_entry(e)
+          num_dir_sec = dir_entries.size / 4
+          num_dir_sec.times do |d_idx|
+            chunk = +""
+            4.times do |e_idx|
+              chunk << serialize_dir_entry(dir_entries[(d_idx * 4) + e_idx])
+            end
+            allocated_sectors << chunk
           end
-          allocated_sectors << dir_sector_bytes
+          sector_chains << [dir_sector_id, num_dir_sec]
 
-          # 5. FAT sector
-          fat_sector_id = allocated_sectors.size
-          fat = Array.new(fat_sector_id + 1, FREESECT)
+          # 5. FAT and DIFAT sectors
+          entries_per_fat_sec = sector_size / 4
+          difat_entries_per_sec = entries_per_fat_sec - 1
+          base_sectors = allocated_sectors.size
+          num_fat_sec = 1
+          num_difat_sec = 0
+          loop do
+            needed_difat = num_fat_sec > 109 ? ((num_fat_sec - 109 + difat_entries_per_sec - 1) / difat_entries_per_sec) : 0
+            total_sectors = base_sectors + num_fat_sec + needed_difat
+            needed_fat = (total_sectors + entries_per_fat_sec - 1) / entries_per_fat_sec
+            break if needed_fat == num_fat_sec && needed_difat == num_difat_sec
 
-          # Populate regular sector chains in FAT
+            num_fat_sec = needed_fat
+            num_difat_sec = needed_difat
+          end
+
+          first_fat_sec_id = allocated_sectors.size
+          fat_sector_ids = Array.new(num_fat_sec) { |i| first_fat_sec_id + i }
+          first_difat_sec = num_difat_sec.positive? ? (first_fat_sec_id + num_fat_sec) : ENDOFCHAIN
+
+          fat = Array.new(num_fat_sec * entries_per_fat_sec, FREESECT)
           sector_chains.each do |start_sec, num_sec|
             num_sec.times do |s_idx|
               fat[start_sec + s_idx] = s_idx == num_sec - 1 ? ENDOFCHAIN : (start_sec + s_idx + 1)
             end
           end
+          fat_sector_ids.each { |sec_id| fat[sec_id] = FATSECT }
+          num_difat_sec.times { |d_idx| fat[first_difat_sec + d_idx] = DIFATSECT }
 
-          fat[dir_sector_id] = ENDOFCHAIN
-          fat[fat_sector_id] = FATSECT
+          fat_bytes = fat.pack("V*")
+          num_fat_sec.times do |f_idx|
+            allocated_sectors << fat_bytes[f_idx * sector_size, sector_size]
+          end
 
-          fat_bytes = fat.pack("V*").ljust(sector_size, 255.chr(Encoding::BINARY))
-          allocated_sectors << fat_bytes
+          if num_difat_sec.positive?
+            overflow_fat_ids = fat_sector_ids[109..] || []
+            num_difat_sec.times do |d_idx|
+              slice = overflow_fat_ids[d_idx * difat_entries_per_sec, difat_entries_per_sec] || []
+              padded = slice + Array.new(difat_entries_per_sec - slice.size, FREESECT)
+              next_difat = d_idx == num_difat_sec - 1 ? ENDOFCHAIN : (first_difat_sec + d_idx + 1)
+              allocated_sectors << (padded + [next_difat]).pack("V128")
+            end
+          end
 
           # Build Header (512 bytes)
           header = +""
@@ -434,18 +465,18 @@ module Xlsxrb
           header << [6].pack("v") # 0x20 Mini sector shift (64 bytes)
           header << ("\x00".b * 6) # 0x22 Reserved
           header << [0].pack("V") # 0x28 Number of Directory sectors (0 for v3)
-          header << [1].pack("V") # 0x2C Number of FAT sectors (1)
+          header << [num_fat_sec].pack("V") # 0x2C Number of FAT sectors
           header << [dir_sector_id].pack("V") # 0x30 First Directory sector
           header << [0].pack("V") # 0x34 Transaction signature
           header << [MINI_STREAM_CUTOFF].pack("V") # 0x38 Mini stream cutoff size (4096)
           header << [first_minifat_sec].pack("V") # 0x3C First Mini FAT sector
           header << [num_minifat_sec].pack("V") # 0x40 Number of Mini FAT sectors
-          header << [ENDOFCHAIN].pack("V") # 0x44 First DIFAT sector
-          header << [0].pack("V") # 0x48 Number of DIFAT sectors
+          header << [first_difat_sec].pack("V") # 0x44 First DIFAT sector
+          header << [num_difat_sec].pack("V") # 0x48 Number of DIFAT sectors
 
           # DIFAT array (109 entries * 4 bytes = 436 bytes)
           difat = Array.new(109, FREESECT)
-          difat[0] = fat_sector_id
+          [num_fat_sec, 109].min.times { |i| difat[i] = fat_sector_ids[i] }
           header << difat.pack("V109")
 
           raise "Header size mismatch" unless header.bytesize == 512
