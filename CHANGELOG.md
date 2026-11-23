@@ -5,6 +5,7 @@
 - Build XML parts in `Ooxml::Writer`, its `DrawingXml`, `FeaturesXml`, and `StylesXml` mixins, and `Ooxml::Crypto::Agile` through `Ooxml::XmlBuilder` ([ADR 0014](docs/adr/0014-build-xml-through-xml-builder.md)), keeping string concatenation only for cell-loop and shared-string hot paths in `Ooxml::WorksheetWriter` and `Ooxml::WorkbookWriter`.
 
 ### Fixed
+- Preserve existing row or column ranges when `WorksheetBuilder#print_titles` is called with only `rows:` or `columns:`, keep `StreamWriter#print_titles` synchronized after partial updates, and escape single quotes in sheet names when building and parsing `_xlnm.Print_Titles` and `_xlnm.Print_Area` defined names.
 - Return `"Infinity"`, `"-Infinity"`, or `"NaN"` instead of raising `FloatDomainError` when formatting a non-finite `Float` with a `"General"`, empty, `nil`, or over-length format code in `NumberFormatter.format` and `Xlsxrb.format_value`, and preserve the format code's string encoding when splitting format sections.
 - Stop double-escaping chart `frame_macro` attributes, Hash chart title text, DrawingML color `val` attributes, and threaded comment person `displayName`, `userId`, and `providerId` attributes, which escaped values containing `&`, `<`, `>`, or `"` twice.
 

@@ -1135,8 +1135,8 @@ module Xlsxrb
     def print_titles(rows: nil, columns: nil)
       return @print_titles ? Elements::PrintTitles.new(**@print_titles) : nil if rows.nil? && columns.nil?
 
-      norm_rows = DslHelpers.normalize_print_titles_rows(rows)
-      norm_cols = DslHelpers.normalize_print_titles_columns(columns)
+      norm_rows = rows.nil? ? @print_titles&.rows : DslHelpers.normalize_print_titles_rows(rows)
+      norm_cols = columns.nil? ? @print_titles&.columns : DslHelpers.normalize_print_titles_columns(columns)
       @print_titles = Elements::PrintTitles.new(rows: norm_rows, columns: norm_cols)
       nil
     end

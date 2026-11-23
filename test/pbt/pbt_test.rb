@@ -862,7 +862,8 @@ class PbtTest < Test::Unit::TestCase
     :sheet_columns,
     :auto_filters,
     :merges,
-    :comments
+    :comments,
+    :print_titles
   )
 
   SheetPair = Data.define(:name, :builder_sheet, :stream_proxy)
@@ -947,7 +948,7 @@ class PbtTest < Test::Unit::TestCase
       [b_ret, s_ret]
     end
 
-    def set_sheet_features(pair, auto_filter:, merge_range:, comment_ref:, comment_text:)
+    def set_sheet_features(pair, auto_filter:, merge_range:, comment_ref:, comment_text:, repeat_row: nil, repeat_col: nil)
       pair.builder_sheet.auto_filter = auto_filter
       pair.stream_proxy.auto_filter = auto_filter
       if merge_range
@@ -958,8 +959,16 @@ class PbtTest < Test::Unit::TestCase
         pair.builder_sheet.comment(comment_ref, comment_text)
         pair.stream_proxy.comment(comment_ref, comment_text)
       end
-      @recorded_ops << [:set_sheet_features, auto_filter, merge_range, comment_ref, comment_text]
-      nil
+      if repeat_row
+        pair.builder_sheet.repeat_rows(repeat_row)
+        pair.stream_proxy.repeat_rows(repeat_row)
+      end
+      if repeat_col
+        pair.builder_sheet.repeat_columns(repeat_col)
+        pair.stream_proxy.repeat_columns(repeat_col)
+      end
+      @recorded_ops << [:set_sheet_features, auto_filter, merge_range, comment_ref, comment_text, repeat_row, repeat_col]
+      [pair.builder_sheet.print_titles, pair.stream_proxy.print_titles]
     end
 
     def snapshot_bytes
@@ -1015,6 +1024,14 @@ class PbtTest < Test::Unit::TestCase
             if op[3]
               b_sheet.comment(op[3], op[4])
               s_proxy.comment(op[3], op[4])
+            end
+            if op[5]
+              b_sheet.repeat_rows(op[5])
+              s_proxy.repeat_rows(op[5])
+            end
+            if op[6]
+              b_sheet.repeat_columns(op[6])
+              s_proxy.repeat_columns(op[6])
             end
           end
         end
@@ -1108,7 +1125,8 @@ class PbtTest < Test::Unit::TestCase
             sheet_columns: {},
             auto_filters: {},
             merges: {},
-            comments: {}
+            comments: {},
+            print_titles: {}
           )
         end
 
@@ -1117,7 +1135,7 @@ class PbtTest < Test::Unit::TestCase
 
         m.command :add_sheet, weight: 2 do |c|
           c.guard { |s| s.sheets.size < 3 }
-          c.arguments Pbt.constant_from("Sheet1", "Sheet2", "Sheet3")
+          c.arguments Pbt.constant_from("Sheet1", "Sheet2", "Master's Data")
           c.precondition { |s, name| !s.sheets.include?(name) }
           c.next_state do |s, name, ref|
             inactive = s.active_sheet_ref ? [*s.inactive_sheet_refs, s.active_sheet_ref] : s.inactive_sheet_refs
@@ -1131,7 +1149,8 @@ class PbtTest < Test::Unit::TestCase
               sheet_columns: s.sheet_columns.merge(name => {}),
               auto_filters: s.auto_filters.merge(name => nil),
               merges: s.merges.merge(name => []),
-              comments: s.comments.merge(name => [])
+              comments: s.comments.merge(name => []),
+              print_titles: s.print_titles.merge(name => { rows: nil, columns: nil })
             )
           end
           c.run { |sut, name| sut.add_sheet(name) }
@@ -1287,7 +1306,9 @@ class PbtTest < Test::Unit::TestCase
             Pbt.fixed_hash(
               sheet: Pbt.constant(s.active_sheet_ref),
               comment_ref: comment_ref_arb,
-              comment_text: Pbt.alphanumeric_string(min: 1, max: 12)
+              comment_text: Pbt.alphanumeric_string(min: 1, max: 12),
+              repeat_row: Pbt.constant_from(nil, 0, 1),
+              repeat_col: Pbt.constant_from(nil, 0, 1)
             )
           end
           c.next_state do |s, args|
@@ -1299,10 +1320,19 @@ class PbtTest < Test::Unit::TestCase
                            else
                              s.comments.fetch(sname)
                            end
+            cur_pt = s.print_titles.fetch(sname)
+            next_rows = args[:repeat_row] ? "#{args[:repeat_row] + 1}:#{args[:repeat_row] + 1}" : cur_pt[:rows]
+            next_cols = if args[:repeat_col]
+                          col_l = Xlsxrb::Elements::Cell._column_letter(args[:repeat_col])
+                          "#{col_l}:#{col_l}"
+                        else
+                          cur_pt[:columns]
+                        end
             s.with(
               auto_filters: s.auto_filters.merge(sname => "A1:B2"),
               merges: s.merges.merge(sname => new_merges),
-              comments: s.comments.merge(sname => new_comments)
+              comments: s.comments.merge(sname => new_comments),
+              print_titles: s.print_titles.merge(sname => { rows: next_rows, columns: next_cols })
             )
           end
           c.run do |sut, args|
@@ -1311,9 +1341,12 @@ class PbtTest < Test::Unit::TestCase
               auto_filter: "A1:B2",
               merge_range: "A1:B1",
               comment_ref: args[:comment_ref],
-              comment_text: args[:comment_text]
+              comment_text: args[:comment_text],
+              repeat_row: args[:repeat_row],
+              repeat_col: args[:repeat_col]
             )
           end
+          c.verify { |ctx| assert_equal ctx.result[0], ctx.result[1] }
         end
 
         m.command :write_inactive_sheet, weight: 2 do |c|
@@ -1370,6 +1403,17 @@ class PbtTest < Test::Unit::TestCase
                          b_sheet.comments.map { |c| [c.ref, c.text] })
             assert_equal(state.comments.fetch(sname).map { |c| [c[:ref], c[:text]] },
                          s_sheet.comments.map { |c| [c.ref, c.text] })
+
+            exp_pt = state.print_titles.fetch(sname)
+            if exp_pt[:rows] || exp_pt[:columns]
+              assert_equal exp_pt[:rows], b_sheet.print_titles&.rows
+              assert_equal exp_pt[:columns], b_sheet.print_titles&.columns
+              assert_equal exp_pt[:rows], s_sheet.print_titles&.rows
+              assert_equal exp_pt[:columns], s_sheet.print_titles&.columns
+            else
+              assert_nil b_sheet.print_titles
+              assert_nil s_sheet.print_titles
+            end
 
             expected_rows.each_with_index do |exp_row, r_idx|
               b_row = b_sheet.rows[r_idx]

@@ -403,8 +403,8 @@ module Xlsxrb
         existing = @defined_names.find { |dn| dn[:name] == "_xlnm.Print_Titles" && dn[:local_sheet_name] == sheet_name }
         return nil unless existing
 
-        c = Regexp.last_match(1).delete("$") if existing[:value] =~ /'[^']*'!\$([A-Za-z]+:\$[A-Za-z]+)/
-        r = Regexp.last_match(1).delete("$") if existing[:value] =~ /'[^']*'!\$([0-9]+:\$[0-9]+)/
+        c = Regexp.last_match(1).delete("$") if existing[:value] =~ /'(?:''|[^'])*'!\$([A-Za-z]+:\$[A-Za-z]+)/
+        r = Regexp.last_match(1).delete("$") if existing[:value] =~ /'(?:''|[^'])*'!\$([0-9]+:\$[0-9]+)/
         return Elements::PrintTitles.new(rows: r, columns: c)
       end
 
@@ -412,12 +412,13 @@ module Xlsxrb
       r = DslHelpers.normalize_print_titles_rows(rows)
       existing = @defined_names.find { |dn| dn[:name] == "_xlnm.Print_Titles" && dn[:local_sheet_name] == sheet_name }
       if existing && (r.nil? || c.nil?)
-        c = Regexp.last_match(1).delete("$") if c.nil? && existing[:value] =~ /'[^']*'!\$([A-Za-z]+:\$[A-Za-z]+)/
-        r = Regexp.last_match(1).delete("$") if r.nil? && existing[:value] =~ /'[^']*'!\$([0-9]+:\$[0-9]+)/
+        c = Regexp.last_match(1).delete("$") if c.nil? && existing[:value] =~ /'(?:''|[^'])*'!\$([A-Za-z]+:\$[A-Za-z]+)/
+        r = Regexp.last_match(1).delete("$") if r.nil? && existing[:value] =~ /'(?:''|[^'])*'!\$([0-9]+:\$[0-9]+)/
       end
+      quoted_sheet = DslHelpers.quote_sheet_name(sheet_name)
       parts = []
-      parts << "'#{sheet_name}'!$#{c.sub(":", ":$")}" if c
-      parts << "'#{sheet_name}'!$#{r.sub(":", ":$")}" if r
+      parts << "#{quoted_sheet}!$#{c.sub(":", ":$")}" if c
+      parts << "#{quoted_sheet}!$#{r.sub(":", ":$")}" if r
       value = parts.join(",")
       @defined_names.reject! { |dn| dn[:name] == "_xlnm.Print_Titles" && dn[:local_sheet_name] == sheet_name }
       defined_name("_xlnm.Print_Titles", value, sheet: sheet_name, scope: sheet_name)
@@ -699,7 +700,7 @@ module Xlsxrb
       sheet_name = sheet || @sheets.last&.name || "Sheet1"
       @defined_names.reject! { |dn| dn[:name] == "_xlnm.Print_Area" && dn[:local_sheet_name] == sheet_name }
       if range
-        value = "'#{sheet_name}'!#{absolute_range(range)}"
+        value = "#{DslHelpers.quote_sheet_name(sheet_name)}!#{absolute_range(range)}"
         defined_name("_xlnm.Print_Area", value, sheet: sheet_name, scope: sheet_name)
       end
       range&.to_s

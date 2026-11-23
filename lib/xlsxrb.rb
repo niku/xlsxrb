@@ -1222,8 +1222,9 @@ module Xlsxrb
     # Auto-generate _xlnm.Print_Area and _xlnm.Print_Titles from worksheet definitions if not already present
     workbook.sheets.each_with_index do |ws, idx|
       sheet_name = ws.name || "Sheet#{idx + 1}"
+      quoted_sheet = DslHelpers.quote_sheet_name(sheet_name)
       if ws.respond_to?(:print_area) && ws.print_area && defined_names.none? { |dn| dn[:name] == "_xlnm.Print_Area" && (dn[:local_sheet_id] == idx || dn[:local_sheet_name] == sheet_name) }
-        val = "'#{sheet_name}'!#{DslHelpers.absolute_range(ws.print_area)}"
+        val = "#{quoted_sheet}!#{DslHelpers.absolute_range(ws.print_area)}"
         defined_names << { name: "_xlnm.Print_Area", value: val, local_sheet_id: idx }
       end
       next unless ws.respond_to?(:print_titles) && ws.print_titles && defined_names.none? { |dn| dn[:name] == "_xlnm.Print_Titles" && (dn[:local_sheet_id] == idx || dn[:local_sheet_name] == sheet_name) }
@@ -1232,8 +1233,8 @@ module Xlsxrb
       pt = pt.to_h if pt.is_a?(Elements::MetadataRecord)
       parts = []
       col_val = pt[:columns]
-      parts << "'#{sheet_name}'!$#{col_val.sub(":", ":$")}" if col_val
-      parts << "'#{sheet_name}'!$#{pt[:rows].sub(":", ":$")}" if pt[:rows]
+      parts << "#{quoted_sheet}!$#{col_val.sub(":", ":$")}" if col_val
+      parts << "#{quoted_sheet}!$#{pt[:rows].sub(":", ":$")}" if pt[:rows]
       defined_names << { name: "_xlnm.Print_Titles", value: parts.join(","), local_sheet_id: idx } unless parts.empty?
     end
     defined_names = nil if defined_names.empty?

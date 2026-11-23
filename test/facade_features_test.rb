@@ -923,6 +923,71 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     end
   end
 
+  test "partial print_titles merge and single quotes in sheet names across builders" do
+    sheet_name = "Master's Data"
+    expected_rows = "2:3"
+    expected_cols = "A:B"
+    expected_ref = "'Master''s Data'!$A:$B,'Master''s Data'!$2:$3"
+
+    live_build_pt = nil
+    wb = Xlsxrb.build do |w|
+      w.sheet(sheet_name) do |s|
+        s.row(%w[H1 H2])
+        s.row([1, 2])
+        s.print_area = "A1:B2"
+        s.print_titles(rows: "1:1")
+        s.print_titles(columns: expected_cols)
+        s.repeat_rows(1, 2)
+        live_build_pt = s.print_titles
+      end
+    end
+    assert_equal(expected_rows, live_build_pt.rows)
+    assert_equal(expected_cols, live_build_pt.columns)
+
+    tmp_build = Tempfile.new(["facade_print_quote_build", ".xlsx"])
+    tmp_stream = Tempfile.new(["facade_print_quote_stream", ".xlsx"])
+    begin
+      Xlsxrb.write(tmp_build.path, wb)
+      loaded_build = Xlsxrb.load(tmp_build.path).sheet(0)
+      assert_equal("A1:B2", loaded_build.print_area)
+      assert_equal(expected_rows, loaded_build.print_titles.rows)
+      assert_equal(expected_cols, loaded_build.print_titles.columns)
+      assert_equal(expected_ref, Xlsxrb::Ooxml::Reader.new(tmp_build.path).print_titles(sheet: sheet_name))
+
+      live_stream_first = nil
+      live_stream_merged = nil
+      live_stream_updated = nil
+      Xlsxrb.write(tmp_stream.path) do |w|
+        w.sheet(sheet_name) do |s|
+          s.row(%w[H1 H2])
+          s.row([1, 2])
+          s.print_area = "A1:B2"
+          s.print_titles(rows: "1:1")
+          live_stream_first = s.print_titles
+          s.print_titles(columns: expected_cols)
+          live_stream_merged = s.print_titles
+          s.repeat_rows(1, 2)
+          live_stream_updated = s.print_titles
+        end
+      end
+      assert_equal("1:1", live_stream_first.rows)
+      assert_nil(live_stream_first.columns)
+      assert_equal("1:1", live_stream_merged.rows)
+      assert_equal(expected_cols, live_stream_merged.columns)
+      assert_equal(expected_rows, live_stream_updated.rows)
+      assert_equal(expected_cols, live_stream_updated.columns)
+
+      loaded_stream = Xlsxrb.load(tmp_stream.path).sheet(0)
+      assert_equal("A1:B2", loaded_stream.print_area)
+      assert_equal(expected_rows, loaded_stream.print_titles.rows)
+      assert_equal(expected_cols, loaded_stream.print_titles.columns)
+      assert_equal(expected_ref, Xlsxrb::Ooxml::Reader.new(tmp_stream.path).print_titles(sheet: sheet_name))
+    ensure
+      tmp_build&.close!
+      tmp_stream&.close!
+    end
+  end
+
   # =====================================================
   # Workbook Protection
   # =====================================================
