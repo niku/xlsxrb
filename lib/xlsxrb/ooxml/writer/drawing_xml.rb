@@ -1681,7 +1681,7 @@ module Xlsxrb
             parts << '<x:ClientData ObjectType="Note">'
             parts << "<x:MoveWithCells/><x:SizeWithCells/>"
             anchor = c[:anchor] || Xlsxrb::Elements::Comment.default_anchor(col, row)
-            parts << "<x:Anchor>#{anchor.join(", ")}</x:Anchor>"
+            parts << "<x:Anchor>#{xml_escape(anchor.join(", "))}</x:Anchor>"
             parts << "<x:AutoFill>False</x:AutoFill>"
             parts << "<x:Row>#{row}</x:Row>"
             parts << "<x:Column>#{col}</x:Column>"

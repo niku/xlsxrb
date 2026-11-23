@@ -359,12 +359,25 @@ module Xlsxrb
             else
               v_str = xml_val.to_s
               v_str = v_str.dup.force_encoding(Encoding::UTF_8) if v_str.encoding == Encoding::BINARY
-              v_str = escape_text(v_str) if type == "str" || xml_val.is_a?(String)
+              v_str = if type == "str" || (type != "e" && xml_val.is_a?(String))
+                        escape_text(v_str)
+                      elsif xml_val.is_a?(Numeric)
+                        v_str
+                      else
+                        escape_xml(v_str)
+                      end
               buf << "<v>" << v_str << "</v></c>"
             end
           else
             v_str = xml_val.to_s
             v_str = v_str.dup.force_encoding(Encoding::UTF_8) if v_str.encoding == Encoding::BINARY
+            v_str = if type == "str"
+                      escape_text(v_str)
+                    elsif xml_val.is_a?(Numeric) || xml_val.is_a?(BigDecimal)
+                      v_str
+                    else
+                      escape_xml(v_str)
+                    end
             buf << "><v>" << v_str << "</v></c>"
           end
         end
@@ -471,11 +484,11 @@ module Xlsxrb
                 v_val = "0"
               when Xlsxrb::Elements::CellError
                 c_type = ' t="e"'
-                v_val = value.cached_value.code
+                v_val = escape_xml(value.cached_value.code)
               when nil
                 v_val = 0
               else
-                v_val = value.cached_value.is_a?(String) ? escape_xml(value.cached_value) : value.cached_value
+                v_val = value.cached_value.is_a?(Numeric) ? value.cached_value : escape_xml(value.cached_value)
               end
               f_tag = if formula_expr && !formula_expr.empty?
                         "<f#{f_attrs}>#{escape_xml(formula_expr)}</f>"
@@ -523,7 +536,7 @@ module Xlsxrb
                   c_type = ' t="e"'
                   xml_val = xml_val.code
                 end
-                xml_val = escape_xml(xml_val) if xml_val.is_a?(String)
+                xml_val = escape_xml(xml_val) unless xml_val.is_a?(Numeric)
                 f_tag = if formula_expr && !formula_expr.empty?
                           "<f#{f_attrs}>#{escape_xml(formula_expr)}</f>"
                         else
@@ -532,7 +545,7 @@ module Xlsxrb
                 buf << "<c r=\"#{col_ref}#{row_num_str}\"#{c_type}>#{f_tag}<v>#{xml_val}</v></c>"
               end
             when Xlsxrb::Elements::CellError
-              buf << "<c r=\"#{col_ref}#{row_num_str}\" t=\"e\"><v>#{value.code}</v></c>"
+              buf << "<c r=\"#{col_ref}#{row_num_str}\" t=\"e\"><v>#{escape_xml(value.code)}</v></c>"
             when BigDecimal
               buf << "<c r=\"#{col_ref}#{row_num_str}\"><v>#{value.to_s("F")}</v></c>"
             else
@@ -846,7 +859,14 @@ module Xlsxrb
             buf << "<v>0</v></c>"
           else
             v_str = xml_val.to_s
-            v_str = escape_text(v_str) if type == "str" || xml_val.is_a?(String)
+            v_str = v_str.dup.force_encoding(Encoding::UTF_8) if v_str.encoding == Encoding::BINARY
+            v_str = if type == "str" || (type != "e" && xml_val.is_a?(String))
+                      escape_text(v_str)
+                    elsif xml_val.is_a?(Numeric)
+                      v_str
+                    else
+                      escape_xml(v_str)
+                    end
             buf << "<v>" << v_str << "</v></c>"
           end
         elsif type == "inlineStr"
@@ -856,7 +876,10 @@ module Xlsxrb
             buf << "><is><t>" << escape_text(xml_val.to_s) << "</t></is></c>"
           end
         else
-          buf << "><v>" << xml_val.to_s << "</v></c>"
+          v_str = xml_val.to_s
+          v_str = v_str.dup.force_encoding(Encoding::UTF_8) if v_str.encoding == Encoding::BINARY
+          v_str = escape_xml(v_str) unless xml_val.is_a?(Numeric) || xml_val.is_a?(BigDecimal)
+          buf << "><v>" << v_str << "</v></c>"
         end
       end
 

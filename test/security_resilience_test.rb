@@ -361,6 +361,53 @@ class SecurityResilienceTest < Test::Unit::TestCase
     end
   end
 
+  def test_element_content_values_are_escaped
+    payload = "1</v><injected/>"
+    sym_payload = :"1</v><injected/>"
+
+    files = write_both_modes do |sheet|
+      sheet.style(:styled, bold: true)
+      sheet.row([Xlsxrb.formula("1", cached_value: payload), { formula: "1", value: payload }])
+      sheet.row([Xlsxrb.formula("1", cached_value: payload), { formula: "1", value: payload }], cell_styles: :styled)
+    end
+    files.each do |bytes|
+      sheet_doc = REXML::Document.new(read_part(bytes, "xl/worksheets/sheet1.xml"))
+      assert_empty REXML::XPath.match(sheet_doc, "//*[local-name()='injected']")
+      assert_equal Array.new(4, payload), REXML::XPath.match(sheet_doc, "//*[local-name()='v']").map(&:text)
+    end
+
+    io = StringIO.new
+    ws = Xlsxrb::Ooxml::WorksheetWriter.new(io)
+    ws.write_row(0, [
+                   { ref: "A1", value: payload, type: "str" },
+                   { ref: "B1", value: payload, type: "e" }
+                 ])
+    ws.write_row_values(1, [{ formula: "1", value: sym_payload }])
+    ws.write_row_values(2, [{ formula: "1", value: sym_payload }], styles: 0)
+    ws.finish
+    ws_doc = REXML::Document.new(io.string)
+    assert_empty REXML::XPath.match(ws_doc, "//*[local-name()='injected']")
+    assert_equal Array.new(4, payload), REXML::XPath.match(ws_doc, "//*[local-name()='v']").map(&:text)
+
+    writer = Xlsxrb::Ooxml::Writer.new
+    writer.set_cell("A1", 1)
+    writer.add_comment("A1", "note", anchor: [1, "0</x:Anchor><injected/>"])
+    writer.app_property(:heading_pairs, [["Worksheets", "1</vt:i4><injected/>"]])
+    writer.app_property(:titles_of_parts, ["Sheet1"])
+    Tempfile.create(["element_content_escape", ".xlsx"]) do |f|
+      writer.write(f.path)
+      bytes = File.binread(f.path)
+
+      vml_doc = REXML::Document.new(read_part(bytes, "xl/drawings/vmlDrawing1.vml"))
+      assert_empty REXML::XPath.match(vml_doc, "//*[local-name()='injected']")
+      assert_equal "1, 0</x:Anchor><injected/>", REXML::XPath.first(vml_doc, "//*[local-name()='Anchor']").text
+
+      app_doc = REXML::Document.new(read_part(bytes, "docProps/app.xml"))
+      assert_empty REXML::XPath.match(app_doc, "//*[local-name()='injected']")
+      assert_equal "1</vt:i4><injected/>", REXML::XPath.first(app_doc, "//*[local-name()='i4']").text
+    end
+  end
+
   # Values a writer puts in an attribute without escaping them, by file, each with the
   # reason it cannot hold a character that needs escaping. The check below cannot see
   # that reason; it only matches the expression as written. A value that is not listed
@@ -416,6 +463,12 @@ class SecurityResilienceTest < Test::Unit::TestCase
   # for a value that is neither escaped, nor of a form that needs no escaping, nor listed
   # above. It matches the two ways the writers write an attribute today and does not see
   # an attribute built in another way.
+  #
+  # Static inspection does not extend to element content (`>#{...}</`) in
+  # string-interpolating writers because most element-content interpolations insert
+  # pre-built child XML fragments that must not be escaped; a regex on source lines cannot
+  # distinguish an unescaped text variable from a variable holding child XML elements
+  # without maintaining an exhaustive list of fragment expressions.
   def test_writers_escape_every_attribute_value
     root = File.expand_path("..", __dir__)
     seen = 0

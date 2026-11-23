@@ -750,7 +750,7 @@ module Xlsxrb
             parts << %(<vt:vector size="#{xml_escape(hp.size * 2)}" baseType="variant">)
             hp.each do |label, count|
               parts << "<vt:variant><vt:lpstr>#{xml_escape(label)}</vt:lpstr></vt:variant>"
-              parts << "<vt:variant><vt:i4>#{count}</vt:i4></vt:variant>"
+              parts << "<vt:variant><vt:i4>#{xml_escape(count)}</vt:i4></vt:variant>"
             end
             parts << "</vt:vector>"
             parts << "</HeadingPairs>"

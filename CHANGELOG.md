@@ -1,3 +1,8 @@
+## [Unreleased]
+
+### Security
+- Escape non-String formula cached values, Hash cell values with an explicit type, VML comment anchors, and app property heading-pair counts when writing them as XML element content.
+
 ## [0.2.2] - 2026-11-23
 
 ### Added
