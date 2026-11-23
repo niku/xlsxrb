@@ -12,10 +12,14 @@ module Xlsxrb
     #   workbook.each { |s| puts s.name }
     #
     # @api public
-    # rubocop:disable Style/DataInheritance -- Required as class syntax for mutant subject matcher
+    # Class syntax is required for the mutant subject matcher.
     class Workbook < Data.define(:sheets, :shared_strings, :styles, :unmapped_data, :errors, :defined_names, :workbook_properties, :core_properties, :app_properties, :workbook_protection, :custom_properties)
-      # rubocop:enable Style/DataInheritance
       [Enumerable].each { |m| include m }
+
+      STALE_UNMAPPED_KEYS = %i[
+        defined_names workbook_properties core_properties app_properties workbook_protection custom_properties
+      ].freeze
+      private_constant :STALE_UNMAPPED_KEYS
 
       # @param sheets [Array<Elements::Worksheet>] Worksheets in the workbook.
       # @param shared_strings [Array<String>] Shared strings table.
@@ -325,6 +329,30 @@ module Xlsxrb
         Xlsxrb.write(self, shared_strings: shared_strings, compression_level: compression_level, **options)
       end
 
+      # Returns a new Workbook with attributes replaced, clearing stale unmapped/facade metadata
+      # and keeping sheet-scoped print defined names synchronized when sheets change.
+      #
+      # @param changes [Hash]
+      # @return [Elements::Workbook]
+      # @api public
+      #: (**untyped) -> Elements::Workbook
+      def with(**changes)
+        return self if changes.empty?
+
+        updated = changes.dup
+        if updated.key?(:sheets) && !updated.key?(:defined_names) && updated[:sheets].is_a?(Array)
+          synced = sync_sheet_print_defined_names(updated[:sheets])
+          updated[:defined_names] = synced if synced
+        end
+
+        unless updated.key?(:unmapped_data)
+          cleaned = strip_stale_unmapped_data(updated)
+          updated[:unmapped_data] = cleaned if cleaned
+        end
+
+        super(**updated)
+      end
+
       # Validates workbook structure according to OOXML specifications.
       #
       # @param sheets [Array<Elements::Worksheet>]
@@ -343,6 +371,89 @@ module Xlsxrb
           end
         end
         errs
+      end
+
+      private
+
+      #: (Hash[Symbol, untyped] updated) -> Hash[untyped, untyped]?
+      def strip_stale_unmapped_data(updated)
+        return nil unless unmapped_data.is_a?(Hash)
+
+        changed_keys = STALE_UNMAPPED_KEYS.select { |k| updated.key?(k) }
+        return nil if changed_keys.empty?
+
+        facade = unmapped_data[:facade]
+        has_facade = facade.is_a?(Hash)
+        stale_top = changed_keys.any? { |k| unmapped_data.key?(k) }
+        stale_facade = has_facade && changed_keys.any? { |k| facade.key?(k) }
+        return nil unless stale_top || stale_facade
+
+        cleaned = unmapped_data.dup
+        if stale_facade
+          cleaned_facade = facade.dup
+          changed_keys.each { |k| cleaned_facade.delete(k) }
+          cleaned[:facade] = cleaned_facade
+        end
+        changed_keys.each { |k| cleaned.delete(k) } if stale_top
+        cleaned
+      end
+
+      #: (Array[untyped] new_sheets) -> Array[Elements::DefinedName]?
+      def sync_sheet_print_defined_names(new_sheets)
+        dns = nil #: Array[Elements::DefinedName]?
+        if new_sheets.size < sheets.size
+          dns = defined_names.dup
+          dns.reject! do |dn|
+            %w[_xlnm.Print_Area _xlnm.Print_Titles].include?(dn.name) &&
+              !dn.local_sheet_id.nil? && dn.local_sheet_id >= new_sheets.size
+          end
+        end
+
+        new_sheets.each_with_index do |new_ws, idx|
+          old_ws = sheets[idx]
+          new_name = new_ws.name || "Sheet#{idx + 1}"
+          old_name = old_ws&.name
+          renamed = !old_ws.nil? && new_name != old_name
+
+          if new_ws.print_area != old_ws&.print_area || (renamed && !new_ws.print_area.nil?)
+            dns ||= defined_names.dup
+            dns.reject! { |dn| matches_sheet_print_dn?(dn, "_xlnm.Print_Area", idx, old_name, new_name) }
+            if new_ws.print_area
+              quoted = DslHelpers.quote_sheet_name(new_name)
+              val = new_ws.print_area.split(",").map { |part| "#{quoted}!#{DslHelpers.absolute_range(part.strip)}" }.join(",")
+              dns << Elements::DefinedName.new(name: "_xlnm.Print_Area", value: val, local_sheet_id: idx)
+            end
+          end
+
+          next unless new_ws.print_titles != old_ws&.print_titles || (renamed && !new_ws.print_titles.nil?)
+
+          dns ||= defined_names.dup
+          dns.reject! { |dn| matches_sheet_print_dn?(dn, "_xlnm.Print_Titles", idx, old_name, new_name) }
+          next unless new_ws.print_titles
+
+          pt = new_ws.print_titles
+          quoted = DslHelpers.quote_sheet_name(new_name)
+          parts = [] #: Array[String]
+          parts << "#{quoted}!$#{pt.columns.sub(":", ":$")}" if pt.columns
+          parts << "#{quoted}!$#{pt.rows.sub(":", ":$")}" if pt.rows
+          dns << Elements::DefinedName.new(name: "_xlnm.Print_Titles", value: parts.join(","), local_sheet_id: idx) unless parts.empty?
+        end
+
+        return nil if dns.nil? || dns == defined_names
+
+        dns
+      end
+
+      #: (Elements::DefinedName defined_name_entry, String target_name, Integer idx, String? old_name, String new_name) -> bool
+      def matches_sheet_print_dn?(defined_name_entry, target_name, idx, old_name, new_name)
+        return false unless defined_name_entry.name == target_name
+        return true if !defined_name_entry.local_sheet_id.nil? && defined_name_entry.local_sheet_id == idx
+        return true if defined_name_entry.local_sheet_name && [old_name, new_name].include?(defined_name_entry.local_sheet_name)
+        return false unless defined_name_entry.local_sheet_id.nil? && defined_name_entry.value
+
+        [old_name, new_name].compact.uniq.any? do |sname|
+          defined_name_entry.value.start_with?("#{DslHelpers.quote_sheet_name(sname)}!", "#{sname}!")
+        end
       end
     end
   end

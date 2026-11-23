@@ -1238,6 +1238,69 @@ class ElementsTest < Test::Unit::TestCase
     assert_equal(%w[Sales Expenses], collected)
   end
 
+  test "workbook#with clears and updates print_area and print_titles without stale defined_names" do
+    bytes = Xlsxrb.write do |w|
+      w.defined_name("UserRange", range: "A1:B2", sheet: "Report")
+      w.sheet("Report") do |s|
+        s.row(%w[H1 H2])
+        s.row([1, 2])
+        s.print_area = "A1:B2"
+        s.print_titles(rows: "1:1")
+      end
+    end
+    loaded = Xlsxrb.load(StringIO.new(bytes))
+
+    cleared_ws = loaded.sheet(0).with(print_area: nil, print_titles: nil)
+    cleared_wb = loaded.with(sheets: [cleared_ws])
+    assert_equal(["UserRange"], cleared_wb.defined_names.map(&:name))
+
+    reloaded_cleared = Xlsxrb.load(StringIO.new(cleared_wb.to_data))
+    assert_nil(reloaded_cleared.sheet(0).print_area)
+    assert_nil(reloaded_cleared.sheet(0).print_titles)
+    assert_equal(["UserRange"], reloaded_cleared.defined_names.map(&:name))
+
+    updated_ws = cleared_ws.with(print_area: "A1:B2,D1:E2", print_titles: { rows: "2:3", columns: "A:B" })
+    updated_wb = loaded.with(sheets: [updated_ws])
+    reloaded_updated = Xlsxrb.load(StringIO.new(updated_wb.to_data))
+    assert_equal("A1:B2,D1:E2", reloaded_updated.sheet(0).print_area)
+    assert_equal("2:3", reloaded_updated.sheet(0).print_titles&.rows)
+    assert_equal("A:B", reloaded_updated.sheet(0).print_titles&.columns)
+    assert_equal(["UserRange"], reloaded_updated.defined_names.reject { |dn| dn.name.start_with?("_xlnm.") }.map(&:name))
+  end
+
+  test "workbook#with clears stale facade metadata while leaving original workbook unchanged" do
+    built = Xlsxrb.build do |w|
+      w.core_properties(title: "OriginalTitle")
+      w.workbook_protection(lock_structure: true)
+      w.defined_name("UserRange", range: "A1:B1", sheet: "S")
+      w.sheet("S") { |s| s.row([1]) }
+    end
+
+    edited = built.with(
+      defined_names: [],
+      workbook_protection: nil,
+      core_properties: { title: "EditedTitle" }
+    )
+
+    assert_equal("OriginalTitle", built.core_properties.title)
+    assert_not_nil(built.workbook_protection)
+    assert_equal(["UserRange"], built.defined_names.map(&:name))
+
+    reloaded = Xlsxrb.load(StringIO.new(edited.to_data))
+    assert_equal("EditedTitle", reloaded.core_properties.title)
+    assert_nil(reloaded.workbook_protection)
+    assert_empty(reloaded.defined_names)
+  end
+
+  test "WorkbookBuilder#print_area= survives Xlsxrb.write without sheet edit" do
+    built = Xlsxrb.build do |b|
+      b.sheet("S") { |s| s.row([1]) }
+      b.print_area = "A1:B10"
+    end
+    reloaded = Xlsxrb.load(StringIO.new(Xlsxrb.write(built)))
+    assert_equal("A1:B10", reloaded.sheet(0).print_area)
+  end
+
   test "workbook document properties and protection accessors" do
     ws = Xlsxrb::Elements::Worksheet.new(name: "Sheet1")
 

@@ -10,8 +10,10 @@ module Xlsxrb
     #   workbook.each { |s| puts s.name }
     #
     # @api public
-    # rubocop:disable Style/DataInheritance -- Required as class syntax for mutant subject matcher
+    # Class syntax is required for the mutant subject matcher.
     class Workbook
+      STALE_UNMAPPED_KEYS: untyped
+
       # @param sheets [Array<Elements::Worksheet>] Worksheets in the workbook.
       # @param shared_strings [Array<String>] Shared strings table.
       # @param styles [Elements::Styles, Hash] Styles definition.
@@ -196,6 +198,15 @@ module Xlsxrb
       # : (?shared_strings: bool, ?compression_level: Integer?, **untyped options) -> String
       def to_data: (?shared_strings: bool, ?compression_level: Integer?, **untyped options) -> String
 
+      # Returns a new Workbook with attributes replaced, clearing stale unmapped/facade metadata
+      # and keeping sheet-scoped print defined names synchronized when sheets change.
+      #
+      # @param changes [Hash]
+      # @return [Elements::Workbook]
+      # @api public
+      # : (**untyped) -> Elements::Workbook
+      def with: (**untyped) -> Elements::Workbook
+
       # Validates workbook structure according to OOXML specifications.
       #
       # @param sheets [Array<Elements::Worksheet>]
@@ -203,6 +214,17 @@ module Xlsxrb
       # @api private
       # : (untyped sheets) -> Array[String]
       def self.validate: (untyped sheets) -> Array[String]
+
+      private
+
+      # : (Hash[Symbol, untyped] updated) -> Hash[untyped, untyped]?
+      def strip_stale_unmapped_data: (Hash[Symbol, untyped] updated) -> Hash[untyped, untyped]?
+
+      # : (Array[untyped] new_sheets) -> Array[Elements::DefinedName]?
+      def sync_sheet_print_defined_names: (Array[untyped] new_sheets) -> Array[Elements::DefinedName]?
+
+      # : (Elements::DefinedName defined_name_entry, String target_name, Integer idx, String? old_name, String new_name) -> bool
+      def matches_sheet_print_dn?: (Elements::DefinedName defined_name_entry, String target_name, Integer idx, String? old_name, String new_name) -> bool
     end
   end
 end

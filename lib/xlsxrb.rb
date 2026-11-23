@@ -1224,7 +1224,7 @@ module Xlsxrb
       sheet_name = ws.name || "Sheet#{idx + 1}"
       quoted_sheet = DslHelpers.quote_sheet_name(sheet_name)
       if ws.respond_to?(:print_area) && ws.print_area && defined_names.none? { |dn| dn[:name] == "_xlnm.Print_Area" && (dn[:local_sheet_id] == idx || dn[:local_sheet_name] == sheet_name) }
-        val = "#{quoted_sheet}!#{DslHelpers.absolute_range(ws.print_area)}"
+        val = ws.print_area.split(",").map { |part| "#{quoted_sheet}!#{DslHelpers.absolute_range(part.strip)}" }.join(",")
         defined_names << { name: "_xlnm.Print_Area", value: val, local_sheet_id: idx }
       end
       next unless ws.respond_to?(:print_titles) && ws.print_titles && defined_names.none? { |dn| dn[:name] == "_xlnm.Print_Titles" && (dn[:local_sheet_id] == idx || dn[:local_sheet_name] == sheet_name) }
