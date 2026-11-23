@@ -86,6 +86,40 @@ class OoxmlTest < Test::Unit::TestCase
     assert_equal("A" * (150_000 - 15_000), rest)
   end
 
+  test "zip_reader open_entry_io read(0) returns unfrozen empty string without consuming data" do
+    stored_io = StringIO.new
+    Xlsxrb::Ooxml::ZipWriter.open(stored_io, compression_level: 0) do |w|
+      w.add_entry("stored.txt", "hello")
+    end
+    deflated_io = StringIO.new
+    Xlsxrb::Ooxml::ZipWriter.open(deflated_io, compression_level: 6) do |w|
+      w.add_entry("deflated.txt", "world" * 20)
+    end
+
+    [
+      [stored_io.string, "stored.txt", "hello"],
+      [deflated_io.string, "deflated.txt", "world" * 20]
+    ].each do |archive_bytes, name, expected|
+      reader = Xlsxrb::Ooxml::ZipReader.new(StringIO.new(archive_bytes))
+
+      bin_stream = reader.open_entry_io(name)
+      empty_bin = bin_stream.read(0)
+      assert_equal("", empty_bin)
+      assert_equal(false, empty_bin.frozen?)
+      assert_equal(Encoding::BINARY, empty_bin.encoding)
+      assert_equal(expected.b, bin_stream.read)
+      bin_stream.close
+
+      utf8_stream = reader.open_entry_io(name, encoding: Encoding::UTF_8)
+      empty_utf8 = utf8_stream.read(0)
+      assert_equal("", empty_utf8)
+      assert_equal(false, empty_utf8.frozen?)
+      assert_equal(Encoding::UTF_8, empty_utf8.encoding)
+      assert_equal(expected, utf8_stream.read)
+      utf8_stream.close
+    end
+  end
+
   test "zip_reader normalizes Windows backslash path separators" do
     # ZipWriter rejects backslashes, so write the names with slashes and replace them in the
     # local headers and the central directory.

@@ -74,7 +74,7 @@ module Xlsxrb
             return result
           end
 
-          return "".force_encoding(@encoding || Encoding::BINARY) if length.zero?
+          return String.new(encoding: @encoding || Encoding::BINARY) if length.zero?
 
           while @buffer.bytesize - @buffer_pos < length && !@eof
             chunk = fetch_chunk([length - (@buffer.bytesize - @buffer_pos), DEFAULT_CHUNK_SIZE].max)
