@@ -566,7 +566,7 @@ class PbtTest < Test::Unit::TestCase
   test "property-based test: strict excel mode validates numeric extremes" do
     Pbt.assert(num_runs: 50) do
       # 1. Invalid floats
-      invalid_float_arb = Pbt.one_of(Float::NAN, Float::INFINITY, -Float::INFINITY)
+      invalid_float_arb = Pbt.constant_from(Float::NAN, Float::INFINITY, -Float::INFINITY)
       Pbt.property(invalid_float_arb) do |bad_float|
         assert_raise(ArgumentError) do
           Xlsxrb.build(strict_excel_mode: true) { |w| w.sheet("S1") { |s| s.row [bad_float] } }
