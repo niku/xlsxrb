@@ -101,6 +101,28 @@ module Xlsxrb
         end
       end
 
+      # Written by Excel 2016 for Mac, going by the application recorded in them. Taken unchanged
+      # from tests/inputs of msoffcrypto-tool (https://github.com/nolze/msoffcrypto-tool, commit
+      # bdb71ea5), under the MIT license in test/fixtures/encryption/msoffcrypto-tool/LICENSE.txt.
+      # The first uses AES-256 and SHA-512, as Excel does by default, and the second AES-128 and SHA-1.
+      def test_reads_and_checks_files_encrypted_by_excel
+        password = "Password1234_"
+        %w[example_password.xlsx ecma376agile_sha1_password.xlsx].each do |file|
+          name = "msoffcrypto-tool/#{file}"
+          workbook = Xlsxrb.load(encryption_fixture(name), password: password)
+
+          assert_equal %w[lorem ipsum], workbook.sheets[0].rows[0].cells.map(&:value), file
+          assert_raise(Xlsxrb::InvalidPasswordError, file) { Xlsxrb.load(encryption_fixture(name), password: "wrong") }
+
+          info, package = encryption_streams(name)
+          changed = package.dup
+          changed.setbyte(package.bytesize / 2, changed.getbyte(package.bytesize / 2) ^ 1)
+          assert_raise_with_message(Xlsxrb::DecryptionError, /Data integrity check failed/, file) do
+            Crypto::Agile.decrypt(info, changed, password)
+          end
+        end
+      end
+
       def test_agile_rejects_a_changed_package
         info, package = encryption_streams("poi_agile.xlsx")
 
