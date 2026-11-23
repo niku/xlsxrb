@@ -142,6 +142,19 @@ module Xlsxrb
         end
       end
 
+      # Some writers leave bytes after the encrypted package that are not a whole AES block.
+      def test_standard_ignores_bytes_after_the_package
+        plain = "PK\x03\x04#{"S" * 1000}".b
+        streams = Crypto::Standard.encrypt(plain, "pwd")
+        info = streams["EncryptionInfo"]
+        package = streams["EncryptedPackage"]
+
+        assert_equal plain, Crypto::Standard.decrypt(info, "#{package}#{"\x01" * 8}".b, "pwd")
+        assert_raise_with_message(Xlsxrb::DecryptionError, /shorter than its declared size/) do
+          Crypto::Standard.decrypt(info, package[0, package.bytesize - 16], "pwd")
+        end
+      end
+
       def test_encrypt_with_nil_or_empty_password_returns_plain
         plain = "PK\x03\x04plain".b
         assert_equal plain, Crypto.encrypt(plain, nil)

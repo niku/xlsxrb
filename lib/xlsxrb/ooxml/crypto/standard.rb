@@ -35,7 +35,11 @@ module Xlsxrb
             total_size = encrypted_package_bytes[0, 8].unpack1("Q<")
             raise Xlsxrb::DecryptionError, "Encrypted package size is invalid or exceeds limits" if total_size.negative? || total_size > 0x400_000_000
 
-            encrypted_data = encrypted_package_bytes[8..] || "".b
+            # Only the blocks that hold the package are decrypted. Some writers leave bytes
+            # after them that are not a whole block.
+            encrypted_size = (total_size + 15) / 16 * 16
+            encrypted_data = encrypted_package_bytes[8, encrypted_size] || "".b
+            raise Xlsxrb::DecryptionError, "Encrypted package is shorter than its declared size" if encrypted_data.bytesize < encrypted_size
 
             decrypted = aes_ecb_decrypt(k, encrypted_data)
             decrypted[0, total_size] || "".b
