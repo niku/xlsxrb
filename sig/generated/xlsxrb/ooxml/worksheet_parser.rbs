@@ -132,9 +132,11 @@ module Xlsxrb
 
       COL_MAP: untyped
 
+      FORMULA_TYPE_MAP: untyped
+
       # Captures r, s, and t directly when they appear in the order Excel and xlsxrb write them
       # (groups 1 to 3). Any other attribute set or order falls back to capturing the raw
-      # attribute string (group 4, or group 8 for a self-closing cell) for ATTR_* lookups.
+      # attribute string (group 4, or group 9 for a self-closing cell) for ATTR_* lookups.
       CELL_FAST_RE: ::Regexp
 
       CELL_GENERIC_RE: ::Regexp
@@ -170,8 +172,21 @@ module Xlsxrb
 
       def self.fast_parse_cells_direct: (untyped xml, untyped from, untyped to, untyped shared_strings, untyped row_source, ?untyped prefix) -> untyped
 
+      # Parses a `<f ...>` element with attributes into an `Elements::Formula`,
+      # registering or expanding shared formulas when `shared_formulas` is present.
+      # : (String f_attrs, String? raw_f, String? cell_ref, Hash[Integer, Hash[Symbol, untyped]]? shared_formulas) -> Elements::Formula?
+      def self.build_formula_from_attrs: (String f_attrs, String? raw_f, String? cell_ref, Hash[Integer, Hash[Symbol, untyped]]? shared_formulas) -> Elements::Formula?
+
+      # Records shared formula masters from a row slice before yielding StreamRow
+      # so forward-iterated or skipped rows still populate shared masters for later slaves.
+      # : (String xml, Integer from, Integer to, Hash[Integer, Hash[Symbol, untyped]] shared_formulas, Integer row_idx) -> void
+      def self.record_shared_masters: (String xml, Integer from, Integer to, Hash[Integer, Hash[Symbol, untyped]] shared_formulas, Integer row_idx) -> void
+
+      # : (String? ref, Integer col_idx) -> Integer
+      def self.resolve_cell_col_index: (String? ref, Integer col_idx) -> Integer
+
       # rubocop:disable Style/OptionalBooleanParameter
-      def self.fast_scan_cells_direct: (untyped xml, untyped from, untyped to, untyped shared_strings, untyped row_source, ?untyped _prefix, ?untyped styles, ?untyped date1904) ?{ (?) -> untyped } -> untyped
+      def self.fast_scan_cells_direct: (untyped xml, untyped from, untyped to, untyped shared_strings, untyped row_source, ?untyped _prefix, ?untyped styles, ?untyped date1904, ?untyped shared_formulas) ?{ (?) -> untyped } -> untyped
 
       # rubocop:disable Style/OptionalBooleanParameter
       # : (String xml, Integer from, Integer to, Array[String | Elements::RichText | untyped] shared_strings, ?untyped styles, ?bool date1904, ?type_cast: bool) -> Array[untyped]

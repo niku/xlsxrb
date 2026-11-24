@@ -737,6 +737,7 @@ module Xlsxrb
 
         pos = sd_open_end + 1
         last_row_index = -1
+        shared_formulas = xml.include?('t="shared"') || xml.include?("t='shared'") ? {} : nil
 
         while pos < sd_end
           row_start = xml.index(row_start_pattern, pos)
@@ -815,6 +816,11 @@ module Xlsxrb
           row_end = xml.index(row_end_tag, tag_end + 1)
           break unless row_end
 
+          if shared_formulas
+            shared_pos = xml.byteindex("shared", tag_end + 1)
+            record_shared_masters(xml, tag_end + 1, row_end, shared_formulas, row_index) if shared_pos && shared_pos < row_end
+          end
+
           row_obj = StreamRow.fast_create(
             row_index,
             xml,
@@ -830,7 +836,8 @@ module Xlsxrb
             styles,
             date1904,
             attrs[:collapsed] || false,
-            pad_empty_cells
+            pad_empty_cells,
+            shared_formulas
           )
           block.call(row_obj)
 
@@ -857,6 +864,7 @@ module Xlsxrb
         row_end_len = 6
         sd_end_tag = "</sheetData>"
         last_row_index = -1
+        shared_formulas = nil
         # SECURITY NOTE: The buffer is searched again each time a chunk is added. These hold
         # how far the previous searches got without a match, so that a row or a stretch of
         # other markup spanning many chunks is searched once, not once per chunk.
@@ -1016,6 +1024,10 @@ module Xlsxrb
             end
 
             cells_xml = buffer.byteslice(tag_end + 1, row_end - (tag_end + 1))
+            if cells_xml.include?('t="shared"') || cells_xml.include?("t='shared'")
+              shared_formulas ||= {}
+              record_shared_masters(cells_xml, 0, cells_xml.bytesize, shared_formulas, row_index)
+            end
             row_obj = StreamRow.fast_create(
               row_index,
               cells_xml,
@@ -1031,7 +1043,8 @@ module Xlsxrb
               styles,
               date1904,
               attrs[:collapsed] || false,
-              pad_empty_cells
+              pad_empty_cells,
+              shared_formulas
             )
             block.call(row_obj)
 
@@ -1092,11 +1105,14 @@ module Xlsxrb
         [COL_LETTERS[idx], idx]
       end.freeze
 
+      FORMULA_TYPE_MAP = { "shared" => :shared, "array" => :array, "dataTable" => :data_table }.freeze
+      private_constant :FORMULA_TYPE_MAP
+
       # Captures r, s, and t directly when they appear in the order Excel and xlsxrb write them
       # (groups 1 to 3). Any other attribute set or order falls back to capturing the raw
-      # attribute string (group 4, or group 8 for a self-closing cell) for ATTR_* lookups.
-      CELL_FAST_RE = %r{<(?:[a-zA-Z0-9_]+:)?c(?:\s+r="([A-Za-z0-9]+)"(?:\s+s="(\d+)")?(?:\s+t="([a-zA-Z]+)")?\s*|\b([^>]*(?<!/)))>\s*(?:<(?:[a-zA-Z0-9_]+:)?f\b[^>]*?(?:/>|>([^<]*)</(?:[a-zA-Z0-9_]+:)?f>)\s*)?(?:<(?:[a-zA-Z0-9_]+:)?v>([^<]*)</(?:[a-zA-Z0-9_]+:)?v>\s*)?(?:<(?:[a-zA-Z0-9_]+:)?is>(.*?)</(?:[a-zA-Z0-9_]+:)?is>\s*)?.*?</(?:[a-zA-Z0-9_]+:)?c>|<(?:[a-zA-Z0-9_]+:)?c\b([^>]*)/?>}m
-      CELL_GENERIC_RE = %r{<(?:[a-zA-Z0-9_]+:)?c\b([^>]*?)(?:>\s*(?:<(?:[a-zA-Z0-9_]+:)?f\b[^>]*?(?:/>|>([^<]*)</(?:[a-zA-Z0-9_]+:)?f>)\s*)?(?:<(?:[a-zA-Z0-9_]+:)?v>([^<]*)</(?:[a-zA-Z0-9_]+:)?v>\s*)?(?:<(?:[a-zA-Z0-9_]+:)?is>(.*?)</(?:[a-zA-Z0-9_]+:)?is>\s*)?.*?</(?:[a-zA-Z0-9_]+:)?c>|/>)}m
+      # attribute string (group 4, or group 9 for a self-closing cell) for ATTR_* lookups.
+      CELL_FAST_RE = %r{<(?:[a-zA-Z0-9_]+:)?c(?:\s+r="([A-Za-z0-9]+)"(?:\s+s="(\d+)")?(?:\s+t="([a-zA-Z]+)")?\s*|\b([^>]*(?<!/)))>\s*(?:<(?:[a-zA-Z0-9_]+:)?f(?:\s+([^>]*?))?(?:/>|>([^<]*)</(?:[a-zA-Z0-9_]+:)?f>)\s*)?(?:<(?:[a-zA-Z0-9_]+:)?v>([^<]*)</(?:[a-zA-Z0-9_]+:)?v>\s*)?(?:<(?:[a-zA-Z0-9_]+:)?is>(.*?)</(?:[a-zA-Z0-9_]+:)?is>\s*)?.*?</(?:[a-zA-Z0-9_]+:)?c>|<(?:[a-zA-Z0-9_]+:)?c\b([^>]*)/?>}m
+      CELL_GENERIC_RE = %r{<(?:[a-zA-Z0-9_]+:)?c\b([^>]*?)(?:>\s*(?:<(?:[a-zA-Z0-9_]+:)?f(?:\s+([^>]*?))?(?:/>|>([^<]*)</(?:[a-zA-Z0-9_]+:)?f>)\s*)?(?:<(?:[a-zA-Z0-9_]+:)?v>([^<]*)</(?:[a-zA-Z0-9_]+:)?v>\s*)?(?:<(?:[a-zA-Z0-9_]+:)?is>(.*?)</(?:[a-zA-Z0-9_]+:)?is>\s*)?.*?</(?:[a-zA-Z0-9_]+:)?c>|/>)}m
       ATTR_R = /\br="([A-Za-z0-9]+)"/
       ATTR_T = /\bt="([a-zA-Z]+)"/
       ATTR_S = /\bs="(\d+)"/
@@ -1149,8 +1165,93 @@ module Xlsxrb
         cells
       end
 
+      # Parses a `<f ...>` element with attributes into an `Elements::Formula`,
+      # registering or expanding shared formulas when `shared_formulas` is present.
+      #: (String f_attrs, String? raw_f, String? cell_ref, Hash[Integer, Hash[Symbol, untyped]]? shared_formulas) -> Elements::Formula?
+      def self.build_formula_from_attrs(f_attrs, raw_f, cell_ref, shared_formulas)
+        attrs_padded = " #{f_attrs}"
+        raw_type = tag_attr(attrs_padded, ' t="') || tag_attr(attrs_padded, " t='")
+        f_type = raw_type ? FORMULA_TYPE_MAP[raw_type] : nil
+        f_ref = decoded_attr(attrs_padded, ' ref="')
+        si_str = tag_attr(attrs_padded, ' si="') || tag_attr(attrs_padded, " si='")
+        f_si = si_str&.to_i
+        expr = raw_f ? normalize_text(utf8!(strip_ws(raw_f))) : +""
+        if f_type == :shared && f_si && shared_formulas
+          if !expr.empty?
+            shared_formulas[f_si] = { ref: cell_ref, expression: expr }
+          elsif (master = shared_formulas[f_si]) && cell_ref
+            expr = Xlsxrb.expand_formula(master[:expression], from_ref: master[:ref], to_ref: cell_ref) || ""
+          end
+        end
+        return nil if expr.empty? && f_type.nil?
+
+        Elements::Formula.new(
+          expression: expr,
+          type: f_type,
+          ref: f_ref,
+          shared_index: f_si,
+          calculate_always: (true if f_attrs.include?('ca="1"') || f_attrs.include?('ca="true"')),
+          aca: (true if f_attrs.include?('aca="1"') || f_attrs.include?('aca="true"')),
+          bx: (true if f_attrs.include?('bx="1"') || f_attrs.include?('bx="true"')),
+          dt2d: (true if f_attrs.include?('dt2D="1"') || f_attrs.include?('dt2D="true"')),
+          dtr: (true if f_attrs.include?('dtr="1"') || f_attrs.include?('dtr="true"')),
+          r1: decoded_attr(attrs_padded, ' r1="'),
+          r2: decoded_attr(attrs_padded, ' r2="')
+        )
+      end
+
+      private_class_method :build_formula_from_attrs
+
+      # Records shared formula masters from a row slice before yielding StreamRow
+      # so forward-iterated or skipped rows still populate shared masters for later slaves.
+      #: (String xml, Integer from, Integer to, Hash[Integer, Hash[Symbol, untyped]] shared_formulas, Integer row_idx) -> void
+      def self.record_shared_masters(xml, from, to, shared_formulas, row_idx)
+        chunk = scrub_row(xml.byteslice(from, to - from))
+        col_idx = 0
+        matched_any = false
+        chunk.scan(CELL_FAST_RE) do |r, _s, _t, attrs_str, f_attrs, f, _v, _is, self_attrs|
+          matched_any = true
+          r ||= (attrs_str || self_attrs || "")[ATTR_R, 1]
+          c_idx = resolve_cell_col_index(r, col_idx)
+          col_idx = c_idx + 1
+          next unless f_attrs && f && !f.empty? && (f_attrs.include?('t="shared"') || f_attrs.include?("t='shared'"))
+
+          build_formula_from_attrs(f_attrs, f, r || "#{COL_LETTERS[c_idx]}#{row_idx + 1}", shared_formulas)
+        end
+        return if matched_any
+
+        col_idx = 0
+        chunk.scan(CELL_GENERIC_RE) do |attrs, f_attrs, f, _v, _is|
+          r = attrs[ATTR_R, 1]
+          c_idx = resolve_cell_col_index(r, col_idx)
+          col_idx = c_idx + 1
+          next unless f_attrs && f && !f.empty? && (f_attrs.include?('t="shared"') || f_attrs.include?("t='shared'"))
+
+          build_formula_from_attrs(f_attrs, f, r || "#{COL_LETTERS[c_idx]}#{row_idx + 1}", shared_formulas)
+        end
+      end
+
+      private_class_method :record_shared_masters
+
+      #: (String? ref, Integer col_idx) -> Integer
+      def self.resolve_cell_col_index(ref, col_idx)
+        return col_idx unless ref
+
+        expected_letter = COL_LETTERS[col_idx]
+        if expected_letter && ref.start_with?(expected_letter) && (digit = ref.getbyte(expected_letter.bytesize)) && digit >= 48 && digit <= 57
+          col_idx
+        else
+          c_len = 0
+          c_len += 1 while (b = ref.getbyte(c_len)) && (b.between?(65, 90) || b.between?(97, 122))
+          col_letters = ref.byteslice(0, c_len).upcase
+          COL_MAP[col_letters] || col_idx
+        end
+      end
+
+      private_class_method :resolve_cell_col_index
+
       # rubocop:disable Style/OptionalBooleanParameter
-      def self.fast_scan_cells_direct(xml, from, to, shared_strings, row_source, _prefix = "", styles = nil, date1904 = false, &)
+      def self.fast_scan_cells_direct(xml, from, to, shared_strings, row_source, _prefix = "", styles = nil, date1904 = false, shared_formulas = nil, &)
         # rubocop:enable Style/OptionalBooleanParameter
         chunk = scrub_row(xml.byteslice(from, to - from))
         verify_cells_closed!(chunk)
@@ -1158,7 +1259,7 @@ module Xlsxrb
         col_idx = 0
         matched_any = false
 
-        chunk.scan(CELL_FAST_RE) do |r, s, t, attrs_str, f, v, is, self_attrs|
+        chunk.scan(CELL_FAST_RE) do |r, s, t, attrs_str, f_attrs, f, v, is, self_attrs|
           matched_any = true
           unless r
             raw_attrs = attrs_str || self_attrs || ""
@@ -1168,19 +1269,7 @@ module Xlsxrb
           end
           style_idx = s&.to_i
           ref = r
-          c_idx = if ref
-                    expected_letter = COL_LETTERS[col_idx]
-                    if expected_letter && ref.start_with?(expected_letter) && (digit = ref.getbyte(expected_letter.bytesize)) && digit >= 48 && digit <= 57
-                      col_idx
-                    else
-                      c_len = 0
-                      c_len += 1 while (b = ref.getbyte(c_len)) && (b.between?(65, 90) || b.between?(97, 122))
-                      col_letters = ref.byteslice(0, c_len).upcase
-                      COL_MAP[col_letters] || col_idx
-                    end
-                  else
-                    col_idx
-                  end
+          c_idx = resolve_cell_col_index(ref, col_idx)
           col_idx = c_idx + 1
           v = utf8!(strip_ws(v)) if v
           f = utf8!(strip_ws(f)) if f
@@ -1193,34 +1282,27 @@ module Xlsxrb
                       normalize_text(v)
                     end
 
-          formula_expr = f ? normalize_text(f) : nil
-          formula_expr = nil if formula_expr && formula_expr.empty?
+          formula_val = if f_attrs
+                          cell_ref = ref || "#{COL_LETTERS[c_idx]}#{row_idx + 1}"
+                          build_formula_from_attrs(f_attrs, f, cell_ref, shared_formulas)
+                        elsif f
+                          expr = normalize_text(f)
+                          expr.empty? ? nil : expr
+                        end
           fmt_code = NumberFormatter.format_code_for(style_idx, styles) if styles && style_idx
-          cell = Elements::Cell.fast_create(row_idx, c_idx, val, style_idx, formula_expr, raw_val, fmt_code, date1904)
+          cell = Elements::Cell.fast_create(row_idx, c_idx, val, style_idx, formula_val, raw_val, fmt_code, date1904)
           yield cell
         end
 
         return if matched_any || (!chunk.include?("<c") && !chunk.include?(":c"))
 
         # Fallback for non-standard attribute ordering
-        chunk.scan(CELL_GENERIC_RE) do |attrs, f, v, is|
+        chunk.scan(CELL_GENERIC_RE) do |attrs, f_attrs, f, v, is|
           r = attrs[ATTR_R, 1]
           t = attrs[ATTR_T, 1]
           s = attrs[ATTR_S, 1]
 
-          c_idx = if r
-                    expected_letter = COL_LETTERS[col_idx]
-                    if expected_letter && r.start_with?(expected_letter) && (digit = r.getbyte(expected_letter.bytesize)) && digit >= 48 && digit <= 57
-                      col_idx
-                    else
-                      c_len = 0
-                      c_len += 1 while (b = r.getbyte(c_len)) && (b.between?(65, 90) || b.between?(97, 122))
-                      col_letters = r.byteslice(0, c_len).upcase
-                      COL_MAP[col_letters] || col_idx
-                    end
-                  else
-                    col_idx
-                  end
+          c_idx = resolve_cell_col_index(r, col_idx)
           col_idx = c_idx + 1
           v = utf8!(strip_ws(v)) if v
           f = utf8!(strip_ws(f)) if f
@@ -1234,10 +1316,15 @@ module Xlsxrb
                     end
 
           style_idx = s&.to_i
-          formula_expr = f ? normalize_text(f) : nil
-          formula_expr = nil if formula_expr && formula_expr.empty?
+          formula_val = if f_attrs
+                          cell_ref = r || "#{COL_LETTERS[c_idx]}#{row_idx + 1}"
+                          build_formula_from_attrs(f_attrs, f, cell_ref, shared_formulas)
+                        elsif f
+                          expr = normalize_text(f)
+                          expr.empty? ? nil : expr
+                        end
           fmt_code = NumberFormatter.format_code_for(style_idx, styles) if styles && style_idx
-          cell = Elements::Cell.fast_create(row_idx, c_idx, val, style_idx, formula_expr, raw_val, fmt_code, date1904)
+          cell = Elements::Cell.fast_create(row_idx, c_idx, val, style_idx, formula_val, raw_val, fmt_code, date1904)
           yield cell
         end
       end
@@ -1255,7 +1342,7 @@ module Xlsxrb
         matched_any = false
         row_values = []
 
-        chunk.scan(CELL_FAST_RE) do |r, s_val, t, attrs_str, _f, v, is, self_attrs|
+        chunk.scan(CELL_FAST_RE) do |r, s_val, t, attrs_str, _f_attrs, _f, v, is, self_attrs|
           matched_any = true
           unless r
             raw_attrs = attrs_str || self_attrs || ""
@@ -1264,19 +1351,7 @@ module Xlsxrb
             t = raw_attrs.include?('t="') ? raw_attrs[ATTR_T, 1] : nil
           end
           ref = r
-          c_idx = if ref
-                    expected_letter = COL_LETTERS[col_idx]
-                    if expected_letter && ref.start_with?(expected_letter) && (digit = ref.getbyte(expected_letter.bytesize)) && digit >= 48 && digit <= 57
-                      col_idx
-                    else
-                      c_len = 0
-                      c_len += 1 while (b = ref.getbyte(c_len)) && (b.between?(65, 90) || b.between?(97, 122))
-                      col_letters = ref.byteslice(0, c_len).upcase
-                      COL_MAP[col_letters] || col_idx
-                    end
-                  else
-                    col_idx
-                  end
+          c_idx = resolve_cell_col_index(ref, col_idx)
           col_idx = c_idx + 1
           v = v.strip if v
 
@@ -1302,24 +1377,12 @@ module Xlsxrb
         return row_values if matched_any || (!chunk.include?("<c") && !chunk.include?(":c"))
 
         # Fallback for non-standard attribute ordering
-        chunk.scan(CELL_GENERIC_RE) do |attrs, _f, v, is|
+        chunk.scan(CELL_GENERIC_RE) do |attrs, _f_attrs, _f, v, is|
           r = attrs[ATTR_R, 1]
           t = attrs[ATTR_T, 1]
           s = attrs[ATTR_S, 1]
 
-          c_idx = if r
-                    expected_letter = COL_LETTERS[col_idx]
-                    if expected_letter && r.start_with?(expected_letter) && (digit = r.getbyte(expected_letter.bytesize)) && digit >= 48 && digit <= 57
-                      col_idx
-                    else
-                      c_len = 0
-                      c_len += 1 while (b = r.getbyte(c_len)) && (b.between?(65, 90) || b.between?(97, 122))
-                      col_letters = r.byteslice(0, c_len).upcase
-                      COL_MAP[col_letters] || col_idx
-                    end
-                  else
-                    col_idx
-                  end
+          c_idx = resolve_cell_col_index(r, col_idx)
           col_idx = c_idx + 1
           v = v.strip if v
 

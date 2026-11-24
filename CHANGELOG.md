@@ -5,6 +5,7 @@
 - Build XML parts in `Ooxml::Writer`, its `DrawingXml`, `FeaturesXml`, and `StylesXml` mixins, and `Ooxml::Crypto::Agile` through `Ooxml::XmlBuilder` ([ADR 0014](docs/adr/0014-build-xml-through-xml-builder.md)), keeping string concatenation only for cell-loop and shared-string hot paths in `Ooxml::WorksheetWriter` and `Ooxml::WorkbookWriter`.
 
 ### Fixed
+- Preserve formula attributes (`type`, `ref`, `shared_index`, `calculate_always`, and data-table flags) and expand shared formulas in `Ooxml::WorksheetParser`, `StreamRow`, `Xlsxrb.load`, and `Xlsxrb.read`, and emit self-closing `<f t="shared" si="..."/>` tags for shared formula slaves in `Ooxml::WorksheetWriter`.
 - Enforce `max_uncompressed_size` for stored (`method == 0`) ZIP entries in `Ooxml::ZipReader#read_entry` and `#decompress`, matching `EntryStreamIO`.
 - Skip single-quoted sheet names (`'Q1'!`, `'O''Reilly'!`) and unquoted sheet prefixes before `!` (`S1!`, `Q1!`) in `Xlsxrb.expand_formula` so short or quoted sheet names matching cell-reference patterns are not shifted.
 - Unwrap `<![CDATA[...]]>` sections in `Ooxml::WorksheetParser.normalize_text` and handle SAX2 `cdata` callbacks in `Ooxml::Reader::WorksheetListener` so inline string cells containing CDATA return their text content instead of literal CDATA markers or empty strings.

@@ -349,7 +349,7 @@ module Xlsxrb
               end
             end
             f_attrs << ' ca="1"' if formula_ca
-            if formula_expr && !formula_expr.empty?
+            if formula_expr && !formula_expr.empty? && !(formula_type&.to_sym == :shared && formula_ref.nil?)
               buf << "><f#{f_attrs}>" << escape_xml(formula_expr) << "</f>"
             else
               buf << "><f#{f_attrs}/>"
@@ -490,7 +490,7 @@ module Xlsxrb
               else
                 v_val = value.cached_value.is_a?(Numeric) ? value.cached_value : escape_xml(value.cached_value)
               end
-              f_tag = if formula_expr && !formula_expr.empty?
+              f_tag = if formula_expr && !formula_expr.empty? && !(value.type&.to_sym == :shared && value.ref.nil?)
                         "<f#{f_attrs}>#{escape_xml(formula_expr)}</f>"
                       else
                         "<f#{f_attrs}/>"
@@ -537,7 +537,7 @@ module Xlsxrb
                   xml_val = xml_val.code
                 end
                 xml_val = escape_xml(xml_val) unless xml_val.is_a?(Numeric)
-                f_tag = if formula_expr && !formula_expr.empty?
+                f_tag = if formula_expr && !formula_expr.empty? && !(f_type&.to_sym == :shared && value[:ref].nil?)
                           "<f#{f_attrs}>#{escape_xml(formula_expr)}</f>"
                         else
                           "<f#{f_attrs}/>"
@@ -850,7 +850,7 @@ module Xlsxrb
             end
           end
           f_attrs << ' ca="1"' if formula_ca
-          if formula_expr && !formula_expr.empty?
+          if formula_expr && !formula_expr.empty? && !(formula_type&.to_sym == :shared && formula_ref.nil?)
             buf << "><f#{f_attrs}>" << escape_xml(formula_expr) << "</f>"
           else
             buf << "><f#{f_attrs}/>"

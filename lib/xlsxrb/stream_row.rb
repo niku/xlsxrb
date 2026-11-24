@@ -43,9 +43,10 @@ module Xlsxrb
     # @param styles [Elements::Styles, Hash, nil] Optional parsed styles.
     # @param date1904 [Boolean] Whether the 1904 date system is active.
     # @param pad_empty_cells [Boolean] Whether missing cells in this row are padded.
-    #: (index: Integer, xml_bytes: String, from: Integer, to: Integer, shared_strings: Array[String], ?prefix: String, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil, ?style_index: Integer | nil, ?styles: (Elements::Styles | Hash[untyped, untyped])?, ?date1904: bool, ?pad_empty_cells: bool) -> void
+    # @param shared_formulas [Hash{Integer => Hash}, nil] Sheet shared formula masters table.
+    #: (index: Integer, xml_bytes: String, from: Integer, to: Integer, shared_strings: Array[String], ?prefix: String, ?height: Float | Integer | nil, ?hidden: bool, ?custom_height: bool, ?collapsed: bool, ?outline_level: Integer | nil, ?style_index: Integer | nil, ?styles: (Elements::Styles | Hash[untyped, untyped])?, ?date1904: bool, ?pad_empty_cells: bool, ?shared_formulas: Hash[Integer, Hash[Symbol, untyped]]?) -> void
     def initialize(index:, xml_bytes:, from:, to:, shared_strings:, prefix: "", height: nil, hidden: false,
-                   custom_height: false, collapsed: false, outline_level: nil, style_index: nil, styles: nil, date1904: false, pad_empty_cells: false)
+                   custom_height: false, collapsed: false, outline_level: nil, style_index: nil, styles: nil, date1904: false, pad_empty_cells: false, shared_formulas: nil)
       @index = index
       @xml = xml_bytes.encoding == Encoding::BINARY ? xml_bytes : xml_bytes.b
       @from = from
@@ -61,12 +62,13 @@ module Xlsxrb
       @styles = styles
       @date1904 = date1904 ? true : false
       @pad_empty_cells = pad_empty_cells ? true : false
+      @shared_formulas = shared_formulas
       @cells = nil
     end
 
     # @api private
     # rubocop:disable Style/OptionalBooleanParameter
-    def self.fast_create(index, xml_bytes, from, to, shared_strings, prefix = "", height = nil, hidden = false, custom_height = false, outline_level = nil, style_index = nil, styles = nil, date1904 = false, collapsed = false, pad_empty_cells = false)
+    def self.fast_create(index, xml_bytes, from, to, shared_strings, prefix = "", height = nil, hidden = false, custom_height = false, outline_level = nil, style_index = nil, styles = nil, date1904 = false, collapsed = false, pad_empty_cells = false, shared_formulas = nil)
       inst = allocate
       inst.instance_variable_set(:@index, index)
       inst.instance_variable_set(:@xml, xml_bytes.encoding == Encoding::BINARY ? xml_bytes : xml_bytes.b)
@@ -83,6 +85,7 @@ module Xlsxrb
       inst.instance_variable_set(:@styles, styles)
       inst.instance_variable_set(:@date1904, date1904 ? true : false)
       inst.instance_variable_set(:@pad_empty_cells, pad_empty_cells ? true : false)
+      inst.instance_variable_set(:@shared_formulas, shared_formulas)
       inst.instance_variable_set(:@cells, nil)
       inst
     end
@@ -193,7 +196,7 @@ module Xlsxrb
       if @cells || @pad_empty_cells
         cells.each(&block)
       else
-        Ooxml::WorksheetParser.fast_scan_cells_direct(@xml, @from, @to, @shared_strings, @index, @prefix, @styles, @date1904, &block)
+        Ooxml::WorksheetParser.fast_scan_cells_direct(@xml, @from, @to, @shared_strings, @index, @prefix, @styles, @date1904, @shared_formulas, &block)
       end
     end
 
@@ -217,7 +220,7 @@ module Xlsxrb
     def cells
       @cells ||= begin
         arr = []
-        Ooxml::WorksheetParser.fast_scan_cells_direct(@xml, @from, @to, @shared_strings, @index, @prefix, @styles, @date1904) do |c|
+        Ooxml::WorksheetParser.fast_scan_cells_direct(@xml, @from, @to, @shared_strings, @index, @prefix, @styles, @date1904, @shared_formulas) do |c|
           arr << c
         end
         if @pad_empty_cells && !arr.empty?

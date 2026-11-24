@@ -3048,6 +3048,59 @@ class ReaderTest < Test::Unit::TestCase
     File.delete(xlsx_path) if xlsx_path && File.exist?(xlsx_path)
   end
 
+  test "Xlsxrb.load, Xlsxrb.read, and to_data preserve shared and array formula attributes and expand shared slaves" do
+    xlsx_bytes = Tempfile.create(["xlsxrb-load-formulas", ".xlsx"]) do |tmp|
+      tmp.close
+      writer = Xlsxrb::Ooxml::Writer.new
+      writer.set_cell("A1", 10)
+      writer.set_cell("A2", 20)
+      writer.set_cell("A3", 30)
+      writer.set_cell("B1", Xlsxrb::Elements::Formula.new(expression: "A1*2", type: :shared, ref: "B1:B3", shared_index: 0, cached_value: 20))
+      writer.set_cell("B2", Xlsxrb::Elements::Formula.new(expression: "", type: :shared, shared_index: 0, cached_value: 40))
+      writer.set_cell("B3", Xlsxrb::Elements::Formula.new(expression: "", type: :shared, shared_index: 0, cached_value: 60))
+      writer.set_cell("C1", Xlsxrb::Elements::Formula.new(expression: "SUM(A1:A3)", type: :array, ref: "C1", cached_value: 60))
+      writer.write(tmp.path)
+      File.binread(tmp.path)
+    end
+
+    loaded = Xlsxrb.load(StringIO.new(xlsx_bytes))
+    sheet = loaded.sheet(0)
+    assert_equal(:shared, sheet["B1"].formula.type)
+    assert_equal("B1:B3", sheet["B1"].formula.ref)
+    assert_equal(0, sheet["B1"].formula.shared_index)
+    assert_equal("A1*2", sheet["B1"].formula_expression)
+    assert_equal(:shared, sheet["B2"].formula.type)
+    assert_equal(0, sheet["B2"].formula.shared_index)
+    assert_equal("A2*2", sheet["B2"].formula_expression)
+    assert_equal("A3*2", sheet["B3"].formula_expression)
+    assert_equal(:array, sheet["C1"].formula.type)
+    assert_equal("C1", sheet["C1"].formula.ref)
+    assert_equal("SUM(A1:A3)", sheet["C1"].formula_expression)
+
+    # Skipping row 0 in Xlsxrb.read must still expand shared slave formulas in rows 1 and 2.
+    streamed = {}
+    Xlsxrb.read(StringIO.new(xlsx_bytes)) do |ss|
+      ss.each_row do |row|
+        next if row.index.zero?
+
+        streamed[row.index] = row["B"].formula_expression
+      end
+    end
+    assert_equal({ 1 => "A2*2", 2 => "A3*2" }, streamed)
+
+    resaved = loaded.to_data
+    resaved_xml = Xlsxrb::Ooxml::ZipReader.new(StringIO.new(resaved)).read_entry("xl/worksheets/sheet1.xml")
+    assert_include(resaved_xml, '<f t="shared" si="0" ref="B1:B3">A1*2</f>')
+    assert_include(resaved_xml, '<f t="shared" si="0"/>')
+
+    reloaded = Xlsxrb.load(StringIO.new(resaved)).sheet(0)
+    assert_equal("A1*2", reloaded["B1"].formula_expression)
+    assert_equal("A2*2", reloaded["B2"].formula_expression)
+    assert_equal("A3*2", reloaded["B3"].formula_expression)
+    assert_equal(:array, reloaded["C1"].formula.type)
+    assert_equal("SUM(A1:A3)", reloaded["C1"].formula_expression)
+  end
+
   test "round-trips formula calculate_always through writer and reader" do
     writer = Xlsxrb::Ooxml::Writer.new
     writer.set_cell("A1", Xlsxrb::Elements::Formula.new(expression: "NOW()", cached_value: "45000", calculate_always: true))
