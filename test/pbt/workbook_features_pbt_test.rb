@@ -621,7 +621,6 @@ class WorkbookFeaturesPbtTest < Test::Unit::TestCase
                     elsif state.first_sheet.is_a?(String)
                       state.sheets.find_index { |sh| sh[:name] == state.first_sheet }
                     end
-    exp_first_idx = nil if exp_first_idx&.zero?
     assert_equal(exp_first_idx, workbook.first_sheet, "[#{label}] first_sheet")
     assert_equal(state.show_sheet_tabs != false, workbook.show_sheet_tabs?, "[#{label}] show_sheet_tabs?")
     assert_equal(state.tab_ratio, workbook.tab_ratio, "[#{label}] tab_ratio")
