@@ -1402,6 +1402,7 @@ module Xlsxrb
               attrs[:height] = row.height if row.height
               attrs[:hidden] = true if row.hidden?
               attrs[:custom_height] = true if row.custom_height?
+              attrs[:collapsed] = true if row.collapsed?
               attrs[:outline_level] = row.outline_level if row.outline_level
               style_idx = row.unmapped_data&.[](:style_index) || (row.respond_to?(:style_index) && row.style_index)
               attrs[:style_index] = style_idx if style_idx

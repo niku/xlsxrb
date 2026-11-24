@@ -1865,12 +1865,19 @@ class FacadeFeaturesTest < Test::Unit::TestCase
     assert_match(/<outlinePr[^>]+summaryBelow="0"/, sheet_xml)
     assert_match(/<outlinePr[^>]+summaryRight="1"/, sheet_xml)
     assert_match(/<outlinePr[^>]+showOutlineSymbols="0"/, sheet_xml)
+    assert_match(/<row[^>]+r="2"[^>]+collapsed="1"/, sheet_xml)
+    assert_match(/<row[^>]+r="3"[^>]+collapsed="1"/, sheet_xml)
 
     # DOM inspection
     ws = wb.sheets.first
     assert_equal(false, ws.outline_properties[:summary_below])
     assert_equal(true, ws.outline_properties[:summary_right])
     assert_equal(false, ws.outline_properties[:show_outline_symbols])
+
+    reloaded_rows = Xlsxrb.load(tmp.path).sheet(0).rows
+    assert_equal([false, true, true, false], reloaded_rows.map(&:collapsed?))
+    resaved_rows = Xlsxrb.load(StringIO.new(Xlsxrb.load(tmp.path).to_data)).sheet(0).rows
+    assert_equal([false, true, true, false], resaved_rows.map(&:collapsed?))
   ensure
     tmp&.close!
   end
