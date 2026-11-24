@@ -342,7 +342,7 @@ module Xlsxrb
         v_tag_end_str = "</#{prefix}v>"
         v_tag_end_len = v_tag_end_str.bytesize
 
-        is_tag_start_str = "<#{prefix}is>"
+        is_tag_start_str = "<#{prefix}is"
         is_tag_start_len = is_tag_start_str.bytesize
         is_tag_end_str = "</#{prefix}is>"
         is_tag_end_len = is_tag_end_str.bytesize
@@ -437,11 +437,22 @@ module Xlsxrb
               else
                 cpos = tag_pos + 2
               end
-            elsif xml.byteslice(tag_pos, is_tag_start_len) == is_tag_start_str
-              is_end = xml.index(is_tag_end_str, tag_pos + is_tag_start_len)
-              if is_end && is_end <= c_end
-                inline_str = extract_inline_text(xml, tag_pos + is_tag_start_len, is_end)
-                cpos = is_end + is_tag_end_len
+            elsif xml.byteslice(tag_pos, is_tag_start_len) == is_tag_start_str &&
+                  TAG_DELIM_BYTES.include?(xml.getbyte(tag_pos + is_tag_start_len))
+              is_tag_end = xml.index(">", tag_pos + is_tag_start_len)
+              if is_tag_end && is_tag_end < c_end
+                if xml.getbyte(is_tag_end - 1) == 47
+                  inline_str = +""
+                  cpos = is_tag_end + 1
+                else
+                  is_end = xml.index(is_tag_end_str, is_tag_end + 1)
+                  if is_end && is_end <= c_end
+                    inline_str = extract_inline_text(xml, is_tag_end + 1, is_end)
+                    cpos = is_end + is_tag_end_len
+                  else
+                    cpos = is_tag_end + 1
+                  end
+                end
               else
                 cpos = tag_pos + is_tag_start_len
               end
@@ -1111,15 +1122,15 @@ module Xlsxrb
       # Captures r, s, and t directly when they appear in the order Excel and xlsxrb write them
       # (groups 1 to 3). Any other attribute set or order falls back to capturing the raw
       # attribute string (group 4, or group 9 for a self-closing cell) for ATTR_* lookups.
-      CELL_FAST_RE = %r{<(?:[a-zA-Z0-9_]+:)?c(?:\s+r="([A-Za-z0-9]+)"(?:\s+s="(\d+)")?(?:\s+t="([a-zA-Z]+)")?\s*|\b([^>]*(?<!/)))>\s*(?:<(?:[a-zA-Z0-9_]+:)?f(?:\s+([^>]*?))?(?:/>|>([^<]*)</(?:[a-zA-Z0-9_]+:)?f>)\s*)?(?:<(?:[a-zA-Z0-9_]+:)?v>([^<]*)</(?:[a-zA-Z0-9_]+:)?v>\s*)?(?:<(?:[a-zA-Z0-9_]+:)?is>(.*?)</(?:[a-zA-Z0-9_]+:)?is>\s*)?.*?</(?:[a-zA-Z0-9_]+:)?c>|<(?:[a-zA-Z0-9_]+:)?c\b([^>]*)/?>}m
-      CELL_GENERIC_RE = %r{<(?:[a-zA-Z0-9_]+:)?c\b([^>]*?)(?:>\s*(?:<(?:[a-zA-Z0-9_]+:)?f(?:\s+([^>]*?))?(?:/>|>([^<]*)</(?:[a-zA-Z0-9_]+:)?f>)\s*)?(?:<(?:[a-zA-Z0-9_]+:)?v>([^<]*)</(?:[a-zA-Z0-9_]+:)?v>\s*)?(?:<(?:[a-zA-Z0-9_]+:)?is>(.*?)</(?:[a-zA-Z0-9_]+:)?is>\s*)?.*?</(?:[a-zA-Z0-9_]+:)?c>|/>)}m
+      CELL_FAST_RE = %r{<(?:[a-zA-Z0-9_]+:)?c(?:\s+r="([A-Za-z0-9]+)"(?:\s+s="(\d+)")?(?:\s+t="([a-zA-Z]+)")?\s*|\b([^>]*(?<!/)))>\s*(?:<(?:[a-zA-Z0-9_]+:)?f(?:\s+([^>]*?))?(?:/>|>([^<]*)</(?:[a-zA-Z0-9_]+:)?f>)\s*)?(?:<(?:[a-zA-Z0-9_]+:)?v>([^<]*)</(?:[a-zA-Z0-9_]+:)?v>\s*)?(?:<(?:[a-zA-Z0-9_]+:)?is\s*((?=/)|>.*?(?=</(?:[a-zA-Z0-9_]+:)?is>))(?:/>|</(?:[a-zA-Z0-9_]+:)?is>)\s*)?.*?</(?:[a-zA-Z0-9_]+:)?c>|<(?:[a-zA-Z0-9_]+:)?c\b([^>]*)/?>}m
+      CELL_GENERIC_RE = %r{<(?:[a-zA-Z0-9_]+:)?c\b([^>]*?)(?:>\s*(?:<(?:[a-zA-Z0-9_]+:)?f(?:\s+([^>]*?))?(?:/>|>([^<]*)</(?:[a-zA-Z0-9_]+:)?f>)\s*)?(?:<(?:[a-zA-Z0-9_]+:)?v>([^<]*)</(?:[a-zA-Z0-9_]+:)?v>\s*)?(?:<(?:[a-zA-Z0-9_]+:)?is\s*((?=/)|>.*?(?=</(?:[a-zA-Z0-9_]+:)?is>))(?:/>|</(?:[a-zA-Z0-9_]+:)?is>)\s*)?.*?</(?:[a-zA-Z0-9_]+:)?c>|/>)}m
       ATTR_R = /\br="([A-Za-z0-9]+)"/
       ATTR_T = /\bt="([a-zA-Z]+)"/
       ATTR_S = /\bs="(\d+)"/
 
       CELL_CLOSE_RE = %r{</(?:[a-zA-Z0-9_]+:)?c>}
       UNCLOSED_CELL_RE = %r{<(?:[a-zA-Z0-9_]+:)?c(?:\s[^>]*)?(?<!/)>}
-      INLINE_STRING_OPEN_RE = /<(?:[a-zA-Z0-9_]+:)?is[\s>]/
+      INLINE_STRING_OPEN_RE = %r{<(?:[a-zA-Z0-9_]+:)?is(?:\s[^>]*)?(?<!/)>}
       INLINE_STRING_CLOSE_RE = %r{</(?:[a-zA-Z0-9_]+:)?is>}
       private_constant :CELL_CLOSE_RE, :UNCLOSED_CELL_RE, :INLINE_STRING_OPEN_RE, :INLINE_STRING_CLOSE_RE
 

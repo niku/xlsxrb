@@ -11651,4 +11651,33 @@ class ReaderTest < Test::Unit::TestCase
       assert_equal(["C & <D>", "prefix & mid <tag> suffix"], sheet.each_row.first.values)
     end
   end
+
+  test "parses self-closing <is/> inline string cells as empty string across all paths" do
+    sheet_xml = <<~XML
+      <?xml version="1.0" encoding="UTF-8"?>
+      <x:worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:x="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+        <x:sheetData>
+          <x:row r="1">
+            <x:c r="A1" t="inlineStr"><x:is/></x:c>
+            <x:c r="B1" t="inlineStr"><x:is /></x:c>
+            <x:c r="C1" t="inlineStr"/>
+          </x:row>
+        </x:sheetData>
+      </x:worksheet>
+    XML
+
+    row = Xlsxrb::Ooxml::WorksheetParser.parse(sheet_xml).first
+    assert_equal(["", "", nil], row.cells.map(&:value))
+    assert_equal(["", "", nil], row.values)
+
+    event_values = []
+    Xlsxrb::Ooxml::WorksheetParser.each_event(sheet_xml) do |ev|
+      event_values << ev.args[3] if ev.type == :cell
+    end
+    assert_equal(["", "", nil], event_values)
+
+    listener = Xlsxrb::Ooxml::Reader::WorksheetListener.new([])
+    Xlsxrb::Ooxml::XmlParser.parse(sheet_xml, listener)
+    assert_equal({ "A1" => "", "B1" => "" }, listener.cells)
+  end
 end
