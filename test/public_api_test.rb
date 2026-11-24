@@ -4608,6 +4608,18 @@ class PublicApiTest < Test::Unit::TestCase
 
     # Sheet prefix
     assert_equal("Sheet1!A3 + 'My Sheet'!B3", Xlsxrb.expand_formula("Sheet1!A2 + 'My Sheet'!B2", from_ref: "C2", to_ref: "C3"))
+    assert_equal("S1!B3 + Q1!C3 + 'Q1'!D3 + 'Sales Q1'!$B3 + 'O''Reilly'!E3",
+                 Xlsxrb.expand_formula("S1!A2 + Q1!B2 + 'Q1'!C2 + 'Sales Q1'!$B2 + 'O''Reilly'!D2", row_delta: 1, column_delta: 1))
+    assert_equal('"don\'t A1" & B3', Xlsxrb.expand_formula('"don\'t A1" & A2', row_delta: 1, column_delta: 1))
+    assert_equal("ZZZ1+B3", Xlsxrb.expand_formula("ZZZ1+A2", row_delta: 1, column_delta: 1))
+
+    # ReDoS defense on unmatched single and double quotes
+    ["'" * 10_000, '"' * 10_000].each do |adversarial|
+      t0 = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      assert_equal(adversarial, Xlsxrb.expand_formula(adversarial, row_delta: 1, column_delta: 1))
+      elapsed_ms = (Process.clock_gettime(Process::CLOCK_MONOTONIC) - t0) * 1000.0
+      assert_operator(elapsed_ms, :<, 50.0)
+    end
 
     # Functions with numbers
     assert_equal("LOG10(A3)", Xlsxrb.expand_formula("LOG10(A2)", from_ref: "B2", to_ref: "B3"))

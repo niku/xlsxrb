@@ -579,7 +579,7 @@ module Xlsxrb
     [Elements::Cell._column_letter(col_idx), row_idx + 1]
   end
 
-  FORMULA_TOKEN_RE = %r{(?<str>"(?:[^"]|"")*")|(?<ref>(?<=\b|\A|[$!:,()+\-*/^<>=& \r\n])(?<col_abs>\$?)(?<col>[A-Za-z]{1,3})(?<row_abs>\$?)(?<row>\d+)(?!\w|\())}
+  FORMULA_TOKEN_RE = %r{(?<str>"(?:[^"]|"")*"|'(?:[^']|'')*')|(?<ref>(?<=\b|\A|[$!:,()+\-*/^<>=& \r\n])(?<col_abs>\$?)(?<col>[A-Za-z]{1,3})(?<row_abs>\$?)(?<row>\d+)(?!\w|\(|!))}
   private_constant :FORMULA_TOKEN_RE
 
   # Expands a formula by shifting relative cell references from a master cell to a target cell or by offset amounts.
@@ -625,11 +625,13 @@ module Xlsxrb
         r_abs = !m[:row_abs].empty?
         col = m[:col]
         row = m[:row].to_i
+        col_idx = Elements::Cell._column_index(col)
+        next match if col_idx.nil? || col_idx > 16_383 || row < 1 || row > 1_048_576
 
         new_col = if c_abs || cd.zero?
                     col
                   else
-                    ci = Elements::Cell._column_index(col) + cd
+                    ci = col_idx + cd
                     ci = ci.clamp(0, 16_383)
                     Elements::Cell._column_letter(ci)
                   end
