@@ -4993,4 +4993,53 @@ class PublicApiTest < Test::Unit::TestCase
       assert_equal(false, reloaded.custom_properties["Active"].value)
     end
   end
+
+  test "all filterColumn types, button flags, and sortState options roundtrip via build, stream, and to_data" do
+    filter_specs = {
+      0 => { type: :filters, values: %w[Alpha Beta], blank: true, hidden: true },
+      1 => { type: :custom, filters: [{ operator: "greaterThanOrEqual", val: "5" }, { operator: "lessThan", val: "50" }], and: true, show_button: false },
+      2 => { type: :dynamic, dynamic_type: "aboveAverage" },
+      3 => { type: :top10, top: true, percent: false, val: 5 },
+      4 => { type: :color_filter, dxf_id: 0, cell_color: false },
+      5 => { type: :icon_filter, icon_set: "3Arrows", icon_id: 1 }
+    }
+    populate = lambda do |wb|
+      wb.sheet("S") do |s|
+        s.row(%w[A B C D E F])
+        s.row(["Alpha", 10, 20, 30, 40, 50])
+        s.conditional_format("A2:A2", type: :cell_is, operator: :greater_than, formula: "0", fill_color: "FFEEEE")
+        s.auto_filter = "A1:F2"
+        filter_specs.each { |col_id, spec| s.filter_column(col_id, spec) }
+        s.sort_state("A2:F2", [{ ref: "B2:B2", descending: true }, { ref: "C2:C2", descending: false }], case_sensitive: true, sort_method: "pinYin")
+      end
+    end
+
+    mem_bytes = Xlsxrb.write(Xlsxrb.build(&populate))
+    stream_bytes = Xlsxrb.write(&populate)
+
+    [mem_bytes, stream_bytes].each do |bytes|
+      assert_empty(ExcelRules.check(bytes).map(&:to_s))
+
+      loaded = Xlsxrb.load(StringIO.new(bytes))
+      resaved = Xlsxrb.load(StringIO.new(loaded.to_data))
+
+      [loaded, resaved].each do |wb|
+        ws = wb.sheet(0)
+        assert_equal("A1:F2", ws.auto_filter)
+        assert_equal(filter_specs, ws.filter_columns.transform_values(&:to_spec))
+        assert_equal(true, ws.filter_columns[0].hidden?)
+        assert_equal(false, ws.filter_columns[1].show_button?)
+        assert_equal("A2:F2", ws.sort_state.ref)
+        assert_equal(true, ws.sort_state.case_sensitive?)
+        assert_equal("pinYin", ws.sort_state.sort_method)
+        assert_equal([{ ref: "B2:B2", descending: true }, { ref: "C2:C2" }], ws.sort_state.conditions)
+      end
+
+      Xlsxrb.read(StringIO.new(bytes)) do |ss|
+        assert_equal(filter_specs, ss.filter_columns.transform_values(&:to_spec))
+        assert_equal("pinYin", ss.sort_state.sort_method)
+        assert_equal([{ ref: "B2:B2", descending: true }, { ref: "C2:C2" }], ss.sort_state.conditions)
+      end
+    end
+  end
 end

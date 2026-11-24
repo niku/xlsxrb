@@ -1126,10 +1126,16 @@ module Xlsxrb
             ss_attrs = { ref: sort_state[:ref] }
             ss_attrs[:columnSort] = "1" if sort_state[:column_sort]
             ss_attrs[:caseSensitive] = "1" if sort_state[:case_sensitive]
+            ss_attrs[:sortMethod] = sort_state[:sort_method].to_s if sort_state[:sort_method]
             @builder.open_tag("sortState", ss_attrs)
-            (sort_state[:sort_conditions] || []).each do |sc|
+            (sort_state[:sort_conditions] || sort_state[:conditions] || []).each do |sc|
               sc_attrs = { ref: sc[:ref] }
               sc_attrs[:descending] = "1" if sc[:descending]
+              sc_attrs[:sortBy] = sc[:sort_by].to_s if sc[:sort_by]
+              sc_attrs[:customList] = sc[:custom_list].to_s if sc[:custom_list]
+              sc_attrs[:dxfId] = sc[:dxf_id].to_s unless sc[:dxf_id].nil?
+              sc_attrs[:iconSet] = sc[:icon_set].to_s if sc[:icon_set]
+              sc_attrs[:iconId] = sc[:icon_id].to_s unless sc[:icon_id].nil?
               @builder.empty_tag("sortCondition", sc_attrs)
             end
             @builder.close_tag("sortState")
@@ -1141,16 +1147,34 @@ module Xlsxrb
       end
 
       def write_filter_column(col_id, filter)
-        @builder.open_tag("filterColumn", { colId: col_id.to_s })
+        fc_attrs = { colId: col_id.to_s }
+        fc_attrs[:hiddenButton] = "1" if filter[:hidden] || filter[:hidden_button]
+        fc_attrs[:showButton] = "0" if filter[:show_button] == false
+        @builder.open_tag("filterColumn", fc_attrs)
         case filter[:type]
         when :filters
           f_attrs = {}
           f_attrs[:blank] = "1" if filter[:blank]
-          @builder.open_tag("filters", f_attrs)
-          (filter[:values] || []).each do |val|
-            @builder.empty_tag("filter", { val: val.to_s })
+          f_attrs[:calendarType] = filter[:calendar_type].to_s if filter[:calendar_type]
+          values = filter[:values] || []
+          date_items = filter[:date_group_items] || []
+          if values.any? || date_items.any?
+            @builder.open_tag("filters", f_attrs)
+            values.each { |val| @builder.empty_tag("filter", { val: val.to_s }) }
+            date_items.each do |dg|
+              dg_attrs = { dateTimeGrouping: dg[:date_time_grouping].to_s }
+              dg_attrs[:year] = dg[:year].to_s if dg[:year]
+              dg_attrs[:month] = dg[:month].to_s if dg[:month]
+              dg_attrs[:day] = dg[:day].to_s if dg[:day]
+              dg_attrs[:hour] = dg[:hour].to_s if dg[:hour]
+              dg_attrs[:minute] = dg[:minute].to_s if dg[:minute]
+              dg_attrs[:second] = dg[:second].to_s if dg[:second]
+              @builder.empty_tag("dateGroupItem", dg_attrs)
+            end
+            @builder.close_tag("filters")
+          else
+            @builder.empty_tag("filters", f_attrs)
           end
-          @builder.close_tag("filters")
         when :custom
           if filter[:filters]
             c_attrs = {}
@@ -1165,13 +1189,29 @@ module Xlsxrb
           end
           @builder.close_tag("customFilters")
         when :dynamic
-          @builder.empty_tag("dynamicFilter", { type: filter[:dynamic_type] })
+          d_attrs = { type: filter[:dynamic_type].to_s }
+          d_attrs[:val] = filter[:val].to_s unless filter[:val].nil?
+          d_attrs[:valIso] = filter[:val_iso].to_s if filter[:val_iso]
+          d_attrs[:maxVal] = filter[:max_val].to_s unless filter[:max_val].nil?
+          d_attrs[:maxValIso] = filter[:max_val_iso].to_s if filter[:max_val_iso]
+          @builder.empty_tag("dynamicFilter", d_attrs)
         when :top10
           t_attrs = {}
           t_attrs[:top] = filter[:top] ? "1" : "0" unless filter[:top].nil?
           t_attrs[:percent] = filter[:percent] ? "1" : "0" unless filter[:percent].nil?
           t_attrs[:val] = filter[:val].to_s if filter[:val]
+          t_attrs[:filterVal] = filter[:filter_val].to_s unless filter[:filter_val].nil?
           @builder.empty_tag("top10", t_attrs)
+        when :color_filter
+          cf_attrs = {}
+          cf_attrs[:dxfId] = filter[:dxf_id].to_s unless filter[:dxf_id].nil?
+          cf_attrs[:cellColor] = "0" if filter[:cell_color] == false
+          @builder.empty_tag("colorFilter", cf_attrs)
+        when :icon_filter
+          ic_attrs = {}
+          ic_attrs[:iconSet] = filter[:icon_set].to_s if filter[:icon_set]
+          ic_attrs[:iconId] = filter[:icon_id].to_s unless filter[:icon_id].nil?
+          @builder.empty_tag("iconFilter", ic_attrs)
         end
         @builder.close_tag("filterColumn")
       end
