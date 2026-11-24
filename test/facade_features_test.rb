@@ -1935,4 +1935,40 @@ class FacadeFeaturesTest < Test::Unit::TestCase
       tmp_stream&.close!
     end
   end
+
+  test "table autoFilter presence and absence roundtrip across build, stream, load, read, and to_data" do
+    populate = lambda do |wb|
+      wb.sheet("Tables") do |s|
+        s.row(%w[A B C X Y Z])
+        s.row([1, 2, 3, 4, 5, 6])
+        s.row([7, 8, 9, 10, 11, 12])
+        s.row(["T", 8, 12, "T", 15, 18])
+        s.table("A1:C4", columns: %w[A B C], name: "WithFilter")
+        s.table("D1:F4", columns: %w[X Y Z], name: "NoFilter", auto_filter: false)
+      end
+    end
+
+    mem_bytes = Xlsxrb.write(Xlsxrb.build(&populate))
+    stream_bytes = Xlsxrb.write(&populate)
+
+    [mem_bytes, stream_bytes].each do |bytes|
+      loaded = Xlsxrb.load(StringIO.new(bytes))
+      assert_equal({ ref: "A1:C4" }, loaded.sheet(0).tables[0].auto_filter)
+      assert_nil(loaded.sheet(0).tables[1].auto_filter)
+
+      Xlsxrb.read(StringIO.new(bytes)) do |stream_sheet|
+        assert_equal({ ref: "A1:C4" }, stream_sheet.tables[0].auto_filter)
+        assert_nil(stream_sheet.tables[1].auto_filter)
+      end
+
+      resaved_bytes = loaded.to_data
+      resaved_entries = Xlsxrb::Ooxml::ZipReader.new(StringIO.new(resaved_bytes)).read_all
+      assert_include(resaved_entries.fetch("xl/tables/table1.xml"), '<autoFilter ref="A1:C4"/>')
+      refute_includes(resaved_entries.fetch("xl/tables/table2.xml"), "<autoFilter")
+
+      reloaded = Xlsxrb.load(StringIO.new(resaved_bytes))
+      assert_equal({ ref: "A1:C4" }, reloaded.sheet(0).tables[0].auto_filter)
+      assert_nil(reloaded.sheet(0).tables[1].auto_filter)
+    end
+  end
 end

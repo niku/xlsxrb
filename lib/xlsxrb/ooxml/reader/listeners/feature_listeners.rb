@@ -1382,6 +1382,8 @@ module Xlsxrb
             cid = attributes["connectionId"]
             @table[:connection_id] = cid.to_i if cid
             @table[:table_type] = attributes["tableType"] if attributes["tableType"]
+          when "autoFilter"
+            @table[:auto_filter] = { ref: attributes["ref"] } if @table && attributes["ref"]
           when "tableColumn"
             col = { name: attributes["name"] }
             trf = attributes["totalsRowFunction"]

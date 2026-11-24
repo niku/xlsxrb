@@ -1448,8 +1448,13 @@ module Xlsxrb
         t_attrs[:totalsRowCount] = tbl[:totals_row_count].to_s if tbl[:totals_row_count]&.positive?
         b.open_tag("table", t_attrs)
 
-        # Auto filter for the table range unless auto_filter: false
-        b.empty_tag("autoFilter", { ref: tbl[:ref] }) unless tbl[:auto_filter] == false
+        # Preserve table autoFilter from loaded tables, or emit by default for new tables unless auto_filter: false.
+        af = tbl[:auto_filter]
+        if af.is_a?(Hash) && af[:ref]
+          b.empty_tag("autoFilter", { ref: af[:ref] })
+        elsif af != false && !(tbl[:id] && af.nil?)
+          b.empty_tag("autoFilter", { ref: tbl[:ref] })
+        end
 
         # Table columns
         columns = tbl[:columns] || []
