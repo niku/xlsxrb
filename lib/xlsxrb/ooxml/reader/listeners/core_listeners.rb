@@ -280,6 +280,10 @@ module Xlsxrb
           @formula_buffer << text if @inside_formula
         end
 
+        def cdata(content)
+          characters(content)
+        end
+
         def end_element(_uri, local_name, qname)
           name = element_name(local_name, qname)
 

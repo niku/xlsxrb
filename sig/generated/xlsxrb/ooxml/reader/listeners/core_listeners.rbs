@@ -38,6 +38,8 @@ module Xlsxrb
 
         def characters: (untyped text) -> untyped
 
+        def cdata: (untyped content) -> untyped
+
         def end_element: (untyped _uri, untyped local_name, untyped qname) -> untyped
 
         private

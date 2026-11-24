@@ -11555,4 +11555,47 @@ class ReaderTest < Test::Unit::TestCase
     assert_equal(1, s1.images.size)
     assert_equal(1, s1.charts.size)
   end
+
+  test "unwraps CDATA sections in inline string cells across WorksheetParser and WorksheetListener" do
+    sheet_xml = <<~XML
+      <?xml version="1.0" encoding="UTF-8"?>
+      <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+        <sheetData>
+          <row r="1">
+            <c r="A1" t="inlineStr"><is><t><![CDATA[C & <D>]]></t></is></c>
+            <c r="B1" t="inlineStr"><is><t>prefix &amp; <![CDATA[mid <tag>]]> suffix</t></is></c>
+          </row>
+        </sheetData>
+      </worksheet>
+    XML
+
+    parsed_rows = Xlsxrb::Ooxml::WorksheetParser.parse(sheet_xml)
+    assert_equal(["C & <D>", "prefix & mid <tag> suffix"], parsed_rows.first.values)
+
+    event_values = []
+    Xlsxrb::Ooxml::WorksheetParser.each_event(sheet_xml) do |ev|
+      event_values << ev.args[3] if ev.type == :cell
+    end
+    assert_equal(["C & <D>", "prefix & mid <tag> suffix"], event_values)
+
+    listener = Xlsxrb::Ooxml::Reader::WorksheetListener.new([])
+    Xlsxrb::Ooxml::XmlParser.parse(sheet_xml, listener)
+    assert_equal("C & <D>", listener.cells["A1"])
+    assert_equal("prefix & mid <tag> suffix", listener.cells["B1"])
+
+    io = StringIO.new(+"".b)
+    Xlsxrb::Ooxml::ZipWriter.open(io) do |z|
+      z.add_entry("[Content_Types].xml", '<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/></Types>')
+      z.add_entry("_rels/.rels", '<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>')
+      z.add_entry("xl/workbook.xml", '<?xml version="1.0" encoding="UTF-8"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="S" sheetId="1" r:id="rId1"/></sheets></workbook>')
+      z.add_entry("xl/_rels/workbook.xml.rels", '<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/></Relationships>')
+      z.add_entry("xl/worksheets/sheet1.xml", sheet_xml)
+    end
+
+    loaded = Xlsxrb.load(StringIO.new(io.string))
+    assert_equal(["C & <D>", "prefix & mid <tag> suffix"], loaded.sheet(0).rows.first.values)
+    Xlsxrb.read(StringIO.new(io.string)) do |sheet|
+      assert_equal(["C & <D>", "prefix & mid <tag> suffix"], sheet.each_row.first.values)
+    end
+  end
 end

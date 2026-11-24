@@ -637,10 +637,37 @@ module Xlsxrb
 
       #: (String str) -> String
       def self.normalize_text(str)
-        s = decode_xml_entities(str)
+        s = str.include?("<![CDATA[") ? decode_text_with_cdata(str) : decode_xml_entities(str)
         s = s.gsub("\r\n", "\n").tr("\r", "\n") if s.include?("\r")
         s.encoding == Encoding::BINARY ? s.dup.force_encoding(Encoding::UTF_8) : s
       end
+
+      #: (String str) -> String
+      def self.decode_text_with_cdata(str)
+        utf8 = str.encoding == Encoding::BINARY ? str.dup.force_encoding(Encoding::UTF_8) : str
+        out = +""
+        pos = 0
+        len = utf8.length
+        while pos < len
+          c_start = utf8.index("<![CDATA[", pos)
+          unless c_start
+            out << decode_xml_entities(utf8[pos..] || "")
+            break
+          end
+          out << decode_xml_entities(utf8[pos...c_start] || "") if c_start > pos
+          body_start = c_start + 9
+          c_end = utf8.index("]]>", body_start)
+          unless c_end
+            out << decode_xml_entities(utf8[c_start..] || "")
+            break
+          end
+          out << (utf8[body_start...c_end] || "")
+          pos = c_end + 3
+        end
+        out
+      end
+
+      private_class_method :decode_text_with_cdata
 
       # Parses <cols> section for column definitions.
       class ColumnsListener
