@@ -5,6 +5,7 @@
 - Build XML parts in `Ooxml::Writer`, its `DrawingXml`, `FeaturesXml`, and `StylesXml` mixins, and `Ooxml::Crypto::Agile` through `Ooxml::XmlBuilder` ([ADR 0014](docs/adr/0014-build-xml-through-xml-builder.md)), keeping string concatenation only for cell-loop and shared-string hot paths in `Ooxml::WorksheetWriter` and `Ooxml::WorkbookWriter`.
 
 ### Fixed
+- Scrub invalid UTF-8 byte sequences before running the regex fallback in `Ooxml::RelationshipsParser.parse_all` instead of raising `ArgumentError`.
 - Forward `Elements::Row#collapsed?` into row attributes in `Ooxml::WorkbookWriter` so collapsed row outlines built in memory or re-saved via `to_data` emit `collapsed="1"` matching `StreamWriter`.
 - Preserve per-series `:chart_type` values read from combo charts in `Ooxml::Writer::DrawingXml#group_chart_series` so re-saving a loaded workbook keeps `comboChart` series types instead of collapsing them to `barChart`.
 - Emit an empty `<gradientFill/>` element when gradient stops are `nil` or empty in `Ooxml::WorkbookWriter#build_styles_xml` instead of raising `NoMethodError`.

@@ -1178,6 +1178,16 @@ class OoxmlTest < Test::Unit::TestCase
 
     assert_equal({ entries: [], targets: {}, types: {} }, Xlsxrb::Ooxml::RelationshipsParser.parse_all(""))
     assert_equal({ entries: [], targets: {}, types: {} }, Xlsxrb::Ooxml::RelationshipsParser.parse_all(nil))
+
+    bad_utf8 = "<?xml version=\"1.0\"?><Relationships><Relationship Id=\"rId1\" Type=\"urn:t\" Target=\"sheet1.xml\"/><Relationship Id=\"rId2\" Type=\"urn:t\" Target=\"x\xFF\"/><Relationship Id=\"rId3\""
+    bad_utf8_parsed = Xlsxrb::Ooxml::RelationshipsParser.parse_all(bad_utf8)
+    assert_equal("sheet1.xml", bad_utf8_parsed[:targets]["rId1"])
+    assert_equal("x\uFFFD", bad_utf8_parsed[:targets]["rId2"])
+
+    bad_bin = bad_utf8.b
+    bad_bin_parsed = Xlsxrb::Ooxml::RelationshipsParser.parse_all(bad_bin)
+    assert_equal("sheet1.xml", bad_bin_parsed[:targets]["rId1"])
+    assert_equal("x\uFFFD", bad_bin_parsed[:targets]["rId2"])
   end
 
   # --- WorksheetParser ---

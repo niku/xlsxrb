@@ -167,7 +167,9 @@ module Xlsxrb
         rescue StandardError
           # Fallback to regex scanning if SAX parser fails on malformed XML
           listener = Listener.new
-          sanitized.scan(%r{<(?:[a-zA-Z0-9_]+:)?Relationship\b([^>]*)/?>}i) do |match|
+          safe = sanitized.encoding == Encoding::UTF_8 ? sanitized : sanitized.dup.force_encoding(Encoding::UTF_8)
+          safe = safe.scrub unless safe.valid_encoding?
+          safe.scan(%r{<(?:[a-zA-Z0-9_]+:)?Relationship\b([^>]*)/?>}i) do |match|
             attrs_str = match[0]
             id = attrs_str[/\bId=["']([^"']+)["']/i, 1]
             type = attrs_str[/\bType=["']([^"']+)["']/i, 1]
