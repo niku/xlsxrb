@@ -119,6 +119,15 @@ class ZipBombTest < Test::Unit::TestCase
     end
   end
 
+  test "stored entries enforce max_uncompressed_size across read_entry, read_all, and open_entry_io" do
+    archive = local_entry("xl/stored.bin", "X" * 256, method: 0)
+    Xlsxrb::Ooxml::ZipReader.open(archive, max_uncompressed_size: 64) do |zip|
+      assert_raise(Xlsxrb::ZipBombError) { zip.read_entry("xl/stored.bin") }
+      assert_raise(Xlsxrb::ZipBombError) { zip.read_all }
+      assert_raise(Xlsxrb::ZipBombError) { zip.open_entry_io("xl/stored.bin").read }
+    end
+  end
+
   private
 
   def raw_deflate(data)

@@ -303,6 +303,9 @@ module Xlsxrb
         return nil unless entry
 
         verify_entry_bounds!(entry)
+        limit = @max_uncompressed_size || MAX_UNCOMPRESSED_SIZE
+        raise ZipBombError, "ZIP bomb detected: Uncompressed size exceeds #{limit} bytes" if entry.method.zero? && entry.compressed_size > limit
+
         raw = if @should_close_io && @raw_io.respond_to?(:closed?) && @raw_io.closed? && @filepath
                 File.open(@filepath, "rb") do |f|
                   f.seek(entry.data_offset, IO::SEEK_SET)
@@ -691,7 +694,11 @@ module Xlsxrb
 
       def decompress(raw, method)
         data = case method
-               when 0 then raw&.dup || ""
+               when 0
+                 limit = @max_uncompressed_size || MAX_UNCOMPRESSED_SIZE
+                 raise ZipBombError, "ZIP bomb detected: Uncompressed size exceeds #{limit} bytes" if raw && raw.bytesize > limit
+
+                 raw&.dup || ""
                when 8 then safe_inflate(raw || "", -Zlib::MAX_WBITS)
                else raise ZipError, "Unsupported ZIP compression method: #{method}"
                end
