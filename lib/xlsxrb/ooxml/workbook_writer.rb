@@ -254,6 +254,7 @@ module Xlsxrb
         media_idx = 0
         comment_idx = 0
         tc_idx = 0
+        tc_writer = nil
         table_idx = 0
         pivot_cache_idx = 0
         pivot_table_idx = 0
@@ -337,7 +338,9 @@ module Xlsxrb
           sheet_threaded_comments = sheet[:threaded_comments] || []
           if sheet_threaded_comments.any?
             tc_idx += 1
-            tc_writer = Xlsxrb::Ooxml::Writer.new
+            tc_writer ||= Xlsxrb::Ooxml::Writer.new
+            sheet_key = "__tc_#{tc_idx}"
+            tc_writer.add_sheet(sheet_key)
             sheet_threaded_comments.each do |c|
               c = c.to_h if c.is_a?(Elements::MetadataRecord)
               tc_writer.add_threaded_comment(
@@ -349,13 +352,14 @@ module Xlsxrb
                 parent_id: c[:parent_id],
                 done: c.key?(:done) ? c[:done] : c[:resolved],
                 user_id: c[:user_id],
-                provider_id: c[:provider_id]
+                provider_id: c[:provider_id],
+                sheet: sheet_key
               )
             end
-            tc_writer.persons.each do |p|
-              @persons << p unless @persons.any? { |ep| ep[:id] == p[:id] || ep[:display_name] == p[:display_name] }
-            end
-            zip.add_entry("xl/threadedComments/threadedComment#{tc_idx}.xml", tc_writer.send(:generate_threaded_comments_xml, tc_writer.threaded_comments))
+            zip.add_entry(
+              "xl/threadedComments/threadedComment#{tc_idx}.xml",
+              tc_writer.send(:generate_threaded_comments_xml, tc_writer.threaded_comments(sheet: sheet_key))
+            )
           end
 
           sheet_tables.each do |tbl|
@@ -395,10 +399,12 @@ module Xlsxrb
           zip.add_entry("xl/worksheets/_rels/sheet#{idx + 1}.xml.rels", build_sheet_rels_from_list(sheet_rels)) unless sheet_rels.empty?
         end
 
+        return unless tc_writer
+
+        @persons = tc_writer.persons
         return unless @persons.any?
 
-        p_writer = Xlsxrb::Ooxml::Writer.new
-        zip.add_entry("xl/persons/person.xml", p_writer.send(:generate_persons_xml, @persons))
+        zip.add_entry("xl/persons/person.xml", tc_writer.send(:generate_persons_xml, @persons))
       end
 
       def write_package_metadata(zip)
@@ -502,6 +508,7 @@ module Xlsxrb
         drawing_count = 0
         chart_count = 0
         comment_count = 0
+        threaded_comment_count = 0
         table_count = 0
         pivot_cache_count = 0
         pivot_table_count = 0
@@ -563,6 +570,11 @@ module Xlsxrb
             b.empty_tag("Override", { PartName: "/xl/comments#{comment_count}.xml", ContentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.comments+xml" })
           end
 
+          if (sheet[:threaded_comments] || []).any?
+            threaded_comment_count += 1
+            b.empty_tag("Override", { PartName: "/xl/threadedComments/threadedComment#{threaded_comment_count}.xml", ContentType: "application/vnd.ms-excel.threadedcomments+xml" })
+          end
+
           sheet_tables.each do |_tbl|
             table_count += 1
             b.empty_tag("Override", { PartName: "/xl/tables/table#{table_count}.xml", ContentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.table+xml" })
@@ -579,9 +591,6 @@ module Xlsxrb
         end
 
         b.empty_tag("Override", { PartName: "/xl/persons/person.xml", ContentType: "application/vnd.ms-excel.person+xml" }) if @persons.any?
-        (1..@threaded_comment_count).each do |tc|
-          b.empty_tag("Override", { PartName: "/xl/threadedComments/threadedComment#{tc}.xml", ContentType: "application/vnd.ms-excel.threadedcomments+xml" })
-        end
 
         b.close_tag("Types")
         io.string

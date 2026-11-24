@@ -2,6 +2,7 @@
 
 require "test_helper"
 require "tempfile"
+require_relative "support/excel_rules"
 
 class PublicApiTest < Test::Unit::TestCase
   # --- Read / Write ---
@@ -4917,5 +4918,55 @@ class PublicApiTest < Test::Unit::TestCase
     assert_false cf.respond_to?(:equal_average)
     assert_false cf.respond_to?(:percent)
     assert_false cf.respond_to?(:bottom)
+  end
+
+  test "multi-sheet threaded comments share person records and emit content type overrides" do
+    root_id = "{00000000-0000-0000-0000-000000000001}"
+    populate = lambda do |wb|
+      wb.sheet("First") do |s|
+        s.row(%w[A B])
+        s.threaded_comment("A1", "Root comment", author: "Alice", id: root_id)
+        s.threaded_comment("A1", "Reply comment", author: "Bob", parent_id: root_id, done: true)
+      end
+      wb.sheet("Second") do |s|
+        s.row(%w[C D])
+        s.threaded_comment("C1", "Second sheet note", author: "Alice")
+      end
+    end
+
+    mem_bytes = Xlsxrb.write(Xlsxrb.build(&populate))
+    stream_bytes = Xlsxrb.write(&populate)
+
+    [mem_bytes, stream_bytes].each do |bytes|
+      assert_empty(ExcelRules.check(bytes).map(&:to_s))
+      entries = Xlsxrb::Ooxml::ZipReader.new(StringIO.new(bytes)).read_all
+      ct = entries.fetch("[Content_Types].xml")
+      assert_include(ct, "/xl/persons/person.xml")
+      assert_include(ct, "/xl/threadedComments/threadedComment1.xml")
+      assert_include(ct, "/xl/threadedComments/threadedComment2.xml")
+
+      person_doc = REXML::Document.new(entries.fetch("xl/persons/person.xml"))
+      persons = REXML::XPath.match(person_doc, "//person")
+      assert_equal(%w[Alice Bob], persons.map { |el| el.attributes["displayName"] })
+      person_ids = persons.map { |el| el.attributes["id"] }
+
+      %w[xl/threadedComments/threadedComment1.xml xl/threadedComments/threadedComment2.xml].each do |part|
+        tc_doc = REXML::Document.new(entries.fetch(part))
+        REXML::XPath.each(tc_doc, "//threadedComment") do |el|
+          assert_include(person_ids, el.attributes["personId"])
+        end
+      end
+
+      loaded = Xlsxrb.load(StringIO.new(bytes))
+      assert_equal([["Root comment", "Alice"], ["Reply comment", "Bob"]], loaded.sheet(0).threaded_comments.map { |c| [c.text, c.author] })
+      assert_equal([["Second sheet note", "Alice"]], loaded.sheet(1).threaded_comments.map { |c| [c.text, c.author] })
+
+      stream_authors = []
+      Xlsxrb.read(StringIO.new(bytes)) { |s| stream_authors << s.threaded_comments.map { |c| [c.text, c.author] } }
+      assert_equal([[["Root comment", "Alice"], ["Reply comment", "Bob"]], [["Second sheet note", "Alice"]]], stream_authors)
+
+      resaved = Xlsxrb.load(StringIO.new(loaded.to_data))
+      assert_equal([["Second sheet note", "Alice"]], resaved.sheet(1).threaded_comments.map { |c| [c.text, c.author] })
+    end
   end
 end

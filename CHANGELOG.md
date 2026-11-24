@@ -5,6 +5,7 @@
 - Build XML parts in `Ooxml::Writer`, its `DrawingXml`, `FeaturesXml`, and `StylesXml` mixins, and `Ooxml::Crypto::Agile` through `Ooxml::XmlBuilder` ([ADR 0014](docs/adr/0014-build-xml-through-xml-builder.md)), keeping string concatenation only for cell-loop and shared-string hot paths in `Ooxml::WorksheetWriter` and `Ooxml::WorkbookWriter`.
 
 ### Fixed
+- Share a single person table across worksheets when writing threaded comments in `Ooxml::WorkbookWriter` and emit `[Content_Types].xml` overrides for `xl/threadedComments/threadedComment*.xml` from the sheet list so multi-sheet threaded comments do not leave dangling `personId` references and `StreamWriter` emits valid content types.
 - Synchronize `_xlnm.Print_Area` and `_xlnm.Print_Titles` defined names and drop stale `unmapped_data` metadata in `Elements::Workbook#with` so edits to worksheet print settings, defined names, or workbook metadata persist across `to_data` and `Xlsxrb.write`.
 - Register inline Hash style definitions passed in `cell_styles` in `StreamWriter#row` (including date and time format variants) so streaming rows apply inline cell styles identically to `WorkbookBuilder`.
 - Deduplicate conditional formatting differential formats (`dxfs`) against `Elements::Styles` in `Ooxml::WorkbookWriter` so identical rules across sheets or repeated writes share a single `dxfId` matching `StreamWriter`.
