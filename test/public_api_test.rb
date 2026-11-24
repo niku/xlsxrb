@@ -4969,4 +4969,28 @@ class PublicApiTest < Test::Unit::TestCase
       assert_equal([["Second sheet note", "Alice"]], resaved.sheet(1).threaded_comments.map { |c| [c.text, c.author] })
     end
   end
+
+  test "false boolean custom_property persists across WorkbookBuilder, StreamWriter, load, and to_data" do
+    built = Xlsxrb.build do |b|
+      b.custom_property("Active", false, type: :boolean)
+      b.sheet("S") { |s| s.row([1]) }
+    end
+    assert_equal(false, built.custom_properties["Active"].value)
+
+    mem_bytes = Xlsxrb.write(built)
+    stream_bytes = Xlsxrb.write do |w|
+      w.custom_property("Active", false, type: :boolean)
+      assert_equal(false, w.custom_properties["Active"].value)
+      w.sheet("S") { |s| s.row([1]) }
+    end
+
+    [mem_bytes, stream_bytes].each do |bytes|
+      loaded = Xlsxrb.load(StringIO.new(bytes))
+      assert_equal(:bool, loaded.custom_properties["Active"].type)
+      assert_equal(false, loaded.custom_properties["Active"].value)
+
+      reloaded = Xlsxrb.load(StringIO.new(loaded.to_data))
+      assert_equal(false, reloaded.custom_properties["Active"].value)
+    end
+  end
 end

@@ -611,7 +611,12 @@ module Xlsxrb
     #: () -> Hash[String, Elements::CustomProperty]
     def custom_properties
       @custom_properties.to_h do |cp|
-        prop = cp.is_a?(Elements::CustomProperty) ? cp : Elements::CustomProperty.new(name: (cp[:name] || cp["name"]).to_s, value: cp[:value] || cp["value"], type: cp[:type] || cp["type"] || :string)
+        prop = if cp.is_a?(Elements::CustomProperty)
+                 cp
+               else
+                 val = cp.key?(:value) ? cp[:value] : cp["value"]
+                 Elements::CustomProperty.new(name: (cp[:name] || cp["name"]).to_s, value: val, type: cp[:type] || cp["type"] || :string)
+               end
         [prop.name.to_s, prop]
       end.freeze
     end

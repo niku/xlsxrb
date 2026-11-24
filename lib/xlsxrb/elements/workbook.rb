@@ -72,7 +72,7 @@ module Xlsxrb
                           if v.is_a?(Elements::CustomProperty)
                             v
                           elsif v.is_a?(Hash)
-                            Elements::CustomProperty.new(name: (v[:name] || v["name"] || k).to_s, value: v[:value] || v["value"], type: v[:type] || v["type"])
+                            Elements::CustomProperty.new(name: (v[:name] || v["name"] || k).to_s, value: v.key?(:value) ? v[:value] : v["value"], type: v[:type] || v["type"])
                           else
                             Elements::CustomProperty.new(name: k.to_s, value: v)
                           end
@@ -80,7 +80,7 @@ module Xlsxrb
                       elsif raw_custom.is_a?(Array)
                         raw_custom.map do |v|
                           if v.is_a?(Hash)
-                            Elements::CustomProperty.new(name: (v[:name] || v["name"]).to_s, value: v[:value] || v["value"], type: v[:type] || v["type"])
+                            Elements::CustomProperty.new(name: (v[:name] || v["name"]).to_s, value: v.key?(:value) ? v[:value] : v["value"], type: v[:type] || v["type"])
                           else
                             v
                           end

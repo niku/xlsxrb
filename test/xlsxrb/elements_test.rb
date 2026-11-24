@@ -3032,4 +3032,31 @@ class ElementsTest < Test::Unit::TestCase
     run = Xlsxrb::Elements::RichTextRun.new(text: "Hello", font: { size: 14 })
     assert_equal(14, run.font_size)
   end
+
+  test "Workbook.new preserves false boolean values in Hash and Array custom_properties" do
+    wb_hash_sym = Xlsxrb::Elements::Workbook.new(custom_properties: { "Flag" => { value: false, type: :bool } })
+    assert_equal(false, wb_hash_sym.custom_properties["Flag"].value)
+    assert_equal(:bool, wb_hash_sym.custom_properties["Flag"].type)
+
+    wb_hash_str = Xlsxrb::Elements::Workbook.new(
+      custom_properties: {
+        "Flag" => { "value" => false, "type" => :bool },
+        "Str" => { "value" => "ok", "type" => :string }
+      }
+    )
+    assert_equal(false, wb_hash_str.custom_properties["Flag"].value)
+    assert_equal("ok", wb_hash_str.custom_properties["Str"].value)
+
+    wb_arr_sym = Xlsxrb::Elements::Workbook.new(custom_properties: [{ name: "Flag", value: false, type: :bool }])
+    assert_equal(false, wb_arr_sym.custom_properties["Flag"].value)
+
+    wb_arr_str = Xlsxrb::Elements::Workbook.new(
+      custom_properties: [
+        { "name" => "Flag", "value" => false, "type" => :bool },
+        { "name" => "Str", "value" => "ok", "type" => :string }
+      ]
+    )
+    assert_equal(false, wb_arr_str.custom_properties["Flag"].value)
+    assert_equal("ok", wb_arr_str.custom_properties["Str"].value)
+  end
 end
