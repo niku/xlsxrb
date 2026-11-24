@@ -1369,20 +1369,29 @@ class OoxmlTest < Test::Unit::TestCase
     assert_equal("A1", row1_cells[0].ref)
     assert_equal(10, row1_cells[0].value)
     assert_equal("B1+C1", row1_cells[0].formula_expression)
+    assert_equal(:shared, row1_cells[0].formula&.type)
+    assert_equal("A1:C1", row1_cells[0].formula&.ref)
+    assert_equal(0, row1_cells[0].formula&.shared_index)
 
     assert_equal("B1", row1_cells[1].ref)
     assert_equal(20, row1_cells[1].value)
-    assert_nil(row1_cells[1].formula)
+    assert_equal("C1+D1", row1_cells[1].formula_expression)
+    assert_equal(:shared, row1_cells[1].formula&.type)
+    assert_equal(0, row1_cells[1].formula&.shared_index)
 
     assert_equal("C1", row1_cells[2].ref)
     assert_equal(30, row1_cells[2].value)
-    assert_nil(row1_cells[2].formula)
+    assert_equal("D1+E1", row1_cells[2].formula_expression)
+    assert_equal(:shared, row1_cells[2].formula&.type)
+    assert_equal(0, row1_cells[2].formula&.shared_index)
 
     row2_cells = rows[1].cells
     assert_equal(1, row2_cells.size)
     assert_equal("A2", row2_cells[0].ref)
     assert_equal(40, row2_cells[0].value)
-    assert_nil(row2_cells[0].formula)
+    assert_equal("B2+C2", row2_cells[0].formula_expression)
+    assert_equal(:shared, row2_cells[0].formula&.type)
+    assert_equal(0, row2_cells[0].formula&.shared_index)
   end
 
   # --- WorksheetWriter ---
