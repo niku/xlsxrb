@@ -3543,21 +3543,34 @@ module Xlsxrb
         next unless value.is_a?(Date) || value.is_a?(Time)
 
         style_name = styles_for_cells ? styles_for_cells[idx] : cell_styles
-        style_name = row_style.nil? ? @current_column_style_names[idx] : row_style if style_name.nil?
+        from_column = false
+        if style_name.nil?
+          if row_style.nil?
+            style_name = @current_column_style_names[idx]
+            from_column = !style_name.nil?
+          else
+            style_name = row_style
+          end
+        end
         next unless style_name.is_a?(String) || style_name.is_a?(Symbol)
 
         variant = DslHelpers.date_style_variant(value, style_name.to_s, @styles[style_name.to_s])
-        next unless variant
+        target_style = if variant
+                         variant_name, number_format = variant
+                         unless @style_name_to_id.key?(variant_name)
+                           variant_builder = @styles[style_name.to_s].with_number_format(variant_name, number_format)
+                           @styles[variant_name] = variant_builder
+                           @style_name_to_id[variant_name] = variant_builder.register_with(@style_writer)
+                         end
+                         variant_name
+                       elsif from_column
+                         style_name
+                       end
+        next unless target_style
 
-        variant_name, number_format = variant
-        unless @style_name_to_id.key?(variant_name)
-          variant_builder = @styles[style_name.to_s].with_number_format(variant_name, number_format)
-          @styles[variant_name] = variant_builder
-          @style_name_to_id[variant_name] = variant_builder.register_with(@style_writer)
-        end
         styles_for_cells ||= Array.new(values.size, cell_styles)
         styles_for_cells = styles_for_cells.dup if styles_for_cells.equal?(cell_styles)
-        styles_for_cells[idx] = variant_name
+        styles_for_cells[idx] = target_style
       end
       styles_for_cells || cell_styles
     end

@@ -281,4 +281,43 @@ class DateTimeStyleTest < Test::Unit::TestCase
     assert_equal(target_date, cells["A1"])
     assert_equal(target_time, cells["B1"])
   end
+
+  test "redefined named column style applies current number format to Date and Time cells in build and stream" do
+    target_date = Date.new(2026, 4, 1)
+    target_time = Time.utc(2026, 4, 1, 9, 30, 0)
+
+    mem_bytes = Xlsxrb.write(Xlsxrb.build do |b|
+      b.style(:col_fmt, bold: true, italic: true)
+      b.sheet("S") do |s|
+        s.column(0, width: 14, style: :col_fmt)
+        b.style(:col_fmt, bold: true, italic: true, number_format: "#,##0.00")
+        s.row([target_date])
+        s.row([target_time])
+      end
+    end)
+
+    stream_bytes = Xlsxrb.write do |sw|
+      sw.style(:col_fmt, bold: true, italic: true)
+      sw.sheet("S") do |s|
+        s.column(0, width: 14, style: :col_fmt)
+        sw.style(:col_fmt, bold: true, italic: true, number_format: "#,##0.00")
+        s.row([target_date])
+        s.row([target_time])
+      end
+    end
+
+    [mem_bytes, stream_bytes].each do |bytes|
+      wb = Xlsxrb.load(StringIO.new(bytes))
+      ws = wb.sheet(0)
+      [0, 1].each do |row_idx|
+        cell = ws.rows[row_idx][0]
+        xf = wb.styles.cell_xf(cell.style_index)
+        font = wb.styles.fonts[xf.font_id.to_i]
+        fmt = wb.styles.number_format_code(xf.num_fmt_id.to_i)
+        assert_true(font.bold?)
+        assert_true(font.italic?)
+        assert_equal("#,##0.00", fmt)
+      end
+    end
+  end
 end
