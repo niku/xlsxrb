@@ -643,6 +643,33 @@ class PublicApiTest < Test::Unit::TestCase
     assert_match(%r{<c:firstSliceAng val="90"/><c:holeSize val="30"/>}, chart_xml.call(first_slice_ang: 90, hole_size: 30))
   end
 
+  test "loaded combo charts preserve per-series chart_type on to_data roundtrip" do
+    built = Xlsxrb.build do |b|
+      b.sheet("S") do |s|
+        s.row(%w[Cat S1 S2])
+        s.row(["A", 10, 20])
+        s.row(["B", 30, 40])
+        s.chart(type: :combo, title: "Combo") do |c|
+          c.series(name: "S1", categories: "S!$A$2:$A$3", values: "S!$B$2:$B$3", type: :bar)
+          c.series(name: "S2", categories: "S!$A$2:$A$3", values: "S!$C$2:$C$3", type: :line, secondary_axis: true)
+        end
+      end
+    end
+
+    loaded = Xlsxrb.load(StringIO.new(Xlsxrb.write(built)))
+    assert_equal("comboChart", loaded.sheet(0).charts.first.type)
+
+    resaved = loaded.to_data
+    chart_xml = Xlsxrb::Ooxml::ZipReader.new(StringIO.new(resaved)).read_entry("xl/charts/chart1.xml")
+    assert_include(chart_xml, "<c:barChart>")
+    assert_include(chart_xml, "<c:lineChart>")
+
+    reloaded = Xlsxrb.load(StringIO.new(resaved))
+    reloaded_chart = reloaded.sheet(0).charts.first
+    assert_equal("comboChart", reloaded_chart.type)
+    assert_equal(%w[barChart lineChart], reloaded_chart.series.map { |ser| ser[:chart_type] })
+  end
+
   test "sheet tab colors accept color names and hex" do
     tab = lambda do |color|
       built = Xlsxrb.build do |b|

@@ -1258,10 +1258,11 @@ module Xlsxrb
         def group_chart_series(all_series, chart_type)
           groups = []
           all_series.each_with_index do |ser, idx|
-            s_type = if ser[:type]
+            raw_type = ser[:type] || (chart_type == "comboChart" ? ser[:chart_type] : nil)
+            s_type = if raw_type
                        # The type is written as an element name, so only known types are accepted.
-                       CHART_TYPE_MAP[ser[:type]] || CHART_TYPE_MAP.values.find { |element| element == ser[:type].to_s } ||
-                         raise(ArgumentError, "Unknown chart series type: #{ser[:type].inspect}. Use one of: #{CHART_TYPE_MAP.keys.map(&:inspect).join(", ")}.")
+                       CHART_TYPE_MAP[raw_type] || CHART_TYPE_MAP.values.find { |element| element == raw_type.to_s } ||
+                         raise(ArgumentError, "Unknown chart series type: #{raw_type.inspect}. Use one of: #{CHART_TYPE_MAP.keys.map(&:inspect).join(", ")}.")
                      elsif chart_type == "comboChart"
                        "barChart"
                      else
