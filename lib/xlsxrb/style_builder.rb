@@ -851,13 +851,13 @@ module Xlsxrb
     # Sets or gets a gradient fill.
     # @param type [String, nil] The gradient type.
     # @param degree [Numeric, nil] The degree.
-    # @param stops [Array] The gradient stops.
+    # @param stops [Array, nil] The gradient stops.
     # @return [Hash, void, nil]
     # @api public
     #: () -> Hash[Symbol, untyped]?
-    #: (?type: untyped, ?degree: Numeric | nil, ?stops: Array[untyped]) -> void
+    #: (?type: untyped, ?degree: Numeric | nil, ?stops: Array[untyped]?) -> void
     def fill_gradient(type: nil, degree: nil, stops: [])
-      return @fill_props[:gradient] if type.nil? && degree.nil? && stops.empty?
+      return @fill_props[:gradient] if type.nil? && degree.nil? && (stops.nil? || stops.empty?)
 
       @fill_props.clear
       @fill_props[:gradient] = {
@@ -1457,7 +1457,7 @@ module Xlsxrb
       definition_for_use.fill = opts
     end
 
-    #: (?type: untyped, ?degree: Numeric | nil, ?stops: Array[untyped]) -> void
+    #: (?type: untyped, ?degree: Numeric | nil, ?stops: Array[untyped]?) -> void
     def fill_gradient(...) = definition_for_use.fill_gradient(...)
 
     #: (?all: Hash[Symbol, untyped]?, ?left: Hash[Symbol, untyped]?, ?right: Hash[Symbol, untyped]?, ?top: Hash[Symbol, untyped]?, ?bottom: Hash[Symbol, untyped]?, ?diagonal: Hash[Symbol, untyped]?) -> void

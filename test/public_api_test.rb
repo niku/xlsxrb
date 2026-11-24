@@ -599,6 +599,24 @@ class PublicApiTest < Test::Unit::TestCase
     assert_match(%r{<gradientFill type="linear" degree="45(\.0)?"><stop position="0(\.0)?"><color rgb="FFFFFFFF"/></stop>}, gradient_xml.call(Xlsxrb.write(loaded)))
   end
 
+  test "gradient fills with nil or empty stops write empty gradientFill elements" do
+    wb = Xlsxrb.build do |b|
+      b.style(:nil_stops) { |st| st.fill_gradient(type: "linear", degree: 45, stops: nil) }
+      b.style(:empty_stops) { |st| st.fill_gradient(type: "linear", degree: 90, stops: []) }
+      b.sheet("S") { |s| s.row(%w[a b], cell_styles: %i[nil_stops empty_stops]) }
+    end
+
+    data = Xlsxrb.write(wb)
+    styles_xml = Xlsxrb::Ooxml::ZipReader.new(StringIO.new(data)).read_entry("xl/styles.xml")
+    assert_match(%r{<gradientFill type="linear" degree="45(?:\.0)?"/>}, styles_xml)
+    assert_match(%r{<gradientFill type="linear" degree="90(?:\.0)?"/>}, styles_xml)
+
+    loaded = Xlsxrb.load(StringIO.new(data))
+    resaved_styles = Xlsxrb::Ooxml::ZipReader.new(StringIO.new(loaded.to_data)).read_entry("xl/styles.xml")
+    assert_match(%r{<gradientFill type="linear" degree="45(?:\.0)?"/>}, resaved_styles)
+    assert_match(%r{<gradientFill type="linear" degree="90(?:\.0)?"/>}, resaved_styles)
+  end
+
   test "unknown border styles raise" do
     error = assert_raise(ArgumentError) { Xlsxrb.build { |b| b.style(:s) { |st| st.border_all(style: "slantedDashDot") } } }
     assert_equal('unknown border style: "slantedDashDot"; did you mean :slantDashDot?', error.message)

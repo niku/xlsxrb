@@ -5,6 +5,7 @@
 - Build XML parts in `Ooxml::Writer`, its `DrawingXml`, `FeaturesXml`, and `StylesXml` mixins, and `Ooxml::Crypto::Agile` through `Ooxml::XmlBuilder` ([ADR 0014](docs/adr/0014-build-xml-through-xml-builder.md)), keeping string concatenation only for cell-loop and shared-string hot paths in `Ooxml::WorksheetWriter` and `Ooxml::WorkbookWriter`.
 
 ### Fixed
+- Emit an empty `<gradientFill/>` element when gradient stops are `nil` or empty in `Ooxml::WorkbookWriter#build_styles_xml` instead of raising `NoMethodError`.
 - Parse `<autoFilter>` inside table XML in `Ooxml::Reader::TableListener` and preserve the presence or absence of table auto-filters when writing loaded workbooks in `Ooxml::WorkbookWriter#build_table_xml`.
 - Emit `colorFilter`, `iconFilter`, `hiddenButton`, `showButton`, `sortMethod`, extra `sortCondition` attributes, and `Elements::SortState#conditions` in `Ooxml::WorksheetWriter#write_auto_filter` and `#write_filter_column` so filter columns and sort states survive `StreamWriter` output and `to_data` re-saves.
 - Preserve `false` boolean values in `Elements::Workbook#initialize`, `WorkbookBuilder#custom_properties`, and `StreamWriter#custom_properties` instead of falling through `v[:value] || v["value"]` to `nil`.

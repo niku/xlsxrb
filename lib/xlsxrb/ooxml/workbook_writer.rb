@@ -895,15 +895,21 @@ module Xlsxrb
             b.tag("fill") do |_|
               if fill_props[:gradient]
                 gradient = fill_props[:gradient]
-                b.open_tag("gradientFill", { type: gradient[:type], degree: gradient[:degree]&.to_s, left: gradient[:left]&.to_s,
-                                             right: gradient[:right]&.to_s, top: gradient[:top]&.to_s, bottom: gradient[:bottom]&.to_s }.compact)
-                fill_props[:gradient][:stops].each do |stop|
-                  b.tag("stop", { position: stop[:position].to_s }) do |_|
-                    c_attrs = color_tag_attrs(stop[:color] || stop)
-                    b.empty_tag("color", c_attrs) if c_attrs
+                g_attrs = { type: gradient[:type], degree: gradient[:degree]&.to_s, left: gradient[:left]&.to_s,
+                            right: gradient[:right]&.to_s, top: gradient[:top]&.to_s, bottom: gradient[:bottom]&.to_s }.compact
+                stops = gradient[:stops]
+                if stops && !stops.empty?
+                  b.tag("gradientFill", g_attrs) do |_|
+                    stops.each do |stop|
+                      b.tag("stop", { position: stop[:position].to_s }) do |_|
+                        c_attrs = color_tag_attrs(stop[:color] || stop)
+                        b.empty_tag("color", c_attrs) if c_attrs
+                      end
+                    end
                   end
+                else
+                  b.empty_tag("gradientFill", g_attrs)
                 end
-                b.close_tag("gradientFill")
               else
                 # Elements::Fill names the pattern :pattern_type; StyleBuilder fills use :pattern.
                 b.tag("patternFill", { patternType: fill_props[:pattern_type] || fill_props[:pattern] || "none" }) do |_|

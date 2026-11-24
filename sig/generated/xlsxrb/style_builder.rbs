@@ -318,13 +318,13 @@ module Xlsxrb
     # Sets or gets a gradient fill.
     # @param type [String, nil] The gradient type.
     # @param degree [Numeric, nil] The degree.
-    # @param stops [Array] The gradient stops.
+    # @param stops [Array, nil] The gradient stops.
     # @return [Hash, void, nil]
     # @api public
     # : () -> Hash[Symbol, untyped]?
-    # : (?type: untyped, ?degree: Numeric | nil, ?stops: Array[untyped]) -> void
+    # : (?type: untyped, ?degree: Numeric | nil, ?stops: Array[untyped]?) -> void
     def fill_gradient: () -> Hash[Symbol, untyped]?
-                     | (?type: untyped, ?degree: Numeric | nil, ?stops: Array[untyped]) -> void
+                     | (?type: untyped, ?degree: Numeric | nil, ?stops: Array[untyped]?) -> void
 
     # Configures multiple border properties or returns current border properties.
     #
@@ -714,8 +714,8 @@ module Xlsxrb
     # : (untyped opts) -> untyped
     def fill=: (untyped opts) -> untyped
 
-    # : (?type: untyped, ?degree: Numeric | nil, ?stops: Array[untyped]) -> void
-    def fill_gradient: (?type: untyped, ?degree: Numeric | nil, ?stops: Array[untyped]) -> void
+    # : (?type: untyped, ?degree: Numeric | nil, ?stops: Array[untyped]?) -> void
+    def fill_gradient: (?type: untyped, ?degree: Numeric | nil, ?stops: Array[untyped]?) -> void
 
     # : (?all: Hash[Symbol, untyped]?, ?left: Hash[Symbol, untyped]?, ?right: Hash[Symbol, untyped]?, ?top: Hash[Symbol, untyped]?, ?bottom: Hash[Symbol, untyped]?, ?diagonal: Hash[Symbol, untyped]?) -> void
     def border: (?all: Hash[Symbol, untyped]?, ?left: Hash[Symbol, untyped]?, ?right: Hash[Symbol, untyped]?, ?top: Hash[Symbol, untyped]?, ?bottom: Hash[Symbol, untyped]?, ?diagonal: Hash[Symbol, untyped]?) -> void
