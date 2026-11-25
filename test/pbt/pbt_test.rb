@@ -3,12 +3,44 @@
 require "test_helper"
 require "pbt"
 require "tempfile"
+require "bigdecimal"
 require "date"
 require "time"
 require_relative "../support/excel_rules"
 require_relative "../support/xsd_validator"
 
 class PbtTest < Test::Unit::TestCase
+  # Duck-typed Time replacement simulating ActiveSupport::TimeWithZone.
+  class FakeTimeWithZone
+    attr_reader :year, :month, :day, :hour, :min, :sec, :subsec, :utc_offset
+
+    def initialize(year, month, day, hour, min, sec, subsec = 0, utc_offset = 0)
+      @year = year
+      @month = month
+      @day = day
+      @hour = hour
+      @min = min
+      @sec = sec
+      @subsec = subsec
+      @utc_offset = utc_offset
+    end
+
+    def is_a?(klass)
+      klass == Time || super
+    end
+
+    def to_time
+      Time.new(@year, @month, @day, @hour, @min, @sec + @subsec, @utc_offset)
+    end
+
+    def ==(other)
+      other.is_a?(FakeTimeWithZone) &&
+        year == other.year && month == other.month && day == other.day &&
+        hour == other.hour && min == other.min && sec == other.sec &&
+        subsec == other.subsec && utc_offset == other.utc_offset
+    end
+  end
+
   def setup
     omit "Skip property-based tests under RBS runtime testing to prevent OOM / slowdown" if defined?(RBS::Test)
   end
@@ -21,10 +53,10 @@ class PbtTest < Test::Unit::TestCase
   end
 
   # Generates raw descriptors for the entire union type domain:
-  # [type_code (0..11), int_val, float_val, bool_val, str_val, sub_choice (0..7)]
+  # [type_code (0..13), int_val, float_val, bool_val, str_val, sub_choice (0..7)]
   def cell_value_descriptor_generator
     Pbt.tuple(
-      Pbt.choose(0..11),
+      Pbt.choose(0..13),
       Pbt.integer,
       Pbt.float.filter { |f| !f.nan? && !f.infinite? },
       Pbt.boolean,
@@ -101,6 +133,17 @@ class PbtTest < Test::Unit::TestCase
         { text: " Run2_#{sub_choice}", font: { italic: !bool_val, sz: 12 } }
       ]
       Xlsxrb::Elements::RichText.new(runs: runs)
+    when 12 # BigDecimal
+      BigDecimal(["123.45", "-0.005", "0"][sub_choice % 3])
+    when 13 # TimeLike (duck-typed Time replacement)
+      year = 1900 + (int_val.abs % 150)
+      month = 1 + (sub_choice % 12)
+      day = 1 + (int_val.abs % 28)
+      hour = int_val.abs % 24
+      min = (sub_choice * 7) % 60
+      sec = int_val.abs % 60
+      offset = [0, 32_400, -18_000][sub_choice % 3]
+      FakeTimeWithZone.new(year, month, day, hour, min, sec, 0, offset)
     end
   end
 
@@ -231,10 +274,19 @@ class PbtTest < Test::Unit::TestCase
                   assert_equal expected_val.to_s, actual_val.to_s
                 when Date
                   assert_equal expected_val, actual_cell.to_date
+                when FakeTimeWithZone
+                  actual_time = actual_cell.to_time
+                  assert_not_nil actual_time
+                  assert_equal(
+                    [expected_val.year, expected_val.month, expected_val.day, expected_val.hour, expected_val.min, expected_val.sec],
+                    [actual_time.year, actual_time.month, actual_time.day, actual_time.hour, actual_time.min, actual_time.sec]
+                  )
                 when Time
                   actual_time = actual_cell.to_time
                   assert_not_nil actual_time
                   assert_in_delta expected_val.to_i, actual_time.to_i, 2
+                when BigDecimal
+                  assert_in_delta expected_val.to_f, actual_val.to_f, 0.0001
                 when Float
                   assert_in_delta expected_val, actual_val.to_f, 0.001
                 when Integer, true, false
@@ -256,8 +308,9 @@ class PbtTest < Test::Unit::TestCase
     Pbt.assert(num_runs: 25) do
       Pbt.property(
         sheet_name_generator,
-        Pbt.array(Pbt.array(cell_value_descriptor_generator, min: 1, max: 5), min: 1, max: 5)
-      ) do |sheet_name, raw_rows_data|
+        Pbt.array(Pbt.array(cell_value_descriptor_generator, min: 1, max: 5), min: 1, max: 5),
+        Pbt.constant_from(nil, "Arial", { name: "Calibri", size: 12 })
+      ) do |sheet_name, raw_rows_data, default_font|
         rows_data = raw_rows_data.map do |row|
           row.map { |cell_desc| resolve_cell_value(cell_desc) }
         end
@@ -267,23 +320,33 @@ class PbtTest < Test::Unit::TestCase
           in_memory_path = File.join(dir, "in_memory_union.xlsx")
 
           # 1. Streaming write
-          Xlsxrb.write(streaming_path) do |wb|
+          Xlsxrb.write(streaming_path, default_font: default_font) do |wb|
             wb.sheet(sheet_name) do |s|
               rows_data.each { |r| s.row(r) }
             end
           end
 
           # 2. In-memory write
-          wb = Xlsxrb.build do |b|
+          wb = Xlsxrb.build(default_font: default_font) do |b|
             b.sheet(sheet_name) do |s|
               rows_data.each { |r| s.row(r) }
             end
           end
           Xlsxrb.write(in_memory_path, wb)
 
-          # Invariant: Both write modes yield identical sheets and cell values
+          streaming_bytes = File.binread(streaming_path)
+          in_memory_bytes = File.binread(in_memory_path)
+          assert_empty ExcelRules.check(streaming_bytes).map(&:to_s)
+          assert_empty ExcelRules.check(in_memory_bytes).map(&:to_s)
+          assert_empty XsdValidator.check(streaming_bytes)
+          assert_empty XsdValidator.check(in_memory_bytes)
+
+          # Invariant: Both write modes yield identical sheets, styles, formatted values, and cell values
           streaming_wb = Xlsxrb.load(streaming_path)
           in_memory_wb = Xlsxrb.load(in_memory_path)
+
+          assert_equal streaming_wb.styles.fonts.first&.name, in_memory_wb.styles.fonts.first&.name
+          assert_equal streaming_wb.styles.fonts.first&.size, in_memory_wb.styles.fonts.first&.size
 
           assert_equal 1, streaming_wb.sheets.size
           assert_equal 1, in_memory_wb.sheets.size
@@ -297,12 +360,14 @@ class PbtTest < Test::Unit::TestCase
             m_row = in_memory_sheet.rows[r_idx]
             assert_equal s_row.index, m_row.index
             assert_equal s_row.cells.size, m_row.cells.size
+            assert_equal s_row.formatted_values, m_row.formatted_values
 
             s_row.cells.each_with_index do |s_cell, c_idx|
               m_cell = m_row.cells[c_idx]
               assert_equal s_cell.column_index, m_cell.column_index
               assert_equal s_cell.ref, m_cell.ref
               assert_equal s_cell.formula, m_cell.formula
+              assert_equal s_cell.formatted_value, m_cell.formatted_value
 
               if s_cell.value.is_a?(Float)
                 assert_in_delta s_cell.value, m_cell.value, 0.0001
@@ -353,6 +418,7 @@ class PbtTest < Test::Unit::TestCase
         Pbt.choose(0..50)
       ) do |cell_desc, row_idx, col_idx|
         val = resolve_cell_value(cell_desc)
+        val = val.to_time if val.is_a?(FakeTimeWithZone)
         cell = Xlsxrb::Elements::Cell.new(row_index: row_idx, column_index: col_idx, value: val)
 
         assert_true cell.valid?
@@ -1161,8 +1227,10 @@ class PbtTest < Test::Unit::TestCase
       Pbt.integer(min: -1000, max: 1000),
       Pbt.alphanumeric_string(min: 1, max: 12),
       Pbt.boolean,
+      Pbt.constant(BigDecimal("123.45")),
       Pbt.constant(Date.new(2026, 4, 1)),
-      Pbt.constant(Time.utc(2026, 4, 1, 9, 30, 0))
+      Pbt.constant(Time.utc(2026, 4, 1, 9, 30, 0)),
+      Pbt.constant(FakeTimeWithZone.new(2026, 4, 1, 9, 30, 0, 0, 32_400))
     )
 
     Pbt.assert(num_runs: 15) do
@@ -1515,6 +1583,7 @@ class PbtTest < Test::Unit::TestCase
               s_row = s_sheet.rows[r_idx]
               assert_equal exp_row[:cells].size, b_row.cells.size
               assert_equal exp_row[:cells].size, s_row.cells.size
+              assert_equal b_row.formatted_values, s_row.formatted_values
 
               exp_row[:cells].each_with_index do |exp_cell, c_idx|
                 b_cell = b_row.cells[c_idx]
@@ -1525,14 +1594,24 @@ class PbtTest < Test::Unit::TestCase
                 when Date
                   assert_equal exp_val, b_cell.to_date
                   assert_equal exp_val, s_cell.to_date
+                when FakeTimeWithZone
+                  bt = b_cell.to_time
+                  st = s_cell.to_time
+                  exp_wall = [exp_val.year, exp_val.month, exp_val.day, exp_val.hour, exp_val.min, exp_val.sec]
+                  assert_equal exp_wall, [bt.year, bt.month, bt.day, bt.hour, bt.min, bt.sec]
+                  assert_equal exp_wall, [st.year, st.month, st.day, st.hour, st.min, st.sec]
                 when Time
                   assert_in_delta exp_val.to_i, b_cell.to_time.to_i, 1
                   assert_in_delta exp_val.to_i, s_cell.to_time.to_i, 1
+                when BigDecimal
+                  assert_in_delta exp_val.to_f, b_cell.value.to_f, 0.0001
+                  assert_in_delta exp_val.to_f, s_cell.value.to_f, 0.0001
                 else
                   assert_equal exp_val, b_cell.value
                   assert_equal exp_val, s_cell.value
                 end
 
+                assert_equal b_cell.formatted_value, s_cell.formatted_value
                 b_style = extract_loaded_cell_style(built_wb.styles, b_cell)
                 s_style = extract_loaded_cell_style(streamed_wb.styles, s_cell)
                 assert_equal exp_cell[:style], b_style
@@ -2955,15 +3034,19 @@ class PbtTest < Test::Unit::TestCase
             assert_equal exp_rows.size, m_ws.rows.size
             assert_equal exp_rows.size, s_ws.rows.size
             exp_rows.each_with_index do |exp_r, r_idx|
+              assert_equal m_ws.rows[r_idx].formatted_values, s_ws.rows[r_idx].formatted_values
               exp_r.each_with_index do |exp_v, c_idx|
                 mc = m_ws[r_idx, c_idx]
                 sc = s_ws[r_idx, c_idx]
                 if exp_v.is_a?(Date)
                   assert_equal exp_v, mc.to_date
                   assert_equal exp_v, sc.to_date
+                  assert_equal exp_v.strftime("%Y-%m-%d"), mc.formatted_value
+                  assert_equal exp_v.strftime("%Y-%m-%d"), sc.formatted_value
                 else
                   assert_equal exp_v, mc.value
                   assert_equal exp_v, sc.value
+                  assert_equal mc.formatted_value, sc.formatted_value
                 end
               end
             end
@@ -3225,6 +3308,7 @@ class PbtTest < Test::Unit::TestCase
 
   FlushStyleState = Data.define(
     :shared_strings,
+    :default_font,
     :flushed,
     :row_cursor,
     :styles,
@@ -3239,11 +3323,12 @@ class PbtTest < Test::Unit::TestCase
 
     attr_reader :stream_writer
 
-    def initialize(shared_strings:)
+    def initialize(shared_strings:, default_font: nil)
       @shared_strings = shared_strings
-      @builder = Xlsxrb::WorkbookBuilder.new
+      @default_font = default_font
+      @builder = Xlsxrb::WorkbookBuilder.new(default_font: @default_font)
       @stream_io = StringIO.new
-      @stream_writer = Xlsxrb::StreamWriter.new(@stream_io, shared_strings: @shared_strings)
+      @stream_writer = Xlsxrb::StreamWriter.new(@stream_io, shared_strings: @shared_strings, default_font: @default_font)
       @b_sheet = nil
       @fiber = Fiber.new do
         @builder.sheet("FlushSheet") do |sh|
@@ -3303,9 +3388,9 @@ class PbtTest < Test::Unit::TestCase
     end
 
     def snapshot_bytes
-      snap_builder = Xlsxrb::WorkbookBuilder.new
+      snap_builder = Xlsxrb::WorkbookBuilder.new(default_font: @default_font)
       snap_io = StringIO.new
-      snap_stream = Xlsxrb::StreamWriter.new(snap_io, shared_strings: @shared_strings)
+      snap_stream = Xlsxrb::StreamWriter.new(snap_io, shared_strings: @shared_strings, default_font: @default_font)
       snap_b_sheet = nil
       snap_fiber = Fiber.new do
         snap_builder.sheet("FlushSheet") do |sh|
@@ -3401,10 +3486,14 @@ class PbtTest < Test::Unit::TestCase
   end
 
   test "stateful PBT: StreamWriter 64KB flush boundary with style redefinition, precedence, and date variants" do
-    init_arb = Pbt.boolean.map(
-      lambda do |ss|
+    init_arb = Pbt.fixed_hash(
+      shared_strings: Pbt.boolean,
+      default_font: Pbt.constant_from(nil, { name: "Arial", size: 12 })
+    ).map(
+      lambda do |h|
         FlushStyleState.new(
-          shared_strings: ss,
+          shared_strings: h[:shared_strings],
+          default_font: h[:default_font],
           flushed: false,
           row_cursor: 0,
           styles: {
@@ -3416,14 +3505,14 @@ class PbtTest < Test::Unit::TestCase
           has_post_features: false
         )
       end,
-      :shared_strings.to_proc
+      ->(s) { { shared_strings: s.shared_strings, default_font: s.default_font } }
     )
 
     Pbt.assert(num_runs: 10) do
       Pbt.stateful(max_steps: 10) do |m|
         m.initial_state init_arb
         m.sut do |init|
-          sut = FlushStyleSut.new(shared_strings: init.shared_strings)
+          sut = FlushStyleSut.new(shared_strings: init.shared_strings, default_font: init.default_font)
           init.styles.each { |name, opts| sut.define_style(name, **opts) }
           sut
         end
@@ -3461,7 +3550,7 @@ class PbtTest < Test::Unit::TestCase
 
         m.command :append_styled_row, weight: 4 do |c|
           c.arguments(
-            v0: Pbt.one_of(Pbt.integer(min: 1, max: 500), Pbt.alphanumeric_string(min: 1, max: 8)),
+            v0: Pbt.one_of(Pbt.integer(min: 1, max: 500), Pbt.alphanumeric_string(min: 1, max: 8), Pbt.constant(BigDecimal("-12.34"))),
             day_off: Pbt.integer(min: 0, max: 20),
             use_hash_cell_styles: Pbt.boolean,
             cs0: Pbt.constant_from(nil, :s_a, :s_b, { bold: true }),
@@ -3470,8 +3559,13 @@ class PbtTest < Test::Unit::TestCase
             row_style: Pbt.constant_from(nil, :s_a, :s_b, { italic: true })
           )
           c.next_state do |s, args|
-            vals = [args[:v0], Date.new(2026, 6, 15) + args[:day_off], Time.utc(2026, 6, 15, 9, 30, 0)]
-            styles_for_cells = [args[:cs0], args[:cs1], args[:cs2]]
+            vals = [
+              args[:v0],
+              Date.new(2026, 6, 15) + args[:day_off],
+              Time.utc(2026, 6, 15, 9, 30, 0),
+              FakeTimeWithZone.new(2026, 6, 15, 9, 30, 0, 0, 32_400)
+            ]
+            styles_for_cells = [args[:cs0], args[:cs1], args[:cs2], args[:cs2]]
             exp_cells = vals.each_with_index.map do |v, ci|
               [v, resolve_flush_cell_style(v, styles_for_cells[ci], args[:row_style], s.col_styles[ci], s.styles)]
             end
@@ -3479,17 +3573,23 @@ class PbtTest < Test::Unit::TestCase
             s.with(row_cursor: s.row_cursor + 1, tracked_rows: [*s.tracked_rows, record])
           end
           c.run do |sut, args|
-            vals = [args[:v0], Date.new(2026, 6, 15) + args[:day_off], Time.utc(2026, 6, 15, 9, 30, 0)]
+            vals = [
+              args[:v0],
+              Date.new(2026, 6, 15) + args[:day_off],
+              Time.utc(2026, 6, 15, 9, 30, 0),
+              FakeTimeWithZone.new(2026, 6, 15, 9, 30, 0, 0, 32_400)
+            ]
             cell_styles = if args[:use_hash_cell_styles]
                             h = {}
                             h[0] = args[:cs0] if args[:cs0]
                             h["B"] = args[:cs1] if args[:cs1]
                             h["C"] = args[:cs2] if args[:cs2]
+                            h["D"] = args[:cs2] if args[:cs2]
                             h.empty? ? nil : h
                           elsif args[:cs0].nil? && args[:cs1].nil? && args[:cs2].nil?
                             nil
                           else
-                            [args[:cs0], args[:cs1], args[:cs2]]
+                            [args[:cs0], args[:cs1], args[:cs2], args[:cs2]]
                           end
             sut.append_styled_row(vals, cell_styles: cell_styles, row_style: args[:row_style])
           end
@@ -3527,8 +3627,12 @@ class PbtTest < Test::Unit::TestCase
             assert_equal([%w[A1 post_flush]], s_ws.comments.map { |cm| [cm.ref, cm.text] })
           end
 
+          assert_equal m_wb.styles.fonts.first&.name, s_wb.styles.fonts.first&.name
+          assert_equal m_wb.styles.fonts.first&.size, s_wb.styles.fonts.first&.size
+
           state.tracked_rows.each do |rec|
             r_idx = rec[:row_index]
+            assert_equal m_ws.rows[r_idx].formatted_values, s_ws.rows[r_idx].formatted_values
             rec[:cells].each_with_index do |(exp_val, exp_style), c_idx|
               mc = m_ws[r_idx, c_idx]
               sc = s_ws[r_idx, c_idx]
@@ -3536,13 +3640,23 @@ class PbtTest < Test::Unit::TestCase
               when Date
                 assert_equal exp_val, mc.to_date
                 assert_equal exp_val, sc.to_date
+              when FakeTimeWithZone
+                mt = mc.to_time
+                st = sc.to_time
+                exp_wall = [exp_val.year, exp_val.month, exp_val.day, exp_val.hour, exp_val.min, exp_val.sec]
+                assert_equal exp_wall, [mt.year, mt.month, mt.day, mt.hour, mt.min, mt.sec]
+                assert_equal exp_wall, [st.year, st.month, st.day, st.hour, st.min, st.sec]
               when Time
                 assert_in_delta exp_val.to_i, mc.to_time.to_i, 1
                 assert_in_delta exp_val.to_i, sc.to_time.to_i, 1
+              when BigDecimal
+                assert_in_delta exp_val.to_f, mc.value.to_f, 0.0001
+                assert_in_delta exp_val.to_f, sc.value.to_f, 0.0001
               else
                 assert_equal exp_val, mc.value
                 assert_equal exp_val, sc.value
               end
+              assert_equal mc.formatted_value, sc.formatted_value
               assert_equal exp_style, extract_loaded_cell_style(m_wb.styles, mc)
               assert_equal exp_style, extract_loaded_cell_style(s_wb.styles, sc)
             end
