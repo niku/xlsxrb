@@ -5,6 +5,7 @@
 - Build XML parts in `Ooxml::Writer`, its `DrawingXml`, `FeaturesXml`, and `StylesXml` mixins, and `Ooxml::Crypto::Agile` through `Ooxml::XmlBuilder` ([ADR 0014](docs/adr/0014-build-xml-through-xml-builder.md)), keeping string concatenation only for cell-loop and shared-string hot paths in `Ooxml::WorksheetWriter` and `Ooxml::WorkbookWriter`.
 
 ### Fixed
+- Pass `date1904: date1904?` from `Elements::Cell#formatted_value` to `NumberFormatter.format` so formatted dates and times on 1904-epoch workbooks do not shift by four years and one day.
 - Apply the current definition of a redefined named column style to `Date` and `Time` cells in `StreamWriter#with_date_style_variants` when the redefined style specifies a number format, matching `WorkbookBuilder`.
 - Parse self-closing `<is/>` elements in inline string cells as empty strings in `Ooxml::WorksheetParser` (`each_row`, `fast_scan_row_values`, and `each_event`) so they match `Ooxml::Reader::WorksheetListener`.
 - Preserve formula attributes (`type`, `ref`, `shared_index`, `calculate_always`, and data-table flags) and expand shared formulas in `Ooxml::WorksheetParser`, `StreamRow`, `Xlsxrb.load`, and `Xlsxrb.read`, and emit self-closing `<f t="shared" si="..."/>` tags for shared formula slaves in `Ooxml::WorksheetWriter`.

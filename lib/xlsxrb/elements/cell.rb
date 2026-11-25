@@ -375,7 +375,7 @@ module Xlsxrb
       def formatted_value(custom_format_code = nil)
         return nil if value.nil?
 
-        NumberFormatter.format(value, custom_format_code || format_code)
+        NumberFormatter.format(value, custom_format_code || format_code, date1904: date1904?)
       end
 
       # Returns the classified format category for this cell (:date, :datetime, :time, :number, :text, :general, or nil).

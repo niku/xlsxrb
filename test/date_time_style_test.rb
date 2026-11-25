@@ -320,4 +320,34 @@ class DateTimeStyleTest < Test::Unit::TestCase
       end
     end
   end
+
+  test "Cell#formatted_value, Row#formatted_values, and StreamRow#formatted_values honor date1904 flag" do
+    target_date = Date.new(2026, 4, 1)
+    target_time = Time.utc(2026, 4, 1, 9, 30, 0)
+
+    mem_bytes = Xlsxrb.write(Xlsxrb.build do |b|
+      b.workbook_properties(date1904: true)
+      b.sheet("S") { |s| s.row([target_date, target_time]) }
+    end)
+
+    stream_bytes = Xlsxrb.write do |sw|
+      sw.workbook_properties(date1904: true)
+      sw.sheet("S") { |s| s.row([target_date, target_time]) }
+    end
+
+    [mem_bytes, stream_bytes].each do |bytes|
+      wb = Xlsxrb.load(StringIO.new(bytes))
+      assert_true(wb.date1904?)
+      row = wb.sheet(0).rows.first
+      assert_equal("2026-04-01", row[0].formatted_value)
+      assert_equal("2026-04-01 09:30:00", row[1].formatted_value)
+      assert_equal(["2026-04-01", "2026-04-01 09:30:00"], row.formatted_values)
+
+      stream_rows = []
+      Xlsxrb.read(StringIO.new(bytes)) do |sheet|
+        sheet.each { |sr| stream_rows << sr.formatted_values }
+      end
+      assert_equal([["2026-04-01", "2026-04-01 09:30:00"]], stream_rows)
+    end
+  end
 end
