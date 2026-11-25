@@ -117,12 +117,13 @@ module Xlsxrb
           raise ArgumentError, "Excel serial date must be non-negative" if serial.negative?
           raise ArgumentError, "Excel serial date exceeds maximum supported date (9999-12-31)" if serial >= max_serial + 1
 
+          days = serial.div(1)
           if date1904
-            EPOCH_1904 + serial
+            EPOCH_1904 + days
           else
             # Adjust for Lotus 1-2-3 bug.
-            serial -= 1 if serial > 60
-            EPOCH_1900 + serial
+            days -= 1 if days > 60
+            EPOCH_1900 + days
           end
         end
 

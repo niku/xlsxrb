@@ -324,4 +324,19 @@ class UtilsTest < Test::Unit::TestCase
     assert_false(Xlsxrb::Ooxml::Utils.valid_excel_date?(2_957_004, date1904: true))
     assert_false(Xlsxrb::Ooxml::Utils.valid_excel_date?(-1, date1904: true))
   end
+
+  test "serial_to_date drops fractional time portion for both 1900 and 1904 epochs" do
+    d1900 = Date.new(2025, 1, 16)
+    s1900 = Xlsxrb::Ooxml::Utils.date_to_serial(d1900) + 0.00001157408
+    res1900 = Xlsxrb::Ooxml::Utils.serial_to_date(s1900)
+    assert_equal(d1900, res1900)
+
+    d1904 = Date.new(2025, 1, 16)
+    s1904 = Xlsxrb::Ooxml::Utils.date_to_serial(d1904, date1904: true) + 0.00001157408
+    res1904 = Xlsxrb::Ooxml::Utils.serial_to_date(s1904, date1904: true)
+    assert_equal(d1904, res1904)
+
+    # Fractional serial on fictitious Feb 29, 1900 stays on 1900-03-01 without rational offset
+    assert_equal(Date.new(1900, 3, 1), Xlsxrb::Ooxml::Utils.serial_to_date(60.5))
+  end
 end
