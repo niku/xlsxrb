@@ -5,6 +5,7 @@ require "pbt"
 require "stringio"
 require "date"
 require_relative "../support/excel_rules"
+require_relative "../support/xsd_validator"
 
 class DslDrawingStylesPbtTest < Test::Unit::TestCase
   def setup
@@ -213,12 +214,15 @@ class DslDrawingStylesPbtTest < Test::Unit::TestCase
           mem_bytes, stream_bytes = sut.snapshot_bytes
           assert_empty(ExcelRules.check(mem_bytes).map(&:to_s))
           assert_empty(ExcelRules.check(stream_bytes).map(&:to_s))
+          assert_empty(XsdValidator.check(mem_bytes))
+          assert_empty(XsdValidator.check(stream_bytes))
 
           m_wb = Xlsxrb.load(StringIO.new(mem_bytes))
           s_wb = Xlsxrb.load(StringIO.new(stream_bytes))
 
           resaved = m_wb.to_data
           assert_empty(ExcelRules.check(resaved).map(&:to_s))
+          assert_empty(XsdValidator.check(resaved))
           r_wb = Xlsxrb.load(StringIO.new(resaved))
 
           assert_equal(m_wb.styles.dxfs.size, s_wb.styles.dxfs.size, "dxf dedup count mismatch between build and stream")
@@ -428,6 +432,8 @@ class DslDrawingStylesPbtTest < Test::Unit::TestCase
           mem_bytes, stream_bytes = sut.snapshot_bytes
           assert_empty(ExcelRules.check(mem_bytes).map(&:to_s))
           assert_empty(ExcelRules.check(stream_bytes).map(&:to_s))
+          assert_empty(XsdValidator.check(mem_bytes))
+          assert_empty(XsdValidator.check(stream_bytes))
 
           m_wb = Xlsxrb.load(StringIO.new(mem_bytes))
           s_wb = Xlsxrb.load(StringIO.new(stream_bytes))
@@ -443,6 +449,7 @@ class DslDrawingStylesPbtTest < Test::Unit::TestCase
 
           resaved = m_wb.to_data
           assert_empty(ExcelRules.check(resaved).map(&:to_s))
+          assert_empty(XsdValidator.check(resaved))
           r_norm = normalize_dvs(Xlsxrb.load(StringIO.new(resaved)).sheet(0))
           assert_equal(m_norm, r_norm)
         end
@@ -634,6 +641,8 @@ class DslDrawingStylesPbtTest < Test::Unit::TestCase
           mem_bytes, stream_bytes = sut.snapshot_bytes
           assert_empty(ExcelRules.check(mem_bytes).map(&:to_s))
           assert_empty(ExcelRules.check(stream_bytes).map(&:to_s))
+          assert_empty(XsdValidator.check(mem_bytes))
+          assert_empty(XsdValidator.check(stream_bytes))
 
           m_wb = Xlsxrb.load(StringIO.new(mem_bytes))
           s_wb = Xlsxrb.load(StringIO.new(stream_bytes))
@@ -652,6 +661,7 @@ class DslDrawingStylesPbtTest < Test::Unit::TestCase
 
           resaved = m_wb.to_data
           assert_empty(ExcelRules.check(resaved).map(&:to_s))
+          assert_empty(XsdValidator.check(resaved))
           r_ws = Xlsxrb.load(StringIO.new(resaved)).sheet(0)
           assert_equal(normalize_charts(m_ws), normalize_charts(r_ws))
           assert_equal(normalize_shapes(m_ws), normalize_shapes(r_ws))
@@ -970,6 +980,8 @@ class DslDrawingStylesPbtTest < Test::Unit::TestCase
           mem_bytes, stream_bytes = sut.snapshot_bytes
           assert_empty(ExcelRules.check(mem_bytes).map(&:to_s))
           assert_empty(ExcelRules.check(stream_bytes).map(&:to_s))
+          assert_empty(XsdValidator.check(mem_bytes))
+          assert_empty(XsdValidator.check(stream_bytes))
 
           m_wb = Xlsxrb.load(StringIO.new(mem_bytes))
           s_wb = Xlsxrb.load(StringIO.new(stream_bytes))
@@ -983,6 +995,7 @@ class DslDrawingStylesPbtTest < Test::Unit::TestCase
 
           resaved = m_wb.to_data
           assert_empty(ExcelRules.check(resaved).map(&:to_s))
+          assert_empty(XsdValidator.check(resaved))
           r_snap = extract_sheet_meta_snapshot(Xlsxrb.load(StringIO.new(resaved)).sheet(0))
           assert_equal(m_snap, r_snap, "sheet metadata roundtrip mismatch after to_data")
 
@@ -991,6 +1004,7 @@ class DslDrawingStylesPbtTest < Test::Unit::TestCase
           )
           mut_bytes = mut_wb.to_data
           assert_empty(ExcelRules.check(mut_bytes).map(&:to_s))
+          assert_empty(XsdValidator.check(mut_bytes))
           mut_ws = Xlsxrb.load(StringIO.new(mut_bytes)).sheet(0)
           assert_equal(["B2"], mut_ws.cell_watches)
           assert_true(mut_ws.print_options.grid_lines?)
@@ -1415,6 +1429,7 @@ class DslDrawingStylesPbtTest < Test::Unit::TestCase
 
           bytes, wb_styles_xml = sut.build_workbook_styles_xml
           assert_empty(ExcelRules.check(bytes).map(&:to_s))
+          assert_empty(XsdValidator.check(bytes))
 
           wb_sp, wb_sl, parsed_wb = normalize_parsed_styles_xml(wb_styles_xml)
           assert_equal(wb_sp, wb_sl, "StylesParser vs StylesListener mismatch on WorkbookWriter styles.xml")

@@ -6,6 +6,7 @@ require "stringio"
 require "rexml/document"
 require "time"
 require_relative "../support/excel_rules"
+require_relative "../support/xsd_validator"
 
 class WorkbookFeaturesPbtTest < Test::Unit::TestCase
   TINY_PNG = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
@@ -433,6 +434,8 @@ class WorkbookFeaturesPbtTest < Test::Unit::TestCase
           mem_bytes, stream_bytes = sut.snapshot_bytes
           assert_empty(ExcelRules.check(mem_bytes).map(&:to_s))
           assert_empty(ExcelRules.check(stream_bytes).map(&:to_s))
+          assert_empty(XsdValidator.check(mem_bytes))
+          assert_empty(XsdValidator.check(stream_bytes))
 
           assert_threaded_comment_package_integrity!(mem_bytes, "mem")
           assert_threaded_comment_package_integrity!(stream_bytes, "stream")
@@ -443,6 +446,7 @@ class WorkbookFeaturesPbtTest < Test::Unit::TestCase
 
           resaved = m_wb.to_data(shared_strings: state.shared_strings)
           assert_empty(ExcelRules.check(resaved).map(&:to_s))
+          assert_empty(XsdValidator.check(resaved))
           assert_threaded_comment_package_integrity!(resaved, "resaved")
           r_wb = Xlsxrb.load(StringIO.new(resaved))
           assert_auxiliary_workbooks_match!(state, m_wb, r_wb, [resaved, resaved])
@@ -788,6 +792,8 @@ class WorkbookFeaturesPbtTest < Test::Unit::TestCase
           mem_bytes, stream_bytes = sut.snapshot_bytes
           assert_empty(ExcelRules.check(mem_bytes).map(&:to_s))
           assert_empty(ExcelRules.check(stream_bytes).map(&:to_s))
+          assert_empty(XsdValidator.check(mem_bytes))
+          assert_empty(XsdValidator.check(stream_bytes))
 
           assert_no_hidden_tab_selected!(mem_bytes, state.sheets, "mem")
           assert_no_hidden_tab_selected!(stream_bytes, state.sheets, "stream")
@@ -799,6 +805,7 @@ class WorkbookFeaturesPbtTest < Test::Unit::TestCase
 
           resaved = m_wb.to_data
           assert_empty(ExcelRules.check(resaved).map(&:to_s))
+          assert_empty(XsdValidator.check(resaved))
           r_wb = Xlsxrb.load(StringIO.new(resaved))
           assert_workbook_meta_matches!(state, r_wb, "resaved")
 
@@ -808,6 +815,7 @@ class WorkbookFeaturesPbtTest < Test::Unit::TestCase
           )
           mut_bytes = mutated.to_data
           assert_empty(ExcelRules.check(mut_bytes).map(&:to_s))
+          assert_empty(XsdValidator.check(mut_bytes))
           mw = Xlsxrb.load(StringIO.new(mut_bytes))
           assert_equal(!m_wb.show_sheet_tabs?, mw.show_sheet_tabs?)
           assert_equal("MutatedCo", mw.app_properties.company)
@@ -1162,6 +1170,8 @@ class WorkbookFeaturesPbtTest < Test::Unit::TestCase
           mem_bytes, stream_bytes = sut.snapshot_bytes
           assert_empty(ExcelRules.check(mem_bytes).map(&:to_s))
           assert_empty(ExcelRules.check(stream_bytes).map(&:to_s))
+          assert_empty(XsdValidator.check(mem_bytes))
+          assert_empty(XsdValidator.check(stream_bytes))
 
           m_wb = Xlsxrb.load(StringIO.new(mem_bytes))
           s_wb = Xlsxrb.load(StringIO.new(stream_bytes))
@@ -1173,6 +1183,7 @@ class WorkbookFeaturesPbtTest < Test::Unit::TestCase
 
           resaved = m_wb.to_data
           assert_empty(ExcelRules.check(resaved).map(&:to_s))
+          assert_empty(XsdValidator.check(resaved))
           r_wb = Xlsxrb.load(StringIO.new(resaved))
           assert_table_filter_sort_workbook_matches!(state, r_wb, "resaved")
         end

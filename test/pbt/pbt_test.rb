@@ -6,6 +6,7 @@ require "tempfile"
 require "date"
 require "time"
 require_relative "../support/excel_rules"
+require_relative "../support/xsd_validator"
 
 class PbtTest < Test::Unit::TestCase
   def setup
@@ -1462,6 +1463,8 @@ class PbtTest < Test::Unit::TestCase
           built_bytes, streamed_bytes = sut.snapshot_bytes
           assert_empty ExcelRules.check(built_bytes).map(&:to_s)
           assert_empty ExcelRules.check(streamed_bytes).map(&:to_s)
+          assert_empty XsdValidator.check(built_bytes)
+          assert_empty XsdValidator.check(streamed_bytes)
 
           built_wb = Xlsxrb.load(StringIO.new(built_bytes))
           streamed_wb = Xlsxrb.load(StringIO.new(streamed_bytes))
@@ -1642,6 +1645,7 @@ class PbtTest < Test::Unit::TestCase
 
           bytes = sut.snapshot_bytes
           assert_empty ExcelRules.check(bytes).map(&:to_s)
+          assert_empty XsdValidator.check(bytes)
 
           wb = Xlsxrb.load(StringIO.new(bytes))
           loaded_rows = wb.sheet(0).rows
@@ -2158,6 +2162,7 @@ class PbtTest < Test::Unit::TestCase
 
           bytes = sut.serialize_bytes
           assert_empty ExcelRules.check(bytes).map(&:to_s)
+          assert_empty XsdValidator.check(bytes)
 
           loaded_ws = Xlsxrb.load(StringIO.new(bytes)).sheet(0)
           expected_rows = state.rows.map { |r| [r[:row_index], r[:values]] }
@@ -2894,6 +2899,8 @@ class PbtTest < Test::Unit::TestCase
           mem_bytes, stream_bytes = sut.snapshot_bytes
           assert_empty ExcelRules.check(mem_bytes).map(&:to_s), "WorkbookBuilder violated ExcelRules"
           assert_empty ExcelRules.check(stream_bytes).map(&:to_s), "StreamWriter violated ExcelRules"
+          assert_empty XsdValidator.check(mem_bytes)
+          assert_empty XsdValidator.check(stream_bytes)
 
           expected_total_charts = state.charts.values.sum(&:size)
           [mem_bytes, stream_bytes].each do |bytes|
@@ -2998,7 +3005,7 @@ class PbtTest < Test::Unit::TestCase
         w.sheet("EditSheet") do |s|
           s.freeze_pane(row: 1, column: 0)
           s.sheet_view(zoom_scale: 120)
-          s.sheet_properties(tab_color: "FF0000")
+          s.sheet_properties(tab_color: "FFFF0000")
           s.row(%w[H1 H2])
           s.row([10, 20])
           s.merge("A1:B1")
@@ -3045,7 +3052,7 @@ class PbtTest < Test::Unit::TestCase
           print_titles_rows: "1:1",
           freeze_row: 1,
           zoom_scale: 120,
-          tab_color: "FF0000",
+          tab_color: "FFFF0000",
           comments: [["A1", "init comment"]],
           hyperlinks: { "B1" => "https://example.com/init" },
           row_breaks: [0],
@@ -3178,6 +3185,7 @@ class PbtTest < Test::Unit::TestCase
         m.invariant(:edit_lifecycle_and_fixed_point) do |state, sut|
           bytes1 = sut.wb.to_data
           assert_empty ExcelRules.check(bytes1).map(&:to_s)
+          assert_empty XsdValidator.check(bytes1)
           wb1 = Xlsxrb.load(StringIO.new(bytes1))
           ws1 = wb1.sheet(0)
 
@@ -3200,6 +3208,7 @@ class PbtTest < Test::Unit::TestCase
 
           bytes2 = wb1.to_data
           assert_empty ExcelRules.check(bytes2).map(&:to_s)
+          assert_empty XsdValidator.check(bytes2)
           wb2 = Xlsxrb.load(StringIO.new(bytes2))
           ws2 = wb2.sheet(0)
 
@@ -3498,6 +3507,8 @@ class PbtTest < Test::Unit::TestCase
           mem_bytes, stream_bytes = sut.snapshot_bytes
           assert_empty ExcelRules.check(mem_bytes).map(&:to_s)
           assert_empty ExcelRules.check(stream_bytes).map(&:to_s)
+          assert_empty XsdValidator.check(mem_bytes)
+          assert_empty XsdValidator.check(stream_bytes)
 
           m_wb = Xlsxrb.load(StringIO.new(mem_bytes))
           s_wb = Xlsxrb.load(StringIO.new(stream_bytes))

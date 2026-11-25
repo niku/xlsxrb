@@ -6,6 +6,7 @@ require "stringio"
 require "tempfile"
 require "zlib"
 require_relative "../support/excel_rules"
+require_relative "../support/xsd_validator"
 
 class ParserFormulaZipPbtTest < Test::Unit::TestCase
   def setup
@@ -231,6 +232,7 @@ class ParserFormulaZipPbtTest < Test::Unit::TestCase
           File.binread(tmp.path)
         end
         assert_empty(ExcelRules.check(xlsx_bytes).map(&:to_s))
+        assert_empty(XsdValidator.check(xlsx_bytes))
 
         raw_sheet_xml = Xlsxrb::Ooxml::ZipReader.new(StringIO.new(xlsx_bytes)).read_entry("xl/worksheets/sheet1.xml")
         raw_sheet_xml = raw_sheet_xml.gsub(%r{<f t="shared" si="0"/>}, '<f t="shared" si="0"></f>') unless use_self_closing_slave
@@ -265,6 +267,7 @@ class ParserFormulaZipPbtTest < Test::Unit::TestCase
 
         resaved = loaded.to_data
         assert_empty(ExcelRules.check(resaved).map(&:to_s))
+        assert_empty(XsdValidator.check(resaved))
         reloaded = Xlsxrb.load(StringIO.new(resaved)).sheet(0)
         assert_equal(master_expr, reloaded["D1"].formula_expression)
         assert_equal(array_expr, reloaded["E1"].formula_expression)
