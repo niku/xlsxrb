@@ -459,6 +459,34 @@ class OoxmlTest < Test::Unit::TestCase
     assert_equal("65534", reader.read_entry("f65534.txt"))
   end
 
+  test "zip_writer sets UTF-8 general purpose bit 11 for non-ASCII entry names" do
+    require "zip"
+    io = StringIO.new
+    Xlsxrb::Ooxml::ZipWriter.open(io) do |w|
+      w.add_entry("ascii.txt", "a")
+      w.add_entry("日本語.txt", "raw_utf8")
+      w.start_entry("stream_📝.txt")
+      w.write_data("streamed_utf8")
+      w.finish_entry
+    end
+
+    data = io.string.b
+    # ASCII entry keeps gp_flag = 0; UTF-8 entries set bit 11 (0x0800) in central directory
+    cd_ascii = data.index("PK\x01\x02".b)
+    cd_utf8 = data.index("PK\x01\x02".b, cd_ascii + 4)
+    cd_stream = data.index("PK\x01\x02".b, cd_utf8 + 4)
+    assert_equal(0, data.byteslice(cd_ascii + 8, 2).unpack1("v"))
+    assert_equal(0x0800, data.byteslice(cd_utf8 + 8, 2).unpack1("v"))
+    assert_equal(0x0800, data.byteslice(cd_stream + 8, 2).unpack1("v"))
+
+    Zip::File.open_buffer(StringIO.new(data)) do |zf|
+      assert_equal(["ascii.txt", "日本語.txt", "stream_📝.txt"], zf.entries.map { |e| e.name.dup.force_encoding("UTF-8") })
+      assert_equal([0, 0x0800, 0x0800], zf.entries.map { |e| e.gp_flags & 0x0800 })
+      assert_equal("raw_utf8", zf.read("日本語.txt".b))
+      assert_equal("streamed_utf8", zf.read("stream_📝.txt".b))
+    end
+  end
+
   test "zip_reader parses ZIP64 extra fields in central directory and local headers" do
     filename = "test.txt"
     payload = "Hello ZIP64!"

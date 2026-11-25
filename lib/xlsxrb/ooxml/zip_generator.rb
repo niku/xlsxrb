@@ -72,15 +72,15 @@ module Xlsxrb
       end
 
       def write_local_header(entry)
-        filename = entry[:path]
-        filename_bytes = filename.bytes
+        filename = entry[:path].encode("UTF-8")
+        filename_bytes = filename.b.bytes
 
         # Local file header
         local_header = []
         local_header += [0x50, 0x4b, 0x03, 0x04] # Signature
-        local_header += [0x14, 0x00]  # Version needed to extract
-        local_header += [0x00, 0x00]  # General purpose bit flag
-        local_header += [0x08, 0x00]  # Compression method (8 = deflate)
+        local_header += [0x14, 0x00] # Version needed to extract
+        local_header += filename.ascii_only? ? [0x00, 0x00] : [0x00, 0x08] # General purpose bit flag (EFS UTF-8 if non-ASCII)
+        local_header += [0x08, 0x00] # Compression method (8 = deflate)
 
         # Last mod file time/date
         dos_time = dos_datetime(entry[:mtime])
@@ -104,15 +104,15 @@ module Xlsxrb
         offset = @file.pos
         cd_offset = 0
         @entries.each do |entry|
-          filename = entry[:path]
-          filename_bytes = filename.bytes
+          filename = entry[:path].encode("UTF-8")
+          filename_bytes = filename.b.bytes
 
           cd_header = []
           cd_header += [0x50, 0x4b, 0x01, 0x02] # Central directory file header signature
           cd_header += [0x14, 0x03]  # Version made by
           cd_header += [0x14, 0x00]  # Version needed to extract
-          cd_header += [0x00, 0x00]  # General purpose bit flag
-          cd_header += [0x08, 0x00]  # Compression method
+          cd_header += filename.ascii_only? ? [0x00, 0x00] : [0x00, 0x08] # General purpose bit flag (EFS UTF-8 if non-ASCII)
+          cd_header += [0x08, 0x00] # Compression method
 
           dos_time = dos_datetime(entry[:mtime])
           cd_header += dos_time
@@ -175,7 +175,7 @@ module Xlsxrb
       end
 
       def calculate_central_dir_size
-        @entries.sum { |entry| 46 + entry[:path].bytesize }
+        @entries.sum { |entry| 46 + entry[:path].encode("UTF-8").bytesize }
       end
     end
   end

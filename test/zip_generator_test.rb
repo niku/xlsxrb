@@ -75,4 +75,30 @@ class ZipGeneratorTest < Test::Unit::TestCase
     # (46 + 5) + (46 + 9) = 51 + 55 = 106
     assert_equal(106, gen.send(:calculate_central_dir_size))
   end
+
+  test "sets UTF-8 general purpose bit 11 for non-ASCII entry names" do
+    require "zip"
+    zip_tempfile = Tempfile.new(["xlsxrb-zip-utf8", ".zip"])
+    zip_path = zip_tempfile.path
+    zip_tempfile.close
+
+    gen = Xlsxrb::Ooxml::ZipGenerator.new(zip_path)
+    gen.add_entry("ascii.txt", "plain")
+    gen.add_entry("日本語/データ.xml", "<ok/>")
+    gen.generate
+
+    data = File.binread(zip_path)
+    cd_ascii = data.index("PK\x01\x02".b)
+    cd_utf8 = data.index("PK\x01\x02".b, cd_ascii + 4)
+    assert_equal(0, data.byteslice(cd_ascii + 8, 2).unpack1("v"))
+    assert_equal(0x0800, data.byteslice(cd_utf8 + 8, 2).unpack1("v"))
+
+    Zip::File.open_buffer(StringIO.new(data)) do |zf|
+      assert_equal(["ascii.txt", "日本語/データ.xml"], zf.entries.map { |e| e.name.dup.force_encoding("UTF-8") })
+      assert_equal([0, 0x0800], zf.entries.map { |e| e.gp_flags & 0x0800 })
+      assert_equal("<ok/>", zf.read("日本語/データ.xml".b))
+    end
+  ensure
+    File.delete(zip_path) if zip_path && File.exist?(zip_path)
+  end
 end

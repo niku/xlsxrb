@@ -5,6 +5,7 @@
 - Build XML parts in `Ooxml::Writer`, its `DrawingXml`, `FeaturesXml`, and `StylesXml` mixins, and `Ooxml::Crypto::Agile` through `Ooxml::XmlBuilder` ([ADR 0014](docs/adr/0014-build-xml-through-xml-builder.md)), keeping string concatenation only for cell-loop and shared-string hot paths in `Ooxml::WorksheetWriter` and `Ooxml::WorkbookWriter`.
 
 ### Fixed
+- Set the ZIP UTF-8 language encoding flag (general purpose bit 11, `0x0800`) in `Ooxml::ZipWriter` and `Ooxml::ZipGenerator` when writing non-ASCII entry names so external ZIP readers decode UTF-8 filenames instead of treating them as raw bytes.
 - Truncate fractional time portions in `Ooxml::Utils.serial_to_date` so `Cell#to_date` and `StreamRow#values(type_cast: true)` return exact `Date` instances equal to `Date.new(...)` instead of carrying sub-day rational offsets.
 - Pass `date1904: date1904?` from `Elements::Cell#formatted_value` to `NumberFormatter.format` so formatted dates and times on 1904-epoch workbooks do not shift by four years and one day.
 - Apply the current definition of a redefined named column style to `Date` and `Time` cells in `StreamWriter#with_date_style_variants` when the redefined style specifies a number format, matching `WorkbookBuilder`.

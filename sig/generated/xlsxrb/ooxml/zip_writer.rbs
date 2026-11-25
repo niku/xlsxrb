@@ -19,6 +19,8 @@ module Xlsxrb
 
       DATA_DESCRIPTOR_FLAG: ::Integer
 
+      UTF8_FLAG: ::Integer
+
       def self.open: (untyped target, ?compression_level: untyped) ?{ (?) -> untyped } -> untyped
 
       # @return [Integer] Deflate compression level (0..9).
@@ -73,6 +75,9 @@ module Xlsxrb
       def write_data_descriptor: (untyped crc, untyped compressed_size, untyped uncompressed_size, zip64: untyped) -> untyped
 
       def write_bytes: (untyped data) -> untyped
+
+      # : (String path, ?Integer base_flag) -> Integer
+      def entry_gp_flag: (String path, ?Integer base_flag) -> Integer
 
       def write_raw_entry: (untyped path, untyped content_bytes) -> untyped
 

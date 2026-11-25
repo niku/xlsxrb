@@ -18,6 +18,7 @@ module Xlsxrb
       VERSION_DEFAULT = 20
       VERSION_ZIP64 = 45
       DATA_DESCRIPTOR_FLAG = 0x0008
+      UTF8_FLAG = 0x0800
 
       def self.open(target, compression_level: DEFAULT_COMPRESSION_LEVEL, &block)
         io = target.is_a?(String) ? File.open(target, "wb") : target
@@ -80,7 +81,7 @@ module Xlsxrb
         validate_entry_name!(path)
         @entry_path = path
         @entry_offset = @bytes_written
-        @entry_gp_flag = @seekable ? 0 : DATA_DESCRIPTOR_FLAG
+        @entry_gp_flag = entry_gp_flag(path, @seekable ? 0 : DATA_DESCRIPTOR_FLAG)
         @entry_deflater = Zlib::Deflate.new(@compression_level, -Zlib::MAX_WBITS)
         @entry_crc = Zlib.crc32
         @entry_uncompressed_size = 0
@@ -122,14 +123,14 @@ module Xlsxrb
 
         if @entry_seekable && !zip64
           # Patch the local header if seekable
-          patch_local_header { write_local_header(@entry_path, final_crc, @entry_compressed_size, @entry_uncompressed_size, gp_flag: 0, count_bytes: false) }
+          patch_local_header { write_local_header(@entry_path, final_crc, @entry_compressed_size, @entry_uncompressed_size, gp_flag: @entry_gp_flag, count_bytes: false) }
         else
           # Unseekable output always ends a streamed entry with an 8-byte data descriptor.
           # On seekable output, an entry that outgrew 32-bit sizes falls back to one too,
           # because the local header has no room for a ZIP64 extra field.
           write_data_descriptor(final_crc, @entry_compressed_size, @entry_uncompressed_size, zip64: zip64)
           if @entry_seekable
-            @entry_gp_flag = DATA_DESCRIPTOR_FLAG
+            @entry_gp_flag |= DATA_DESCRIPTOR_FLAG
             patch_local_header { write_local_header(@entry_path, 0, 0, 0, gp_flag: @entry_gp_flag, count_bytes: false, version: VERSION_ZIP64) }
           end
         end
@@ -152,8 +153,9 @@ module Xlsxrb
         raise "ZipWriter is closed" if @closed
 
         validate_entry_name!(path)
+        gp_flag = entry_gp_flag(path)
         offset = @bytes_written
-        write_local_header(path, crc32, compressed_size, uncompressed_size, gp_flag: 0, method: method)
+        write_local_header(path, crc32, compressed_size, uncompressed_size, gp_flag: gp_flag, method: method)
 
         if compressed_size.positive?
           source_io.seek(data_offset, IO::SEEK_SET)
@@ -167,7 +169,7 @@ module Xlsxrb
           compressed_size: compressed_size,
           uncompressed_size: uncompressed_size,
           offset: offset,
-          gp_flag: 0,
+          gp_flag: gp_flag,
           method: method
         }
       end
@@ -236,13 +238,19 @@ module Xlsxrb
         @bytes_written += data.bytesize
       end
 
+      #: (String path, ?Integer base_flag) -> Integer
+      def entry_gp_flag(path, base_flag = 0)
+        path.encode("UTF-8").b.ascii_only? ? base_flag : (base_flag | UTF8_FLAG)
+      end
+
       def write_raw_entry(path, content_bytes)
         validate_entry_name!(path)
+        gp_flag = entry_gp_flag(path)
         crc = Zlib.crc32(content_bytes) & 0xFFFFFFFF
         compressed = deflate(content_bytes)
         offset = @bytes_written
 
-        write_local_header(path, crc, compressed.bytesize, content_bytes.bytesize, gp_flag: 0)
+        write_local_header(path, crc, compressed.bytesize, content_bytes.bytesize, gp_flag: gp_flag)
         write_bytes(compressed)
 
         @entries << {
@@ -251,7 +259,7 @@ module Xlsxrb
           compressed_size: compressed.bytesize,
           uncompressed_size: content_bytes.bytesize,
           offset: offset,
-          gp_flag: 0,
+          gp_flag: gp_flag,
           method: 8
         }
       end
