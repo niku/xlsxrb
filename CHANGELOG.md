@@ -5,6 +5,7 @@
 - Build XML parts in `Ooxml::Writer`, its `DrawingXml`, `FeaturesXml`, and `StylesXml` mixins, and `Ooxml::Crypto::Agile` through `Ooxml::XmlBuilder` ([ADR 0014](docs/adr/0014-build-xml-through-xml-builder.md)), keeping string concatenation only for cell-loop and shared-string hot paths in `Ooxml::WorksheetWriter` and `Ooxml::WorkbookWriter`.
 
 ### Fixed
+- Wrap REXML unknown encoding name and encoding conversion errors as `Xlsxrb::ParseError` in `Ooxml::XmlParser`.
 - Scrub invalid UTF-8 byte sequences in `Ooxml::SharedStringsParser` and `Ooxml::WorksheetParser` before XML entity unescaping and newline normalization.
 - Scrub invalid UTF-8 bytes in ZIP entry names inside `Ooxml::ZipReader` instead of raising `ArgumentError` during case-insensitive catalog lookup.
 - Set the ZIP UTF-8 language encoding flag (general purpose bit 11, `0x0800`) in `Ooxml::ZipWriter` and `Ooxml::ZipGenerator` when writing non-ASCII entry names so external ZIP readers decode UTF-8 filenames instead of treating them as raw bytes.

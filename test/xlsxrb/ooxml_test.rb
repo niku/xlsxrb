@@ -842,6 +842,16 @@ class OoxmlTest < Test::Unit::TestCase
     end
   end
 
+  test "xml_parser wraps unknown XML declaration encoding errors as ParseError" do
+    listener = Xlsxrb::Ooxml::XmlParser::BaseListener.new
+    assert_raise(Xlsxrb::ParseError) do
+      Xlsxrb::Ooxml::XmlParser.parse('<?xml version="1.0" encoding="TF-8"?><root/>', listener)
+    end
+    assert_raise(Xlsxrb::ParseError) do
+      Xlsxrb::Ooxml::XmlParser.parse(+'<?xml version="1.0" encoding="UTF-16LE"?><root>a</root>'.b, listener)
+    end
+  end
+
   # --- SharedStringsParser ---
 
   test "shared_strings_parser parses shared strings" do

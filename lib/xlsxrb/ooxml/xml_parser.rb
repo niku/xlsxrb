@@ -122,9 +122,11 @@ module Xlsxrb
           super
         rescue REXML::ParseException => e
           raise Xlsxrb::ParseError, "Malformed XML: #{e.message.lines.first.to_s.strip}"
+        rescue EncodingError => e
+          raise Xlsxrb::ParseError, "Malformed XML: #{e.message}"
         rescue ArgumentError => e
-          # Bytes that are not valid in the document's encoding.
-          raise unless e.message.include?("invalid byte sequence")
+          # Bytes that are not valid in the document's encoding, or an unknown XML declaration encoding.
+          raise unless e.message.include?("invalid byte sequence") || e.message.start_with?("Bad encoding name ")
 
           raise Xlsxrb::ParseError, "Malformed XML: #{e.message}"
         rescue RuntimeError => e
