@@ -531,7 +531,11 @@ module Xlsxrb
           break unless cd_header && cd_header.bytesize == 42
 
           _v_made, _v_need, _gp, method, _time, _date, crc, csize, usize, nlen, elen, clen, _dnum, _iattr, _eattr, offset = cd_header.unpack("vvvvvvVVVvvvvvVV")
-          entry_name = io.read(nlen).force_encoding("UTF-8")
+          raw_name = io.read(nlen)
+          break unless raw_name && raw_name.bytesize == nlen
+
+          entry_name = raw_name.force_encoding(Encoding::UTF_8)
+          entry_name = entry_name.scrub unless entry_name.valid_encoding?
           extra_data = elen.positive? ? io.read(elen) : nil
           io.read(clen) if clen.positive?
 
@@ -597,7 +601,8 @@ module Xlsxrb
           entry_name = io.read(name_len)
           break unless entry_name && entry_name.bytesize == name_len
 
-          entry_name.force_encoding("UTF-8")
+          entry_name.force_encoding(Encoding::UTF_8)
+          entry_name = entry_name.scrub unless entry_name.valid_encoding?
           extra_data = extra_len.positive? ? io.read(extra_len) : nil
           uncompressed_size, compressed_size, = parse_zip64_extra(extra_data, uncompressed_size, compressed_size, 0) if extra_data && (uncompressed_size == 0xFFFF_FFFF || compressed_size == 0xFFFF_FFFF)
           data_offset = io.pos
@@ -745,7 +750,8 @@ module Xlsxrb
       end
 
       def normalize_entry_name(name)
-        name.include?("\\") ? name.tr("\\", "/") : name
+        safe = name.valid_encoding? ? name : name.scrub
+        safe.include?("\\") ? safe.tr("\\", "/") : safe
       end
 
       def lookup_entry(name)
@@ -754,7 +760,7 @@ module Xlsxrb
       end
 
       def ci_catalog
-        @ci_catalog ||= catalog.transform_keys(&:downcase)
+        @ci_catalog ||= catalog.transform_keys { |k| (k.valid_encoding? ? k : k.scrub).downcase }
       end
 
       def normalize_text_encoding(data)

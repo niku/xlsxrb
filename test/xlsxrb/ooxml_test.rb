@@ -526,6 +526,22 @@ class OoxmlTest < Test::Unit::TestCase
     assert_equal payload, reader_fallback.read_entry("test.txt")
   end
 
+  test "zip_reader scrubs invalid UTF-8 bytes in entry names during catalog lookup" do
+    io = StringIO.new
+    Xlsxrb::Ooxml::ZipWriter.open(io) do |w|
+      w.add_entry("xl/aa.xml", "<ok/>")
+    end
+    bytes = io.string.b.gsub("xl/aa.xml".b, "xl/\xFFa.xml".b)
+
+    reader = Xlsxrb::Ooxml::ZipReader.open(StringIO.new(bytes))
+    assert_equal(["xl/\uFFFDa.xml"], reader.entry_names)
+    assert_true(reader.entry_names.all?(&:valid_encoding?))
+    assert_equal(false, reader.entry?("xl/workbook.xml"))
+    assert_raise(Xlsxrb::ParseError) { Xlsxrb.load(StringIO.new(bytes)) }
+  ensure
+    reader&.close
+  end
+
   # --- XmlBuilder ---
 
   test "xml_builder builds XML with tags and attributes" do
