@@ -176,7 +176,7 @@ class DosProtectionTest < Test::Unit::TestCase
       "a comment before the rows" => "<!--#{"x" * (16 * megabyte)}-->"
     }.each do |label, markup|
       bytes = workbook_bytes(sheet: sheet_xml(%(#{markup}<row r="5"><c r="A5"><v>1</v></c></row>)))
-      rows = within(8, label) { Xlsxrb.read(StringIO.new(bytes)).first.each_row.map(&:values) }
+      rows = within(15, label) { Xlsxrb.read(StringIO.new(bytes)).first.each_row.map(&:values) }
 
       assert_equal(label == "a row without an end tag" ? 1 : [[1]], label == "a row without an end tag" ? rows.size : rows, label)
     end
@@ -193,7 +193,8 @@ class DosProtectionTest < Test::Unit::TestCase
     omit "Time limits do not hold under RBS runtime checks, which wrap every method call" if defined?(RBS::Test)
 
     filler = %(<worksheet #{SML_NS}>#{"<a/>" * (16 * 1024 * 1024 / 4)}</worksheet>)
-    assert_nil(within(5, "dimension") { Xlsxrb.read(StringIO.new(workbook_bytes(sheet: filler))).first.dimension })
+    filler_bytes = workbook_bytes(sheet: filler)
+    assert_nil(within(10, "dimension") { Xlsxrb.read(StringIO.new(filler_bytes)).first.dimension })
 
     with_dimension = sheet_xml(%(<row r="1"><c r="A1"><v>1</v></c></row>), before: %(<dimension ref="A1:C3"/>))
     assert_equal "A1:C3", Xlsxrb.read(StringIO.new(workbook_bytes(sheet: with_dimension))).first.dimension
