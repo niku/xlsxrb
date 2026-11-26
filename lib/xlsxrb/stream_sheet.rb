@@ -1251,6 +1251,7 @@ module Xlsxrb
     # UTF-8 is searched as bytes.
     #: (String xml) -> String?
     def dimension_ref_in(xml)
+      return nil unless xml.include?("dimension")
       return xml.slice(DIMENSION_RE, 1) if xml.valid_encoding?
 
       xml.b.slice(DIMENSION_RE, 1)&.force_encoding(Encoding::UTF_8)&.scrub
