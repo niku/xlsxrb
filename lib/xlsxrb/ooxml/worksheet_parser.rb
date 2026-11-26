@@ -556,7 +556,10 @@ module Xlsxrb
       # copying. Only for Strings the caller has just created (e.g. regex captures).
       #: (String? str) -> String?
       def self.utf8!(str)
-        str&.force_encoding(Encoding::UTF_8)
+        return nil unless str
+
+        str.force_encoding(Encoding::UTF_8)
+        str.valid_encoding? ? str : str.scrub
       end
 
       # Resolves a cell value from its type attribute and parsed XML content (<v> or <is>).
@@ -648,9 +651,11 @@ module Xlsxrb
 
       #: (String str) -> String
       def self.normalize_text(str)
-        s = str.include?("<![CDATA[") ? decode_text_with_cdata(str) : decode_xml_entities(str)
+        utf8 = str.encoding == Encoding::BINARY ? str.dup.force_encoding(Encoding::UTF_8) : str
+        utf8 = utf8.scrub unless utf8.valid_encoding?
+        s = utf8.include?("<![CDATA[") ? decode_text_with_cdata(utf8) : decode_xml_entities(utf8)
         s = s.gsub("\r\n", "\n").tr("\r", "\n") if s.include?("\r")
-        s.encoding == Encoding::BINARY ? s.dup.force_encoding(Encoding::UTF_8) : s
+        s
       end
 
       #: (String str) -> String

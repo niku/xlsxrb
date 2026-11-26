@@ -909,6 +909,22 @@ class OoxmlTest < Test::Unit::TestCase
     assert_equal([], Xlsxrb::Ooxml::SharedStringsParser.parse(nil))
   end
 
+  test "shared_strings_parser and worksheet_parser scrub invalid UTF-8 bytes before unescaping" do
+    sst_xml = +"<sst><si><t>A\xFF&amp;B\r\nC</t></si><si><r><t>R1\xFF</t></r><r><t>R2&amp;ok</t></r></si></sst>".b
+    strings = Xlsxrb::Ooxml::SharedStringsParser.parse(sst_xml)
+    assert_equal(["A\uFFFD&B\nC", "R1\uFFFDR2&ok"], strings)
+    assert_true(strings.all?(&:valid_encoding?))
+
+    ws_xml = +"<worksheet><sheetData><row r=\"1\"><c r=\"A1\" t=\"inlineStr\"><is><t>X\xFF&amp;Y\r\nZ</t></is></c></row></sheetData></worksheet>".b
+    rows = Xlsxrb::Ooxml::WorksheetParser.parse(ws_xml)
+    assert_equal("X\uFFFD&Y\nZ", rows[0][0].value)
+    assert_true(rows[0][0].value.valid_encoding?)
+
+    streamed_rows = []
+    Xlsxrb::Ooxml::WorksheetParser.each_row(ws_xml) { |row| streamed_rows << row.cells.map(&:value) }
+    assert_equal([["X\uFFFD&Y\nZ"]], streamed_rows)
+  end
+
   test "shared_strings_parser handles rich text with empty t tags and entities" do
     xml = <<~XML
       <sst>

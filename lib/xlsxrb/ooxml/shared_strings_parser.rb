@@ -122,7 +122,8 @@ module Xlsxrb
                       # Multiple <t> tags (rich text runs)
                       str = extract_multi_t(xml, si_open_end + 1, si_end, t_start_pattern, t_start_len, t_end_tag, t_end_len, rph_start_pattern, rph_end_tag, rph_end_len, has_rph: has_rph)
                     else
-                      raw_str = xml.byteslice(t_open_end + 1, t_end - t_open_end - 1).force_encoding("UTF-8")
+                      raw_str = xml.byteslice(t_open_end + 1, t_end - t_open_end - 1).force_encoding(Encoding::UTF_8)
+                      raw_str = raw_str.scrub unless raw_str.valid_encoding?
                       str = XmlBuilder.unescape(raw_str)
                     end
                   else
@@ -199,7 +200,8 @@ module Xlsxrb
           t_end = xml.index(t_end_tag, t_open_end + 1)
           break unless t_end && t_end <= to
 
-          raw_chunk = xml.byteslice(t_open_end + 1, t_end - t_open_end - 1).force_encoding("UTF-8")
+          raw_chunk = xml.byteslice(t_open_end + 1, t_end - t_open_end - 1).force_encoding(Encoding::UTF_8)
+          raw_chunk = raw_chunk.scrub unless raw_chunk.valid_encoding?
           buf << XmlBuilder.unescape(raw_chunk)
           pos = t_end + t_end_len
         end
