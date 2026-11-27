@@ -1,4 +1,4 @@
-## [Unreleased]
+## [0.2.3] - 2026-11-27
 
 ### Changed
 - Parse workbook metadata and protection, worksheet metadata, relationship parts, and worksheet drawings in a single XML pass per part in `Xlsxrb.load`, and reuse parsed workbook relationships, worksheet relationships, and threaded-comment person maps instead of re-reading those ZIP entries.
