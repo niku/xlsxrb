@@ -149,6 +149,39 @@ module Xlsxrb
         assert_equal ["HugeStream"], reader.stream_names
         assert_equal payload, reader.read_stream("HugeStream")
       end
+
+      def test_cfb_oversized_uint64_stream_size_and_truncated_difat_sector
+        # 1. Oversized uint64 (>= 2**63) StreamSize in directory entry must not raise RangeError.
+        payload = ("A" * 5000).b
+        cfb_bytes = Cfb::Writer.write({ "Payload" => payload })
+        name_marker = "Payload\u0000".encode("UTF-16LE").b
+        entry_offset = cfb_bytes.index(name_marker)
+        assert_not_nil entry_offset
+        assert_equal 0, (entry_offset - 512) % 128
+
+        corrupted = cfb_bytes.dup
+        corrupted[entry_offset + 0x78, 8] = [0xFFFF_FFFF_FFFF_FFFF].pack("Q<")
+        regular_data = Cfb::Reader.new(corrupted).read_stream("Payload")
+        assert_equal 5120, regular_data.bytesize
+        assert_true regular_data.start_with?(payload)
+
+        # 2. Oversized uint64 size passed to read_mini_stream_data must not raise RangeError.
+        mini_payload = ("B" * 100).b
+        mini_reader = Cfb::Reader.new(Cfb::Writer.write({ "Mini" => mini_payload }))
+        mini_data = mini_reader.send(:read_mini_stream_data, 0, 0xFFFF_FFFF_FFFF_FFFF)
+        assert_true mini_data.start_with?(mini_payload)
+
+        # 3. Out-of-range @first_difat_sector must not raise NoMethodError.
+        out_of_range_difat = cfb_bytes.dup
+        out_of_range_difat[0x44, 4] = [9999].pack("V")
+        assert_nothing_raised { Cfb::Reader.new(out_of_range_difat) }
+
+        # 4. Truncated DIFAT sector (short sector < 512 bytes) must not raise NoMethodError.
+        difat_cfb = Cfb::Writer.write({ "Huge" => ("D" * 7_200_000).b })
+        first_difat_sector = difat_cfb[0x44, 4].unpack1("V")
+        truncated_difat = difat_cfb[0, ((first_difat_sector + 1) * 512) + 200]
+        assert_nothing_raised { Cfb::Reader.new(truncated_difat) }
+      end
     end
   end
 end

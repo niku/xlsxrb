@@ -5,6 +5,7 @@
 - Build XML parts in `Ooxml::Writer`, its `DrawingXml`, `FeaturesXml`, and `StylesXml` mixins, and `Ooxml::Crypto::Agile` through `Ooxml::XmlBuilder` ([ADR 0014](docs/adr/0014-build-xml-through-xml-builder.md)), keeping string concatenation only for cell-loop and shared-string hot paths in `Ooxml::WorksheetWriter` and `Ooxml::WorkbookWriter`.
 
 ### Fixed
+- Guard against oversized 64-bit stream sizes and truncated DIFAT sectors in `Ooxml::Cfb::Reader` so corrupted CFB containers do not raise `RangeError` or `NoMethodError`.
 - Wrap REXML unknown encoding name and encoding conversion errors as `Xlsxrb::ParseError` in `Ooxml::XmlParser`.
 - Scrub invalid UTF-8 byte sequences in `Ooxml::SharedStringsParser` and `Ooxml::WorksheetParser` before XML entity unescaping and newline normalization.
 - Scrub invalid UTF-8 bytes in ZIP entry names inside `Ooxml::ZipReader` instead of raising `ArgumentError` during case-insensitive catalog lookup.

@@ -155,10 +155,15 @@ module Xlsxrb
 
               visited[curr] = true
               sec_data = read_sector(curr)
+              break if sec_data.empty?
+
               entries_per_sec = (@sector_size / 4) - 1
-              entries = sec_data[0, entries_per_sec * 4].unpack("V*")
+              entries = (sec_data[0, entries_per_sec * 4] || "".b).unpack("V*")
               @difat_sectors.concat(entries)
-              curr = sec_data[entries_per_sec * 4, 4].unpack1("V")
+              next_bytes = sec_data[entries_per_sec * 4, 4]
+              break if next_bytes.nil? || next_bytes.bytesize < 4
+
+              curr = next_bytes.unpack1("V")
             end
           end
 
@@ -244,9 +249,9 @@ module Xlsxrb
         end
 
         def read_regular_stream_data(start_sector, total_size)
-          return "".b if [ENDOFCHAIN, FREESECT].include?(start_sector) || total_size.zero?
+          return "".b if [ENDOFCHAIN, FREESECT].include?(start_sector) || total_size <= 0
 
-          result = +""
+          result = +"".b
           curr = start_sector
           visited = {}
           while curr != ENDOFCHAIN && curr != FREESECT && curr < @fat.size
@@ -258,13 +263,13 @@ module Xlsxrb
 
             curr = @fat[curr]
           end
-          result[0, total_size] || "".b
+          result.bytesize > total_size ? (result.byteslice(0, total_size) || "".b) : result
         end
 
         def read_mini_stream_data(start_mini_sector, total_size)
-          return "".b if [ENDOFCHAIN, FREESECT].include?(start_mini_sector) || total_size.zero?
+          return "".b if [ENDOFCHAIN, FREESECT].include?(start_mini_sector) || total_size <= 0
 
-          result = +""
+          result = +"".b
           curr = start_mini_sector
           visited = {}
           while curr != ENDOFCHAIN && curr != FREESECT && curr < @minifat.size
@@ -277,7 +282,7 @@ module Xlsxrb
 
             curr = @minifat[curr]
           end
-          result[0, total_size] || "".b
+          result.bytesize > total_size ? (result.byteslice(0, total_size) || "".b) : result
         end
       end
 
